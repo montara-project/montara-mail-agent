@@ -33,7 +33,7 @@ secret is passed as a process argument.
 
 ```sh
 make db/migrations/up            # apply migrations
-make db/migrations/up/seed       # ... and seed the categories
+make db/migrations/up/seed       # ... and seed the default organization
 make db/migrations/force version=N   # after a failed migration
 make db/migrations/refresh       # roll back everything and reapply
 ```
@@ -50,7 +50,7 @@ create and update and repaired on every boot.
 
 With `SEED_ON_BOOT=true` the API creates the `SUPER_USER` account through
 Authula, with a verified email, and gives it the `super_user` role. Only that
-role may create, update or delete categories; everyone can read them.
+role may create, update or delete organizations; everyone can read them.
 
 `SUPER_USER` is the source of truth for the password: if the account's
 password differs, the next seeded boot resets it and ends every session of
@@ -94,12 +94,12 @@ The API accepts either the cookie or `Authorization: Bearer <access_token>`.
 
 ## Idempotent writes
 
-A write to `/api/v1/categories` accepts an idempotency key, so a retried request
+A write to `/api/v1/organizations` accepts an idempotency key, so a retried request
 does not apply twice. Send the key on the first attempt and repeat it verbatim
 on every retry:
 
 ```sh
-curl -X POST http://localhost:8080/api/v1/categories \
+curl -X POST http://localhost:8080/api/v1/organizations \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H 'Content-Type: application/json' \
   -H "X-Idempotency-Key: 8e03978e-40d5-43e8-bc93-6894a57f9324" \

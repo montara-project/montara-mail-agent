@@ -268,18 +268,18 @@ func TestIntegration(t *testing.T) {
 		t.Fatalf("refresh: %d %v", status, out)
 	}
 
-	// Category writes: super user only.
-	category := map[string]string{"name": "Integration"}
-	if status, _ := call(http.MethodPost, "/api/v1/categories", "", category); status != http.StatusUnauthorized {
+	// Organization writes: super user only.
+	organization := map[string]string{"name": "Integration"}
+	if status, _ := call(http.MethodPost, "/api/v1/organizations", "", organization); status != http.StatusUnauthorized {
 		t.Fatalf("create without auth: %d, want 401", status)
 	}
-	if status, _ := call(http.MethodPost, "/api/v1/categories", userToken, category); status != http.StatusForbidden {
+	if status, _ := call(http.MethodPost, "/api/v1/organizations", userToken, organization); status != http.StatusForbidden {
 		t.Fatalf("create as plain user: %d, want 403", status)
 	}
-	if status, out := call(http.MethodPost, "/api/v1/categories", superToken, category); status != http.StatusCreated {
+	if status, out := call(http.MethodPost, "/api/v1/organizations", superToken, organization); status != http.StatusCreated {
 		t.Fatalf("create as super user: %d %v", status, out)
 	}
-	if status, out := call(http.MethodGet, "/api/v1/categories?search=Integration", "", nil); status != http.StatusOK || len(out["data"].([]any)) != 1 {
+	if status, out := call(http.MethodGet, "/api/v1/organizations?search=Integration", "", nil); status != http.StatusOK || len(out["data"].([]any)) != 1 {
 		t.Fatalf("list: %d %v", status, out)
 	}
 
@@ -287,24 +287,24 @@ func TestIntegration(t *testing.T) {
 	// inserting a second row, and the reply is marked as replayed.
 	const idempotencyKey = "8e03978e-40d5-43e8-bc93-6894a57f9324"
 	retried := map[string]string{"name": "Retried"}
-	firstStatus, firstOut := call(http.MethodPost, "/api/v1/categories", superToken, retried, "X-Idempotency-Key", idempotencyKey)
+	firstStatus, firstOut := call(http.MethodPost, "/api/v1/organizations", superToken, retried, "X-Idempotency-Key", idempotencyKey)
 	if firstStatus != http.StatusCreated {
 		t.Fatalf("idempotent create: %d %v", firstStatus, firstOut)
 	}
-	retryStatus, retryOut := call(http.MethodPost, "/api/v1/categories", superToken, retried, "X-Idempotency-Key", idempotencyKey)
+	retryStatus, retryOut := call(http.MethodPost, "/api/v1/organizations", superToken, retried, "X-Idempotency-Key", idempotencyKey)
 	if retryStatus != firstStatus || retryOut["data"].(map[string]any)["id"] != firstOut["data"].(map[string]any)["id"] {
 		t.Fatalf("idempotent retry: %d %v, want the first answer %v", retryStatus, retryOut, firstOut)
 	}
-	if status, out := call(http.MethodGet, "/api/v1/categories?search=Retried", "", nil); status != http.StatusOK || len(out["data"].([]any)) != 1 {
+	if status, out := call(http.MethodGet, "/api/v1/organizations?search=Retried", "", nil); status != http.StatusOK || len(out["data"].([]any)) != 1 {
 		t.Fatalf("the retry inserted a second row: %d %v", status, out)
 	}
 	// A malformed key is refused before the write is attempted.
-	if status, _ := call(http.MethodPost, "/api/v1/categories", superToken, map[string]string{"name": "Bad"}, "X-Idempotency-Key", "not-a-uuid"); status != http.StatusBadRequest {
+	if status, _ := call(http.MethodPost, "/api/v1/organizations", superToken, map[string]string{"name": "Bad"}, "X-Idempotency-Key", "not-a-uuid"); status != http.StatusBadRequest {
 		t.Fatalf("malformed idempotency key: %d, want 400", status)
 	}
 
 	// A browser request from another site is refused before it is authenticated.
-	if status, _ := call(http.MethodPost, "/api/v1/categories", superToken, category, "Sec-Fetch-Site", "cross-site", "Origin", "https://evil.example"); status != http.StatusForbidden {
+	if status, _ := call(http.MethodPost, "/api/v1/organizations", superToken, organization, "Sec-Fetch-Site", "cross-site", "Origin", "https://evil.example"); status != http.StatusForbidden {
 		t.Fatalf("cross-site create: %d, want 403", status)
 	}
 
@@ -312,7 +312,7 @@ func TestIntegration(t *testing.T) {
 	if status, out := call(http.MethodPost, "/api/v1/auth/sign-out", superToken, map[string]any{}); status != http.StatusOK {
 		t.Fatalf("sign out: %d %v", status, out)
 	}
-	if status, _ := call(http.MethodPost, "/api/v1/categories", superToken, category); status != http.StatusUnauthorized {
+	if status, _ := call(http.MethodPost, "/api/v1/organizations", superToken, organization); status != http.StatusUnauthorized {
 		t.Fatalf("create after sign out: %d, want 401", status)
 	}
 

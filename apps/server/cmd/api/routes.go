@@ -53,12 +53,12 @@ func routes(r *fiber.App, app *app.Application) {
 	// means a single in-memory store instead of one per route.
 	idempotent := middlewares.Idempotency()
 
-	categories := v1.Group("/categories")
-	categories.Get("/", h.Category.List)
-	categories.Get("/:id", h.Category.Get)
-	categories.Post("/", m.Authorization, m.SuperUser, idempotent, h.Category.Create)
-	categories.Put("/:id", m.Authorization, m.SuperUser, idempotent, h.Category.Update)
-	categories.Delete("/:id", m.Authorization, m.SuperUser, idempotent, h.Category.Delete)
-	categories.Put("/:id/restore", m.Authorization, m.SuperUser, idempotent, h.Category.Restore)
-	categories.Delete("/:id/force", m.Authorization, m.SuperUser, idempotent, h.Category.DeletePermanently)
+	organizations := v1.Group("/organizations")
+	organizations.Get("/", h.Organization.List)
+	organizations.Get("/:id", h.Organization.Get)
+	organizations.Post("/", m.Authorization, m.SuperUser, idempotent, h.Organization.Create)
+	organizations.Put("/:id", m.Authorization, m.SuperUser, idempotent, h.Organization.Update)
+	organizations.Delete("/:id", m.Authorization, m.SuperUser, idempotent, h.Organization.Delete)
+	organizations.Put("/:id/restore", m.Authorization, m.SuperUser, idempotent, h.Organization.Restore)
+	organizations.Delete("/:id/force", m.Authorization, m.SuperUser, idempotent, h.Organization.DeletePermanently)
 }

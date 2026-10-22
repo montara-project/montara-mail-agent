@@ -12,7 +12,7 @@ import (
 // running Authula instance, so the API appends SuperUserSeeder itself.
 func All(db *sql.DB) []Seeder {
 	return []Seeder{
-		CategorySeeder{DB: db},
+		OrganizationSeeder{DB: db},
 	}
 }
 

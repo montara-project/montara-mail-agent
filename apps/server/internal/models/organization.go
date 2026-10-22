@@ -1,6 +1,6 @@
 package models
 
-type Category struct {
+type Organization struct {
 	Base
 	SoftDelete
 	Name string `db:"name" json:"name"`
