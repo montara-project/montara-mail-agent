@@ -16,12 +16,12 @@ import (
 	authulamodels "github.com/Authula/authula/models"
 	"github.com/gofiber/fiber/v3"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/app"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/config"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib/constant"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/repositories"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/seeders"
+	"montara-mail-agent/server/internal/app"
+	"montara-mail-agent/server/internal/config"
+	"montara-mail-agent/server/internal/lib"
+	"montara-mail-agent/server/internal/lib/constant"
+	"montara-mail-agent/server/internal/repositories"
+	"montara-mail-agent/server/internal/seeders"
 )
 
 // TestIntegration runs the boot sequence and the auth flow against a real

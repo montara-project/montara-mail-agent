@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib/constant"
+	"montara-mail-agent/server/internal/lib/constant"
 )
 
 type CategorySeeder struct {

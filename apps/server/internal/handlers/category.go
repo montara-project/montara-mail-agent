@@ -4,11 +4,11 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/app"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/dtos"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/models"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/repositories"
+	"montara-mail-agent/server/internal/app"
+	"montara-mail-agent/server/internal/dtos"
+	"montara-mail-agent/server/internal/lib"
+	"montara-mail-agent/server/internal/models"
+	"montara-mail-agent/server/internal/repositories"
 )
 
 type categoryHandler struct {

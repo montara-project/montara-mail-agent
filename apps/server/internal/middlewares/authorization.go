@@ -10,10 +10,10 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/config"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib/apperr"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib/constant"
+	"montara-mail-agent/server/internal/config"
+	"montara-mail-agent/server/internal/lib"
+	"montara-mail-agent/server/internal/lib/apperr"
+	"montara-mail-agent/server/internal/lib/constant"
 )
 
 // bearerToken returns the token of an "Authorization: Bearer <token>" header,

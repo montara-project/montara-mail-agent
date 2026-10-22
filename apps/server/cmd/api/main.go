@@ -8,10 +8,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/app"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/config"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/repositories"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/seeders"
+	"montara-mail-agent/server/internal/app"
+	"montara-mail-agent/server/internal/config"
+	"montara-mail-agent/server/internal/repositories"
+	"montara-mail-agent/server/internal/seeders"
 )
 
 func main() {

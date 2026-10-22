@@ -21,8 +21,8 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/requestid"
 	"github.com/gofiber/fiber/v3/middleware/static"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/app"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/middlewares"
+	"montara-mail-agent/server/internal/app"
+	"montara-mail-agent/server/internal/middlewares"
 )
 
 // serve runs the HTTP server until SIGINT/SIGTERM, then drains in-flight

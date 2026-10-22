@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib/apperr"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib/validator"
+	"montara-mail-agent/server/internal/lib/apperr"
+	"montara-mail-agent/server/internal/lib/validator"
 
 	"github.com/gofiber/fiber/v3"
 )

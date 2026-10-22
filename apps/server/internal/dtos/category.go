@@ -1,6 +1,6 @@
 package dtos
 
-import "github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib/validator"
+import "montara-mail-agent/server/internal/lib/validator"
 
 // maxNameLen bounds a category name; the column itself is unbounded.
 const maxNameLen = 100

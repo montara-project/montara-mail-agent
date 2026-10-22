@@ -1,4 +1,4 @@
-module github.com/masb0ymas/montara-mail-agent/apps/server
+module montara-mail-agent/server
 
 go 1.27.2
 

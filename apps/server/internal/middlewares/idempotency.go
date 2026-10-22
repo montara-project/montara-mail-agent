@@ -8,8 +8,8 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/idempotency"
 	"github.com/google/uuid"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib/apperr"
+	"montara-mail-agent/server/internal/lib"
+	"montara-mail-agent/server/internal/lib/apperr"
 )
 
 // Idempotency guards state-changing routes against duplicate work: a client

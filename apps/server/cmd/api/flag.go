@@ -14,8 +14,8 @@ import (
 
 	authulaenv "github.com/Authula/authula/env"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/config"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/seeders"
+	"montara-mail-agent/server/internal/config"
+	"montara-mail-agent/server/internal/seeders"
 )
 
 // Every flag defaults to its environment variable, so `make run` (which exports

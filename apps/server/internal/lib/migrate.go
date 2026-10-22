@@ -8,7 +8,7 @@ import (
 	migratepgx "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/migrations"
+	"montara-mail-agent/server/migrations"
 )
 
 // NewMigrator builds a golang-migrate instance over the embedded SQL files.

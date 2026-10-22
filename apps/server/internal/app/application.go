@@ -6,8 +6,8 @@ import (
 
 	authula "github.com/Authula/authula"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/config"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/repositories"
+	"montara-mail-agent/server/internal/config"
+	"montara-mail-agent/server/internal/repositories"
 )
 
 type Application struct {

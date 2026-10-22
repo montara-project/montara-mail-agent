@@ -6,10 +6,10 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/dtos"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib/apperr"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/repositories"
+	"montara-mail-agent/server/internal/dtos"
+	"montara-mail-agent/server/internal/lib"
+	"montara-mail-agent/server/internal/lib/apperr"
+	"montara-mail-agent/server/internal/repositories"
 )
 
 // pathID parses the :id path parameter, naming the resource in the error so a

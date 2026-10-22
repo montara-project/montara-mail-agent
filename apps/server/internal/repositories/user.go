@@ -3,7 +3,7 @@ package repositories
 import (
 	"context"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/models"
+	"montara-mail-agent/server/internal/models"
 
 	"github.com/google/uuid"
 )

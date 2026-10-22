@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib/apperr"
+	"montara-mail-agent/server/internal/lib/apperr"
 
 	"github.com/jackc/pgx/v5/pgconn"
 )

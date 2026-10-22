@@ -6,8 +6,8 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib/apperr"
+	"montara-mail-agent/server/internal/lib"
+	"montara-mail-agent/server/internal/lib/apperr"
 )
 
 // ErrorHandler renders handler errors: validation failures as 422 with the

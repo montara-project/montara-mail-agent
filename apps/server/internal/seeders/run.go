@@ -3,7 +3,7 @@ package seeders
 import (
 	"context"
 	"database/sql"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib"
+	"montara-mail-agent/server/internal/lib"
 	"time"
 )
 

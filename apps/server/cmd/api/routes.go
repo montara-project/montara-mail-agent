@@ -4,10 +4,10 @@ import (
 	fiberadapter "github.com/Authula/authula/adapters/fiber"
 	"github.com/gofiber/fiber/v3"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/app"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/config"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/handlers"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/middlewares"
+	"montara-mail-agent/server/internal/app"
+	"montara-mail-agent/server/internal/config"
+	"montara-mail-agent/server/internal/handlers"
+	"montara-mail-agent/server/internal/middlewares"
 )
 
 // Per-IP request budgets per minute: tight on the auth routes, loose on the

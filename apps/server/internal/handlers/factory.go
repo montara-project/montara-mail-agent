@@ -1,6 +1,6 @@
 package handlers
 
-import "github.com/masb0ymas/montara-mail-agent/apps/server/internal/app"
+import "montara-mail-agent/server/internal/app"
 
 type Handlers struct {
 	Health   *healthHandler
