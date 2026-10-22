@@ -20,6 +20,12 @@ type Config struct {
 	DB     ConfigDB
 	Auth   ConfigAuth
 	Sentry ConfigSentry
+	AI     ConfigAI
+}
+
+// ConfigAI configures the Claude-backed AI features; an empty key disables them.
+type ConfigAI struct {
+	AnthropicAPIKey string
 }
 
 // ConfigAuth configures the embedded Authula server.

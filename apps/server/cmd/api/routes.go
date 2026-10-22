@@ -15,6 +15,7 @@ import (
 const (
 	authRateLimit = 30
 	apiRateLimit  = 120
+	aiRateLimit   = 10
 )
 
 func routes(r *fiber.App, app *app.Application) {
@@ -52,6 +53,10 @@ func routes(r *fiber.App, app *app.Application) {
 	// write route: its keys are already scoped per route, and a shared cache
 	// means a single in-memory store instead of one per route.
 	idempotent := middlewares.Idempotency()
+
+	// Each summary is a paid model call, so signed-in users only, on a tighter budget.
+	ai := v1.Group("/ai", m.Authorization, middlewares.RateLimit(aiRateLimit, exemptLoopback, exemptIPs))
+	ai.Post("/mail-summary", h.AI.MailSummary)
 
 	organizations := v1.Group("/organizations")
 	organizations.Get("/", h.Organization.List)

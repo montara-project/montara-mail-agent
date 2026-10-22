@@ -17,6 +17,8 @@ const (
 	KindConflict        Kind = http.StatusConflict
 	KindTooManyRequests Kind = http.StatusTooManyRequests
 	KindInternal        Kind = http.StatusInternalServerError
+	KindBadGateway      Kind = http.StatusBadGateway
+	KindUnavailable     Kind = http.StatusServiceUnavailable
 )
 
 // Error is a typed application error. Wrap sentinel errors (ErrNotFound, …)

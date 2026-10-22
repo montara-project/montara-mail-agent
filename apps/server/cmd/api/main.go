@@ -8,6 +8,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/anthropics/anthropic-sdk-go/option"
+
 	"montara-mail-agent/server/internal/app"
 	"montara-mail-agent/server/internal/config"
 	"montara-mail-agent/server/internal/repositories"
@@ -76,11 +79,20 @@ func run() error {
 		}
 	}
 
+	var ai *anthropic.Client
+	if cfg.AI.AnthropicAPIKey != "" {
+		client := anthropic.NewClient(option.WithAPIKey(cfg.AI.AnthropicAPIKey))
+		ai = &client
+	} else {
+		logger.Warn("AI features disabled: anthropic-api-key is not set")
+	}
+
 	return serve(&app.Application{
 		Config:       cfg,
 		Logger:       logger,
 		DB:           db,
 		Repositories: repos,
 		Auth:         auth,
+		AI:           ai,
 	})
 }

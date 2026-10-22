@@ -308,6 +308,15 @@ func TestIntegration(t *testing.T) {
 		t.Fatalf("cross-site create: %d, want 403", status)
 	}
 
+	// Mail summary: signed-in users only, and 503 while no Anthropic key is set.
+	mail := map[string]string{"from": "a@example.com", "subject": "Hi", "body": "Hello"}
+	if status, _ := call(http.MethodPost, "/api/v1/ai/mail-summary", "", mail); status != http.StatusUnauthorized {
+		t.Fatalf("summary without token: %d, want 401", status)
+	}
+	if status, _ := call(http.MethodPost, "/api/v1/ai/mail-summary", userToken, mail); status != http.StatusServiceUnavailable {
+		t.Fatalf("summary without AI key: %d, want 503", status)
+	}
+
 	// Signing out revokes the access token.
 	if status, out := call(http.MethodPost, "/api/v1/auth/sign-out", superToken, map[string]any{}); status != http.StatusOK {
 		t.Fatalf("sign out: %d %v", status, out)
