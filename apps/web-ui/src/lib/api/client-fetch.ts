@@ -2,7 +2,7 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 
 import { env } from '@/config/env'
 
-import type { SignInData } from './models/user'
+import type { RefreshData } from './models/user'
 
 import {
   clearAuthTokens,
@@ -42,16 +42,13 @@ async function refreshTokens() {
     throw new Error('No refresh token')
   }
 
-  const res = await api.post<{ data: SignInData }>(`${AUTH_PATH}/refresh`, {
+  const res = await api.post<RefreshData>(`${AUTH_PATH}/token/refresh`, {
     refresh_token: refreshToken,
   })
-  const payload = res.data.data
 
   setAuthTokens({
-    accessToken: payload.access_token,
-    refreshToken: payload.refresh_token,
-    idToken: payload.id_token,
-    expiresIn: payload.expires_in,
+    accessToken: res.data.access_token,
+    refreshToken: res.data.refresh_token,
   })
 }
 
@@ -70,8 +67,8 @@ api.interceptors.response.use(undefined, async (error: AxiosError) => {
   const recoverable =
     error.response?.status === 401 &&
     config !== undefined &&
-    !url.startsWith(`${AUTH_PATH}/sign-in`) &&
-    !url.startsWith(`${AUTH_PATH}/refresh`)
+    !url.startsWith(`${AUTH_PATH}/email-password/sign-in`) &&
+    !url.startsWith(`${AUTH_PATH}/token/refresh`)
 
   if (!recoverable) {
     return Promise.reject(error)

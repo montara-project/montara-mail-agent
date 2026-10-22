@@ -15,7 +15,7 @@ interface SignInWithEmailParams {
 export async function signInWithEmail({ email, password }: SignInWithEmailParams) {
   try {
     const res = await services.auth.signIn({ email, password })
-    const payload = res?.data?.data
+    const payload = res?.data
 
     if (!payload?.access_token) {
       throw new Error('Sign-in response did not include an access token')
@@ -24,7 +24,6 @@ export async function signInWithEmail({ email, password }: SignInWithEmailParams
     setAuthTokens({
       accessToken: payload.access_token,
       refreshToken: payload.refresh_token,
-      idToken: payload.id_token,
       expiresIn: payload.expires_in,
     })
 

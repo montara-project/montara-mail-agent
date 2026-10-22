@@ -23,13 +23,13 @@ async function getBackendSession(): Promise<AuthSession | null> {
   }
 
   try {
-    // The profile query returns the API envelope, like every other query.
+    // Authula answers GET /me unwrapped: { user, session }.
     const profile = await getQueryClient().ensureQueryData(queries.auth.profile())
     // Read again: the request above may have rotated the tokens.
     const token = getStoredAccessToken() ?? ''
 
     return {
-      user: profile.data,
+      user: profile.user,
       session: { token },
       data: {
         accessToken: token,

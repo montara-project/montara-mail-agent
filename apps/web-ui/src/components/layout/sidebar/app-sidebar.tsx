@@ -32,13 +32,14 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
 export default function AppSidebar({ user, userError, onRetryUser, ...props }: AppSidebarProps) {
   const userInfo: UserInfo | undefined = user
     ? {
-        name: user.fullname,
+        name: user.name,
         email: user.email,
-        avatar: '',
+        avatar: user.image ?? '',
       }
     : undefined
 
-  const menu = getSidebarMenu(user?.role?.name)
+  // ponytail: GET /me carries no app role yet, so everyone gets the default menu.
+  const menu = getSidebarMenu()
 
   return (
     <Sidebar collapsible="icon" variant="floating" {...props}>

@@ -90,8 +90,8 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
       }
     >
       <AppSidebar
-        user={meData?.data}
-        userError={isError && !meData?.data}
+        user={meData?.user}
+        userError={isError && !meData?.user}
         onRetryUser={() => void refetch()}
       />
       <SidebarInset>

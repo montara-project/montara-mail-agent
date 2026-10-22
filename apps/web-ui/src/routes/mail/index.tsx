@@ -24,12 +24,12 @@ export const Route = createFileRoute('/mail/')({
 
 function RouteComponent() {
   const { data: meData, isError, refetch } = useQuery(queries.auth.profile())
-  const user = meData?.data
+  const user = meData?.user
 
   return (
     <SidebarProvider style={{ '--sidebar-width': '350px' } as React.CSSProperties}>
       <MailSidebar
-        user={user ? { name: user.fullname, email: user.email, avatar: '' } : undefined}
+        user={user ? { name: user.name, email: user.email, avatar: '' } : undefined}
         userError={isError && !user}
         onRetryUser={() => void refetch()}
       />
