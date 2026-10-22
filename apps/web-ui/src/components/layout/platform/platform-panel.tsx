@@ -1,6 +1,7 @@
 import { Bot, FolderOpen, MessageSquare, SlidersHorizontal, SquarePen, Workflow } from 'lucide-react'
 import React from 'react'
 
+import OrganizationSwitcher from '@/components/layout/organization/organization-switcher'
 import {
   Sidebar,
   SidebarContent,
@@ -41,8 +42,8 @@ export default function PlatformPanel() {
 
   return (
     <Sidebar collapsible="none" className="hidden flex-1 md:flex">
-      <SidebarHeader className="border-b p-4">
-        <div className="text-foreground text-base font-medium">Platform</div>
+      <SidebarHeader className="gap-3.5 p-4 pb-2">
+        <OrganizationSwitcher />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>

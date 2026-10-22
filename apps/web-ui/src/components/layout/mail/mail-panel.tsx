@@ -1,6 +1,7 @@
 import { useSearch } from '@tanstack/react-router'
 import { ArchiveX, File, Inbox, Send, Trash2 } from 'lucide-react'
 
+import OrganizationSwitcher from '@/components/layout/organization/organization-switcher'
 import { Label } from '@/components/ui/label'
 import {
   Sidebar,
@@ -77,7 +78,8 @@ export default function MailPanel() {
   return (
     <Sidebar collapsible="none" className="hidden flex-1 md:flex">
       <SidebarHeader className="gap-3.5 border-b p-4">
-        <div className="flex w-full items-center justify-between">
+        <OrganizationSwitcher />
+        <div className="flex w-full items-center justify-between pt-2">
           <div className="text-foreground text-base font-medium">{folder.title}</div>
           <Label className="flex items-center gap-2 text-sm">
             <span>Unreads</span>
