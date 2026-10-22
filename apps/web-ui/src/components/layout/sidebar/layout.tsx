@@ -88,7 +88,8 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
     <SidebarProvider
       style={
         {
-          '--sidebar-width': hasPanel ? '350px' : 'calc(var(--sidebar-width-icon) + 1px)',
+          // Rail plus panel; shared by every panel (Platform, Mail) so they line up.
+          '--sidebar-width': hasPanel ? '420px' : 'calc(var(--sidebar-width-icon) + 1px)',
         } as React.CSSProperties
       }
     >
