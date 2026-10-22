@@ -113,7 +113,9 @@ export default function OrganizationSwitcher() {
   const label = active?.name ?? (isPending ? 'Loading...' : 'No organization')
 
   return (
-    <>
+    // Same height and bottom border as the page header (h-16), so the two lines meet;
+    // the negative margins cancel the panel header's p-4.
+    <div className="-mx-4 -mt-4 flex h-16 shrink-0 items-center border-b px-4">
       <Popover
         open={open}
         onOpenChange={(next) => {
@@ -183,8 +185,6 @@ export default function OrganizationSwitcher() {
           )}
         </PopoverContent>
       </Popover>
-      {/* Spans the panel edge to edge, past the header's p-4. */}
-      <Separator className="-mx-4 w-auto!" />
-    </>
+    </div>
   )
 }
