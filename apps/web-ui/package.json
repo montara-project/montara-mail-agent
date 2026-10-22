@@ -1,5 +1,5 @@
 {
-  "name": "web-ui",
+  "name": "@montara-mail/web-ui",
   "private": true,
   "type": "module",
   "imports": {

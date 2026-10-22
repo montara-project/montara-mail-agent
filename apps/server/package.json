@@ -1,0 +1,16 @@
+{
+  "name": "@montara-mail/server",
+  "version": "2.7.0",
+  "private": true,
+  "scripts": {
+    "dev": "make run",
+    "build": "go build -o bin/api ./cmd/api && go build -o bin/migrate ./cmd/migrate",
+    "test": "go test ./...",
+    "migrate:up": "go run ./cmd/migrate up",
+    "migrate:down": "go run ./cmd/migrate down",
+    "migrate:refresh": "go run ./cmd/migrate refresh",
+    "migrate:force": "go run ./cmd/migrate force",
+    "migrate:version": "go run ./cmd/migrate version",
+    "migrate:create": "go run ./cmd/migrate create"
+  }
+}
