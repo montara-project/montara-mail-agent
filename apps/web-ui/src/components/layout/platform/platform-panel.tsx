@@ -1,44 +1,34 @@
-import { Bot, FolderOpen, MessageSquare, SlidersHorizontal, SquarePen, Workflow } from 'lucide-react'
-import React from 'react'
+import { Link, useLocation } from '@tanstack/react-router'
+import { HardDrive, LayoutDashboard, Settings, UserRound } from 'lucide-react'
 
 import OrganizationSwitcher from '@/components/layout/organization/organization-switcher'
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
-  SidebarInput,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
 
-// ponytail: none of these have pages yet; give each a url once its route exists.
+// ponytail: Account and Settings have no pages yet; give each a url once its route exists.
 const PLATFORM_ITEMS = [
-  { title: 'New Chat', icon: SquarePen },
-  { title: 'Agent', icon: Bot },
-  { title: 'Browse files', icon: FolderOpen },
-  { title: 'Automation', icon: Workflow },
-  { title: 'Control centers', icon: SlidersHorizontal },
+  { title: 'Dashboard', icon: LayoutDashboard, url: '/dashboard' },
+  { title: 'Account', icon: UserRound },
+  { title: 'Settings', icon: Settings },
 ]
 
-// ponytail: sample history until the server stores chats; swap for a query then.
-const CHAT_HISTORY = [
-  { id: '1', title: 'Summarize unread mails from today', date: 'Today' },
-  { id: '2', title: 'Draft a reply to Alice about the project update', date: 'Today' },
-  { id: '3', title: 'Find invoices sent last month', date: 'Yesterday' },
-  { id: '4', title: 'Auto-label newsletters as Junk', date: '2 days ago' },
-  { id: '5', title: 'Schedule follow-up with Emily on budget', date: '1 week ago' },
-]
+const STORAGE_LIMIT_GB = 5
+// ponytail: sample usage until the server reports it; swap for a query then.
+const STORAGE_USED_GB = 2.4
 
 /** Second panel of the sidebar-09 shell on the Platform pages. */
 export default function PlatformPanel() {
-  const [search, setSearch] = React.useState('')
-  const chats = CHAT_HISTORY.filter((chat) =>
-    chat.title.toLowerCase().includes(search.trim().toLowerCase())
-  )
+  const pathname = useLocation().pathname
+  const usedPercent = Math.min(100, (STORAGE_USED_GB / STORAGE_LIMIT_GB) * 100)
 
   return (
     <Sidebar collapsible="none" className="hidden flex-1 md:flex">
@@ -51,43 +41,50 @@ export default function PlatformPanel() {
             <SidebarMenu>
               {PLATFORM_ITEMS.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton>
-                    <item.icon />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
+                  {item.url ? (
+                    <SidebarMenuButton asChild isActive={pathname.startsWith(item.url)}>
+                      <Link to={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  ) : (
+                    <SidebarMenuButton>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  )}
                 </SidebarMenuItem>
               ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <SidebarGroup className="min-h-0 flex-1">
-          <SidebarGroupLabel>Recent</SidebarGroupLabel>
-          <SidebarGroupContent className="flex min-h-0 flex-1 flex-col gap-2">
-            <SidebarInput
-              placeholder="Search chats..."
-              aria-label="Search chats"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-            <SidebarMenu>
-              {chats.map((chat) => (
-                <SidebarMenuItem key={chat.id}>
-                  <SidebarMenuButton className="h-auto py-2">
-                    <MessageSquare className="self-start" />
-                    <div className="grid min-w-0 flex-1 gap-0.5">
-                      <span className="truncate">{chat.title}</span>
-                      <span className="text-muted-foreground text-xs">{chat.date}</span>
-                    </div>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-              {chats.length === 0 && (
-                <p className="text-muted-foreground px-2 py-1.5 text-xs">No chats found.</p>
-              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter className="p-4">
+        <div className="grid gap-2 rounded-lg border p-3 text-sm">
+          <div className="flex items-center gap-2 font-medium">
+            <HardDrive className="size-4" />
+            Storage
+          </div>
+          <div
+            role="progressbar"
+            aria-label="Storage used"
+            aria-valuemin={0}
+            aria-valuemax={STORAGE_LIMIT_GB}
+            aria-valuenow={STORAGE_USED_GB}
+            aria-valuetext={`${STORAGE_USED_GB} GB of ${STORAGE_LIMIT_GB} GB`}
+            className="bg-muted h-2 overflow-hidden rounded-full"
+          >
+            <div
+              className={usedPercent >= 90 ? 'bg-destructive h-full' : 'bg-primary h-full'}
+              style={{ width: `${usedPercent}%` }}
+            />
+          </div>
+          <p className="text-muted-foreground text-xs">
+            {STORAGE_USED_GB} GB of {STORAGE_LIMIT_GB} GB used
+          </p>
+        </div>
+      </SidebarFooter>
     </Sidebar>
   )
 }
