@@ -15,6 +15,6 @@ export default defineConfig({
       ASSETS: bindings.assets(),
       IMAGES: bindings.images(),
     },
-    // domains: ["your-domain.com"],
+    domains: ["montaramail.web.id"],
   }),
 });
