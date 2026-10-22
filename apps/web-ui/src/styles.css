@@ -140,6 +140,13 @@
   }
 }
 
+/* Magic UI animated theme toggler: the toggler animates the clip-path itself. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
 @utility no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;

@@ -1,5 +1,6 @@
 import { IconMail } from '@tabler/icons-react'
 import { Link, useLocation } from '@tanstack/react-router'
+import { useTheme } from 'next-themes'
 import React from 'react'
 
 import type { Models } from '@/lib/api/models'
@@ -7,6 +8,7 @@ import type { UserInfo } from '@/types/menu'
 
 import MailPanel, { MAIL_FOLDERS, useMailFolder } from '@/components/layout/mail/mail-panel'
 import PlatformPanel from '@/components/layout/platform/platform-panel'
+import { AnimatedThemeToggler } from '@/components/ui/animated-theme-toggler'
 import {
   Sidebar,
   SidebarContent,
@@ -23,6 +25,20 @@ import {
 import { getSidebarMenu } from '@/data/sidebar-menu'
 
 import NavUser from './nav-user'
+
+/** Light/dark switch with Magic UI's circular reveal; next-themes keeps the choice. */
+function ThemeToggle() {
+  const { resolvedTheme, setTheme } = useTheme()
+
+  return (
+    <AnimatedThemeToggler
+      theme={resolvedTheme === 'light' ? 'light' : 'dark'}
+      onThemeChange={setTheme}
+      title="Toggle theme"
+      className="self-center hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-sidebar-ring flex size-8 items-center justify-center rounded-md outline-none focus-visible:ring-2 [&_svg]:size-4"
+    />
+  )
+}
 
 /** The second panel shown next to the rail for a path, if any. */
 function sidebarPanel(pathname: string) {
@@ -145,6 +161,7 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
+          <ThemeToggle />
           <NavUser user={userInfo} userError={userError} onRetryUser={onRetryUser} />
         </SidebarFooter>
       </Sidebar>
