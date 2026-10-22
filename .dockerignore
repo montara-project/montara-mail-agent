@@ -1,0 +1,14 @@
+# Docker builds use the workspace root as context (docker build -f apps/<app>/Dockerfile .).
+# .env holds secrets and must never reach a build context.
+.git
+.github
+**/.env
+**/.env.*
+!**/.env.example
+**/node_modules
+**/dist
+**/.wrangler
+**/*.bak
+.claude
+.omc
+graft
