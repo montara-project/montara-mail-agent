@@ -6,6 +6,7 @@ import type { Models } from '@/lib/api/models'
 import type { UserInfo } from '@/types/menu'
 
 import MailPanel, { MAIL_FOLDERS, useMailFolder } from '@/components/layout/mail/mail-panel'
+import PlatformPanel from '@/components/layout/platform/platform-panel'
 import {
   Sidebar,
   SidebarContent,
@@ -23,6 +24,18 @@ import { getSidebarMenu } from '@/data/sidebar-menu'
 
 import NavUser from './nav-user'
 
+/** The second panel shown next to the rail for a path, if any. */
+function sidebarPanel(pathname: string) {
+  if (pathname.startsWith('/mail')) return <MailPanel />
+  if (pathname.startsWith('/dashboard')) return <PlatformPanel />
+  return null
+}
+
+/** Whether a path has a second panel, which sets the sidebar width. */
+export function hasSidebarPanel(pathname: string) {
+  return sidebarPanel(pathname) !== null
+}
+
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   /** The signed-in user from GET /v1/auth/me; undefined while it loads. */
   user?: Models.User | null
@@ -33,8 +46,8 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
 }
 
 /**
- * shadcn sidebar-09: an icon rail on every page, plus the mail list panel
- * next to it on /mail.
+ * shadcn sidebar-09: an icon rail on every page, plus a second panel next to
+ * it on the pages that have one (see sidebarPanel).
  */
 export default function AppSidebar({ user, userError, onRetryUser, ...props }: AppSidebarProps) {
   const pathname = useLocation().pathname
@@ -131,7 +144,7 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
         </SidebarFooter>
       </Sidebar>
 
-      {isMail && <MailPanel />}
+      {sidebarPanel(pathname)}
     </Sidebar>
   )
 }

@@ -5,7 +5,7 @@ import type { NavMainItem, SidebarMenuData } from '@/types/menu'
 import { ROLES, type RoleName } from '@/lib/constants/auth'
 
 const NAV_DASHBOARD: NavMainItem = {
-  title: 'Dashboard',
+  title: 'Platform',
   url: '/dashboard',
   icon: IconLayoutDashboard,
   isActive: true,

@@ -16,7 +16,7 @@ import { queries } from '@/lib/api/queries'
 import { capitalizeFirstLetter } from '@/lib/string'
 import { cn } from '@/lib/utils'
 
-import AppSidebar from './app-sidebar'
+import AppSidebar, { hasSidebarPanel } from './app-sidebar'
 
 interface SidebarLayoutProps {
   children: React.ReactNode
@@ -24,8 +24,8 @@ interface SidebarLayoutProps {
 
 export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const pathname = useLocation().pathname
-  // Only /mail has the second panel; elsewhere the sidebar is just the icon rail.
-  const isMail = pathname.startsWith('/mail')
+  // Pages without a second panel show just the icon rail.
+  const hasPanel = hasSidebarPanel(pathname)
 
   const { data: meData, isError, refetch } = useQuery(queries.auth.profile())
 
@@ -88,7 +88,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
     <SidebarProvider
       style={
         {
-          '--sidebar-width': isMail ? '350px' : 'calc(var(--sidebar-width-icon) + 1px)',
+          '--sidebar-width': hasPanel ? '350px' : 'calc(var(--sidebar-width-icon) + 1px)',
         } as React.CSSProperties
       }
     >
@@ -101,12 +101,12 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
         <header className="sticky bg-background top-0 z-20 flex h-16 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex w-full items-center justify-between px-4">
             <div className="flex items-center justify-center gap-2">
-              <SidebarTrigger className={cn('-ml-1', !isMail && 'md:hidden')} />
+              <SidebarTrigger className={cn('-ml-1', !hasPanel && 'md:hidden')} />
               <Separator
                 orientation="vertical"
                 className={cn(
                   'my-auto mr-2 data-[orientation=vertical]:h-4',
-                  !isMail && 'md:hidden'
+                  !hasPanel && 'md:hidden'
                 )}
               />
               {renderBreadcrumb()}
