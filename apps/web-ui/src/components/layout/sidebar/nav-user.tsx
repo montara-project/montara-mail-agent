@@ -15,7 +15,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar'
+import {
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from '@/components/ui/sidebar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { signOut } from '@/lib/auth/email-auth'
 
@@ -43,6 +48,7 @@ function getInitials(name: string) {
 export default function NavUser({ user, userError, onRetryUser }: NavUserProps) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { isMobile } = useSidebar()
 
   const handleSignOut = async () => {
     await signOut()
@@ -59,8 +65,12 @@ export default function NavUser({ user, userError, onRetryUser }: NavUserProps) 
     return (
       <SidebarMenu>
         <SidebarMenuItem>
-          <div className="px-2 py-1.5 text-xs text-destructive">Couldn't load your profile.</div>
-          <SidebarMenuButton size="lg" onClick={onRetryUser}>
+          <SidebarMenuButton
+            size="lg"
+            className="text-destructive md:h-8 md:p-0"
+            tooltip={{ children: "Couldn't load your profile. Try again", hidden: false }}
+            onClick={onRetryUser}
+          >
             <RotateCcw />
             <span>Try again</span>
           </SidebarMenuButton>
@@ -73,7 +83,7 @@ export default function NavUser({ user, userError, onRetryUser }: NavUserProps) 
     return (
       <SidebarMenu>
         <SidebarMenuItem>
-          <SidebarMenuButton size="lg" disabled>
+          <SidebarMenuButton size="lg" className="md:h-8 md:p-0" disabled>
             <Skeleton className="size-8 rounded-lg" />
             <div className="grid flex-1 gap-1.5">
               <Skeleton className="h-3.5 w-24" />
@@ -92,7 +102,7 @@ export default function NavUser({ user, userError, onRetryUser }: NavUserProps) 
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground md:h-8 md:p-0"
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={user.avatar} alt={name} />
@@ -107,7 +117,7 @@ export default function NavUser({ user, userError, onRetryUser }: NavUserProps) 
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-            side="top"
+            side={isMobile ? 'bottom' : 'right'}
             align="end"
             sideOffset={4}
           >

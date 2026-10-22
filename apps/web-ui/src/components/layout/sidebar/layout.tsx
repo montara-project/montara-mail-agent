@@ -14,6 +14,7 @@ import { Separator } from '@/components/ui/separator'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { queries } from '@/lib/api/queries'
 import { capitalizeFirstLetter } from '@/lib/string'
+import { cn } from '@/lib/utils'
 
 import AppSidebar from './app-sidebar'
 
@@ -23,6 +24,8 @@ interface SidebarLayoutProps {
 
 export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const pathname = useLocation().pathname
+  // Only /mail has the second panel; elsewhere the sidebar is just the icon rail.
+  const isMail = pathname.startsWith('/mail')
 
   const { data: meData, isError, refetch } = useQuery(queries.auth.profile())
 
@@ -85,7 +88,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
     <SidebarProvider
       style={
         {
-          '--sidebar-width': '19rem',
+          '--sidebar-width': isMail ? '350px' : 'calc(var(--sidebar-width-icon) + 1px)',
         } as React.CSSProperties
       }
     >
@@ -98,10 +101,13 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
         <header className="sticky bg-background top-0 z-20 flex h-16 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex w-full items-center justify-between px-4">
             <div className="flex items-center justify-center gap-2">
-              <SidebarTrigger className="-ml-1" />
+              <SidebarTrigger className={cn('-ml-1', !isMail && 'md:hidden')} />
               <Separator
                 orientation="vertical"
-                className="my-auto mr-2 data-[orientation=vertical]:h-4"
+                className={cn(
+                  'my-auto mr-2 data-[orientation=vertical]:h-4',
+                  !isMail && 'md:hidden'
+                )}
               />
               {renderBreadcrumb()}
             </div>

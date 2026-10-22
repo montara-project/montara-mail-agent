@@ -1,4 +1,4 @@
-import { IconFolders, IconLayoutDashboard, IconMail } from '@tabler/icons-react'
+import { IconFolders, IconLayoutDashboard } from '@tabler/icons-react'
 
 import type { NavMainItem, SidebarMenuData } from '@/types/menu'
 
@@ -12,13 +12,6 @@ const NAV_DASHBOARD: NavMainItem = {
   items: [],
 }
 
-const NAV_MAIL: NavMainItem = {
-  title: 'Mail',
-  url: '/mail',
-  icon: IconMail,
-  items: [],
-}
-
 const NAV_MASTER: NavMainItem = {
   title: 'Master',
   url: '#',
@@ -28,9 +21,9 @@ const NAV_MASTER: NavMainItem = {
 
 /** Menus by role. Only routes that actually exist are listed. */
 const MENUS: Record<RoleName, NavMainItem[]> = {
-  [ROLES.ADMIN]: [NAV_DASHBOARD, NAV_MAIL, NAV_MASTER],
-  [ROLES.MENTOR]: [NAV_DASHBOARD, NAV_MAIL, NAV_MASTER],
-  [ROLES.USER]: [NAV_DASHBOARD, NAV_MAIL],
+  [ROLES.ADMIN]: [NAV_DASHBOARD, NAV_MASTER],
+  [ROLES.MENTOR]: [NAV_DASHBOARD, NAV_MASTER],
+  [ROLES.USER]: [NAV_DASHBOARD],
 }
 
 const SIDEBAR_MENU: SidebarMenuData = {

@@ -1,23 +1,26 @@
-import { IconBox } from '@tabler/icons-react'
-import { Link } from '@tanstack/react-router'
+import { IconMail } from '@tabler/icons-react'
+import { Link, useLocation } from '@tanstack/react-router'
 import React from 'react'
 
 import type { Models } from '@/lib/api/models'
 import type { UserInfo } from '@/types/menu'
 
+import MailPanel, { MAIL_FOLDERS, useMailFolder } from '@/components/layout/mail/mail-panel'
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import { getSidebarMenu } from '@/data/sidebar-menu'
 
-import NavMain from './nav-main'
 import NavUser from './nav-user'
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
@@ -29,7 +32,16 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   onRetryUser?: () => void
 }
 
+/**
+ * shadcn sidebar-09: an icon rail on every page, plus the mail list panel
+ * next to it on /mail.
+ */
 export default function AppSidebar({ user, userError, onRetryUser, ...props }: AppSidebarProps) {
+  const pathname = useLocation().pathname
+  const isMail = pathname.startsWith('/mail')
+  const activeFolder = useMailFolder()
+  const { setOpen } = useSidebar()
+
   const userInfo: UserInfo | undefined = user
     ? {
         name: user.name,
@@ -39,34 +51,87 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
     : undefined
 
   // ponytail: GET /me carries no app role yet, so everyone gets the default menu.
-  const menu = getSidebarMenu()
+  // The rail has no room for nesting, so grouped items show their children.
+  const navItems = getSidebarMenu().navMenu.overview.flatMap((item) =>
+    item.items.length > 0 ? item.items.map((sub) => ({ ...sub, icon: sub.icon ?? item.icon })) : [item]
+  )
 
   return (
-    <Sidebar collapsible="icon" variant="floating" {...props}>
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link to="/dashboard">
-                <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <IconBox className="size-5" />
-                </div>
-                <div className="flex flex-col gap-1 leading-none">
-                  <span className="font-medium">Vine</span>
-                  <span className="text-xs">Dashboard</span>
-                </div>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
-      <SidebarContent>
-        <NavMain title="Menu" items={menu.navMenu.overview} />
-      </SidebarContent>
-      <SidebarFooter>
-        <NavUser user={userInfo} userError={userError} onRetryUser={onRetryUser} />
-      </SidebarFooter>
-      <SidebarRail />
+    <Sidebar
+      collapsible="icon"
+      className="overflow-hidden *:data-[sidebar=sidebar]:flex-row"
+      {...props}
+    >
+      {/* Icon rail: not collapsible, fixed to the icon width. */}
+      <Sidebar collapsible="none" className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r">
+        <SidebarHeader>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
+                <Link to="/dashboard">
+                  <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                    <IconMail className="size-4" />
+                  </div>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-medium">Montara</span>
+                    <span className="truncate text-xs">Mail</span>
+                  </div>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupContent className="px-1.5 md:px-0">
+              <SidebarMenu>
+                {navItems.map((item) => (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton
+                      asChild
+                      tooltip={{ children: item.title, hidden: false }}
+                      isActive={pathname.startsWith(item.url)}
+                      className="px-2.5 md:px-2"
+                    >
+                      <Link to={item.url}>
+                        {item.icon && <item.icon />}
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+          <SidebarGroup>
+            <SidebarGroupLabel className="md:hidden">Mail</SidebarGroupLabel>
+            <SidebarGroupContent className="px-1.5 md:px-0">
+              <SidebarMenu>
+                {MAIL_FOLDERS.map((folder) => (
+                  <SidebarMenuItem key={folder.id}>
+                    <SidebarMenuButton
+                      asChild
+                      tooltip={{ children: folder.title, hidden: false }}
+                      isActive={isMail && activeFolder.id === folder.id}
+                      className="px-2.5 md:px-2"
+                    >
+                      <Link to="/mail" search={{ folder: folder.id }} onClick={() => setOpen(true)}>
+                        <folder.icon />
+                        <span>{folder.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+        <SidebarFooter>
+          <NavUser user={userInfo} userError={userError} onRetryUser={onRetryUser} />
+        </SidebarFooter>
+      </Sidebar>
+
+      {isMail && <MailPanel />}
     </Sidebar>
   )
 }
