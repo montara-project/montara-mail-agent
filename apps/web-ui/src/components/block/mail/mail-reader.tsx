@@ -159,7 +159,11 @@ export default function MailReader({ mail }: { mail: Mail }) {
         )}
       </div>
 
-      <form onSubmit={sendReply} className="focus-within:ring-ring/30 m-4 rounded-xl border p-2 focus-within:ring-2">
+      {/* Magic UI rainbow-button animation, on the border only. */}
+      <form
+        onSubmit={sendReply}
+        className="animate-rainbow m-4 rounded-xl border-2 border-transparent bg-[linear-gradient(var(--color-card),var(--color-card)),linear-gradient(90deg,var(--color-1),var(--color-5),var(--color-3),var(--color-4),var(--color-2))] bg-[length:200%] [background-clip:padding-box,border-box] [background-origin:border-box] p-2 motion-reduce:animate-none"
+      >
         <Textarea
           value={reply}
           onChange={(event) => setReply(event.target.value)}
