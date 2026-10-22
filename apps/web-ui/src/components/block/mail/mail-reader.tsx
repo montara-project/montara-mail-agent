@@ -15,6 +15,7 @@ import {
   OctagonAlert,
   Plus,
   Printer,
+  RotateCcw,
   Sparkles,
   ThumbsDown,
   ThumbsUp,
@@ -26,11 +27,14 @@ import { toast } from 'sonner'
 
 import type { Mail, MailContact } from '@/components/layout/mail/mail-data'
 
+import Markdown from '@/components/block/common/markdown'
 import { mailInitials, MAILS } from '@/components/layout/mail/mail-data'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
+import { axiosErrorMessage } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
 
@@ -57,6 +61,15 @@ export default function MailReader({ mail }: { mail: Mail }) {
   const { data: meData } = useQuery(queries.auth.profile())
   const [reply, setReply] = React.useState('')
   const [summaryOpen, setSummaryOpen] = React.useState(false)
+  // Fetched on the first open only; the query keeps it for the session.
+  const summary = useQuery({
+    ...queries.ai.mailSummary(mail.id, {
+      from: `${mail.name} <${mail.email}>`,
+      subject: mail.subject,
+      body: mail.body,
+    }),
+    enabled: summaryOpen,
+  })
   // ponytail: importance feedback is local only; send it to the AI service once one exists.
   const [feedback, setFeedback] = React.useState<'up' | 'down' | null>(null)
 
@@ -199,18 +212,37 @@ export default function MailReader({ mail }: { mail: Mail }) {
           </Button>
         </div>
 
-        {/* ponytail: the summary is sample text; fetch it from the AI service once it exists. */}
-        {summaryOpen && (
-          <div className="bg-muted/50 mt-3 rounded-lg border p-3 text-sm">
-            <p className="mb-1 flex items-center gap-1.5 font-medium">
-              <Sparkles className="size-4" />
-              Summary
-            </p>
-            <p className="text-muted-foreground">{mail.summary}</p>
-          </div>
-        )}
-
         <Separator className="my-5" />
+
+        {summaryOpen && (
+          <section
+            aria-label="AI email summary"
+            aria-busy={summary.isPending}
+            className="mb-6 max-w-3xl rounded-xl border border-l-4 border-violet-500/30 border-l-violet-500 bg-violet-500/5 p-4"
+          >
+            <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-violet-700 dark:text-violet-300">
+              <Sparkles className="size-4" />
+              AI Summary
+            </p>
+            {summary.isPending ? (
+              <div className="grid gap-2">
+                <Skeleton className="h-4 w-11/12" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-5/6" />
+              </div>
+            ) : summary.isError ? (
+              <div className="flex flex-wrap items-center gap-3 text-sm">
+                <span className="text-destructive">{axiosErrorMessage(summary.error)}</span>
+                <Button variant="outline" size="sm" onClick={() => summary.refetch()}>
+                  <RotateCcw />
+                  Try again
+                </Button>
+              </div>
+            ) : (
+              <Markdown>{summary.data}</Markdown>
+            )}
+          </section>
+        )}
 
         <div className="max-w-3xl text-[15px] leading-relaxed whitespace-pre-line">{mail.body}</div>
 
