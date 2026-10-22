@@ -9,6 +9,7 @@ export type Mail = {
   name: string
   email: string
   verified?: boolean
+  starred?: boolean
   subject: string
   teaser: string
   body: string
@@ -20,6 +21,22 @@ export type Mail = {
   importance: string
   attachments?: { name: string; size: string }[]
 }
+
+export type MailAccount = {
+  id: string
+  label: string
+  email: string
+  provider: string
+  unread: number
+  syncedAt: string
+}
+
+// ponytail: sample accounts until the server can connect mailboxes; swap for a query then.
+export const MAIL_ACCOUNTS: MailAccount[] = [
+  { id: 'work', label: 'Work', email: 'hello@montara.app', provider: 'Google Workspace', unread: 2, syncedAt: '2026-10-22T14:30:00' },
+  { id: 'support', label: 'Support', email: 'support@montara.app', provider: 'Microsoft 365', unread: 14, syncedAt: '2026-10-22T14:12:00' },
+  { id: 'personal', label: 'Personal', email: 'me@fastmail.com', provider: 'IMAP', unread: 0, syncedAt: '2026-10-21T22:05:00' },
+]
 
 // ponytail: sample mails until the server exposes a mailbox endpoint; swap for a query then.
 export const MAILS: Mail[] = [
@@ -54,6 +71,7 @@ export const MAILS: Mail[] = [
     name: 'Figma Community',
     email: 'community@figma.com',
     verified: true,
+    starred: true,
     subject: 'New resources you might like',
     teaser: 'Discover trending UI kits and design systems shared by the community this week.',
     body: "Hello,\n\nWe've found a few new resources from the Figma Community that match your recent activity and interests in UI design and design systems.\n\nDesigners around the world have been sharing incredible files this week, and we picked a few that might help you speed up your workflow or inspire your next project.\n\nBest Regards,\nFigma Community",
@@ -61,7 +79,11 @@ export const MAILS: Mail[] = [
     receivedAt: '2026-10-12T09:15:00',
     read: true,
     tab: 'others',
-    attachments: [{ name: 'Design-system-starter-kit.fig', size: '125 MB' }],
+    attachments: [
+      { name: 'Design-system-starter-kit.fig', size: '125 MB' },
+      { name: 'UI-kit-preview.png', size: '3.6 MB' },
+      { name: 'Icon-set.svg', size: '420 KB' },
+    ],
   },
   {
     id: 'm4',
@@ -79,6 +101,7 @@ export const MAILS: Mail[] = [
   {
     id: 'm5',
     name: 'Stripe',
+    starred: true,
     email: 'reports@stripe.com',
     verified: true,
     subject: 'Your monthly report is ready',

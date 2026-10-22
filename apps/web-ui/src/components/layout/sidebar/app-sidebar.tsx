@@ -116,8 +116,9 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-          <SidebarGroup>
-            <SidebarGroupLabel className="md:hidden">Mail</SidebarGroupLabel>
+          {/* Phones only: there the folder panel is hidden, so the rail lists the folders. */}
+          <SidebarGroup className="md:hidden">
+            <SidebarGroupLabel>Mail</SidebarGroupLabel>
             <SidebarGroupContent className="px-1.5 md:px-0">
               <SidebarMenu>
                 {MAIL_FOLDERS.map((folder) => (
@@ -128,7 +129,11 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
                       isActive={isMail && activeFolder.id === folder.id}
                       className="px-2.5 md:px-2"
                     >
-                      <Link to="/mail" search={{ folder: folder.id }} onClick={() => setOpen(true)}>
+                      <Link
+                        to="/mail"
+                        search={(prev) => ({ account: prev.account, folder: folder.id })}
+                        onClick={() => setOpen(true)}
+                      >
                         <folder.icon />
                         <span>{folder.title}</span>
                       </Link>
