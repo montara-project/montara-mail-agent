@@ -2,6 +2,8 @@ import { format, isToday } from 'date-fns'
 
 export type MailTab = 'focused' | 'archive' | 'others'
 
+export type MailContact = { name: string; email: string }
+
 export type Mail = {
   id: string
   name: string
@@ -13,6 +15,11 @@ export type Mail = {
   receivedAt: string
   read: boolean
   tab: MailTab
+  cc?: MailContact[]
+  /** How the AI ranked this mail, e.g. "very important". */
+  importance: string
+  /** AI summary of the mail. */
+  summary: string
   attachments?: { name: string; size: string }[]
 }
 
@@ -25,6 +32,9 @@ export const MAILS: Mail[] = [
     subject: 'Feedback on your landing page design',
     teaser: 'Hi, thanks for sharing the latest version. We think the hero reads much better now.',
     body: "Hi there,\n\nThanks for sharing the latest version. We think the hero reads much better now, and the new pricing table is a lot easier to scan.\n\nA few small notes are in the attached brief. Let us know when the next round is ready.\n\nBest Regards,\nVanuell",
+    cc: [{ name: 'Marry', email: 'marry@vanuel.studio' }, { name: 'Josh', email: 'josh@vanuel.studio' }],
+    importance: 'very important',
+    summary: 'Vanuel likes the new hero and pricing table and left a few small notes in the attached brief. They are waiting for the next design round.',
     receivedAt: '2026-10-22T10:06:00',
     read: false,
     tab: 'focused',
@@ -37,6 +47,8 @@ export const MAILS: Mail[] = [
     subject: 'Your shot is getting noticed',
     teaser: 'Congrats! Your recent design shot has started gaining traction with the community.',
     body: 'Congrats!\n\nYour recent design shot has started gaining traction with the community. It picked up 120 likes in the last 24 hours.\n\nKeep it up,\nThe Dribbble Team',
+    importance: 'low priority',
+    summary: 'Dribbble reports your latest shot picked up 120 likes in the last day.',
     receivedAt: '2026-10-22T14:24:00',
     read: false,
     tab: 'others',
@@ -49,6 +61,8 @@ export const MAILS: Mail[] = [
     subject: 'New resources you might like',
     teaser: 'Discover trending UI kits and design systems shared by the community this week.',
     body: "Hello,\n\nWe've found a few new resources from the Figma Community that match your recent activity and interests in UI design and design systems.\n\nDesigners around the world have been sharing incredible files this week, and we picked a few that might help you speed up your workflow or inspire your next project.\n\nBest Regards,\nFigma Community",
+    importance: 'important',
+    summary: 'Figma Community recommends new UI kits and design-system files based on your recent activity, with a starter kit attached.',
     receivedAt: '2026-10-12T09:15:00',
     read: true,
     tab: 'others',
@@ -62,6 +76,8 @@ export const MAILS: Mail[] = [
     subject: 'Your project got 12 new appreciations',
     teaser: 'People around the world are loving your latest case study.',
     body: 'Hi,\n\nPeople around the world are loving your latest case study. It got 12 new appreciations this week.\n\nThe Behance Team',
+    importance: 'low priority',
+    summary: 'Behance says your latest case study received 12 new appreciations this week.',
     receivedAt: '2026-10-08T16:40:00',
     read: true,
     tab: 'others',
@@ -74,6 +90,9 @@ export const MAILS: Mail[] = [
     subject: 'Your monthly report is ready',
     teaser: 'View your latest payments summary and analytics on the dashboard.',
     body: 'Hello,\n\nYour monthly report is ready. View your latest payments summary and analytics on the Stripe dashboard.\n\nStripe',
+    importance: 'important',
+    cc: [{ name: 'Finance', email: 'finance@montara.app' }],
+    summary: 'Stripe has published your monthly payments report; the summary and analytics are on the dashboard.',
     receivedAt: '2026-10-04T08:00:00',
     read: true,
     tab: 'focused',
@@ -85,6 +104,8 @@ export const MAILS: Mail[] = [
     subject: 'New opportunity for UI/UX Designers',
     teaser: 'A startup is looking for a product designer to help redesign their onboarding.',
     body: 'Hi,\n\nA startup is looking for a product designer to help redesign their onboarding flow. The engagement is remote and starts next month.\n\nContra',
+    importance: 'normal',
+    summary: 'Contra shares a remote product-design gig redesigning a startup onboarding flow, starting next month.',
     receivedAt: '2026-08-17T11:30:00',
     read: true,
     tab: 'archive',
