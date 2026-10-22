@@ -126,6 +126,12 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    /* Thin scrollbar on a transparent track, faint until its container is hovered. */
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  *:hover {
+    scrollbar-color: color-mix(in oklch, var(--muted-foreground) 50%, transparent) transparent;
   }
   body {
     @apply bg-background text-foreground;
