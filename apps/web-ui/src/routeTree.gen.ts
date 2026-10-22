@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as appRouteRouteImport } from './routes/(app)/route'
+import { Route as MailIndexRouteImport } from './routes/mail/index'
 import { Route as SignInIndexRouteImport } from './routes/sign-in/index'
 import { Route as appDashboardIndexRouteImport } from './routes/(app)/dashboard/index'
 import { Route as appMasterOrganizationIndexRouteImport } from './routes/(app)/master/organization/index'
@@ -22,6 +23,11 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const appRouteRoute = appRouteRouteImport.update({
   id: '/(app)',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MailIndexRoute = MailIndexRouteImport.update({
+  id: '/mail/',
+  path: '/mail/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignInIndexRoute = SignInIndexRouteImport.update({
@@ -43,12 +49,14 @@ const appMasterOrganizationIndexRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/mail/': typeof MailIndexRoute
   '/sign-in/': typeof SignInIndexRoute
   '/dashboard/': typeof appDashboardIndexRoute
   '/master/organization/': typeof appMasterOrganizationIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/mail': typeof MailIndexRoute
   '/sign-in': typeof SignInIndexRoute
   '/dashboard': typeof appDashboardIndexRoute
   '/master/organization': typeof appMasterOrganizationIndexRoute
@@ -57,19 +65,22 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/(app)': typeof appRouteRouteWithChildren
+  '/mail/': typeof MailIndexRoute
   '/sign-in/': typeof SignInIndexRoute
   '/(app)/dashboard/': typeof appDashboardIndexRoute
   '/(app)/master/organization/': typeof appMasterOrganizationIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/sign-in/' | '/dashboard/' | '/master/organization/'
+  fullPaths:
+    '/' | '/mail/' | '/sign-in/' | '/dashboard/' | '/master/organization/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/sign-in' | '/dashboard' | '/master/organization'
+  to: '/' | '/mail' | '/sign-in' | '/dashboard' | '/master/organization'
   id:
     | '__root__'
     | '/'
     | '/(app)'
+    | '/mail/'
     | '/sign-in/'
     | '/(app)/dashboard/'
     | '/(app)/master/organization/'
@@ -78,6 +89,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   appRouteRoute: typeof appRouteRouteWithChildren
+  MailIndexRoute: typeof MailIndexRoute
   SignInIndexRoute: typeof SignInIndexRoute
 }
 
@@ -95,6 +107,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: ''
       preLoaderRoute: typeof appRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mail/': {
+      id: '/mail/'
+      path: '/mail'
+      fullPath: '/mail/'
+      preLoaderRoute: typeof MailIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sign-in/': {
@@ -138,6 +157,7 @@ const appRouteRouteWithChildren = appRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   appRouteRoute: appRouteRouteWithChildren,
+  MailIndexRoute: MailIndexRoute,
   SignInIndexRoute: SignInIndexRoute,
 }
 export const routeTree = rootRouteImport
