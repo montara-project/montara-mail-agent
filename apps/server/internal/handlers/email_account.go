@@ -205,7 +205,8 @@ func (h *emailAccountHandler) Send(c fiber.Ctx) error {
 		return err
 	}
 	var body dtos.MailSendBody
-	if err := lib.ValidateRequestBody(c, &body); err != nil {
+	attachments, err := mailBody(c, &body)
+	if err != nil {
 		return err
 	}
 	if len(body.To)+len(body.Cc) > dtos.MaxRecipients {
@@ -217,7 +218,7 @@ func (h *emailAccountHandler) Send(c fiber.Ctx) error {
 	if htmlBody == "" {
 		htmlBody = `<div style="white-space:pre-wrap">` + html.EscapeString(body.Text) + "</div>"
 	}
-	if err := h.sync.Compose(c.Context(), account, body.To, body.Cc, body.Subject, body.Text, htmlBody); err != nil {
+	if err := h.sync.Compose(c.Context(), account, body.To, body.Cc, body.Subject, body.Text, htmlBody, attachments); err != nil {
 		return serverError(err)
 	}
 	return dtos.Message(c, fiber.StatusOK, "mail sent")

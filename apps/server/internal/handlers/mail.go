@@ -184,7 +184,8 @@ func (h *mailHandler) Reply(c fiber.Ctx) error {
 		return err
 	}
 	var body dtos.MailReplyBody
-	if err := lib.ValidateRequestBody(c, &body); err != nil {
+	attachments, err := mailBody(c, &body)
+	if err != nil {
 		return err
 	}
 
@@ -208,7 +209,7 @@ func (h *mailHandler) Reply(c fiber.Ctx) error {
 	if htmlBody == "" {
 		htmlBody = `<div style="white-space:pre-wrap">` + html.EscapeString(body.Text) + "</div>"
 	}
-	if err := h.sync.Reply(c.Context(), account, m, to, body.Cc, body.Text, htmlBody); err != nil {
+	if err := h.sync.Reply(c.Context(), account, m, to, body.Cc, body.Text, htmlBody, attachments); err != nil {
 		return serverError(err)
 	}
 	return dtos.Message(c, fiber.StatusOK, "reply sent")

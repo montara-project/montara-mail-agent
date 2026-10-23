@@ -84,6 +84,11 @@ LLM provider. Someone else's organization, account or mail answers 404.
 | `POST /api/v1/mails/:id/forward`                        | Forward to up to 20 addresses through the account's SMTP server, with an optional note.         |
 | `POST /api/v1/mails/:id/reply`                          | Reply through SMTP to the sender (or the given To, plus Cc), threaded under the original (In-Reply-To) and quoting it. |
 
+Send and reply take JSON, or, to carry files, a `multipart/form-data` body
+with that JSON in a `payload` field and the files in `attachments`: at most
+10 files of 18 MB in all, which base64 grows to just under the 25 MB most
+providers accept.
+
 Every provider (Gmail, Outlook, Yahoo, iCloud, or any IMAP server) connects
 with the address and an app password; the known providers' servers are
 built in. Passwords and LLM API keys are sealed in the database with a key

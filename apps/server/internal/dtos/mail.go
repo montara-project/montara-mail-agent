@@ -39,6 +39,14 @@ func (dto MailMoveBody) Validate(v *validator.MapValidator) {
 // account can't become a mass mailer.
 const MaxRecipients = 20
 
+// Attachments of one outgoing mail: at most MaxAttachments files of
+// MaxAttachmentBytes in all, under the 25 MB most providers accept once
+// base64 has grown them by a third.
+const (
+	MaxAttachments     = 10
+	MaxAttachmentBytes = 18 << 20
+)
+
 // emailPattern is a plain address, with no display name or list separators.
 const emailPattern = `^[^@\s<>,;]+@[^@\s<>,;]+\.[^@\s<>,;]+$`
 

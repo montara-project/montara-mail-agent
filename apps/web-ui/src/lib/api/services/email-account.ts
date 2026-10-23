@@ -1,6 +1,7 @@
 import type { EmailAccountResources } from './types/email-account'
 
 import { api } from '../client-fetch'
+import { withAttachments } from '../dtos/mail/attachments'
 
 const organizationPath = (organizationId: string) =>
   `/api/v1/organizations/${organizationId}/email-accounts`
@@ -11,7 +12,8 @@ const resources = (): EmailAccountResources => ({
   create: (organizationId, body) => api.post(organizationPath(organizationId), body),
   delete: (id) => api.delete(`${path}/${id}`),
   sync: (id) => api.post(`${path}/${id}/sync`),
-  send: (id, body) => api.post(`${path}/${id}/send`, body),
+  send: (id, { attachments, ...body }) =>
+    api.post(`${path}/${id}/send`, withAttachments(body, attachments)),
   mails: (id, params) => api.get(`${path}/${id}/mails`, { params }),
 })
 

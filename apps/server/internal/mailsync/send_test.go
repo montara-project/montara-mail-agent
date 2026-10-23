@@ -195,7 +195,7 @@ func TestReply(t *testing.T) {
 		ReceivedAt: time.Date(2026, 10, 22, 10, 6, 0, 0, time.UTC),
 	}
 
-	if err := syncer.Reply(context.Background(), account, m, []string{"boss@example.com"}, []string{"hr@example.com"}, "**Signed.**", "<p><b>Signed.</b></p>"); err != nil {
+	if err := syncer.Reply(context.Background(), account, m, []string{"boss@example.com"}, []string{"hr@example.com"}, "**Signed.**", "<p><b>Signed.</b></p>", nil); err != nil {
 		t.Fatalf("reply: %v", err)
 	}
 	<-smtpServer.done
@@ -218,7 +218,7 @@ func TestReply(t *testing.T) {
 		}
 	}
 
-	if err := syncer.Reply(context.Background(), account, models.Mail{}, nil, nil, "hi", ""); err == nil {
+	if err := syncer.Reply(context.Background(), account, models.Mail{}, nil, nil, "hi", "", nil); err == nil {
 		t.Fatal("a reply without recipients was sent")
 	}
 }
@@ -241,7 +241,8 @@ func TestCompose(t *testing.T) {
 	}
 	err := syncer.Compose(context.Background(), account,
 		[]string{"a@example.com"}, []string{"b@example.com", "c@example.com"},
-		"Kickoff", "Let's *start*.", "<p>Let's <i>start</i>.</p>")
+		"Kickoff", "Let's *start*.", "<p>Let's <i>start</i>.</p>",
+		[]Attachment{{Name: "plan.pdf", ContentType: "application/pdf", Data: []byte("%PDF-1.7 plan")}})
 	if err != nil {
 		t.Fatalf("compose: %v", err)
 	}
@@ -255,6 +256,10 @@ func TestCompose(t *testing.T) {
 		"Subject: Kickoff",
 		"To: <a@example.com>",
 		"Cc: <b@example.com>, <c@example.com>",
+		"Content-Type: multipart/mixed",
+		`Content-Disposition: attachment; filename=plan.pdf`,
+		"Content-Type: application/pdf",
+		base64.StdEncoding.EncodeToString([]byte("%PDF-1.7 plan")),
 		"Let's *start*.",
 		"<p>Let's <i>start</i>.</p>",
 	} {

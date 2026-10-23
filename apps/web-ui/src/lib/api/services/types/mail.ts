@@ -20,6 +20,8 @@ export type MailReplyBody = {
   cc?: string[]
   text: string
   html?: string
+  /** Sent as a multipart form when present. */
+  attachments?: File[]
 }
 
 export type MailResources = {

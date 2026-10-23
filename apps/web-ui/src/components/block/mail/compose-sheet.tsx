@@ -57,6 +57,7 @@ export default function ComposeSheet({
   const [showCc, setShowCc] = React.useState(false)
   const [draft, setDraft] = React.useState<Draft | null>(null)
   const [problem, setProblem] = React.useState<string | null>(null)
+  const [attachments, setAttachments] = React.useState<File[]>([])
   const send = useMutation(queries.emailAccounts.send())
 
   const fromId = from ?? defaultAccountId
@@ -74,6 +75,7 @@ export default function ComposeSheet({
     setDraft(null)
     setShowCc(false)
     setProblem(null)
+    setAttachments([])
     onOpenChange(false)
   }
 
@@ -102,6 +104,7 @@ export default function ComposeSheet({
           subject: fields.subject.trim(),
           text: body.text,
           html: body.html,
+          attachments,
         },
       },
       {
@@ -202,6 +205,8 @@ export default function ComposeSheet({
               }}
               onSend={submit}
               sending={send.isPending}
+              attachments={attachments}
+              onAttachmentsChange={setAttachments}
             />
           </React.Suspense>
         </div>

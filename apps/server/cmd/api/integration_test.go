@@ -186,7 +186,11 @@ func TestIntegration(t *testing.T) {
 	call := func(method, path, token string, body any, headers ...string) (int, map[string]any) {
 		t.Helper()
 		var payload io.Reader
-		if body != nil {
+		// A []byte body goes as is (a multipart form, with its Content-Type
+		// passed in headers); anything else as JSON.
+		if raw, ok := body.([]byte); ok {
+			payload = bytes.NewReader(raw)
+		} else if body != nil {
 			raw, _ := json.Marshal(body)
 			payload = bytes.NewReader(raw)
 		}

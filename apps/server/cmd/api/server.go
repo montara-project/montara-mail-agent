@@ -61,6 +61,9 @@ func newServer(app *app.Application) (*fiber.App, error) {
 		// whatever it likes, so every request gets a fresh rate-limit key.
 		EnableIPValidation: true,
 		// Bound how long a slow client can hold a connection.
+		// Room for a mail's attachments (dtos.MaxAttachmentBytes) and the
+		// multipart framing around them; Fiber's default is 4 MB.
+		BodyLimit:    20 << 20,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  60 * time.Second,

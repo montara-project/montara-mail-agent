@@ -1,6 +1,7 @@
 import type { MailResources } from './types/mail'
 
 import { api } from '../client-fetch'
+import { withAttachments } from '../dtos/mail/attachments'
 
 const path = '/api/v1/mails'
 
@@ -12,7 +13,8 @@ const resources = (): MailResources => ({
   move: (id, folder) => api.post(`${path}/${id}/move`, { folder }),
   delete: (id) => api.delete(`${path}/${id}`),
   forward: (id, body) => api.post(`${path}/${id}/forward`, body),
-  reply: (id, body) => api.post(`${path}/${id}/reply`, body),
+  reply: (id, { attachments, ...body }) =>
+    api.post(`${path}/${id}/reply`, withAttachments(body, attachments)),
 })
 
 export const mailServices = resources()

@@ -100,6 +100,7 @@ export default function ReplyComposer({ mail }: { mail: Models.Mail }) {
   // A new object reloads the editor, which is how a picked suggestion lands in it.
   const [initial, setInitial] = React.useState<{ text?: string }>({})
   const [problem, setProblem] = React.useState<string | null>(null)
+  const [attachments, setAttachments] = React.useState<File[]>([])
   const reply = useMutation(queries.mails.reply(mail.id))
   const { data: me } = useQuery(queries.auth.profile())
   const cardRef = React.useRef<HTMLDivElement>(null)
@@ -113,6 +114,7 @@ export default function ReplyComposer({ mail }: { mail: Models.Mail }) {
     setShowCc(false)
     setInitial({})
     setProblem(null)
+    setAttachments([])
   }
 
   const send = (body: Reply) => {
@@ -129,7 +131,7 @@ export default function ReplyComposer({ mail }: { mail: Models.Mail }) {
 
     const progress = toastProgress('Sending reply...')
     reply.mutate(
-      { to, cc: cc.length > 0 ? cc : undefined, ...body },
+      { to, cc: cc.length > 0 ? cc : undefined, ...body, attachments },
       {
         onSuccess: () => {
           progress.success('Reply sent')
@@ -181,6 +183,8 @@ export default function ReplyComposer({ mail }: { mail: Models.Mail }) {
             onSend={send}
             onCancel={close}
             sending={reply.isPending}
+            attachments={attachments}
+            onAttachmentsChange={setAttachments}
             leading={<AiMenu mailId={mail.id} onPick={(text) => setInitial({ text })} />}
             header={
               <div className="grid gap-2">

@@ -2,6 +2,12 @@ package handlers
 
 import (
 	"context"
+	"io"
+	"mime"
+	"net/http"
+	"path"
+	"strings"
+	"unicode"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
@@ -11,6 +17,7 @@ import (
 	"montara-mail-agent/server/internal/lib"
 	"montara-mail-agent/server/internal/lib/apperr"
 	"montara-mail-agent/server/internal/lib/constant"
+	"montara-mail-agent/server/internal/mailsync"
 	"montara-mail-agent/server/internal/repositories"
 )
 
@@ -89,4 +96,82 @@ func owner(c fiber.Ctx, app *app.Application, organizationID uuid.UUID) error {
 		return apperr.New(apperr.KindForbidden, "only the organization's owner can do this")
 	}
 	return nil
+}
+
+// mailBody reads the body of a send or a reply: JSON, or, to carry files, a
+// multipart form with that JSON in "payload" and the files in "attachments".
+func mailBody(c fiber.Ctx, obj lib.Validatable) ([]mailsync.Attachment, error) {
+	if !strings.HasPrefix(c.Get(fiber.HeaderContentType), fiber.MIMEMultipartForm) {
+		return nil, lib.ValidateRequestBody(c, obj)
+	}
+	form, err := c.MultipartForm()
+	if err != nil {
+		return nil, apperr.New(apperr.KindBadRequest, "invalid form")
+	}
+	var payload string
+	if values := form.Value["payload"]; len(values) > 0 {
+		payload = values[0]
+	}
+	if err := lib.ValidateJSON([]byte(payload), obj); err != nil {
+		return nil, err
+	}
+
+	files := form.File["attachments"]
+	if len(files) > dtos.MaxAttachments {
+		return nil, apperr.New(apperr.KindBadRequest, "a mail carries at most %d attachments", dtos.MaxAttachments)
+	}
+	var total int64
+	for _, f := range files {
+		total += f.Size
+	}
+	if total > dtos.MaxAttachmentBytes {
+		return nil, apperr.New(apperr.KindBadRequest, "attachments may total at most %d MB", dtos.MaxAttachmentBytes>>20)
+	}
+
+	attachments := make([]mailsync.Attachment, 0, len(files))
+	for _, f := range files {
+		file, err := f.Open()
+		if err != nil {
+			return nil, err
+		}
+		data, err := io.ReadAll(file)
+		file.Close()
+		if err != nil {
+			return nil, err
+		}
+		attachments = append(attachments, mailsync.Attachment{
+			Name:        attachmentName(f.Filename),
+			ContentType: attachmentType(f.Header.Get(fiber.HeaderContentType), data),
+			Data:        data,
+		})
+	}
+	return attachments, nil
+}
+
+// attachmentName keeps the last path segment of an uploaded file's name,
+// without control characters that could break the mail's headers.
+func attachmentName(name string) string {
+	name = path.Base(strings.ReplaceAll(name, `\`, "/"))
+	name = strings.TrimSpace(strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) {
+			return -1
+		}
+		return r
+	}, name))
+	if name == "" || name == "." || name == "/" {
+		return "attachment"
+	}
+	if r := []rune(name); len(r) > 200 {
+		name = string(r[:200])
+	}
+	return name
+}
+
+// attachmentType is the media type the browser sent, else one sniffed from the data.
+func attachmentType(header string, data []byte) string {
+	if mediaType, _, err := mime.ParseMediaType(header); err == nil && strings.Contains(mediaType, "/") {
+		return mediaType
+	}
+	mediaType, _, _ := mime.ParseMediaType(http.DetectContentType(data))
+	return mediaType
 }

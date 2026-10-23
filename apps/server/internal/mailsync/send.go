@@ -45,7 +45,7 @@ func (s *Syncer) Forward(ctx context.Context, account models.EmailAccount, m mod
 // Reply sends a reply to m from the account, to `to` and `cc`. The reply
 // comes as text and as the HTML the editor made; the original is quoted
 // below it.
-func (s *Syncer) Reply(ctx context.Context, account models.EmailAccount, m models.Mail, to, cc []string, text, htmlBody string) error {
+func (s *Syncer) Reply(ctx context.Context, account models.EmailAccount, m models.Mail, to, cc []string, text, htmlBody string, attachments []Attachment) error {
 	if len(to) == 0 {
 		return apperr.New(apperr.KindBadRequest, "a reply needs a recipient")
 	}
@@ -56,7 +56,7 @@ func (s *Syncer) Reply(ctx context.Context, account models.EmailAccount, m model
 	if err != nil {
 		return errors.New("the saved password can't be read, connect the account again")
 	}
-	msg, err := replyMessage(account.Email, m, to, cc, text, htmlBody, time.Now())
+	msg, err := replyMessage(account.Email, m, to, cc, text, htmlBody, attachments, time.Now())
 	if err != nil {
 		return err
 	}
@@ -65,7 +65,7 @@ func (s *Syncer) Reply(ctx context.Context, account models.EmailAccount, m model
 
 // Compose sends a new mail from the account to `to` and `cc`, as text and
 // as the HTML the editor made.
-func (s *Syncer) Compose(ctx context.Context, account models.EmailAccount, to, cc []string, subject, text, htmlBody string) error {
+func (s *Syncer) Compose(ctx context.Context, account models.EmailAccount, to, cc []string, subject, text, htmlBody string, attachments []Attachment) error {
 	ctx, cancel := context.WithTimeout(ctx, actionTimeout)
 	defer cancel()
 
@@ -73,7 +73,7 @@ func (s *Syncer) Compose(ctx context.Context, account models.EmailAccount, to, c
 	if err != nil {
 		return errors.New("the saved password can't be read, connect the account again")
 	}
-	msg, err := composeMessage(account.Email, to, cc, subject, text, htmlBody, time.Now())
+	msg, err := composeMessage(account.Email, to, cc, subject, text, htmlBody, attachments, time.Now())
 	if err != nil {
 		return err
 	}
@@ -212,18 +212,18 @@ func forwardMessage(from string, m models.Mail, recipients []string, note string
 	}
 	text.WriteString("\n" + m.Body + "\n")
 	htmlBody.WriteString("</div><br>" + originalHTML(m))
-	return writeAlternative(h, text.String(), htmlBody.String())
+	return writeMessage(h, text.String(), htmlBody.String(), nil)
 }
 
 // composeMessage builds a new mail; Cc is a header, and its addresses are
 // added to the envelope by the caller.
-func composeMessage(from string, to, cc []string, subject, text, htmlBody string, now time.Time) ([]byte, error) {
+func composeMessage(from string, to, cc []string, subject, text, htmlBody string, attachments []Attachment, now time.Time) ([]byte, error) {
 	h, err := newHeader(from, to, subject, now)
 	if err != nil {
 		return nil, err
 	}
 	setCc(&h, cc)
-	return writeAlternative(h, text, htmlBody)
+	return writeMessage(h, text, htmlBody, attachments)
 }
 
 // setCc lists cc in the header; the caller adds them to the envelope.
@@ -240,7 +240,7 @@ func setCc(h *mail.Header, cc []string) {
 
 // replyMessage builds a reply to m: the reply on top, the original quoted
 // below, and the headers that thread it under m in mail clients.
-func replyMessage(from string, m models.Mail, to, cc []string, replyText, replyHTML string, now time.Time) ([]byte, error) {
+func replyMessage(from string, m models.Mail, to, cc []string, replyText, replyHTML string, attachments []Attachment, now time.Time) ([]byte, error) {
 	h, err := newHeader(from, to, withPrefix("Re:", m.Subject), now)
 	if err != nil {
 		return nil, err
@@ -261,11 +261,19 @@ func replyMessage(from string, m models.Mail, to, cc []string, replyText, replyH
 	text := replyText + "\n\n" + attribution + "\n" + quoted.String()
 	htmlBody := replyHTML + "<br><div>" + html.EscapeString(attribution) + "</div>" +
 		`<blockquote style="margin:0 0 0 .8ex;border-left:1px solid #ccc;padding-left:1ex">` + originalHTML(m) + "</blockquote>"
-	return writeAlternative(h, text, htmlBody)
+	return writeMessage(h, text, htmlBody, attachments)
 }
 
-// writeAlternative writes a message with a text and an HTML version of one body.
-func writeAlternative(h mail.Header, text, htmlBody string) ([]byte, error) {
+// Attachment is a file sent along with a mail.
+type Attachment struct {
+	Name        string
+	ContentType string
+	Data        []byte
+}
+
+// writeMessage writes a message with a text and an HTML version of one body,
+// followed by its attachments (base64, as go-message encodes them).
+func writeMessage(h mail.Header, text, htmlBody string, attachments []Attachment) ([]byte, error) {
 	var buf bytes.Buffer
 	w, err := mail.CreateWriter(&buf, h)
 	if err != nil {
@@ -294,6 +302,21 @@ func writeAlternative(h mail.Header, text, htmlBody string) ([]byte, error) {
 	}
 	if err := inline.Close(); err != nil {
 		return nil, err
+	}
+	for _, a := range attachments {
+		var ah mail.AttachmentHeader
+		ah.SetContentType(a.ContentType, nil)
+		ah.SetFilename(a.Name)
+		aw, err := w.CreateAttachment(ah)
+		if err != nil {
+			return nil, err
+		}
+		if _, err := aw.Write(a.Data); err != nil {
+			return nil, err
+		}
+		if err := aw.Close(); err != nil {
+			return nil, err
+		}
 	}
 	if err := w.Close(); err != nil {
 		return nil, err

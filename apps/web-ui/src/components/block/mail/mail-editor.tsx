@@ -11,10 +11,23 @@ import {
   underlineExtension,
 } from '@lexkit/editor'
 import { $createParagraphNode, $createTextNode, $getRoot } from 'lexical'
-import { Bold, Italic, List, ListOrdered, Loader2, Strikethrough, Underline } from 'lucide-react'
+import {
+  Bold,
+  File as FileIcon,
+  Italic,
+  List,
+  ListOrdered,
+  Loader2,
+  Paperclip,
+  Strikethrough,
+  Underline,
+  X,
+} from 'lucide-react'
 import React from 'react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
+import { attachmentProblem, formatBytes } from '@/lib/api/dtos/mail/attachments'
 import { cn } from '@/lib/utils'
 
 // Lexical and LexKit are large; the reply and compose views load this module only when opened.
@@ -65,6 +78,37 @@ export type MailEditorProps = {
   leading?: React.ReactNode
   /** Fill the parent's height, the text growing to meet the bottom bar (compose). */
   fill?: boolean
+  /** Files to send along; with onAttachmentsChange, the bar gets an attach button. */
+  attachments?: File[]
+  onAttachmentsChange?: (files: File[]) => void
+}
+
+/** The files picked so far, each removable. */
+function AttachmentList({ files, onChange }: { files: File[]; onChange: (files: File[]) => void }) {
+  return (
+    <ul className="flex flex-wrap gap-2" aria-label="Attachments">
+      {files.map((file, i) => (
+        <li
+          key={`${file.name}-${file.size}-${i}`}
+          className="bg-muted/40 flex max-w-64 items-center gap-2 rounded-lg border py-1.5 pr-1 pl-2 text-sm"
+        >
+          <FileIcon className="text-muted-foreground size-4 shrink-0" />
+          <span className="grid min-w-0 leading-tight">
+            <span className="truncate font-medium">{file.name}</span>
+            <span className="text-muted-foreground text-xs">{formatBytes(file.size)}</span>
+          </span>
+          <button
+            type="button"
+            aria-label={`Remove ${file.name}`}
+            className="text-muted-foreground hover:text-foreground ml-1 rounded p-1"
+            onClick={() => onChange(files.filter((_, j) => j !== i))}
+          >
+            <X className="size-3.5" />
+          </button>
+        </li>
+      ))}
+    </ul>
+  )
 }
 
 function EditorBody({
@@ -77,7 +121,17 @@ function EditorBody({
   header,
   leading,
   fill,
+  attachments = [],
+  onAttachmentsChange,
 }: MailEditorProps) {
+  const fileInput = React.useRef<HTMLInputElement>(null)
+  const attach = (picked: FileList | null) => {
+    if (!picked?.length || !onAttachmentsChange) return
+    const next = [...attachments, ...Array.from(picked)]
+    const problem = attachmentProblem(next)
+    if (problem) toast.error(problem)
+    else onAttachmentsChange(next)
+  }
   const { commands, activeStates, lexical: editor } = useEditor()
   const [empty, setEmpty] = React.useState(!(initial.state || initial.text))
 
@@ -168,8 +222,37 @@ function EditorBody({
         // classes above; undefined drops them.
         styles={{ placeholder: { top: undefined, left: undefined, color: undefined } }}
       />
+      {attachments.length > 0 && onAttachmentsChange && (
+        <AttachmentList files={attachments} onChange={onAttachmentsChange} />
+      )}
       <div className="flex flex-wrap items-center gap-1">
         {leading && <div className="mr-2">{leading}</div>}
+        {onAttachmentsChange && (
+          <>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground size-8"
+              aria-label="Attach files"
+              title="Attach files"
+              onClick={() => fileInput.current?.click()}
+            >
+              <Paperclip />
+            </Button>
+            <input
+              ref={fileInput}
+              type="file"
+              multiple
+              hidden
+              onChange={(e) => {
+                attach(e.target.files)
+                // Picking the same file again must fire change again.
+                e.target.value = ''
+              }}
+            />
+          </>
+        )}
         {format.map((item) => (
           <Button
             key={item.label}

@@ -130,3 +130,26 @@ func FieldErrorsFromRecord(mr validator.MessageRecord) []FieldError {
 	}
 	return out
 }
+
+// ValidateJSON validates a raw JSON object, then decodes it into obj, the way
+// ValidateRequestBody does for the request body. A multipart form carrying a
+// JSON field (beside files) goes through here.
+func ValidateJSON(raw []byte, obj Validatable) error {
+	data := make(map[string]interface{})
+	if len(raw) > 0 {
+		if err := json.Unmarshal(raw, &data); err != nil {
+			return errInvalidBody
+		}
+	}
+	dropEmpty(data)
+
+	if err := validateDict(obj, data); err != nil {
+		return err
+	}
+	if len(raw) > 0 {
+		if err := json.Unmarshal(raw, obj); err != nil {
+			return errInvalidBody
+		}
+	}
+	return nil
+}

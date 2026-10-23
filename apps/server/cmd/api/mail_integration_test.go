@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"mime/multipart"
 	"net/http"
 	"strings"
 	"testing"
@@ -11,6 +13,7 @@ import (
 	"github.com/google/uuid"
 
 	"montara-mail-agent/server/internal/app"
+	"montara-mail-agent/server/internal/dtos"
 	"montara-mail-agent/server/internal/lib/constant"
 	"montara-mail-agent/server/internal/models"
 	"montara-mail-agent/server/internal/repositories"
@@ -228,6 +231,45 @@ func testMailFlow(t *testing.T, call callFunc, application *app.Application, tok
 	}
 	if status, out := call(http.MethodPost, send, token, map[string]any{"to": []string{"a@example.com"}, "text": "Hello"}); status != http.StatusBadGateway {
 		t.Fatalf("send with the server unreachable: %d %v, want 502", status, out)
+	}
+
+	// Attachments come as a multipart form: the JSON in "payload", the files
+	// in "attachments".
+	form := func(payload string, files map[string][]byte) ([]byte, string) {
+		var buf bytes.Buffer
+		w := multipart.NewWriter(&buf)
+		_ = w.WriteField("payload", payload)
+		for name, data := range files {
+			fw, _ := w.CreateFormFile("attachments", name)
+			_, _ = fw.Write(data)
+		}
+		_ = w.Close()
+		return buf.Bytes(), w.FormDataContentType()
+	}
+	sendPayload := `{"to":["a@example.com"],"subject":"Plan","text":"Attached."}`
+	body, contentType := form(sendPayload, map[string][]byte{"plan.pdf": []byte("%PDF-1.7")})
+	if status, out := call(http.MethodPost, send, token, body, "Content-Type", contentType); status != http.StatusBadGateway {
+		t.Fatalf("send with an attachment, server unreachable: %d %v, want 502", status, out)
+	}
+	body, contentType = form(`{"text":"Attached."}`, map[string][]byte{"plan.pdf": []byte("%PDF-1.7")})
+	if status, out := call(http.MethodPost, mailPath+"/reply", token, body, "Content-Type", contentType); status != http.StatusBadGateway {
+		t.Fatalf("reply with an attachment, server unreachable: %d %v, want 502", status, out)
+	}
+	body, contentType = form("", map[string][]byte{"plan.pdf": []byte("%PDF-1.7")})
+	if status, _ := call(http.MethodPost, send, token, body, "Content-Type", contentType); status != http.StatusUnprocessableEntity {
+		t.Fatalf("form without payload: %d, want 422", status)
+	}
+	tooMany := map[string][]byte{}
+	for i := range dtos.MaxAttachments + 1 {
+		tooMany[fmt.Sprintf("f%d.txt", i)] = []byte("x")
+	}
+	body, contentType = form(sendPayload, tooMany)
+	if status, _ := call(http.MethodPost, send, token, body, "Content-Type", contentType); status != http.StatusBadRequest {
+		t.Fatalf("11 attachments: %d, want 400", status)
+	}
+	body, contentType = form(sendPayload, map[string][]byte{"big.bin": make([]byte, dtos.MaxAttachmentBytes+1)})
+	if status, _ := call(http.MethodPost, send, token, body, "Content-Type", contentType); status != http.StatusBadRequest {
+		t.Fatalf("attachments over the limit: %d, want 400", status)
 	}
 
 	// Another organization's account and mail look missing.

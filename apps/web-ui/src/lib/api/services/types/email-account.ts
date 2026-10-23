@@ -39,6 +39,8 @@ export type MailSendBody = {
   subject: string
   text: string
   html?: string
+  /** Sent as a multipart form when present. */
+  attachments?: File[]
 }
 
 export type EmailAccountResources = {
