@@ -35,6 +35,19 @@ func translateForeignKey(err error, message string) error {
 	return err
 }
 
+// pgUniqueViolation is the Postgres SQLSTATE for a unique-constraint violation.
+const pgUniqueViolation = "23505"
+
+// translateUnique maps a unique violation onto a typed 409; any other error
+// passes through unchanged.
+func translateUnique(err error, message string) error {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == pgUniqueViolation {
+		return apperr.New(apperr.KindConflict, "%s", message)
+	}
+	return err
+}
+
 // escapeLikePattern escapes ILIKE wildcards (%, _) so a search term matches
 // literally; the backslash is Postgres' default LIKE escape character.
 func escapeLikePattern(s string) string {

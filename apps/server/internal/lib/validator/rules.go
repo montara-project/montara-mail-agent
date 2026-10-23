@@ -55,3 +55,18 @@ func (v *FieldValidator) Regex(pattern string) *FieldValidator {
 	})
 	return v
 }
+
+// IntRange reports a failure when the value is not a whole number within
+// [lo, hi]. JSON numbers decode as float64.
+func (v *FieldValidator) IntRange(lo, hi int) *FieldValidator {
+	v.registerRule(func(key string, data interface{}) (string, bool) {
+		if data == nil {
+			return "", true
+		}
+		if f, ok := data.(float64); !ok || f != float64(int(f)) || int(f) < lo || int(f) > hi {
+			return fmt.Sprintf("%s must be a whole number between %d and %d", key, lo, hi), false
+		}
+		return "", true
+	})
+	return v
+}

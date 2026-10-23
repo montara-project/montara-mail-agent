@@ -22,6 +22,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/static"
 
 	"montara-mail-agent/server/internal/app"
+	"montara-mail-agent/server/internal/mailsync"
 	"montara-mail-agent/server/internal/middlewares"
 )
 
@@ -37,6 +38,10 @@ func serve(app *app.Application) error {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	if every := app.Config.App.MailSyncInterval; every > 0 {
+		go mailsync.New(app).Run(ctx, every)
+	}
 
 	app.Logger.Info("starting server", "port", app.Config.App.Port, "env", app.Config.App.Env, "auth", authBasePath)
 	return server.Listen(fmt.Sprintf(":%d", app.Config.App.Port), fiber.ListenConfig{GracefulContext: ctx})

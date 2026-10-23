@@ -5,17 +5,33 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"net/http"
 	"os"
 	"time"
 
-	"github.com/anthropics/anthropic-sdk-go"
-	"github.com/anthropics/anthropic-sdk-go/option"
-
 	"montara-mail-agent/server/internal/app"
 	"montara-mail-agent/server/internal/config"
+	"montara-mail-agent/server/internal/lib"
+	"montara-mail-agent/server/internal/lib/llm"
 	"montara-mail-agent/server/internal/repositories"
 	"montara-mail-agent/server/internal/seeders"
 )
+
+// fallbackModel serves organizations without their own LLM provider.
+const fallbackModel = "claude-opus-5-5"
+
+// outboundClient calls user-supplied hosts, such as an organization's LLM
+// base URL, through the guarded dialer.
+func outboundClient(allowPrivate bool) *http.Client {
+	return &http.Client{
+		Timeout: 2 * time.Minute,
+		Transport: &http.Transport{
+			DialContext:         lib.GuardedDialer(allowPrivate).DialContext,
+			TLSHandshakeTimeout: 15 * time.Second,
+			ForceAttemptHTTP2:   true,
+		},
+	}
+}
 
 func main() {
 	if err := run(); err != nil {
@@ -79,12 +95,24 @@ func run() error {
 		}
 	}
 
-	var ai *anthropic.Client
+	var ai llm.Client
 	if cfg.AI.AnthropicAPIKey != "" {
-		client := anthropic.NewClient(option.WithAPIKey(cfg.AI.AnthropicAPIKey))
-		ai = &client
+		ai, err = llm.New(llm.Config{
+			Kind:       llm.KindAnthropic,
+			APIKey:     cfg.AI.AnthropicAPIKey,
+			Model:      fallbackModel,
+			HTTPClient: &http.Client{Timeout: 2 * time.Minute},
+		})
+		if err != nil {
+			return err
+		}
 	} else {
-		logger.Warn("AI features disabled: anthropic-api-key is not set")
+		logger.Warn("no fallback AI: anthropic-api-key is not set, so only organizations with their own LLM provider get AI features")
+	}
+
+	secrets, err := lib.NewSecretBox(cfg.App.Secret)
+	if err != nil {
+		return err
 	}
 
 	return serve(&app.Application{
@@ -94,5 +122,7 @@ func run() error {
 		Repositories: repos,
 		Auth:         auth,
 		AI:           ai,
+		Secrets:      secrets,
+		HTTPClient:   outboundClient(cfg.App.AllowPrivateHosts),
 	})
 }

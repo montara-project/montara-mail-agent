@@ -5,6 +5,8 @@ go 1.27.2
 require (
 	github.com/Authula/authula v1.46.0
 	github.com/anthropics/anthropic-sdk-go v1.84.0
+	github.com/emersion/go-imap/v2 v2.0.0-beta.8
+	github.com/emersion/go-message v0.18.2
 	github.com/getsentry/sentry-go v0.49.0
 	github.com/gofiber/contrib/v3/sentry v1.1.12
 	github.com/gofiber/fiber/v3 v3.5.0
@@ -48,6 +50,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/eapache/go-resiliency v1.7.0 // indirect
 	github.com/ebitengine/purego v0.10.1 // indirect
+	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6 // indirect
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.15 // indirect

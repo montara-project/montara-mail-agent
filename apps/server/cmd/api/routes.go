@@ -10,8 +10,8 @@ import (
 	"montara-mail-agent/server/internal/middlewares"
 )
 
-// Per-IP request budgets per minute: tight on the auth routes, loose on the
-// rest of the API.
+// Per-IP request budgets per minute: tight on the auth routes and on model
+// calls and mailbox syncs, loose on the rest of the API.
 const (
 	authRateLimit = 30
 	apiRateLimit  = 120
@@ -47,23 +47,41 @@ func routes(r *fiber.App, app *app.Application) {
 	// budget; give them shared storage once there is more than one instance.
 	v1 := r.Group("/api/v1", middlewares.RateLimit(apiRateLimit, exemptLoopback, exemptIPs))
 
-	// Reads are public; writes need a signed-in super user. Idempotency comes
-	// last, after the caller is known, and replays a repeated write instead of
+	// Every route below needs a signed-in user; what they may touch follows
+	// from their organizations (see handlers.member). Idempotency comes last,
+	// after the caller is known, and replays a repeated write instead of
 	// applying it twice (see middlewares.Idempotency). One guard serves every
 	// write route: its keys are already scoped per route, and a shared cache
 	// means a single in-memory store instead of one per route.
 	idempotent := middlewares.Idempotency()
 
-	// Each summary is a paid model call, so signed-in users only, on a tighter budget.
-	ai := v1.Group("/ai", m.Authorization, middlewares.RateLimit(aiRateLimit, exemptLoopback, exemptIPs))
-	ai.Post("/mail-summary", h.AI.MailSummary)
+	// Model calls and IMAP syncs are slow and may be paid, so they share a
+	// tighter budget.
+	slow := middlewares.RateLimit(aiRateLimit, exemptLoopback, exemptIPs)
 
-	organizations := v1.Group("/organizations")
+	organizations := v1.Group("/organizations", m.Authorization)
 	organizations.Get("/", h.Organization.List)
 	organizations.Get("/:id", h.Organization.Get)
-	organizations.Post("/", m.Authorization, m.SuperUser, idempotent, h.Organization.Create)
-	organizations.Put("/:id", m.Authorization, m.SuperUser, idempotent, h.Organization.Update)
-	organizations.Delete("/:id", m.Authorization, m.SuperUser, idempotent, h.Organization.Delete)
-	organizations.Put("/:id/restore", m.Authorization, m.SuperUser, idempotent, h.Organization.Restore)
-	organizations.Delete("/:id/force", m.Authorization, m.SuperUser, idempotent, h.Organization.DeletePermanently)
+	organizations.Post("/", idempotent, h.Organization.Create)
+	organizations.Put("/:id", idempotent, h.Organization.Update)
+	organizations.Delete("/:id", idempotent, h.Organization.Delete)
+	organizations.Put("/:id/restore", idempotent, h.Organization.Restore)
+	organizations.Delete("/:id/force", idempotent, h.Organization.DeletePermanently)
+	organizations.Get("/:id/stats", h.Organization.Stats)
+	organizations.Get("/:id/email-accounts", h.EmailAccount.List)
+	organizations.Post("/:id/email-accounts", slow, idempotent, h.EmailAccount.Create)
+	organizations.Get("/:id/llm-provider", h.LLMProvider.Get)
+	organizations.Put("/:id/llm-provider", idempotent, h.LLMProvider.Put)
+	organizations.Delete("/:id/llm-provider", idempotent, h.LLMProvider.Delete)
+
+	emailAccounts := v1.Group("/email-accounts", m.Authorization)
+	emailAccounts.Get("/:id/mails", h.EmailAccount.Mails)
+	emailAccounts.Delete("/:id", idempotent, h.EmailAccount.Delete)
+	emailAccounts.Post("/:id/sync", slow, h.EmailAccount.Sync)
+
+	mails := v1.Group("/mails", m.Authorization)
+	mails.Get("/:id", h.Mail.Get)
+	mails.Patch("/:id", idempotent, h.Mail.Patch)
+	mails.Post("/:id/summary", slow, h.Mail.Summary)
+	mails.Post("/:id/reply-suggestions", slow, h.Mail.ReplySuggestions)
 }

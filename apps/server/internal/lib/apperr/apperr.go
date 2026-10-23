@@ -62,3 +62,10 @@ func From(err error) (int, string) {
 
 	return ErrInternal.Status(), ErrInternal.Message
 }
+
+// IsNotFound reports whether err is a not-found error of any message, such
+// as the ones repositories build for a missing row.
+func IsNotFound(err error) bool {
+	var ae *Error
+	return errors.As(err, &ae) && ae.Kind == KindNotFound
+}

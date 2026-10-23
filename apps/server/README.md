@@ -28,6 +28,9 @@ secret is passed as a process argument.
 | `SEED_ON_BOOT`                           | Run the seeders before serving; needs `SUPER_USER`.                                                                                                                  |
 | `SUPER_USER`                             | `email:password`, password of 12 to 128 characters.                                                                                                                  |
 | `SENTRY_DSN`                             | Optional; panics are reported when set.                                                                                                                              |
+| `MAIL_SYNC_INTERVAL`                     | How often every connected mailbox is synced, e.g. `5m` (the default). `0` disables the background sync; at least `1m` otherwise.                                     |
+| `ALLOW_PRIVATE_HOSTS`                    | Lets IMAP servers and LLM base URLs typed in by users reach loopback or private addresses, and LLM base URLs use `http`. Off by default; turn on for a local Ollama.  |
+| `ANTHROPIC_API_KEY`                      | Optional fallback model for organizations without their own LLM provider. Without it, those organizations get no AI features.                                        |
 
 ## Database
 
@@ -49,8 +52,9 @@ create and update and repaired on every boot.
 ## Super user
 
 With `SEED_ON_BOOT=true` the API creates the `SUPER_USER` account through
-Authula, with a verified email, and gives it the `super_user` role. Only that
-role may create, update or delete organizations; everyone can read them.
+Authula, with a verified email, and gives it the `super_user` role. A super
+user sees and manages every organization; everyone else only the ones they
+belong to.
 
 `SUPER_USER` is the source of truth for the password: if the account's
 password differs, the next seeded boot resets it and ends every session of
@@ -58,6 +62,35 @@ that account, so rotating a leaked password locks the holder out. An account
 someone registered with that email before the first seed is taken over the
 same way: verified, reset and signed out. `cmd/migrate --seed` does not create
 the super user, because that needs a running Authula.
+
+## Organizations and mail
+
+Any signed-in user can create an organization and becomes its owner; a user
+can belong to many. Members read and manage the organization's email accounts
+and mail. Only the owner (or a super user) renames or deletes it and sets its
+LLM provider. Someone else's organization, account or mail answers 404.
+
+| Route                                                   | What it does                                                                                   |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `GET /api/v1/organizations/:id/stats`                   | Unread inbox mail, spam and connected accounts.                                                |
+| `GET, POST /api/v1/organizations/:id/email-accounts`    | List accounts, or connect one: signs in over IMAP first, then syncs in the background.          |
+| `GET, PUT, DELETE /api/v1/organizations/:id/llm-provider` | The model for AI features: `openai` or `anthropic` wire format, any compatible base URL.       |
+| `GET /api/v1/email-accounts/:id/mails`                  | One folder (`inbox`, `sent`, `drafts`, `spam`, `trash`), filtered by `importance` and `search`. |
+| `POST /api/v1/email-accounts/:id/sync`                  | Sync now. `DELETE /api/v1/email-accounts/:id` disconnects and drops the synced mail.           |
+| `GET, PATCH /api/v1/mails/:id`                          | Read a mail; mark it read or starred, or set its importance (the AI never overrides the user). |
+| `POST /api/v1/mails/:id/summary`, `/reply-suggestions`  | AI summary (kept after the first call) and up to three short replies.                          |
+
+Every provider (Gmail, Outlook, Yahoo, iCloud, or any IMAP server) connects
+with the address and an app password; the known providers' servers are
+built in. Passwords and LLM API keys are sealed in the database with a key
+derived from `APP_SECRET`, so rotating `APP_SECRET` means connecting the
+accounts and saving the providers again.
+
+The sync takes the newest 50 messages of each folder the first time and
+everything new after that, then has the organization's model classify new
+inbox mail as `important` or `low_priority`. Read and starred states are
+taken from the server once, when a message is first synced; marking a mail
+read in the app does not write back to the server.
 
 ## Authentication
 
@@ -94,7 +127,7 @@ The API accepts either the cookie or `Authorization: Bearer <access_token>`.
 
 ## Idempotent writes
 
-A write to `/api/v1/organizations` accepts an idempotency key, so a retried request
+A write to `/api/v1/organizations` (or any other write route) accepts an idempotency key, so a retried request
 does not apply twice. Send the key on the first attempt and repeat it verbatim
 on every retry:
 
