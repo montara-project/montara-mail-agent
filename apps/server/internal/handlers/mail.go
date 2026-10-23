@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"errors"
+	"html"
 
 	"github.com/gofiber/fiber/v3"
 
@@ -174,6 +175,32 @@ func (h *mailHandler) Forward(c fiber.Ctx) error {
 		return serverError(err)
 	}
 	return dtos.Message(c, fiber.StatusOK, "mail forwarded")
+}
+
+// Reply sends a reply to the mail's sender from its account.
+func (h *mailHandler) Reply(c fiber.Ctx) error {
+	m, err := h.mail(c)
+	if err != nil {
+		return err
+	}
+	var body dtos.MailReplyBody
+	if err := lib.ValidateRequestBody(c, &body); err != nil {
+		return err
+	}
+
+	account, err := h.account(c, m)
+	if err != nil {
+		return err
+	}
+	// Without HTML from the editor, the text stands in, escaped.
+	htmlBody := body.HTML
+	if htmlBody == "" {
+		htmlBody = `<div style="white-space:pre-wrap">` + html.EscapeString(body.Text) + "</div>"
+	}
+	if err := h.sync.Reply(c.Context(), account, m, body.Text, htmlBody); err != nil {
+		return serverError(err)
+	}
+	return dtos.Message(c, fiber.StatusOK, "reply sent")
 }
 
 // llmFor returns the model of the mail's organization.

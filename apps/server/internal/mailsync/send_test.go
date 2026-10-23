@@ -169,3 +169,55 @@ func TestForwardKeepsFwdPrefix(t *testing.T) {
 		t.Fatal("a forward of a forward doubled the prefix")
 	}
 }
+
+func TestReply(t *testing.T) {
+	smtpServer, port, pool := serveFakeSMTP(t)
+
+	box, _ := lib.NewSecretBox("0123456789abcdef0123456789abcdef")
+	application := &app.Application{Secrets: box}
+	application.Config.App.AllowPrivateHosts = true
+	syncer := New(application)
+	syncer.RootCAs = pool
+
+	account := models.EmailAccount{
+		Email:    "me@example.com",
+		Username: "me@example.com",
+		Password: box.Seal("app-password"),
+		SMTPHost: "127.0.0.1",
+		SMTPPort: port,
+	}
+	m := models.Mail{
+		MessageID:  "1@example.com",
+		FromName:   "Boss",
+		FromEmail:  "boss@example.com",
+		Subject:    "Contract",
+		Body:       "Please sign it.\nThanks",
+		ReceivedAt: time.Date(2026, 10, 22, 10, 6, 0, 0, time.UTC),
+	}
+
+	if err := syncer.Reply(context.Background(), account, m, "**Signed.**", "<p><b>Signed.</b></p>"); err != nil {
+		t.Fatalf("reply: %v", err)
+	}
+	<-smtpServer.done
+
+	if len(smtpServer.to) != 1 || !strings.Contains(smtpServer.to[0], "<boss@example.com>") {
+		t.Fatalf("reply went to %q, want the sender", smtpServer.to)
+	}
+	for _, want := range []string{
+		"Subject: Re: Contract",
+		"In-Reply-To: <1@example.com>",
+		"References: <1@example.com>",
+		"**Signed.**",
+		"<p><b>Signed.</b></p>",
+		"> Please sign it.",
+		"<blockquote",
+	} {
+		if !strings.Contains(smtpServer.data, want) {
+			t.Errorf("reply lacks %q:\n%s", want, smtpServer.data)
+		}
+	}
+
+	if err := syncer.Reply(context.Background(), account, models.Mail{}, "hi", ""); err == nil {
+		t.Fatal("a mail without a sender was replied to")
+	}
+}

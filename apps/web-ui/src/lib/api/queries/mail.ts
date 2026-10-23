@@ -4,7 +4,7 @@ import { getQueryClient } from '@/lib/providers/react-query'
 
 import type { Models } from '../models'
 import type { MailListParams } from '../services/types/email-account'
-import type { MailForwardBody, MailPatchBody } from '../services/types/mail'
+import type { MailForwardBody, MailPatchBody, MailReplyBody } from '../services/types/mail'
 
 import { services } from '../services'
 import { ORGANIZATION_QUERY_KEY } from './organization'
@@ -116,6 +116,14 @@ const forward = (id: string) =>
     },
   })
 
+const reply = (id: string) =>
+  mutationOptions({
+    mutationFn: async (body: MailReplyBody) => {
+      const res = await services.mails.reply(id, body)
+      return res.data
+    },
+  })
+
 export const mailQueries = {
   list,
   get,
@@ -125,4 +133,5 @@ export const mailQueries = {
   move,
   delete: remove,
   forward,
+  reply,
 } as const

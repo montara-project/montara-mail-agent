@@ -1,13 +1,12 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Sparkles } from 'lucide-react'
 import { AnimatePresence, motion, MotionConfig } from 'motion/react'
 import React from 'react'
-import { toast } from 'sonner'
 
-import type { Draft } from './reply-editor'
+import type { Draft, Reply } from './reply-editor'
 
 import { Skeleton } from '@/components/ui/skeleton'
-import { axiosErrorMessage } from '@/lib/api/axios-error'
+import { axiosErrorMessage, toastProgress } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
 
@@ -71,9 +70,19 @@ export default function ReplyComposer({ mailId }: { mailId: string }) {
     setOpen(true)
   }
 
-  const send = () => {
-    // ponytail: no send endpoint yet; wire this to the mail API once it exists.
-    toast.info('Sending replies is not available yet')
+  const reply = useMutation(queries.mails.reply(mailId))
+  // On success the reply and its draft are done; on failure the editor stays
+  // open with the text, so nothing typed is lost.
+  const send = (body: Reply) => {
+    const progress = toastProgress('Sending reply...')
+    reply.mutate(body, {
+      onSuccess: () => {
+        progress.success('Reply sent')
+        setDraft(null)
+        setOpen(false)
+      },
+      onError: progress.error,
+    })
   }
 
   return (
@@ -104,6 +113,7 @@ export default function ReplyComposer({ mailId }: { mailId: string }) {
                       setOpen(false)
                     }}
                     onSend={send}
+                    sending={reply.isPending}
                   />
                 </React.Suspense>
               </div>

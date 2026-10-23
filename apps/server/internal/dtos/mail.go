@@ -48,3 +48,15 @@ func (dto MailForwardBody) Validate(v *validator.MapValidator) {
 	v.Field("to").Required().ArrayOf(maxForwardRecipients, `^[^@\s<>,;]+@[^@\s<>,;]+\.[^@\s<>,;]+$`)
 	v.Field("note").String().MaxLen(10000)
 }
+
+// MailReplyBody is a reply to a mail's sender: its text (Markdown, as typed)
+// and the HTML the editor made of it.
+type MailReplyBody struct {
+	Text string `json:"text"`
+	HTML string `json:"html"`
+}
+
+func (dto MailReplyBody) Validate(v *validator.MapValidator) {
+	v.Field("text").Required().String().MaxLen(100000)
+	v.Field("html").String().MaxLen(500000)
+}

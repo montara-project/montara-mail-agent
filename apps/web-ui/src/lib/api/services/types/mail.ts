@@ -13,6 +13,12 @@ export type MailForwardBody = {
   note?: string
 }
 
+/** A reply as typed (Markdown) and as the HTML the editor made of it. */
+export type MailReplyBody = {
+  text: string
+  html?: string
+}
+
 export type MailResources = {
   get: (id: string) => Promise<AxiosItemResponse<Models.Mail>>
   patch: (id: string, body: MailPatchBody) => Promise<AxiosItemResponse<Models.Mail>>
@@ -23,4 +29,6 @@ export type MailResources = {
   /** Moves the mail to the trash, or deletes it for good when it is there. */
   delete: (id: string) => Promise<AxiosDeleteResponse>
   forward: (id: string, body: MailForwardBody) => Promise<AxiosDeleteResponse>
+  /** Replies to the mail's sender from its account. */
+  reply: (id: string, body: MailReplyBody) => Promise<AxiosDeleteResponse>
 }

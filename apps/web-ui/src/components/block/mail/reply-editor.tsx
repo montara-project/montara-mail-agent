@@ -2,6 +2,7 @@ import {
   boldExtension,
   createEditorSystem,
   historyExtension,
+  htmlExtension,
   italicExtension,
   listExtension,
   markdownExtension,
@@ -34,6 +35,7 @@ const extensions = [
   listExtension,
   historyExtension,
   markdownExtension,
+  htmlExtension,
 ] as const
 
 const { Provider, useEditor } = createEditorSystem<typeof extensions>()
@@ -47,14 +49,19 @@ const theme = {
 /** An unsent reply: the Lexical state, so formatting survives, plus its text for the one-line view. */
 export type Draft = { state: string; preview: string }
 
+/** A reply ready to send: Markdown for the text part, HTML for the formatted one. */
+export type Reply = { text: string; html: string }
+
 export type EditorBodyProps = {
   /** A saved draft, or a picked suggestion to start from. */
   initial: { state?: string; text?: string }
   onMinimize: (draft: Draft | null) => void
-  onSend: (markdown: string) => void
+  onSend: (reply: Reply) => void
+  /** True while a reply is on its way; sending is off meanwhile. */
+  sending?: boolean
 }
 
-function EditorBody({ initial, onMinimize, onSend }: EditorBodyProps) {
+function EditorBody({ initial, onMinimize, onSend, sending }: EditorBodyProps) {
   const { commands, activeStates, lexical: editor } = useEditor()
   const [empty, setEmpty] = React.useState(!(initial.state || initial.text))
 
@@ -92,7 +99,7 @@ function EditorBody({ initial, onMinimize, onSend }: EditorBodyProps) {
   ]
 
   const send = () => {
-    if (!empty) onSend(commands.exportToMarkdown())
+    if (!empty && !sending) onSend({ text: commands.exportToMarkdown(), html: commands.exportToHTML() })
   }
 
   return (
@@ -153,7 +160,8 @@ function EditorBody({ initial, onMinimize, onSend }: EditorBodyProps) {
             className="size-8"
             aria-label="Send reply"
             title="Send (Ctrl+Enter)"
-            disabled={empty}
+            aria-busy={sending}
+            disabled={empty || sending}
             onClick={send}
           >
             <ArrowUp />

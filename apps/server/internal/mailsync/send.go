@@ -17,6 +17,7 @@ import (
 	"github.com/emersion/go-message/mail"
 
 	"montara-mail-agent/server/internal/lib"
+	"montara-mail-agent/server/internal/lib/apperr"
 	"montara-mail-agent/server/internal/models"
 )
 
@@ -38,6 +39,26 @@ func (s *Syncer) Forward(ctx context.Context, account models.EmailAccount, m mod
 		return err
 	}
 	return s.send(ctx, account, password, recipients, msg)
+}
+
+// Reply sends a reply to m's sender from the account. The reply comes as
+// text and as the HTML the editor made; the original is quoted below it.
+func (s *Syncer) Reply(ctx context.Context, account models.EmailAccount, m models.Mail, text, htmlBody string) error {
+	if m.FromEmail == "" {
+		return apperr.New(apperr.KindBadRequest, "this email has no sender to reply to")
+	}
+	ctx, cancel := context.WithTimeout(ctx, actionTimeout)
+	defer cancel()
+
+	password, err := s.app.Secrets.Open(account.Password)
+	if err != nil {
+		return errors.New("the saved password can't be read, connect the account again")
+	}
+	msg, err := replyMessage(account.Email, m, text, htmlBody, time.Now())
+	if err != nil {
+		return err
+	}
+	return s.send(ctx, account, password, []string{m.FromEmail}, msg)
 }
 
 // send delivers msg over the account's SMTP server. Ports 587 and 25 upgrade
@@ -110,8 +131,8 @@ func contactLine(contacts []models.MailContact) string {
 	return strings.Join(parts, ", ")
 }
 
-// forwardMessage builds the forward of m as a text and HTML message.
-func forwardMessage(from string, m models.Mail, recipients []string, note string, now time.Time) ([]byte, error) {
+// newHeader starts a message from `from` to recipients, with a fresh Message-ID.
+func newHeader(from string, recipients []string, subject string, now time.Time) (mail.Header, error) {
 	var h mail.Header
 	h.SetDate(now)
 	h.SetAddressList("From", []*mail.Address{{Address: from}})
@@ -120,12 +141,31 @@ func forwardMessage(from string, m models.Mail, recipients []string, note string
 		to[i] = &mail.Address{Address: r}
 	}
 	h.SetAddressList("To", to)
-	subject := m.Subject
-	if !strings.HasPrefix(strings.ToLower(subject), "fwd:") {
-		subject = "Fwd: " + subject
-	}
 	h.SetSubject(subject)
-	if err := h.GenerateMessageIDWithHostname(from[strings.LastIndexByte(from, '@')+1:]); err != nil {
+	err := h.GenerateMessageIDWithHostname(from[strings.LastIndexByte(from, '@')+1:])
+	return h, err
+}
+
+// withPrefix puts prefix ("Re:", "Fwd:") before subject unless it already starts with it.
+func withPrefix(prefix, subject string) string {
+	if strings.HasPrefix(strings.ToLower(subject), strings.ToLower(prefix)) {
+		return subject
+	}
+	return prefix + " " + subject
+}
+
+// originalHTML is m's HTML, or its text in a block that keeps line breaks.
+func originalHTML(m models.Mail) string {
+	if m.BodyHTML != nil && *m.BodyHTML != "" {
+		return *m.BodyHTML
+	}
+	return `<div style="white-space:pre-wrap">` + html.EscapeString(m.Body) + "</div>"
+}
+
+// forwardMessage builds the forward of m as a text and HTML message.
+func forwardMessage(from string, m models.Mail, recipients []string, note string, now time.Time) ([]byte, error) {
+	h, err := newHeader(from, recipients, withPrefix("Fwd:", m.Subject), now)
+	if err != nil {
 		return nil, err
 	}
 
@@ -152,13 +192,37 @@ func forwardMessage(from string, m models.Mail, recipients []string, note string
 		htmlBody.WriteString(line[0] + ": " + html.EscapeString(line[1]) + "<br>")
 	}
 	text.WriteString("\n" + m.Body + "\n")
-	htmlBody.WriteString("</div><br>")
-	if m.BodyHTML != nil && *m.BodyHTML != "" {
-		htmlBody.WriteString(*m.BodyHTML)
-	} else {
-		htmlBody.WriteString(`<div style="white-space:pre-wrap">` + html.EscapeString(m.Body) + "</div>")
+	htmlBody.WriteString("</div><br>" + originalHTML(m))
+	return writeAlternative(h, text.String(), htmlBody.String())
+}
+
+// replyMessage builds a reply to m's sender: the reply on top, the original
+// quoted below, and the headers that thread it under m in mail clients.
+func replyMessage(from string, m models.Mail, replyText, replyHTML string, now time.Time) ([]byte, error) {
+	h, err := newHeader(from, []string{m.FromEmail}, withPrefix("Re:", m.Subject), now)
+	if err != nil {
+		return nil, err
+	}
+	if id := strings.Trim(m.MessageID, "<> "); id != "" {
+		h.SetMsgIDList("In-Reply-To", []string{id})
+		h.SetMsgIDList("References", []string{id})
 	}
 
+	sender := contactLine([]models.MailContact{{Name: m.FromName, Email: m.FromEmail}})
+	attribution := "On " + m.ReceivedAt.Format("Mon, 2 Jan 2006 at 15:04") + ", " + sender + " wrote:"
+
+	var quoted strings.Builder
+	for _, line := range strings.Split(m.Body, "\n") {
+		quoted.WriteString("> " + line + "\n")
+	}
+	text := replyText + "\n\n" + attribution + "\n" + quoted.String()
+	htmlBody := replyHTML + "<br><div>" + html.EscapeString(attribution) + "</div>" +
+		`<blockquote style="margin:0 0 0 .8ex;border-left:1px solid #ccc;padding-left:1ex">` + originalHTML(m) + "</blockquote>"
+	return writeAlternative(h, text, htmlBody)
+}
+
+// writeAlternative writes a message with a text and an HTML version of one body.
+func writeAlternative(h mail.Header, text, htmlBody string) ([]byte, error) {
 	var buf bytes.Buffer
 	w, err := mail.CreateWriter(&buf, h)
 	if err != nil {
@@ -169,8 +233,8 @@ func forwardMessage(from string, m models.Mail, recipients []string, note string
 		return nil, err
 	}
 	for _, part := range []struct{ contentType, body string }{
-		{"text/plain", text.String()},
-		{"text/html", htmlBody.String()},
+		{"text/plain", text},
+		{"text/html", htmlBody},
 	} {
 		var ph mail.InlineHeader
 		ph.SetContentType(part.contentType, map[string]string{"charset": "utf-8"})

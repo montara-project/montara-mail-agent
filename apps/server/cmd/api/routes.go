@@ -86,6 +86,7 @@ func routes(r *fiber.App, app *app.Application) {
 	mails.Delete("/:id", slow, idempotent, h.Mail.Delete)
 	mails.Post("/:id/move", slow, idempotent, h.Mail.Move)
 	mails.Post("/:id/forward", slow, idempotent, h.Mail.Forward)
+	mails.Post("/:id/reply", slow, idempotent, h.Mail.Reply)
 	mails.Post("/:id/summary", slow, h.Mail.Summary)
 	mails.Post("/:id/reply-suggestions", slow, h.Mail.ReplySuggestions)
 }
