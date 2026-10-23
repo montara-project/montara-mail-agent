@@ -36,5 +36,7 @@ type Mail struct {
 	IsStarred    bool      `db:"is_starred" json:"is_starred"`
 	Importance   *string   `db:"importance" json:"importance"`
 	ImportanceBy *string   `db:"importance_by" json:"importance_by"`
-	Summary      *string   `db:"summary" json:"-"`
+	// Summary is the AI summary, kept after the first request; nil until
+	// then, and in list answers.
+	Summary *string `db:"summary" json:"summary"`
 }

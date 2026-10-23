@@ -31,4 +31,6 @@ export interface Mail {
   /** null until the AI or the user classifies the mail. */
   importance: MailImportance | null
   importance_by: 'ai' | 'user' | null
+  /** The AI summary, kept after the first request; null until then and in lists. */
+  summary?: string | null
 }

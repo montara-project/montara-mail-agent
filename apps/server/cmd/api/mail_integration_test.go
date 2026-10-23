@@ -169,6 +169,13 @@ func testMailFlow(t *testing.T, call callFunc, application *app.Application, tok
 	if fake.calls != 1 {
 		t.Fatalf("summary called the model %d times, want once then cached", fake.calls)
 	}
+	// The kept summary comes with the mail, and stays out of lists.
+	if _, out := call(http.MethodGet, mailPath, token, nil); data(out)["summary"] != "**TL;DR** a fake summary" {
+		t.Fatalf("mail without its summary: %v", out)
+	}
+	if _, out := call(http.MethodGet, accountPath+"/mails", token, nil); list(out)[0].(map[string]any)["summary"] != nil {
+		t.Fatalf("list carries the summary: %v", list(out)[0])
+	}
 	if status, out := call(http.MethodPost, mailPath+"/reply-suggestions", token, nil); status != http.StatusOK || len(data(out)["suggestions"].([]any)) != 3 {
 		t.Fatalf("reply suggestions: %d %v", status, out)
 	}

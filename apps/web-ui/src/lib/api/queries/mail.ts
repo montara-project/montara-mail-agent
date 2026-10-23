@@ -2,6 +2,7 @@ import { keepPreviousData, mutationOptions, queryOptions } from '@tanstack/react
 
 import { getQueryClient } from '@/lib/providers/react-query'
 
+import type { Models } from '../models'
 import type { MailListParams } from '../services/types/email-account'
 import type { MailPatchBody } from '../services/types/mail'
 
@@ -58,7 +59,12 @@ const summary = (id: string) =>
     queryKey: [MAIL_QUERY_KEY, 'summary', id],
     queryFn: async () => {
       const res = await services.mails.summary(id)
-      return res.data.data.summary
+      const text = res.data.data.summary
+      // The mail now carries it too, as it will when it is next loaded.
+      getQueryClient().setQueryData<Models.Mail>([MAIL_QUERY_KEY, 'detail', id], (mail) =>
+        mail ? { ...mail, summary: text } : mail
+      )
+      return text
     },
     staleTime: Infinity,
     retry: false,

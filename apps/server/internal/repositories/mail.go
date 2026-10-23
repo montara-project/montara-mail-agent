@@ -22,11 +22,11 @@ const mailColumns = `
 	importance, importance_by, summary`
 
 // mailListColumns swaps the body for a 200-character, one-line teaser and
-// leaves the HTML out.
+// leaves the HTML and the summary out.
 const mailListColumns = `
 	id, created_at, updated_at, email_account_id, folder, uid_validity, uid, message_id,
 	from_name, from_email, "to", cc, subject, left(regexp_replace(body, '\s+', ' ', 'g'), 200), NULL, received_at, is_read, is_starred,
-	importance, importance_by, summary`
+	importance, importance_by, NULL`
 
 func scanMail(row rowScanner) (models.Mail, error) {
 	var m models.Mail

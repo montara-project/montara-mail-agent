@@ -68,9 +68,15 @@ export default function MailReader({ mailId }: { mailId: string }) {
   const navigate = useNavigate()
   const { data: mail, isPending, isError, error } = useQuery(queries.mails.get(mailId))
   const patch = useMutation(queries.mails.patch(mailId))
-  const [summaryOpen, setSummaryOpen] = React.useState(false)
-  // Fetched on the first open only; the server keeps it after that.
-  const summary = useQuery({ ...queries.mails.summary(mailId), enabled: summaryOpen })
+  // A kept summary shows right away; otherwise the panel waits for a click.
+  const [summaryToggled, setSummaryOpen] = React.useState<boolean | null>(null)
+  const summaryOpen = summaryToggled ?? !!mail?.summary
+  // Asked for on the first open of a mail without one; the server keeps it after that.
+  const summary = useQuery({
+    ...queries.mails.summary(mailId),
+    enabled: summaryOpen && !!mail && !mail.summary,
+  })
+  const summaryText = mail?.summary ?? summary.data
 
   // Opening a mail reads it.
   const markRead = React.useEffectEvent(() => {
@@ -238,7 +244,7 @@ export default function MailReader({ mailId }: { mailId: string }) {
           <Button
             variant="outline"
             aria-expanded={summaryOpen}
-            onClick={() => setSummaryOpen((open) => !open)}
+            onClick={() => setSummaryOpen(!summaryOpen)}
           >
             <Sparkles />
             AI Email Summary
@@ -250,14 +256,16 @@ export default function MailReader({ mailId }: { mailId: string }) {
         {summaryOpen && (
           <section
             aria-label="AI email summary"
-            aria-busy={summary.isPending}
+            aria-busy={!summaryText && summary.isPending}
             className="mb-6 max-w-3xl rounded-xl border border-l-4 border-violet-500/30 border-l-violet-500 bg-violet-500/5 p-4"
           >
             <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-violet-700 dark:text-violet-300">
               <Sparkles className="size-4" />
               AI Summary
             </p>
-            {summary.isPending ? (
+            {summaryText ? (
+              <Markdown>{summaryText}</Markdown>
+            ) : summary.isPending ? (
               <div className="grid gap-2">
                 <Skeleton className="h-4 w-11/12" />
                 <Skeleton className="h-4 w-3/4" />
@@ -271,9 +279,7 @@ export default function MailReader({ mailId }: { mailId: string }) {
                   Try again
                 </Button>
               </div>
-            ) : (
-              <Markdown>{summary.data}</Markdown>
-            )}
+            ) : null}
           </section>
         )}
 
