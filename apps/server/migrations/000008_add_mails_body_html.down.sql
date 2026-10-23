@@ -1,1 +1,0 @@
-ALTER TABLE "mails" DROP COLUMN IF EXISTS "body_html";

@@ -16,6 +16,10 @@ CREATE TABLE IF NOT EXISTS "mails" (
   "cc" JSONB NOT NULL DEFAULT '[]',
   "subject" VARCHAR NOT NULL DEFAULT '',
   "body" TEXT NOT NULL DEFAULT '',
+  -- The text/html part, rendered by the client in a sandboxed frame; '' when
+  -- it has none. NULL means the body still has to be read: the sync re-reads
+  -- those bodies and fills it in.
+  "body_html" TEXT,
   "received_at" TIMESTAMPTZ NOT NULL,
   "is_read" BOOLEAN NOT NULL DEFAULT false,
   "is_starred" BOOLEAN NOT NULL DEFAULT false,
