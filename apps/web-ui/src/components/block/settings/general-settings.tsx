@@ -114,10 +114,9 @@ function OrganizationForm({ organization }: { organization: Models.Organization 
   )
 }
 
-/** The signed-in user's name and avatar, and the active organization's name. */
+/** The signed-in user's name and avatar. */
 export default function GeneralSettings() {
   const { data: me, isPending } = useQuery(queries.auth.profile())
-  const { organization } = useActiveOrganization()
 
   return (
     <div className="grid gap-4">
@@ -133,16 +132,24 @@ export default function GeneralSettings() {
           <ProfileForm key={me.user.updated_at} user={me.user} />
         )}
       </SectionCard>
-      <SectionCard title="Organization" description={organization?.name}>
-        {organization ? (
-          <OrganizationForm
-            key={`${organization.id}:${organization.updated_at}`}
-            organization={organization}
-          />
-        ) : (
-          <p className="text-muted-foreground text-sm">Create an organization first.</p>
-        )}
-      </SectionCard>
     </div>
+  )
+}
+
+/** The active organization's name. */
+export function OrganizationSettings() {
+  const { organization } = useActiveOrganization()
+
+  return (
+    <SectionCard title="Organization" description={organization?.name}>
+      {organization ? (
+        <OrganizationForm
+          key={`${organization.id}:${organization.updated_at}`}
+          organization={organization}
+        />
+      ) : (
+        <p className="text-muted-foreground text-sm">Create an organization first.</p>
+      )}
+    </SectionCard>
   )
 }

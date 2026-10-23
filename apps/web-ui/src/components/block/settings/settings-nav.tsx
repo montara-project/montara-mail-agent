@@ -1,12 +1,12 @@
 import { Link } from '@tanstack/react-router'
-import { KeyRound, Server, Settings2, ShieldCheck, Sparkles } from 'lucide-react'
+import { Building2, CreditCard, ShieldCheck, Trash2, User } from 'lucide-react'
 
 const SETTINGS_ITEMS = [
-  { title: 'General', icon: Settings2, url: '/settings/general' },
-  { title: 'Change password', icon: KeyRound, url: '/settings/password' },
-  { title: 'LLM provider', icon: Sparkles, url: '/settings/llm-provider' },
-  { title: 'Self hosted', icon: Server, url: '/settings/self-hosted' },
-  { title: 'Two-factor (TOTP)', icon: ShieldCheck, url: '/settings/two-factor' },
+  { title: 'My Profile', icon: User, url: '/settings/profile' },
+  { title: 'Security', icon: ShieldCheck, url: '/settings/security' },
+  { title: 'Organization', icon: Building2, url: '/settings/organization' },
+  { title: 'Billing', icon: CreditCard, url: '/settings/billing' },
+  { title: 'Delete Account', icon: Trash2, url: '/settings/delete-account' },
 ] as const
 
 /** The settings pages: a column beside the page, a scrolling row on phones. */
