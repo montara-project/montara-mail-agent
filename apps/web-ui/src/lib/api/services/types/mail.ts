@@ -15,6 +15,9 @@ export type MailForwardBody = {
 
 /** A reply as typed (Markdown) and as the HTML the editor made of it. */
 export type MailReplyBody = {
+  /** The mail's sender when left out. */
+  to?: string[]
+  cc?: string[]
   text: string
   html?: string
 }

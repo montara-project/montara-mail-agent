@@ -1,148 +1,227 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Sparkles } from 'lucide-react'
-import { AnimatePresence, motion, MotionConfig } from 'motion/react'
+import { ChevronDown, Reply as ReplyIcon, RotateCcw, Sparkles } from 'lucide-react'
+import { motion, MotionConfig } from 'motion/react'
 import React from 'react'
 
-import type { Draft, Reply } from './reply-editor'
+import type { Models } from '@/lib/api/models'
 
+import type { Reply } from './mail-editor'
+
+import { mailInitials } from '@/components/layout/mail/mail-data'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
 import { axiosErrorMessage, toastProgress } from '@/lib/api/axios-error'
+import { allEmails, MAX_RECIPIENTS } from '@/lib/api/dtos/mail/recipients'
 import { queries } from '@/lib/api/queries'
-import { cn } from '@/lib/utils'
 
-const ReplyEditor = React.lazy(() => import('./reply-editor'))
+import RecipientInput from './recipient-input'
 
-// Magic UI rainbow-button animation, on the border only.
-const RAINBOW_BORDER =
-  'animate-rainbow rounded-xl border-2 border-transparent bg-[linear-gradient(var(--color-card),var(--color-card)),linear-gradient(90deg,var(--color-1),var(--color-5),var(--color-3),var(--color-4),var(--color-2))] bg-[length:200%] [background-clip:padding-box,border-box] [background-origin:border-box] motion-reduce:animate-none'
+const MailEditor = React.lazy(() => import('./mail-editor'))
 
-const CHIP =
-  'bg-muted/60 hover:bg-accent text-muted-foreground hover:text-foreground rounded-full border px-3 py-1 text-xs transition-colors'
-
-/** AI reply suggestions, asked for on demand since each one is a model call. */
-function Suggestions({ mailId, onPick }: { mailId: string; onPick: (text: string) => void }) {
-  const [wanted, setWanted] = React.useState(false)
-  const { data, isFetching, isError, error } = useQuery({
+/** "Use AI": up to three suggested replies, asked for when the menu opens since each is a model call. */
+function AiMenu({ mailId, onPick }: { mailId: string; onPick: (text: string) => void }) {
+  const [open, setOpen] = React.useState(false)
+  const { data, isFetching, isError, error, refetch } = useQuery({
     ...queries.mails.replySuggestions(mailId),
-    enabled: wanted,
+    enabled: open,
   })
 
-  if (!data || isError) {
-    return (
-      <div className="flex flex-wrap items-center gap-2 text-xs">
-        <button
-          type="button"
-          className={cn(CHIP, 'flex items-center gap-1.5')}
-          disabled={isFetching}
-          onClick={() => setWanted(true)}
-        >
-          <Sparkles className="size-3.5" />
-          {isFetching ? 'Thinking of replies...' : 'Suggest replies'}
-        </button>
-        {isError && <span className="text-destructive">{axiosErrorMessage(error)}</span>}
-      </div>
-    )
-  }
-
   return (
-    <div className="flex flex-wrap gap-2" aria-label="Suggested replies">
-      {data.map((text) => (
-        <button key={text} type="button" onClick={() => onPick(text)} className={CHIP}>
-          {text}
-        </button>
-      ))}
-    </div>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className="border-violet-500/40 text-violet-700 hover:text-violet-700 dark:text-violet-300 dark:hover:text-violet-300"
+        >
+          <Sparkles />
+          Use AI
+          <ChevronDown />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" side="top" className="w-80">
+        <DropdownMenuLabel className="text-muted-foreground text-xs">
+          Suggested replies
+        </DropdownMenuLabel>
+        {isFetching ? (
+          <div className="grid gap-2 p-2" aria-busy="true">
+            <Skeleton className="h-4 w-11/12" />
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-5/6" />
+          </div>
+        ) : isError ? (
+          <>
+            <p className="text-destructive px-2 py-1.5 text-sm">{axiosErrorMessage(error)}</p>
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault()
+                refetch()
+              }}
+            >
+              <RotateCcw />
+              Try again
+            </DropdownMenuItem>
+          </>
+        ) : (
+          data?.map((text) => (
+            <DropdownMenuItem
+              key={text}
+              className="whitespace-normal"
+              onSelect={() => onPick(text)}
+            >
+              {text}
+            </DropdownMenuItem>
+          ))
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
 /**
- * Reply box under a mail: one line plus suggestions while minimized, a LexKit
- * rich-text editor once opened.
+ * Reply to a mail: a Reply button, then a card with the recipients as chips
+ * (the sender to start with), the rich-text editor, the AI menu and Send.
+ * Cancel drops the reply.
  */
-export default function ReplyComposer({ mailId }: { mailId: string }) {
+export default function ReplyComposer({ mail }: { mail: Models.Mail }) {
+  const sender = React.useMemo(() => (mail.from_email ? [mail.from_email] : []), [mail.from_email])
   const [open, setOpen] = React.useState(false)
-  // Kept across minimize so an unsent reply is not lost.
-  const [draft, setDraft] = React.useState<Draft | null>(null)
-  const [initial, setInitial] = React.useState<{ state?: string; text?: string }>({})
+  const [to, setTo] = React.useState(sender)
+  const [cc, setCc] = React.useState<string[]>([])
+  const [showCc, setShowCc] = React.useState(false)
+  // A new object reloads the editor, which is how a picked suggestion lands in it.
+  const [initial, setInitial] = React.useState<{ text?: string }>({})
+  const [problem, setProblem] = React.useState<string | null>(null)
+  const reply = useMutation(queries.mails.reply(mail.id))
+  const { data: me } = useQuery(queries.auth.profile())
+  const cardRef = React.useRef<HTMLDivElement>(null)
 
-  const openWith = (text: string) => {
-    setInitial(draft ? { state: draft.state } : { text })
-    setOpen(true)
+  const names = mail.from_name ? { [mail.from_email]: mail.from_name } : undefined
+
+  const close = () => {
+    setOpen(false)
+    setTo(sender)
+    setCc([])
+    setShowCc(false)
+    setInitial({})
+    setProblem(null)
   }
 
-  const reply = useMutation(queries.mails.reply(mailId))
-  // On success the reply and its draft are done; on failure the editor stays
-  // open with the text, so nothing typed is lost.
   const send = (body: Reply) => {
+    const found =
+      to.length === 0
+        ? 'Add at least one recipient.'
+        : !allEmails([...to, ...cc])
+          ? 'One of the addresses is not a valid email.'
+          : to.length + cc.length > MAX_RECIPIENTS
+            ? `A mail goes to at most ${MAX_RECIPIENTS} addresses.`
+            : null
+    setProblem(found)
+    if (found) return
+
     const progress = toastProgress('Sending reply...')
-    reply.mutate(body, {
-      onSuccess: () => {
-        progress.success('Reply sent')
-        setDraft(null)
-        setOpen(false)
-      },
-      onError: progress.error,
-    })
+    reply.mutate(
+      { to, cc: cc.length > 0 ? cc : undefined, ...body },
+      {
+        onSuccess: () => {
+          progress.success('Reply sent')
+          close()
+        },
+        // The card stays open with the text, so nothing typed is lost.
+        onError: progress.error,
+      }
+    )
   }
 
-  return (
-    <MotionConfig reducedMotion="user" transition={{ duration: 0.25, ease: 'easeOut' }}>
-      <div className="m-4">
-        <AnimatePresence initial={false} mode="wait">
-          {open ? (
-            <motion.div
-              key="open"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className={cn(RAINBOW_BORDER, 'overflow-hidden')}
-            >
-              <div className="p-2">
-                <React.Suspense
-                  fallback={
-                    <div className="grid gap-2" aria-busy="true">
-                      <Skeleton className="h-7 w-40" />
-                      <Skeleton className="h-28 w-full" />
-                    </div>
-                  }
-                >
-                  <ReplyEditor
-                    initial={initial}
-                    onMinimize={(next) => {
-                      setDraft(next)
-                      setOpen(false)
-                    }}
-                    onSend={send}
-                    sending={reply.isPending}
-                  />
-                </React.Suspense>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="closed"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              className="grid gap-2"
-            >
-              {!draft && <Suggestions mailId={mailId} onPick={openWith} />}
-              <button
-                type="button"
-                onClick={() => openWith('')}
-                className={cn(
-                  RAINBOW_BORDER,
-                  'text-muted-foreground flex h-11 w-full items-center px-3 text-left text-sm'
-                )}
-              >
-                <span className={cn('truncate', draft && 'text-foreground')}>
-                  {draft?.preview || 'Reply to email...'}
-                </span>
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+  // The card opens below the mail; bring it into view.
+  React.useEffect(() => {
+    if (open) cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [open])
+
+  if (!open) {
+    return (
+      <div className="mt-6">
+        <Button variant="outline" onClick={() => setOpen(true)}>
+          <ReplyIcon />
+          Reply
+        </Button>
       </div>
+    )
+  }
+
+  const user = me?.user
+  return (
+    <MotionConfig reducedMotion="user">
+      <motion.div
+        ref={cardRef}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, ease: 'easeOut' }}
+        className="bg-card mt-6 rounded-xl border p-4 shadow-sm"
+      >
+        <React.Suspense
+          fallback={
+            <div className="grid gap-3" aria-busy="true">
+              <Skeleton className="h-8 w-1/2" />
+              <Skeleton className="h-32 w-full" />
+            </div>
+          }
+        >
+          <MailEditor
+            initial={initial}
+            placeholder="Write your reply..."
+            onSend={send}
+            onCancel={close}
+            sending={reply.isPending}
+            leading={<AiMenu mailId={mail.id} onPick={(text) => setInitial({ text })} />}
+            header={
+              <div className="grid gap-2">
+                <div className="flex items-start gap-3">
+                  <Avatar className="mt-0.5 size-9">
+                    {user?.image && <AvatarImage src={user.image} alt="" />}
+                    <AvatarFallback>{mailInitials(user?.name ?? 'Me')}</AvatarFallback>
+                  </Avatar>
+                  <div className="grid min-w-0 flex-1 gap-2">
+                    <RecipientInput
+                      label="To"
+                      value={to}
+                      onChange={setTo}
+                      names={names}
+                      placeholder="Add a recipient"
+                    />
+                    {showCc && (
+                      <RecipientInput
+                        label="Cc"
+                        value={cc}
+                        onChange={setCc}
+                        placeholder="Add a recipient"
+                      />
+                    )}
+                  </div>
+                  {!showCc && (
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setShowCc(true)}>
+                      Cc
+                    </Button>
+                  )}
+                </div>
+                {problem && (
+                  <p role="alert" className="text-destructive text-sm">
+                    {problem}
+                  </p>
+                )}
+              </div>
+            }
+          />
+        </React.Suspense>
+      </motion.div>
     </MotionConfig>
   )
 }

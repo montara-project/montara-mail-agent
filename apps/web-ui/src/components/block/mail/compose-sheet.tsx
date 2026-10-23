@@ -4,7 +4,7 @@ import React from 'react'
 
 import type { Models } from '@/lib/api/models'
 
-import type { Draft, Reply } from './reply-editor'
+import type { Draft, Reply } from './mail-editor'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -21,7 +21,7 @@ import { toastProgress } from '@/lib/api/axios-error'
 import { allEmails, MAX_RECIPIENTS, parseRecipients } from '@/lib/api/dtos/mail/recipients'
 import { queries } from '@/lib/api/queries'
 
-const ReplyEditor = React.lazy(() => import('./reply-editor'))
+const MailEditor = React.lazy(() => import('./mail-editor'))
 
 const EMPTY = { to: '', cc: '', subject: '' }
 
@@ -36,8 +36,8 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 /**
  * A new mail from one of the organization's accounts. It closes only through
- * its own buttons: minimizing keeps the draft for the next open, Discard
- * drops it. A stray click outside or Escape would otherwise lose the text.
+ * its own buttons: Close (or Escape in the editor) keeps the draft for the
+ * next open, Discard drops it. A stray click outside or Escape would otherwise lose the text.
  */
 export default function ComposeSheet({
   open,
@@ -190,10 +190,11 @@ export default function ComposeSheet({
               </div>
             }
           >
-            <ReplyEditor
+            <MailEditor
               initial={initial}
               placeholder="Write your message..."
-              onMinimize={(next) => {
+              cancelLabel="Close"
+              onCancel={(next) => {
                 setDraft(next)
                 onOpenChange(false)
               }}

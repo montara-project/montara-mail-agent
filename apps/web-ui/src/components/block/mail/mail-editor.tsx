@@ -7,31 +7,23 @@ import {
   listExtension,
   markdownExtension,
   RichText,
+  strikethroughExtension,
   underlineExtension,
 } from '@lexkit/editor'
 import { $createParagraphNode, $createTextNode, $getRoot } from 'lexical'
-import {
-  ArrowUp,
-  AudioLines,
-  Bold,
-  ChevronDown,
-  Italic,
-  List,
-  ListOrdered,
-  Plus,
-  Underline,
-} from 'lucide-react'
+import { Bold, Italic, List, ListOrdered, Loader2, Strikethrough, Underline } from 'lucide-react'
 import React from 'react'
 
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-// Lexical and LexKit are large; ReplyComposer loads this module only when a reply is opened.
+// Lexical and LexKit are large; the reply and compose views load this module only when opened.
 
 const extensions = [
   boldExtension,
   italicExtension,
   underlineExtension,
+  strikethroughExtension,
   listExtension,
   historyExtension,
   markdownExtension,
@@ -43,38 +35,50 @@ const { Provider, useEditor } = createEditorSystem<typeof extensions>()
 // Tailwind's preflight strips list and text styles, so Lexical's nodes get them back here.
 const theme = {
   list: { ul: 'list-disc pl-5', ol: 'list-decimal pl-5' },
-  text: { bold: 'font-semibold', italic: 'italic', underline: 'underline' },
+  text: {
+    bold: 'font-semibold',
+    italic: 'italic',
+    underline: 'underline',
+    strikethrough: 'line-through',
+  },
 }
 
-/** An unsent reply: the Lexical state, so formatting survives, plus its text for the one-line view. */
+/** An unsent mail: the Lexical state, so formatting survives, plus its text for a one-line view. */
 export type Draft = { state: string; preview: string }
 
-/** A reply ready to send: Markdown for the text part, HTML for the formatted one. */
+/** A mail ready to send: Markdown for the text part, HTML for the formatted one. */
 export type Reply = { text: string; html: string }
 
-export type EditorBodyProps = {
-  /** A saved draft, or a picked suggestion to start from. */
+export type MailEditorProps = {
+  /** A saved draft, or text to start from (a picked suggestion). A new object reloads it. */
   initial: { state?: string; text?: string }
-  onMinimize: (draft: Draft | null) => void
   onSend: (reply: Reply) => void
-  /** True while a reply is on its way; sending is off meanwhile. */
+  /** Cancel or Escape, with what was written so far (null when empty). */
+  onCancel: (draft: Draft | null) => void
+  /** True while the mail is on its way; sending is off meanwhile. */
   sending?: boolean
-  /** The empty editor's hint; the reply box's by default. */
   placeholder?: string
+  cancelLabel?: string
+  /** Above the text, e.g. the recipients. */
+  header?: React.ReactNode
+  /** First in the bottom bar, before the formatting buttons, e.g. the AI menu. */
+  leading?: React.ReactNode
 }
 
 function EditorBody({
   initial,
-  onMinimize,
   onSend,
+  onCancel,
   sending,
-  placeholder = 'Write your reply...',
-}: EditorBodyProps) {
+  placeholder = 'Write your message...',
+  cancelLabel = 'Cancel',
+  header,
+  leading,
+}: MailEditorProps) {
   const { commands, activeStates, lexical: editor } = useEditor()
   const [empty, setEmpty] = React.useState(!(initial.state || initial.text))
 
-  // Load the draft or suggestion once, then put the caret at the end. The
-  // composer remounts the editor on every open, so this runs per open.
+  // Load the draft or the starting text, then put the caret at the end.
   React.useEffect(() => {
     if (!editor) return
     if (initial.state) {
@@ -82,7 +86,9 @@ function EditorBody({
     } else if (initial.text) {
       const text = initial.text
       editor.update(() => {
-        $getRoot().clear().append($createParagraphNode().append($createTextNode(text)))
+        $getRoot()
+          .clear()
+          .append($createParagraphNode().append($createTextNode(text)))
       })
     }
     editor.focus(undefined, { defaultSelection: 'rootEnd' })
@@ -91,40 +97,78 @@ function EditorBody({
     )
   }, [editor, initial])
 
-  const minimize = () => {
-    if (!editor) return onMinimize(null)
+  const cancel = () => {
+    if (!editor) return onCancel(null)
     const state = editor.getEditorState()
     const preview = state.read(() => $getRoot().getTextContent().trim())
-    onMinimize(preview ? { state: JSON.stringify(state.toJSON()), preview } : null)
+    onCancel(preview ? { state: JSON.stringify(state.toJSON()), preview } : null)
+  }
+
+  const send = () => {
+    if (!empty && !sending)
+      onSend({ text: commands.exportToMarkdown(), html: commands.exportToHTML() })
   }
 
   const format = [
     { label: 'Bold', icon: Bold, active: activeStates.bold, run: commands.toggleBold },
     { label: 'Italic', icon: Italic, active: activeStates.italic, run: commands.toggleItalic },
-    { label: 'Underline', icon: Underline, active: activeStates.underline, run: commands.toggleUnderline },
-    { label: 'Bullet list', icon: List, active: activeStates.unorderedList, run: commands.toggleUnorderedList },
-    { label: 'Numbered list', icon: ListOrdered, active: activeStates.orderedList, run: commands.toggleOrderedList },
+    {
+      label: 'Underline',
+      icon: Underline,
+      active: activeStates.underline,
+      run: commands.toggleUnderline,
+    },
+    {
+      label: 'Strikethrough',
+      icon: Strikethrough,
+      active: activeStates.strikethrough,
+      run: commands.toggleStrikethrough,
+    },
+    {
+      label: 'Bullet list',
+      icon: List,
+      active: activeStates.unorderedList,
+      run: commands.toggleUnorderedList,
+    },
+    {
+      label: 'Numbered list',
+      icon: ListOrdered,
+      active: activeStates.orderedList,
+      run: commands.toggleOrderedList,
+    },
   ]
-
-  const send = () => {
-    if (!empty && !sending) onSend({ text: commands.exportToMarkdown(), html: commands.exportToHTML() })
-  }
 
   return (
     <div
+      className="grid gap-3"
       onKeyDown={(event) => {
         if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) send()
-        if (event.key === 'Escape') minimize()
+        if (event.key === 'Escape') cancel()
       }}
     >
-      <div className="flex items-center gap-0.5 border-b px-1 pb-1.5">
+      {header}
+      {/* Placed by hand: richTextExtension would render it after the footer. */}
+      <RichText
+        placeholder={placeholder}
+        classNames={{
+          container: 'relative',
+          contentEditable:
+            'max-h-80 min-h-32 overflow-y-auto py-1 text-sm leading-relaxed outline-none',
+          placeholder: 'text-muted-foreground pointer-events-none absolute top-1 left-0 text-sm',
+        }}
+      />
+      <div className="flex flex-wrap items-center gap-1">
+        {leading && <div className="mr-2">{leading}</div>}
         {format.map((item) => (
           <Button
             key={item.label}
             type="button"
             variant="ghost"
             size="icon"
-            className={cn('size-7', item.active && 'bg-accent')}
+            className={cn(
+              'text-muted-foreground size-8',
+              item.active && 'bg-accent text-foreground'
+            )}
             aria-label={item.label}
             aria-pressed={item.active}
             title={item.label}
@@ -133,46 +177,19 @@ function EditorBody({
             <item.icon />
           </Button>
         ))}
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="ml-auto size-7"
-          aria-label="Minimize, keeping the draft"
-          title="Minimize (Esc)"
-          onClick={minimize}
-        >
-          <ChevronDown />
-        </Button>
-      </div>
-      {/* Placed by hand: richTextExtension would render it after the footer. */}
-      <RichText
-        placeholder={placeholder}
-        classNames={{
-          container: 'relative pt-1.5',
-          contentEditable: 'max-h-60 min-h-24 overflow-y-auto px-2 py-1.5 text-sm outline-none',
-          placeholder: 'text-muted-foreground pointer-events-none absolute top-3 left-2 text-sm',
-        }}
-      />
-      <div className="flex items-center justify-between pt-1">
-        <Button type="button" variant="outline" size="icon" className="size-8" aria-label="Attach file" title="Attach file">
-          <Plus />
-        </Button>
-        <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" size="icon" className="size-8" aria-label="Voice input" title="Voice input">
-            <AudioLines />
+        <div className="ml-auto flex items-center gap-2">
+          <Button type="button" variant="outline" onClick={cancel} title="Esc">
+            {cancelLabel}
           </Button>
           <Button
             type="button"
-            size="icon"
-            className="size-8"
-            aria-label="Send"
             title="Send (Ctrl+Enter)"
             aria-busy={sending}
             disabled={empty || sending}
             onClick={send}
           >
-            <ArrowUp />
+            {sending && <Loader2 className="animate-spin motion-reduce:animate-none" />}
+            Send
           </Button>
         </div>
       </div>
@@ -180,8 +197,8 @@ function EditorBody({
   )
 }
 
-/** The opened reply editor: LexKit's provider around the toolbar, editable area and footer. */
-export default function ReplyEditor(props: EditorBodyProps) {
+/** The rich-text mail editor: LexKit's provider around the optional header, the text and the bottom bar. */
+export default function MailEditor(props: MailEditorProps) {
   return (
     <Provider extensions={extensions} config={{ theme }}>
       <EditorBody {...props} />

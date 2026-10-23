@@ -384,9 +384,9 @@ export default function MailReader({ mailId }: { mailId: string }) {
         )}
 
         <MailBody html={mail.body_html} text={mail.body} />
-      </div>
 
-      <ReplyComposer key={mail.id} mailId={mail.id} />
+        <ReplyComposer key={mail.id} mail={mail} />
+      </div>
 
       {forwarding && <ForwardDialog mail={mail} onClose={() => setForwarding(false)} />}
       <SimpleAlertDialog
