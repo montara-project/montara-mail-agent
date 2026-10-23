@@ -16,13 +16,28 @@
     "react/no-children-prop": "off",
     "jsx-a11y/no-autofocus": "off",
     "jsx-a11y/prefer-tag-over-role": "off",
-    "react/set-state-in-effect": "warn"
+    "react/set-state-in-effect": "warn",
+    "eslint/no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "ignoreRestSiblings": true
+      }
+    ]
   },
   "overrides": [
     {
-      "files": ["apps/app/src/components/ui/**"],
+      "files": ["apps/web-ui/src/components/ui/**", "apps/main-web/components/ui/**"],
       "rules": {
         "jsx-a11y/heading-has-content": "off"
+      }
+    },
+    {
+      "files": ["apps/web-ui/src/components/block/common/markdown.tsx"],
+      "rules": {
+        "jsx-a11y/heading-has-content": "off",
+        "jsx-a11y/anchor-has-content": "off"
       }
     }
   ],
@@ -44,6 +59,9 @@
     "graft/",
     ".claude/",
     ".agents/",
-    ".omc/"
+    ".omc/",
+    "**/.impeccable/",
+    "**/.tanstack/",
+    ".trail/"
   ]
 }

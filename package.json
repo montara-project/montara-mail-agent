@@ -2,7 +2,6 @@
   "name": "montara-mail-agent",
   "version": "0.0.0",
   "private": true,
-  "packageManager": "pnpm@11.10.0",
   "scripts": {
     "dev": "pnpm -r --parallel run dev",
     "dev:main-web": "pnpm --filter @montara-mail/main-web dev",
@@ -13,10 +12,26 @@
     "deploy:main-web": "pnpm --filter @montara-mail/main-web run deploy",
     "release": "release-it",
     "release:prepare": "release-it --ci --no-git.tag --no-git.push --no-github.release",
-    "release:publish": "release-it --ci --no-increment --no-git.commit --no-git.push --github.release"
+    "release:publish": "release-it --ci --no-increment --no-git.commit --no-git.push --github.release",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "prepare": "husky || true"
   },
   "devDependencies": {
+    "@commitlint/cli": "21.2.3",
+    "@commitlint/config-conventional": "21.2.3",
     "@release-it/conventional-changelog": "12.0.2",
+    "eslint-plugin-perfectionist": "^5.13.0",
+    "husky": "9.1.7",
+    "lint-staged": "17.6.0",
+    "oxfmt": "0.72.0",
+    "oxlint": "1.87.0",
     "release-it": "21.1.1"
-  }
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@11.10.0"
 }
