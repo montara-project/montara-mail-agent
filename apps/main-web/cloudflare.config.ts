@@ -1,20 +1,20 @@
-import { bindings, defineConfig, defineWorker } from "cf/config";
+import { bindings, defineConfig, defineWorker } from 'cf/config'
 
 export default defineConfig({
   worker: defineWorker({
-    name: "main-web",
-    entrypoint: "vinext/server/fetch-handler",
-    compatibilityDate: "2026-10-22",
-    compatibilityFlags: ["nodejs_compat"],
+    name: 'montaramail-main-web',
+    entrypoint: 'vinext/server/fetch-handler',
+    compatibilityDate: '2026-10-22',
+    compatibilityFlags: ['nodejs_compat'],
     assets: {
-      htmlHandling: "none",
-      notFoundHandling: "none",
-      runWorkerFirst: ["/*", "!/_next/static/*", "!/*/_next/static/*"],
+      htmlHandling: 'none',
+      notFoundHandling: 'none',
+      runWorkerFirst: ['/*', '!/_next/static/*', '!/*/_next/static/*'],
     },
     env: {
       ASSETS: bindings.assets(),
       IMAGES: bindings.images(),
     },
-    domains: ["montaramail.web.id"],
+    domains: ['montaramail.web.id'],
   }),
-});
+})

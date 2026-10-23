@@ -5,8 +5,6 @@ import React from 'react'
 
 import type { Models } from '@/lib/api/models'
 
-import type { Reply } from './mail-editor'
-
 import { mailInitials } from '@/components/layout/mail/mail-data'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -21,6 +19,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { axiosErrorMessage, toastProgress } from '@/lib/api/axios-error'
 import { allEmails, MAX_RECIPIENTS } from '@/lib/api/dtos/mail/recipients'
 import { queries } from '@/lib/api/queries'
+
+import type { Reply } from './mail-editor'
 
 import RecipientInput from './recipient-input'
 

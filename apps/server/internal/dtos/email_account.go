@@ -20,7 +20,7 @@ type EmailAccountBody struct {
 }
 
 func (dto EmailAccountBody) Validate(v *validator.MapValidator) {
-	v.Field("provider").Required().Regex(`^(gmail|outlook|yahoo|icloud|imap)$`)
+	v.Field("provider").Required().Regex(`^(gmail|outlook|yahoo|icloud|lark|zoho|imap)$`)
 	v.Field("label").String().MaxLen(maxNameLen)
 	v.Field("email").Required().String().MaxLen(320).Regex(`^[^@\s]+@[^@\s]+$`)
 	v.Field("username").String().MaxLen(320)

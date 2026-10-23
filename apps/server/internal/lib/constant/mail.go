@@ -42,6 +42,8 @@ const (
 	ProviderOutlook = "outlook"
 	ProviderYahoo   = "yahoo"
 	ProviderICloud  = "icloud"
+	ProviderLark    = "lark"
+	ProviderZoho    = "zoho"
 	ProviderIMAP    = "imap"
 )
 
@@ -52,4 +54,6 @@ var ProviderServers = map[string]struct{ IMAP, SMTP MailServer }{
 	ProviderOutlook: {IMAP: MailServer{"outlook.office365.com", 993}, SMTP: MailServer{"smtp.office365.com", 587}},
 	ProviderYahoo:   {IMAP: MailServer{"imap.mail.yahoo.com", 993}, SMTP: MailServer{"smtp.mail.yahoo.com", 465}},
 	ProviderICloud:  {IMAP: MailServer{"imap.mail.me.com", 993}, SMTP: MailServer{"smtp.mail.me.com", 587}},
+	ProviderLark:    {IMAP: MailServer{"imap.larksuite.com", 993}, SMTP: MailServer{"smtp.larksuite.com", 465}},
+	ProviderZoho:    {IMAP: MailServer{"imap.zoho.com", 993}, SMTP: MailServer{"smtp.zoho.com", 465}},
 }

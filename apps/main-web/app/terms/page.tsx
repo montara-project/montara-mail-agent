@@ -29,8 +29,8 @@ export default function TermsPage() {
       <h2>Availability and liability</h2>
       <p>
         The service is provided as is. We work to keep it reliable but do not guarantee it will be
-        uninterrupted or error free, and to the extent the law allows we are not liable for
-        indirect losses.
+        uninterrupted or error free, and to the extent the law allows we are not liable for indirect
+        losses.
       </p>
 
       <h2>Changes</h2>

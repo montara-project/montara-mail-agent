@@ -1,6 +1,6 @@
 import type { ISO8601DateString } from '@/types/time'
 
-export type EmailProvider = 'gmail' | 'outlook' | 'yahoo' | 'icloud' | 'imap'
+export type EmailProvider = 'gmail' | 'outlook' | 'yahoo' | 'icloud' | 'lark' | 'zoho' | 'imap'
 
 /** A mailbox connected over IMAP; the password never leaves the server. */
 export interface EmailAccount {

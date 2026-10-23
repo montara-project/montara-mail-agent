@@ -1,5 +1,6 @@
-import { IconArrowRight } from '@tabler/icons-react'
 import type { Metadata } from 'next'
+
+import { IconArrowRight } from '@tabler/icons-react'
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
@@ -22,6 +23,9 @@ export const metadata: Metadata = {
   manifest: '/favicon/site.webmanifest',
 }
 
+// Read once per server start, not per render (react/purity).
+const YEAR = new Date().getFullYear()
+
 const nav = [
   { href: '/#providers', label: 'Providers' },
   { href: '/#features', label: 'Features' },
@@ -43,9 +47,18 @@ const footerLinks = [
 
 function Logo() {
   return (
-    <Link href="/" className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight">
+    <Link
+      href="/"
+      className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight"
+    >
       {/* 192px export of public/static/images/montara-mail-logo.png (444KB); its white tile is rounded like an app icon. */}
-      <img src="/favicon/android-chrome-192x192.png" alt="" width={36} height={36} className="size-9 rounded-lg" />
+      <img
+        src="/favicon/android-chrome-192x192.png"
+        alt=""
+        width={36}
+        height={36}
+        className="size-9 rounded-lg"
+      />
       Montara Mail
     </Link>
   )
@@ -63,7 +76,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 <Logo />
                 <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
                   {nav.map((item) => (
-                    <Link key={item.href} href={item.href} className="transition-colors hover:text-foreground">
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="transition-colors hover:text-foreground"
+                    >
                       {item.label}
                     </Link>
                   ))}
@@ -93,7 +110,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                     <ul className="space-y-2 text-muted-foreground">
                       {col.links.map((item) => (
                         <li key={item.href}>
-                          <Link href={item.href} className="transition-colors hover:text-foreground">
+                          <Link
+                            href={item.href}
+                            className="transition-colors hover:text-foreground"
+                          >
                             {item.label}
                           </Link>
                         </li>
@@ -103,7 +123,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 ))}
               </div>
               <div className="mx-auto max-w-6xl border-t px-6 py-6 text-sm text-muted-foreground">
-                © {new Date().getFullYear()} Montara Mail
+                © {YEAR} Montara Mail
               </div>
             </footer>
           </div>

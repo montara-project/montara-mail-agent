@@ -19,11 +19,31 @@ import { cn } from '@/lib/utils'
 
 // Brand tints only; no third-party logos are bundled.
 const providers = [
-  { name: 'Gmail', icon: IconBrandGmail, color: '#EA4335', text: 'Personal Gmail and Google Workspace accounts.' },
-  { name: 'Outlook', icon: IconMail, color: '#0F78D4', text: 'Outlook.com and Microsoft 365 mailboxes.' },
-  { name: 'Yahoo', icon: IconBrandYahoo, color: '#7B3FE4', text: 'Yahoo Mail accounts, alongside the rest.' },
+  {
+    name: 'Gmail',
+    icon: IconBrandGmail,
+    color: '#EA4335',
+    text: 'Personal Gmail and Google Workspace accounts.',
+  },
+  {
+    name: 'Outlook',
+    icon: IconMail,
+    color: '#0F78D4',
+    text: 'Outlook.com and Microsoft 365 mailboxes.',
+  },
+  {
+    name: 'Yahoo',
+    icon: IconBrandYahoo,
+    color: '#7B3FE4',
+    text: 'Yahoo Mail accounts, alongside the rest.',
+  },
   { name: 'Lark', icon: IconFeather, color: '#3370FF', text: 'Lark Mail for your team workspace.' },
-  { name: 'Other IMAP', icon: IconServer, color: 'currentColor', text: 'Any provider that supports IMAP and SMTP.' },
+  {
+    name: 'Other IMAP',
+    icon: IconServer,
+    color: 'currentColor',
+    text: 'Any provider that supports IMAP and SMTP.',
+  },
 ]
 
 const labelStyles = {
@@ -36,10 +56,34 @@ const labelStyles = {
 type Label = keyof typeof labelStyles
 
 const messages: { from: string; via: string; subject: string; label: Label; time: string }[] = [
-  { from: 'Sarah Chen', via: 'Gmail', subject: 'Q4 partnership proposal', label: 'Needs reply', time: '9:42' },
-  { from: 'Finance Team', via: 'Outlook', subject: 'Invoice #2048 is due Friday', label: 'Invoice', time: '9:15' },
-  { from: 'Daniel Park', via: 'Lark', subject: 'Sync on launch timeline?', label: 'Meeting', time: '8:57' },
-  { from: 'Product Weekly', via: 'Yahoo', subject: 'This week in product design', label: 'Newsletter', time: '7:30' },
+  {
+    from: 'Sarah Chen',
+    via: 'Gmail',
+    subject: 'Q4 partnership proposal',
+    label: 'Needs reply',
+    time: '9:42',
+  },
+  {
+    from: 'Finance Team',
+    via: 'Outlook',
+    subject: 'Invoice #2048 is due Friday',
+    label: 'Invoice',
+    time: '9:15',
+  },
+  {
+    from: 'Daniel Park',
+    via: 'Lark',
+    subject: 'Sync on launch timeline?',
+    label: 'Meeting',
+    time: '8:57',
+  },
+  {
+    from: 'Product Weekly',
+    via: 'Yahoo',
+    subject: 'This week in product design',
+    label: 'Newsletter',
+    time: '7:30',
+  },
 ]
 
 const steps = [
@@ -88,12 +132,24 @@ const faqs = [
   },
 ]
 
-function SectionHeading({ eyebrow, title, text }: { eyebrow: string; title: string; text: string }) {
+function SectionHeading({
+  eyebrow,
+  title,
+  text,
+}: {
+  eyebrow: string
+  title: string
+  text: string
+}) {
   return (
     <div className="grid gap-6 md:grid-cols-12 md:items-end md:gap-10">
       <div className="md:col-span-7">
-        <p className="font-mono text-xs font-medium tracking-wider text-primary uppercase dark:text-info">{eyebrow}</p>
-        <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{title}</h2>
+        <p className="font-mono text-xs font-medium tracking-wider text-primary uppercase dark:text-info">
+          {eyebrow}
+        </p>
+        <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+          {title}
+        </h2>
       </div>
       <p className="text-pretty text-muted-foreground md:col-span-5 md:pb-1.5">{text}</p>
     </div>
@@ -106,7 +162,12 @@ function Tile({ className, children }: { className?: string; children: React.Rea
 
 function LabelChip({ label }: { label: Label }) {
   return (
-    <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap', labelStyles[label])}>
+    <span
+      className={cn(
+        'rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap',
+        labelStyles[label]
+      )}
+    >
       {label}
     </span>
   )
@@ -138,7 +199,10 @@ function InboxPreview() {
 
         <ul className="divide-y">
           {messages.map((m, i) => (
-            <li key={m.subject} className={cn('flex flex-col gap-1 px-4 py-3', i === 0 && 'bg-info-bg/50')}>
+            <li
+              key={m.subject}
+              className={cn('flex flex-col gap-1 px-4 py-3', i === 0 && 'bg-info-bg/50')}
+            >
               <div className="flex items-center gap-2 text-sm">
                 <span className="font-medium">{m.from}</span>
                 <span className="text-xs text-muted-foreground">via {m.via}</span>
@@ -162,14 +226,15 @@ function InboxPreview() {
           <div className="space-y-1.5">
             <p className="text-xs font-medium text-muted-foreground">Summary</p>
             <p className="text-sm">
-              Sarah proposes a joint campaign for Q4 and asks for a call this week to agree on budget.
+              Sarah proposes a joint campaign for Q4 and asks for a call this week to agree on
+              budget.
             </p>
           </div>
           <div className="space-y-1.5">
             <p className="text-xs font-medium text-muted-foreground">Draft reply</p>
             <p className="rounded-lg border bg-muted/60 p-3 text-sm">
-              Hi Sarah, thanks for sending this over. Thursday at 2pm works for me. I&apos;ll bring the budget
-              numbers.
+              Hi Sarah, thanks for sending this over. Thursday at 2pm works for me. I&apos;ll bring
+              the budget numbers.
             </p>
           </div>
           <div className="flex gap-2">
@@ -189,7 +254,10 @@ export default function Home() {
     <>
       {/* Hero */}
       <section className="relative isolate">
-        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
+        <div
+          className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
+          aria-hidden="true"
+        >
           <div className="absolute -top-[30%] left-1/2 h-[80%] w-[80%] -translate-x-1/2 rounded-[50%] bg-[radial-gradient(ellipse_50%_50%_at_50%_50%,var(--halo-core)_0%,var(--halo-soft)_50%,transparent_85%)] opacity-70 blur-[100px]" />
           <div className="absolute top-[4%] left-[58%] h-[40%] w-[30%] rounded-[50%] bg-[radial-gradient(ellipse_at_center,var(--halo-warm)_0%,transparent_70%)] opacity-50 blur-[90px]" />
         </div>
@@ -203,8 +271,9 @@ export default function Home() {
             Email management, handled by an AI agent.
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-pretty text-muted-foreground">
-            Montara Mail brings Gmail, Outlook, Yahoo, Lark, and any IMAP account into one inbox. Its AI agent
-            sorts every message, summarizes long threads, and drafts replies for you to approve.
+            Montara Mail brings Gmail, Outlook, Yahoo, Lark, and any IMAP account into one inbox.
+            Its AI agent sorts every message, summarizes long threads, and drafts replies for you to
+            approve.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button size="lg" radius="md" asChild>
@@ -273,7 +342,8 @@ export default function Home() {
               <IconTag className="size-5 text-primary dark:text-info" />
               <h3 className="mt-4 font-display text-xl font-semibold">Smart triage</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Every incoming email is labeled by what it needs from you, so the important ones rise to the top.
+                Every incoming email is labeled by what it needs from you, so the important ones
+                rise to the top.
               </p>
               <div className="mt-6 flex flex-wrap gap-2">
                 {(Object.keys(labelStyles) as Label[]).map((l) => (
@@ -286,7 +356,8 @@ export default function Home() {
               <IconWriting className="size-5 text-primary dark:text-info" />
               <h3 className="mt-4 font-display text-xl font-semibold">Replies drafted for you</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                The agent writes context-aware replies in your tone. Review, tweak, and send in seconds.
+                The agent writes context-aware replies in your tone. Review, tweak, and send in
+                seconds.
               </p>
               <p className="mt-6 rounded-lg border bg-muted/60 p-3 font-mono text-xs leading-relaxed text-muted-foreground">
                 Hi Daniel, Wednesday morning works. I&apos;ll send a calendar invite for 10:00.
@@ -297,17 +368,20 @@ export default function Home() {
               <IconSparkles className="size-5 text-primary dark:text-info" />
               <h3 className="mt-4 font-display text-xl font-semibold">Thread summaries</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Catch up on a 30-message thread in three lines: what was decided, what is open, and who is waiting.
+                Catch up on a 30-message thread in three lines: what was decided, what is open, and
+                who is waiting.
               </p>
               <ul className="mt-6 space-y-2 text-sm">
-                {['Budget approved at the revised amount', 'Design review still open', 'Finance is waiting on you'].map(
-                  (s) => (
-                    <li key={s} className="flex items-center gap-2">
-                      <span className="size-1.5 rounded-full bg-primary dark:bg-info" />
-                      {s}
-                    </li>
-                  ),
-                )}
+                {[
+                  'Budget approved at the revised amount',
+                  'Design review still open',
+                  'Finance is waiting on you',
+                ].map((s) => (
+                  <li key={s} className="flex items-center gap-2">
+                    <span className="size-1.5 rounded-full bg-primary dark:bg-info" />
+                    {s}
+                  </li>
+                ))}
               </ul>
             </Tile>
 
@@ -315,11 +389,15 @@ export default function Home() {
               <IconInbox className="size-5 text-primary dark:text-info" />
               <h3 className="mt-4 font-display text-xl font-semibold">One unified inbox</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Read and reply from every connected account in one place, without switching apps or tabs.
+                Read and reply from every connected account in one place, without switching apps or
+                tabs.
               </p>
               <div className="mt-6 flex flex-wrap gap-2">
                 {providers.map((p) => (
-                  <span key={p.name} className="flex items-center gap-1.5 rounded-md border bg-background px-2 py-1 text-xs">
+                  <span
+                    key={p.name}
+                    className="flex items-center gap-1.5 rounded-md border bg-background px-2 py-1 text-xs"
+                  >
                     <p.icon className="size-3.5" style={{ color: p.color }} />
                     {p.name}
                   </span>
@@ -341,7 +419,9 @@ export default function Home() {
           {steps.map((s, i) => (
             <li key={s.title}>
               <Tile className="h-full">
-                <span className="font-mono text-sm text-muted-foreground">{String(i + 1).padStart(2, '0')}</span>
+                <span className="font-mono text-sm text-muted-foreground">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
                 <h3 className="mt-4 font-display text-xl font-semibold">{s.title}</h3>
                 <p className="mt-2 text-sm text-muted-foreground">{s.text}</p>
               </Tile>
@@ -354,7 +434,9 @@ export default function Home() {
       <section id="faq" className="border-t">
         <div className="mx-auto grid max-w-6xl gap-10 px-6 py-24 md:grid-cols-12 md:py-28">
           <div className="md:col-span-4">
-            <p className="font-mono text-xs font-medium tracking-wider text-primary uppercase dark:text-info">FAQ</p>
+            <p className="font-mono text-xs font-medium tracking-wider text-primary uppercase dark:text-info">
+              FAQ
+            </p>
             <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
               Frequently asked questions.
             </h2>
@@ -384,7 +466,8 @@ export default function Home() {
             Spend less time in your inbox.
           </h2>
           <p className="mt-4 max-w-xl text-white/70">
-            Connect your accounts and let the AI agent handle the sorting, summarizing, and first drafts.
+            Connect your accounts and let the AI agent handle the sorting, summarizing, and first
+            drafts.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button size="lg" radius="md" asChild>

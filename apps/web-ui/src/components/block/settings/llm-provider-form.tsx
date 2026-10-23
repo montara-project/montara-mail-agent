@@ -1,5 +1,5 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
 import { useStore } from '@tanstack/react-form'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { RefreshCw, Trash2 } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
@@ -66,7 +66,9 @@ export function ModelSuggestions({
     <>
       <datalist id={listId}>
         {data?.map((id) => (
-          <option key={id} value={id} />
+          <option key={id} value={id}>
+            {id}
+          </option>
         ))}
       </datalist>
       <div className="-mt-2 flex items-center gap-2" aria-live="polite">

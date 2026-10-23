@@ -196,6 +196,8 @@ function EditorBody({
   ]
 
   return (
+    // Catches Cmd/Ctrl+Enter and Escape as they bubble up from the editor and fields.
+    // oxlint-disable-next-line jsx-a11y/no-static-element-interactions
     <div
       className={cn('flex flex-col gap-3', fill && 'h-full')}
       onKeyDown={(event) => {
