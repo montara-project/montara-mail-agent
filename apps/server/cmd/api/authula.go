@@ -303,6 +303,15 @@ func newAuth(cfg config.Config, mirror func(*authulamodels.User) error, logger *
 	// Assigned below; the hooks that use it only run once requests arrive.
 	var auth *authula.Auth
 
+	// The web app may run on another site (the hosted one in front of a
+	// self-hosted API), and Lax keeps the TOTP pending cookie from
+	// /totp/verify. None needs Secure, so development stays Lax.
+	// CrossOrigin still refuses origins outside CORS_ALLOWED_ORIGINS.
+	totpSameSite := "lax"
+	if cfg.App.Env != config.EnvDevelopment {
+		totpSameSite = "none"
+	}
+
 	userHooks := &authulamodels.ServiceHooks[authulamodels.User]{}
 	userHooks.RegisterAfterCreate(mirror)
 	userHooks.RegisterAfterUpdate(mirror)
@@ -410,6 +419,7 @@ func newAuth(cfg config.Config, mirror func(*authulamodels.User) error, logger *
 				Enabled:                   true,
 				TrustedDevicesAutoCleanup: true,
 				SecureCookie:              cfg.App.Env != config.EnvDevelopment,
+				SameSite:                  totpSameSite,
 			}),
 			magiclinkplugin.New(magiclinkplugintypes.MagicLinkPluginConfig{
 				Enabled:   true,

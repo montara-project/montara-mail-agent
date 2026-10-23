@@ -118,6 +118,15 @@ answers `{"totp_redirect": true}` and a short-lived pending cookie instead of
 tokens; `POST /api/v1/auth/totp/verify` (or `/verify-backup-code`) with the
 code then answers like a sign-in.
 
+### Self-hosting behind the hosted web app
+
+Each browser picks its server under Settings > Self hosted (or "Change" on the
+sign-in page); the default is `https://app.montaramail.web.id`. To use the
+hosted web app with your own server, serve the API over https and add
+`https://app.montaramail.web.id` to `CORS_ALLOWED_ORIGINS`. Outside
+development the TOTP pending cookie is `SameSite=None`, so the two-factor step
+works across sites too.
+
 ## Authentication
 
 Authula is mounted at `/api/v1/auth`. Requests take a JSON body.
