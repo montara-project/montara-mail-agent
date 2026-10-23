@@ -35,8 +35,12 @@ func (dto MailMoveBody) Validate(v *validator.MapValidator) {
 	v.Field("folder").Required().Regex(`^(inbox|archive|spam|trash)$`)
 }
 
-// maxForwardRecipients bounds one forward, so it can't become a mass mailer.
-const maxForwardRecipients = 20
+// MaxRecipients bounds one outgoing mail (all of To and Cc together), so an
+// account can't become a mass mailer.
+const MaxRecipients = 20
+
+// emailPattern is a plain address, with no display name or list separators.
+const emailPattern = `^[^@\s<>,;]+@[^@\s<>,;]+\.[^@\s<>,;]+$`
 
 // MailForwardBody forwards a mail to up to 20 addresses with an optional note.
 type MailForwardBody struct {
@@ -45,7 +49,7 @@ type MailForwardBody struct {
 }
 
 func (dto MailForwardBody) Validate(v *validator.MapValidator) {
-	v.Field("to").Required().ArrayOf(maxForwardRecipients, `^[^@\s<>,;]+@[^@\s<>,;]+\.[^@\s<>,;]+$`)
+	v.Field("to").Required().ArrayOf(MaxRecipients, emailPattern)
 	v.Field("note").String().MaxLen(10000)
 }
 
@@ -57,6 +61,24 @@ type MailReplyBody struct {
 }
 
 func (dto MailReplyBody) Validate(v *validator.MapValidator) {
+	v.Field("text").Required().String().MaxLen(100000)
+	v.Field("html").String().MaxLen(500000)
+}
+
+// MailSendBody is a new mail from an account: its recipients, subject, and
+// body as text (Markdown, as typed) and as the HTML the editor made.
+type MailSendBody struct {
+	To      []string `json:"to"`
+	Cc      []string `json:"cc"`
+	Subject string   `json:"subject"`
+	Text    string   `json:"text"`
+	HTML    string   `json:"html"`
+}
+
+func (dto MailSendBody) Validate(v *validator.MapValidator) {
+	v.Field("to").Required().ArrayOf(MaxRecipients, emailPattern)
+	v.Field("cc").ArrayOf(MaxRecipients, emailPattern)
+	v.Field("subject").String().MaxLen(998)
 	v.Field("text").Required().String().MaxLen(100000)
 	v.Field("html").String().MaxLen(500000)
 }

@@ -10,6 +10,7 @@ import (
 	"io"
 	"net"
 	"net/smtp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -59,6 +60,23 @@ func (s *Syncer) Reply(ctx context.Context, account models.EmailAccount, m model
 		return err
 	}
 	return s.send(ctx, account, password, []string{m.FromEmail}, msg)
+}
+
+// Compose sends a new mail from the account to `to` and `cc`, as text and
+// as the HTML the editor made.
+func (s *Syncer) Compose(ctx context.Context, account models.EmailAccount, to, cc []string, subject, text, htmlBody string) error {
+	ctx, cancel := context.WithTimeout(ctx, actionTimeout)
+	defer cancel()
+
+	password, err := s.app.Secrets.Open(account.Password)
+	if err != nil {
+		return errors.New("the saved password can't be read, connect the account again")
+	}
+	msg, err := composeMessage(account.Email, to, cc, subject, text, htmlBody, time.Now())
+	if err != nil {
+		return err
+	}
+	return s.send(ctx, account, password, append(slices.Clone(to), cc...), msg)
 }
 
 // send delivers msg over the account's SMTP server. Ports 587 and 25 upgrade
@@ -194,6 +212,23 @@ func forwardMessage(from string, m models.Mail, recipients []string, note string
 	text.WriteString("\n" + m.Body + "\n")
 	htmlBody.WriteString("</div><br>" + originalHTML(m))
 	return writeAlternative(h, text.String(), htmlBody.String())
+}
+
+// composeMessage builds a new mail; Cc is a header, and its addresses are
+// added to the envelope by the caller.
+func composeMessage(from string, to, cc []string, subject, text, htmlBody string, now time.Time) ([]byte, error) {
+	h, err := newHeader(from, to, subject, now)
+	if err != nil {
+		return nil, err
+	}
+	if len(cc) > 0 {
+		addrs := make([]*mail.Address, len(cc))
+		for i, c := range cc {
+			addrs[i] = &mail.Address{Address: c}
+		}
+		h.SetAddressList("Cc", addrs)
+	}
+	return writeAlternative(h, text, htmlBody)
 }
 
 // replyMessage builds a reply to m's sender: the reply on top, the original

@@ -11,6 +11,7 @@ const resources = (): EmailAccountResources => ({
   create: (organizationId, body) => api.post(organizationPath(organizationId), body),
   delete: (id) => api.delete(`${path}/${id}`),
   sync: (id) => api.post(`${path}/${id}/sync`),
+  send: (id, body) => api.post(`${path}/${id}/send`, body),
   mails: (id, params) => api.get(`${path}/${id}/mails`, { params }),
 })
 

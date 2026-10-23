@@ -59,9 +59,17 @@ export type EditorBodyProps = {
   onSend: (reply: Reply) => void
   /** True while a reply is on its way; sending is off meanwhile. */
   sending?: boolean
+  /** The empty editor's hint; the reply box's by default. */
+  placeholder?: string
 }
 
-function EditorBody({ initial, onMinimize, onSend, sending }: EditorBodyProps) {
+function EditorBody({
+  initial,
+  onMinimize,
+  onSend,
+  sending,
+  placeholder = 'Write your reply...',
+}: EditorBodyProps) {
   const { commands, activeStates, lexical: editor } = useEditor()
   const [empty, setEmpty] = React.useState(!(initial.state || initial.text))
 
@@ -130,7 +138,7 @@ function EditorBody({ initial, onMinimize, onSend, sending }: EditorBodyProps) {
           variant="ghost"
           size="icon"
           className="ml-auto size-7"
-          aria-label="Minimize reply"
+          aria-label="Minimize, keeping the draft"
           title="Minimize (Esc)"
           onClick={minimize}
         >
@@ -139,7 +147,7 @@ function EditorBody({ initial, onMinimize, onSend, sending }: EditorBodyProps) {
       </div>
       {/* Placed by hand: richTextExtension would render it after the footer. */}
       <RichText
-        placeholder="Write your reply..."
+        placeholder={placeholder}
         classNames={{
           container: 'relative pt-1.5',
           contentEditable: 'max-h-60 min-h-24 overflow-y-auto px-2 py-1.5 text-sm outline-none',
@@ -158,7 +166,7 @@ function EditorBody({ initial, onMinimize, onSend, sending }: EditorBodyProps) {
             type="button"
             size="icon"
             className="size-8"
-            aria-label="Send reply"
+            aria-label="Send"
             title="Send (Ctrl+Enter)"
             aria-busy={sending}
             disabled={empty || sending}

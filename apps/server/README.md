@@ -77,6 +77,7 @@ LLM provider. Someone else's organization, account or mail answers 404.
 | `GET, PUT, DELETE /api/v1/organizations/:id/llm-provider` | The model for AI features: `openai` or `anthropic` wire format, any compatible base URL.       |
 | `GET /api/v1/email-accounts/:id/mails`                  | One folder (`inbox`, `sent`, `drafts`, `spam`, `trash`), filtered by `importance` and `search`. |
 | `POST /api/v1/email-accounts/:id/sync`                  | Sync now. `DELETE /api/v1/email-accounts/:id` disconnects and drops the synced mail.           |
+| `POST /api/v1/email-accounts/:id/send`                  | Send a new mail through the account's SMTP server: To and Cc (20 addresses in all), subject, text and HTML. |
 | `GET, PATCH /api/v1/mails/:id`                          | Read a mail; mark it read or starred, or set its importance (the AI never overrides the user). |
 | `POST /api/v1/mails/:id/summary`, `/reply-suggestions`  | AI summary (kept after the first call) and up to three short replies.                          |
 | `POST /api/v1/mails/:id/move`, `DELETE /api/v1/mails/:id` | Move to `inbox`, `archive`, `spam` or `trash` on the mail server too; delete moves to the trash, or deletes for good from it. |

@@ -12,11 +12,12 @@ import {
   SquarePen,
   Trash2,
 } from 'lucide-react'
-import { toast } from 'sonner'
+import React from 'react'
 
 import type { Models } from '@/lib/api/models'
 
 import { ProviderIcon } from '@/components/block/account/connector-list'
+import ComposeSheet from '@/components/block/mail/compose-sheet'
 import OrganizationSwitcher from '@/components/layout/organization/organization-switcher'
 import { Button } from '@/components/ui/button'
 import {
@@ -147,6 +148,8 @@ export default function MailPanel() {
   const folder = useMailFolder()
   const account = useMailAccount()
   const { label } = useSearch({ strict: false })
+  const { data: accounts } = useMailAccounts()
+  const [composing, setComposing] = React.useState(false)
   const badges: Partial<Record<Models.MailFolder, number>> = {
     inbox: account?.unread,
     spam: account?.spam,
@@ -157,14 +160,16 @@ export default function MailPanel() {
       <SidebarHeader className="gap-3.5 p-4 pb-2">
         <OrganizationSwitcher />
         <AccountSwitcher />
-        {/* ponytail: no send endpoint yet; open a compose view once it exists. */}
-        <Button
-          className="w-full"
-          onClick={() => toast.info('Composing mail is not available yet')}
-        >
+        <Button className="w-full" onClick={() => setComposing(true)} disabled={!account}>
           <SquarePen />
           Compose
         </Button>
+        <ComposeSheet
+          open={composing}
+          onOpenChange={setComposing}
+          accounts={accounts}
+          defaultAccountId={account?.id}
+        />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>

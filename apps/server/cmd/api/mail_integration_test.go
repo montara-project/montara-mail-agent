@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -207,6 +208,22 @@ func testMailFlow(t *testing.T, call callFunc, application *app.Application, tok
 		t.Fatalf("reply with the server unreachable: %d %v, want 502", status, out)
 	}
 
+	// A new mail checks its recipients before reaching for the server.
+	send := accountPath + "/send"
+	if status, _ := call(http.MethodPost, send, token, map[string]any{"subject": "Hi", "text": "Hello"}); status != http.StatusUnprocessableEntity {
+		t.Fatalf("send without recipients: %d, want 422", status)
+	}
+	many := make([]string, 21)
+	for i := range many {
+		many[i] = fmt.Sprintf("r%d@example.com", i)
+	}
+	if status, _ := call(http.MethodPost, send, token, map[string]any{"to": many[:11], "cc": many[11:], "text": "Hello"}); status != http.StatusBadRequest {
+		t.Fatalf("send to 21 addresses: %d, want 400", status)
+	}
+	if status, out := call(http.MethodPost, send, token, map[string]any{"to": []string{"a@example.com"}, "text": "Hello"}); status != http.StatusBadGateway {
+		t.Fatalf("send with the server unreachable: %d %v, want 502", status, out)
+	}
+
 	// Another organization's account and mail look missing.
 	other := seedAccount(t, application, otherOrg, models.Mail{Folder: constant.FolderInbox, Subject: "Private"})
 	otherMails, err := application.Repositories.Mail.List(context.Background(), other.ID, mailListAll())
@@ -216,6 +233,7 @@ func testMailFlow(t *testing.T, call callFunc, application *app.Application, tok
 	for _, req := range []struct{ method, path string }{
 		{http.MethodGet, "/api/v1/email-accounts/" + other.ID.String() + "/mails"},
 		{http.MethodDelete, "/api/v1/email-accounts/" + other.ID.String()},
+		{http.MethodPost, "/api/v1/email-accounts/" + other.ID.String() + "/send"},
 		{http.MethodGet, "/api/v1/mails/" + otherMails[0].ID.String()},
 		{http.MethodPost, "/api/v1/mails/" + otherMails[0].ID.String() + "/summary"},
 		{http.MethodDelete, "/api/v1/mails/" + otherMails[0].ID.String()},

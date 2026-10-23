@@ -32,6 +32,15 @@ export type MailListParams = {
   importance?: Models.MailImportance
 }
 
+/** A new mail: recipients, subject, and the body as Markdown and as HTML. */
+export type MailSendBody = {
+  to: string[]
+  cc?: string[]
+  subject: string
+  text: string
+  html?: string
+}
+
 export type EmailAccountResources = {
   list: (organizationId: string) => Promise<AxiosListResponse<Models.EmailAccount>>
   create: (
@@ -40,6 +49,8 @@ export type EmailAccountResources = {
   ) => Promise<AxiosItemResponse<Models.EmailAccount>>
   delete: (id: string) => Promise<AxiosDeleteResponse>
   sync: (id: string) => Promise<AxiosItemResponse<Models.EmailAccount>>
+  /** Sends a new mail from the account. */
+  send: (id: string, body: MailSendBody) => Promise<AxiosDeleteResponse>
   /** The metadata adds the folder's unread count. */
   mails: (
     id: string,

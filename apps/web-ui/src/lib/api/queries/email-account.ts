@@ -2,7 +2,7 @@ import { mutationOptions, queryOptions } from '@tanstack/react-query'
 
 import { getQueryClient } from '@/lib/providers/react-query'
 
-import type { EmailAccountBody } from '../services/types/email-account'
+import type { EmailAccountBody, MailSendBody } from '../services/types/email-account'
 
 import { services } from '../services'
 import { MAIL_QUERY_KEY } from './mail'
@@ -58,4 +58,13 @@ const del = () =>
     onSuccess: invalidateMailboxes,
   })
 
-export const emailAccountQueries = { list, create, sync, delete: del } as const
+/** Sends a new mail from an account. The copy in Sent arrives with the next sync. */
+const send = () =>
+  mutationOptions({
+    mutationFn: async ({ accountId, body }: { accountId: string; body: MailSendBody }) => {
+      const res = await services.emailAccounts.send(accountId, body)
+      return res.data
+    },
+  })
+
+export const emailAccountQueries = { list, create, sync, send, delete: del } as const

@@ -221,3 +221,44 @@ func TestReply(t *testing.T) {
 		t.Fatal("a mail without a sender was replied to")
 	}
 }
+
+func TestCompose(t *testing.T) {
+	smtpServer, port, pool := serveFakeSMTP(t)
+
+	box, _ := lib.NewSecretBox("0123456789abcdef0123456789abcdef")
+	application := &app.Application{Secrets: box}
+	application.Config.App.AllowPrivateHosts = true
+	syncer := New(application)
+	syncer.RootCAs = pool
+
+	account := models.EmailAccount{
+		Email:    "me@example.com",
+		Username: "me@example.com",
+		Password: box.Seal("app-password"),
+		SMTPHost: "127.0.0.1",
+		SMTPPort: port,
+	}
+	err := syncer.Compose(context.Background(), account,
+		[]string{"a@example.com"}, []string{"b@example.com", "c@example.com"},
+		"Kickoff", "Let's *start*.", "<p>Let's <i>start</i>.</p>")
+	if err != nil {
+		t.Fatalf("compose: %v", err)
+	}
+	<-smtpServer.done
+
+	// Cc addresses get the mail too: they are recipients on the envelope.
+	if len(smtpServer.to) != 3 {
+		t.Fatalf("envelope recipients: %q", smtpServer.to)
+	}
+	for _, want := range []string{
+		"Subject: Kickoff",
+		"To: <a@example.com>",
+		"Cc: <b@example.com>, <c@example.com>",
+		"Let's *start*.",
+		"<p>Let's <i>start</i>.</p>",
+	} {
+		if !strings.Contains(smtpServer.data, want) {
+			t.Errorf("mail lacks %q:\n%s", want, smtpServer.data)
+		}
+	}
+}

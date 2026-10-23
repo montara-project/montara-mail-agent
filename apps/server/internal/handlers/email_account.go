@@ -3,6 +3,7 @@ package handlers
 import (
 	"cmp"
 	"context"
+	"html"
 	"strings"
 
 	"github.com/gofiber/fiber/v3"
@@ -195,4 +196,29 @@ func (h *emailAccountHandler) Mails(c fiber.Ctx) error {
 	meta := dtos.ListMeta(int(total), q.Offset, q.Limit)
 	meta["unread"] = unread
 	return dtos.List(c, mails, meta)
+}
+
+// Send sends a new mail from the account.
+func (h *emailAccountHandler) Send(c fiber.Ctx) error {
+	account, err := h.account(c)
+	if err != nil {
+		return err
+	}
+	var body dtos.MailSendBody
+	if err := lib.ValidateRequestBody(c, &body); err != nil {
+		return err
+	}
+	if len(body.To)+len(body.Cc) > dtos.MaxRecipients {
+		return apperr.New(apperr.KindBadRequest, "a mail goes to at most %d addresses", dtos.MaxRecipients)
+	}
+
+	// Without HTML from the editor, the text stands in, escaped.
+	htmlBody := body.HTML
+	if htmlBody == "" {
+		htmlBody = `<div style="white-space:pre-wrap">` + html.EscapeString(body.Text) + "</div>"
+	}
+	if err := h.sync.Compose(c.Context(), account, body.To, body.Cc, body.Subject, body.Text, htmlBody); err != nil {
+		return serverError(err)
+	}
+	return dtos.Message(c, fiber.StatusOK, "mail sent")
 }

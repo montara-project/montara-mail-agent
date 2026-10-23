@@ -78,6 +78,7 @@ func routes(r *fiber.App, app *app.Application) {
 	emailAccounts.Get("/:id/mails", h.EmailAccount.Mails)
 	emailAccounts.Delete("/:id", idempotent, h.EmailAccount.Delete)
 	emailAccounts.Post("/:id/sync", slow, h.EmailAccount.Sync)
+	emailAccounts.Post("/:id/send", slow, idempotent, h.EmailAccount.Send)
 
 	mails := v1.Group("/mails", m.Authorization)
 	mails.Get("/:id", h.Mail.Get)
