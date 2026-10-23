@@ -3,7 +3,7 @@ import { mutationOptions, queryOptions } from '@tanstack/react-query'
 import { DEFAULT_PAGINATE } from '@/lib/constants/paginate'
 import { getQueryClient } from '@/lib/providers/react-query'
 
-import type { OrganizationFormDto } from '../dtos/master/organization/schema'
+import type { OrganizationFormDto } from '../dtos/organization/schema'
 import type { PaginateDto } from '../dtos/paginate'
 
 import { services } from '../services'

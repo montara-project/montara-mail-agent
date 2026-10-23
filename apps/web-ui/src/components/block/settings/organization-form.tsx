@@ -10,7 +10,7 @@ import { toastAxiosError } from '@/lib/api/axios-error'
 import {
   OrganizationFormSchema,
   type OrganizationFormDto,
-} from '@/lib/api/dtos/master/organization/schema'
+} from '@/lib/api/dtos/organization/schema'
 import { parseDto } from '@/lib/api/dtos/parse'
 import { queries } from '@/lib/api/queries'
 

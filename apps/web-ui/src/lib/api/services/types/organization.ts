@@ -1,6 +1,6 @@
 import type { AxiosDeleteResponse, AxiosItemResponse, AxiosListResponse } from '@/types/api'
 
-import type { OrganizationFormDto } from '../../dtos/master/organization/schema'
+import type { OrganizationFormDto } from '../../dtos/organization/schema'
 import type { PaginateDto } from '../../dtos/paginate'
 import type { Models } from '../../models'
 
