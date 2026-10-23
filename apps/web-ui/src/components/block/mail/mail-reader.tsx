@@ -22,7 +22,6 @@ import {
   Trash2,
 } from 'lucide-react'
 import React from 'react'
-import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
 
@@ -47,7 +46,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
-import { axiosErrorMessage, toastAxiosError } from '@/lib/api/axios-error'
+import { axiosErrorMessage, toastAxiosError, toastProgress } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
 
@@ -121,22 +120,29 @@ export default function MailReader({ mailId }: { mailId: string }) {
   // Each of these signs in to the mail server, so the buttons wait for one to finish.
   const busy = move.isPending || remove.isPending
 
-  const moveTo = (folder: Models.MailMoveTarget) =>
+  // These sign in to the mail server and can take a few seconds, so a toast
+  // shows them from start to finish.
+  const moveTo = (folder: Models.MailMoveTarget) => {
+    const progress = toastProgress(`Moving to ${folderTitle(folder)}...`)
     move.mutate(folder, {
       onSuccess: () => {
-        toast.success(`Moved to ${folderTitle(folder)}`)
+        progress.success(`Moved to ${folderTitle(folder)}`)
         leave()
       },
-      onError: toastAxiosError,
+      onError: progress.error,
     })
-  const deleteMail = () =>
+  }
+  const deleteMail = () => {
+    const forever = mail?.folder === 'trash'
+    const progress = toastProgress(forever ? 'Deleting forever...' : 'Moving to Trash...')
     remove.mutate(undefined, {
-      onSuccess: (res) => {
-        toast.success(res.message ?? 'Deleted')
+      onSuccess: () => {
+        progress.success(forever ? 'Deleted forever' : 'Moved to Trash')
         leave()
       },
-      onError: toastAxiosError,
+      onError: progress.error,
     })
+  }
   const update = (body: Parameters<typeof patch.mutate>[0], then?: () => void) =>
     patch.mutate(body, { onSuccess: then, onError: toastAxiosError })
 

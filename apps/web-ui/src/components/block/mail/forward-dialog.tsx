@@ -1,5 +1,4 @@
 import { useMutation } from '@tanstack/react-query'
-import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
 
@@ -7,7 +6,7 @@ import SimpleAlertScrollableDialogForm from '@/components/block/common/simple-al
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Textarea } from '@/components/ui/textarea'
 import { useAppForm } from '@/hooks/form'
-import { toastAxiosError } from '@/lib/api/axios-error'
+import { toastProgress } from '@/lib/api/axios-error'
 import { ForwardFormSchema, parseRecipients } from '@/lib/api/dtos/mail/forward/schema'
 import { parseDto } from '@/lib/api/dtos/parse'
 import { queries } from '@/lib/api/queries'
@@ -26,14 +25,15 @@ export default function ForwardDialog({
     defaultValues: { to: '', note: '' },
     validators: { onSubmit: ForwardFormSchema, onChange: ForwardFormSchema },
     onSubmit: async ({ value }) => {
+      const progress = toastProgress('Forwarding...')
       try {
         const dto = parseDto(ForwardFormSchema, value)
         const to = parseRecipients(dto.to)
         await forward.mutateAsync({ to, note: dto.note.trim() || undefined })
-        toast.success(`Forwarded to ${to.join(', ')}`)
+        progress.success(`Forwarded to ${to.join(', ')}`)
         onClose()
       } catch (error) {
-        toastAxiosError(error)
+        progress.error(error)
       }
     },
   })
