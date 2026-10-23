@@ -20,7 +20,9 @@ export default function HealthCard() {
         <dl className="grid grid-cols-2 gap-2 text-sm">
           <dt className="text-muted-foreground">Status</dt>
           <dd>
-            <Badge variant={data?.status === 'ok' ? 'success' : 'destructive'}>{data?.status}</Badge>
+            <Badge variant={data?.status === 'ok' ? 'success' : 'destructive'}>
+              {data?.status}
+            </Badge>
           </dd>
           <dt className="text-muted-foreground">Database</dt>
           <dd>{data?.database}</dd>

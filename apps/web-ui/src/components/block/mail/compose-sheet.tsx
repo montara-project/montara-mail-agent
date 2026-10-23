@@ -4,8 +4,6 @@ import React from 'react'
 
 import type { Models } from '@/lib/api/models'
 
-import type { Draft, Reply } from './mail-editor'
-
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -20,6 +18,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { toastProgress } from '@/lib/api/axios-error'
 import { allEmails, MAX_RECIPIENTS, parseRecipients } from '@/lib/api/dtos/mail/recipients'
 import { queries } from '@/lib/api/queries'
+
+import type { Draft, Reply } from './mail-editor'
 
 const MailEditor = React.lazy(() => import('./mail-editor'))
 

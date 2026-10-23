@@ -23,8 +23,8 @@ export default function PrivacyPage() {
 
       <h2>Sharing</h2>
       <p>
-        We share data only with service providers that help us operate the service, under
-        agreements that require them to protect it, or when the law requires us to.
+        We share data only with service providers that help us operate the service, under agreements
+        that require them to protect it, or when the law requires us to.
       </p>
 
       <h2>Retention and deletion</h2>
