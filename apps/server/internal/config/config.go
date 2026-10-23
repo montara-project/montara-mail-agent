@@ -1,6 +1,9 @@
 package config
 
-import "time"
+import (
+	"log"
+	"time"
+)
 
 // Accepted App.Env values. Only EnvDevelopment enables development-only
 // behaviour: the loopback rate-limit exemption and session cookies without
@@ -10,6 +13,29 @@ const (
 	EnvStaging     = "staging"
 	EnvProduction  = "production"
 )
+
+// Edition is the build's edition: EditionCloud (open sign-up) or
+// EditionCommunity (one self-hosted user, no sign-up). The Docker build sets
+// it with -ldflags; the web app inside the image is built for the same one.
+var Edition = EditionCloud
+
+const (
+	EditionCloud     = "cloud"
+	EditionCommunity = "community"
+)
+
+// A mistyped -ldflags value stops every binary, cmd/migrate included, before
+// it acts as the wrong edition.
+func init() {
+	if Edition != EditionCloud && Edition != EditionCommunity {
+		log.Fatalf("edition must be %s or %s, got %q", EditionCloud, EditionCommunity, Edition)
+	}
+}
+
+// Community reports whether this is the Community Edition.
+func Community() bool {
+	return Edition == EditionCommunity
+}
 
 // SessionCookieName is the cookie Authula issues on sign-in; the API's
 // authorization middleware reads the same cookie.

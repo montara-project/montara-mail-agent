@@ -316,6 +316,19 @@ func newAuth(cfg config.Config, mirror func(*authulamodels.User) error, logger *
 	userHooks.RegisterAfterCreate(mirror)
 	userHooks.RegisterAfterUpdate(mirror)
 
+	// Sign-up, magic links and Google all create users through this service,
+	// so in the Community Edition only the seeded super user gets made. The
+	// email-password plugin also turns sign-up off there (DisableSignUp), so
+	// it answers every address alike, before looking it up.
+	if config.Community() {
+		userHooks.RegisterBeforeCreate(func(u *authulamodels.User) error {
+			if !strings.EqualFold(u.Email, cfg.App.SuperUserEmail) {
+				return errors.New("sign-up is not available in the community edition")
+			}
+			return nil
+		})
+	}
+
 	origins := splitCSV(cfg.App.CORSAllowedOrigins)
 
 	logLevel := "info"
@@ -365,16 +378,26 @@ func newAuth(cfg config.Config, mirror func(*authulamodels.User) error, logger *
 		logger.Warn("google sign-in disabled: google-client-id is not set")
 	}
 
+	// Only the Community Edition may run without (see validateFlag). The
+	// email-password plugin then sends nothing, and a magic link could not
+	// be delivered, so that plugin is off.
+	emailEnabled := cfg.Auth.ResendAPIKey != ""
+	var plugins []authulamodels.Plugin
+	if emailEnabled {
+		// Registered first: the email-based plugins look up its mailer.
+		plugins = append(plugins, emailplugin.New(emailplugintypes.EmailPluginConfig{
+			Enabled:     true,
+			Provider:    emailplugintypes.ProviderResend,
+			FromAddress: cfg.Auth.EmailFrom,
+			Resend:      &emailplugintypes.ResendConfig{ApiKey: cfg.Auth.ResendAPIKey},
+		}))
+	} else {
+		logger.Warn("auth emails disabled: resend-api-key is not set; no password reset or magic-link sign-in, change SUPER_USER to reset the password")
+	}
+
 	auth = authula.New(&authula.AuthConfig{
 		Config: authConfig,
-		Plugins: []authulamodels.Plugin{
-			// Registered first: the email-based plugins look up its mailer.
-			emailplugin.New(emailplugintypes.EmailPluginConfig{
-				Enabled:     true,
-				Provider:    emailplugintypes.ProviderResend,
-				FromAddress: cfg.Auth.EmailFrom,
-				Resend:      &emailplugintypes.ResendConfig{ApiKey: cfg.Auth.ResendAPIKey},
-			}),
+		Plugins: append(plugins,
 			// Mints an access and refresh token on every successful sign-in and
 			// serves POST /token/refresh.
 			jwtplugin.New(jwtplugintypes.JWTPluginConfig{
@@ -393,6 +416,7 @@ func newAuth(cfg config.Config, mirror func(*authulamodels.User) error, logger *
 			// Google and magic-link sign-in would later attach to by email.
 			emailpasswordplugin.New(emailpasswordplugintypes.EmailPasswordPluginConfig{
 				Enabled:                  true,
+				DisableSignUp:            config.Community(),
 				MinPasswordLength:        8,
 				MaxPasswordLength:        128,
 				RequireEmailVerification: true,
@@ -422,7 +446,7 @@ func newAuth(cfg config.Config, mirror func(*authulamodels.User) error, logger *
 				SameSite:                  totpSameSite,
 			}),
 			magiclinkplugin.New(magiclinkplugintypes.MagicLinkPluginConfig{
-				Enabled:   true,
+				Enabled:   emailEnabled,
 				ExpiresIn: 15 * time.Minute,
 			}),
 			oauth2plugin.New(oauth2plugintypes.OAuth2PluginConfig{
@@ -436,7 +460,7 @@ func newAuth(cfg config.Config, mirror func(*authulamodels.User) error, logger *
 					},
 				},
 			}),
-		},
+		),
 	})
 
 	issuer, err := newTokenIssuer(auth)

@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { COMMUNITY } from '@/lib/constants/edition'
+
 // Vite only inlines vars prefixed with VITE_ into the client build.
 const parsed = z
   .object({
@@ -13,11 +15,12 @@ const parsed = z
   })
 
 // The server a browser uses until it picks its own (see server-url.ts). Empty
-// means the hosted Montara server, or in development this origin, which
-// proxies /api to the local API.
+// means the hosted Montara server, or in development and in the Community
+// Edition this origin: dev proxies /api to the local API, and the Community
+// server serves this app itself.
 export const env = {
   ...parsed,
   VITE_API_URL:
     parsed.VITE_API_URL ||
-    (import.meta.env.DEV ? window.location.origin : 'https://app.montaramail.web.id'),
+    (import.meta.env.DEV || COMMUNITY ? window.location.origin : 'https://app.montaramail.web.id'),
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"log/slog"
@@ -79,6 +80,22 @@ func run() error {
 	cancel()
 	if err != nil {
 		return fmt.Errorf("reconcile users mirror: %w", err)
+	}
+
+	// The Community Edition's only account is the super user. A database that
+	// holds others (one the Cloud Edition ran on) would still let them sign
+	// in, so it is refused, and before seeding, which would otherwise reset
+	// that database's super user password.
+	if config.Community() {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		others, err := repos.User.HasOtherThan(ctx, cfg.App.SuperUserEmail)
+		cancel()
+		if err != nil {
+			return fmt.Errorf("check community edition accounts: %w", err)
+		}
+		if others {
+			return errors.New("community edition allows only the super user, but the database holds other accounts: run the cloud edition on it, or start from an empty database")
+		}
 	}
 
 	// Seeding follows Authula because the super user is created through it.

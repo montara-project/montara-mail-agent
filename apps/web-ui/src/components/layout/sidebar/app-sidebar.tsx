@@ -23,6 +23,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { NAV_ITEMS } from '@/data/sidebar-menu'
+import { COMMUNITY } from '@/lib/constants/edition'
 
 import NavUser from './nav-user'
 
@@ -98,7 +99,7 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">Montara</span>
-                    <span className="truncate text-xs">Mail</span>
+                    <span className="truncate text-xs">{COMMUNITY ? 'Community' : 'Mail'}</span>
                   </div>
                 </Link>
               </SidebarMenuButton>
