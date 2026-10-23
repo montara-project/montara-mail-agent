@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as appRouteRouteImport } from './routes/(app)/route'
 import { Route as SignInIndexRouteImport } from './routes/sign-in/index'
+import { Route as appAccountIndexRouteImport } from './routes/(app)/account/index'
 import { Route as appDashboardIndexRouteImport } from './routes/(app)/dashboard/index'
 import { Route as appMailIndexRouteImport } from './routes/(app)/mail/index'
 import { Route as appMasterOrganizationIndexRouteImport } from './routes/(app)/master/organization/index'
@@ -29,6 +30,11 @@ const SignInIndexRoute = SignInIndexRouteImport.update({
   id: '/sign-in/',
   path: '/sign-in/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const appAccountIndexRoute = appAccountIndexRouteImport.update({
+  id: '/account/',
+  path: '/account/',
+  getParentRoute: () => appRouteRoute,
 } as any)
 const appDashboardIndexRoute = appDashboardIndexRouteImport.update({
   id: '/dashboard/',
@@ -50,6 +56,7 @@ const appMasterOrganizationIndexRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/sign-in/': typeof SignInIndexRoute
+  '/account/': typeof appAccountIndexRoute
   '/dashboard/': typeof appDashboardIndexRoute
   '/mail/': typeof appMailIndexRoute
   '/master/organization/': typeof appMasterOrganizationIndexRoute
@@ -57,6 +64,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/sign-in': typeof SignInIndexRoute
+  '/account': typeof appAccountIndexRoute
   '/dashboard': typeof appDashboardIndexRoute
   '/mail': typeof appMailIndexRoute
   '/master/organization': typeof appMasterOrganizationIndexRoute
@@ -66,6 +74,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/(app)': typeof appRouteRouteWithChildren
   '/sign-in/': typeof SignInIndexRoute
+  '/(app)/account/': typeof appAccountIndexRoute
   '/(app)/dashboard/': typeof appDashboardIndexRoute
   '/(app)/mail/': typeof appMailIndexRoute
   '/(app)/master/organization/': typeof appMasterOrganizationIndexRoute
@@ -73,14 +82,26 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/sign-in/' | '/dashboard/' | '/mail/' | '/master/organization/'
+    | '/'
+    | '/sign-in/'
+    | '/account/'
+    | '/dashboard/'
+    | '/mail/'
+    | '/master/organization/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/sign-in' | '/dashboard' | '/mail' | '/master/organization'
+  to:
+    | '/'
+    | '/sign-in'
+    | '/account'
+    | '/dashboard'
+    | '/mail'
+    | '/master/organization'
   id:
     | '__root__'
     | '/'
     | '/(app)'
     | '/sign-in/'
+    | '/(app)/account/'
     | '/(app)/dashboard/'
     | '/(app)/mail/'
     | '/(app)/master/organization/'
@@ -115,6 +136,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignInIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(app)/account/': {
+      id: '/(app)/account/'
+      path: '/account'
+      fullPath: '/account/'
+      preLoaderRoute: typeof appAccountIndexRouteImport
+      parentRoute: typeof appRouteRoute
+    }
     '/(app)/dashboard/': {
       id: '/(app)/dashboard/'
       path: '/dashboard'
@@ -140,12 +168,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface appRouteRouteChildren {
+  appAccountIndexRoute: typeof appAccountIndexRoute
   appDashboardIndexRoute: typeof appDashboardIndexRoute
   appMailIndexRoute: typeof appMailIndexRoute
   appMasterOrganizationIndexRoute: typeof appMasterOrganizationIndexRoute
 }
 
 const appRouteRouteChildren: appRouteRouteChildren = {
+  appAccountIndexRoute: appAccountIndexRoute,
   appDashboardIndexRoute: appDashboardIndexRoute,
   appMailIndexRoute: appMailIndexRoute,
   appMasterOrganizationIndexRoute: appMasterOrganizationIndexRoute,

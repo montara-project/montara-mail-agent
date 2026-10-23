@@ -14,10 +14,10 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
 
-// ponytail: Account and Settings have no pages yet; give each a url once its route exists.
+// ponytail: Settings has no page yet; give it a url once its route exists.
 const PLATFORM_ITEMS = [
   { title: 'Dashboard', icon: LayoutDashboard, url: '/dashboard' },
-  { title: 'Account', icon: UserRound },
+  { title: 'Account', icon: UserRound, url: '/account' },
   { title: 'Settings', icon: Settings },
 ]
 

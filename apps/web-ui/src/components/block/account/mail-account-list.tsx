@@ -1,7 +1,5 @@
 import { Link } from '@tanstack/react-router'
 import { formatDistanceToNow } from 'date-fns'
-import { Plus } from 'lucide-react'
-import { toast } from 'sonner'
 
 import { MAIL_ACCOUNTS, mailInitials } from '@/components/layout/mail/mail-data'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -41,15 +39,6 @@ export default function MailAccountList() {
             </div>
           </Link>
         ))}
-        {/* ponytail: no endpoint to connect a mailbox yet; open an OAuth/IMAP flow once it exists. */}
-        <button
-          type="button"
-          onClick={() => toast.info('Connecting an email account is not available yet')}
-          className="text-muted-foreground hover:bg-accent/50 hover:text-foreground focus-visible:ring-ring/50 flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-4 text-sm transition-colors outline-none focus-visible:ring-[3px]"
-        >
-          <Plus className="size-5" />
-          Add email account
-        </button>
       </div>
     </section>
   )

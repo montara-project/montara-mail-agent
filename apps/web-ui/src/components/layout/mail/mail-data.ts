@@ -28,14 +28,15 @@ export type MailAccount = {
   email: string
   provider: string
   unread: number
+  spam: number
   syncedAt: string
 }
 
 // ponytail: sample accounts until the server can connect mailboxes; swap for a query then.
 export const MAIL_ACCOUNTS: MailAccount[] = [
-  { id: 'work', label: 'Work', email: 'hello@montara.app', provider: 'Google Workspace', unread: 2, syncedAt: '2026-10-22T14:30:00' },
-  { id: 'support', label: 'Support', email: 'support@montara.app', provider: 'Microsoft 365', unread: 14, syncedAt: '2026-10-22T14:12:00' },
-  { id: 'personal', label: 'Personal', email: 'me@fastmail.com', provider: 'IMAP', unread: 0, syncedAt: '2026-10-21T22:05:00' },
+  { id: 'work', label: 'Work', email: 'hello@montara.app', provider: 'Google Workspace', unread: 2, spam: 3, syncedAt: '2026-10-22T14:30:00' },
+  { id: 'support', label: 'Support', email: 'support@montara.app', provider: 'Microsoft 365', unread: 14, spam: 9, syncedAt: '2026-10-22T14:12:00' },
+  { id: 'personal', label: 'Personal', email: 'me@fastmail.com', provider: 'IMAP', unread: 0, spam: 1, syncedAt: '2026-10-21T22:05:00' },
 ]
 
 // ponytail: sample mails until the server exposes a mailbox endpoint; swap for a query then.
