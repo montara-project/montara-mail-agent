@@ -53,3 +53,34 @@ func TestOpenAICompatible(t *testing.T) {
 		t.Fatal("an unknown kind was accepted")
 	}
 }
+
+func TestListModels(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// The Anthropic SDK decodes only a JSON content type.
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		// OpenAI format: a self-hosted server without a key gets no header.
+		case r.URL.Path == "/v1/models" && r.Header.Get("Authorization") == "":
+			_, _ = w.Write([]byte(`{"object":"list","data":[{"id":"qwen3:8b"},{"id":"llama3.2"},{"id":"qwen3:8b"}]}`))
+		// Anthropic format, with its own path and key header.
+		case r.URL.Path == "/anthropic/v1/models" && r.Header.Get("X-Api-Key") == "sk-ant":
+			_, _ = w.Write([]byte(`{"data":[{"id":"claude-b","type":"model","display_name":"B","created_at":"2026-01-01T00:00:00Z"},{"id":"claude-a","type":"model","display_name":"A","created_at":"2026-01-01T00:00:00Z"}],"has_more":false,"first_id":"claude-b","last_id":"claude-a"}`))
+		default:
+			http.Error(w, "bad request "+r.URL.Path, http.StatusUnauthorized)
+		}
+	}))
+	defer server.Close()
+	ctx := context.Background()
+
+	got, err := ListModels(ctx, Config{Kind: KindSelfHosted, BaseURL: server.URL + "/v1", HTTPClient: server.Client()})
+	if err != nil || len(got) != 2 || got[0] != "llama3.2" || got[1] != "qwen3:8b" {
+		t.Fatalf("self-hosted models = %v, %v; want sorted and deduplicated", got, err)
+	}
+	got, err = ListModels(ctx, Config{Kind: KindAnthropic, BaseURL: server.URL + "/anthropic", APIKey: "sk-ant", HTTPClient: server.Client()})
+	if err != nil || len(got) != 2 || got[0] != "claude-a" {
+		t.Fatalf("anthropic models = %v, %v", got, err)
+	}
+	if _, err := ListModels(ctx, Config{Kind: KindOpenAI, BaseURL: server.URL + "/v1", APIKey: "wrong", HTTPClient: server.Client()}); err == nil {
+		t.Fatal("a refused key did not fail")
+	}
+}

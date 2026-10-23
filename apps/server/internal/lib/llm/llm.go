@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/anthropics/anthropic-sdk-go"
@@ -17,14 +18,17 @@ import (
 )
 
 // Provider kinds: the API format spoken, so any compatible server works
-// (OpenAI, OpenRouter, Ollama, vLLM, ... or Anthropic and its proxies).
+// (OpenAI, OpenRouter, ... or Anthropic and its proxies). Self-hosted is the
+// OpenAI format on a server the user runs (Ollama, LM Studio, vLLM), where
+// the base URL is required and the API key optional.
 const (
-	KindOpenAI    = "openai"
-	KindAnthropic = "anthropic"
+	KindOpenAI     = "openai"
+	KindAnthropic  = "anthropic"
+	KindSelfHosted = "self_hosted"
 )
 
 // Kinds lists the accepted provider kinds.
-var Kinds = []string{KindOpenAI, KindAnthropic}
+var Kinds = []string{KindOpenAI, KindAnthropic, KindSelfHosted}
 
 const defaultOpenAIBaseURL = "https://api.openai.com/v1"
 
@@ -55,14 +59,77 @@ func New(cfg Config) (Client, error) {
 			opts = append(opts, option.WithBaseURL(cfg.BaseURL))
 		}
 		return anthropicClient{client: anthropic.NewClient(opts...), model: cfg.Model, native: cfg.BaseURL == ""}, nil
-	case KindOpenAI:
-		base := cfg.BaseURL
-		if base == "" {
-			base = defaultOpenAIBaseURL
-		}
-		return openAIClient{http: cfg.HTTPClient, baseURL: strings.TrimSuffix(base, "/"), apiKey: cfg.APIKey, model: cfg.Model}, nil
+	case KindOpenAI, KindSelfHosted:
+		return openAIClient{http: cfg.HTTPClient, baseURL: openAIBaseURL(cfg), apiKey: cfg.APIKey, model: cfg.Model}, nil
 	}
 	return nil, fmt.Errorf("unknown LLM provider kind %q", cfg.Kind)
+}
+
+func openAIBaseURL(cfg Config) string {
+	base := cfg.BaseURL
+	if base == "" {
+		base = defaultOpenAIBaseURL
+	}
+	return strings.TrimSuffix(base, "/")
+}
+
+// maxModels caps the list a server answers with; OpenRouter alone lists hundreds.
+const maxModels = 1000
+
+// ListModels returns the ids of the models cfg's server offers, sorted.
+// cfg.Model is not used.
+func ListModels(ctx context.Context, cfg Config) ([]string, error) {
+	var ids []string
+	switch cfg.Kind {
+	case KindAnthropic:
+		opts := []option.RequestOption{option.WithAPIKey(cfg.APIKey), option.WithHTTPClient(cfg.HTTPClient)}
+		if cfg.BaseURL != "" {
+			opts = append(opts, option.WithBaseURL(cfg.BaseURL))
+		}
+		client := anthropic.NewClient(opts...)
+		pages := client.Models.ListAutoPaging(ctx, anthropic.ModelListParams{Limit: anthropic.Int(maxModels)})
+		for pages.Next() && len(ids) < maxModels {
+			ids = append(ids, pages.Current().ID)
+		}
+		if err := pages.Err(); err != nil {
+			return nil, err
+		}
+	case KindOpenAI, KindSelfHosted:
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, openAIBaseURL(cfg)+"/models", nil)
+		if err != nil {
+			return nil, err
+		}
+		if cfg.APIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
+		}
+		resp, err := cfg.HTTPClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			snippet, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+			return nil, fmt.Errorf("models: %s: %s", resp.Status, bytes.TrimSpace(snippet))
+		}
+
+		var out struct {
+			Data []struct {
+				ID string `json:"id"`
+			} `json:"data"`
+		}
+		if err := json.NewDecoder(io.LimitReader(resp.Body, 4<<20)).Decode(&out); err != nil {
+			return nil, fmt.Errorf("models: %w", err)
+		}
+		for _, m := range out.Data {
+			if m.ID != "" && len(ids) < maxModels {
+				ids = append(ids, m.ID)
+			}
+		}
+	default:
+		return nil, fmt.Errorf("unknown LLM provider kind %q", cfg.Kind)
+	}
+	slices.Sort(ids)
+	return slices.Compact(ids), nil
 }
 
 type anthropicClient struct {
@@ -128,7 +195,10 @@ func (c openAIClient) Complete(ctx context.Context, system, prompt string, maxTo
 		return "", err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+c.apiKey)
+	// A self-hosted server may run without a key.
+	if c.apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+c.apiKey)
+	}
 
 	resp, err := c.http.Do(req)
 	if err != nil {

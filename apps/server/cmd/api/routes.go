@@ -59,6 +59,13 @@ func routes(r *fiber.App, app *app.Application) {
 	// tighter budget.
 	slow := middlewares.RateLimit(aiRateLimit, exemptLoopback, exemptIPs)
 
+	// The signed-in user's own account. Password checks share the slow
+	// budget, which also slows guessing the current password.
+	me := v1.Group("/me", m.Authorization)
+	me.Get("/security", h.Profile.Security)
+	me.Patch("/", idempotent, h.Profile.Update)
+	me.Put("/password", slow, idempotent, h.Profile.ChangePassword)
+
 	organizations := v1.Group("/organizations", m.Authorization)
 	organizations.Get("/", h.Organization.List)
 	organizations.Get("/:id", h.Organization.Get)
@@ -73,6 +80,7 @@ func routes(r *fiber.App, app *app.Application) {
 	organizations.Get("/:id/llm-provider", h.LLMProvider.Get)
 	organizations.Put("/:id/llm-provider", idempotent, h.LLMProvider.Put)
 	organizations.Delete("/:id/llm-provider", idempotent, h.LLMProvider.Delete)
+	organizations.Post("/:id/llm-provider/models", slow, h.LLMProvider.Models)
 
 	emailAccounts := v1.Group("/email-accounts", m.Authorization)
 	emailAccounts.Get("/:id/mails", h.EmailAccount.Mails)

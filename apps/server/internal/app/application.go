@@ -50,9 +50,12 @@ func (a *Application) LLMFor(ctx context.Context, organizationID uuid.UUID) (llm
 		return nil, err
 	}
 
-	key, err := a.Secrets.Open(p.APIKey)
-	if err != nil {
-		return nil, apperr.New(apperr.KindUnavailable, "the LLM provider's API key can't be read, save it again")
+	// A self-hosted model may have no key.
+	var key string
+	if len(p.APIKey) > 0 {
+		if key, err = a.Secrets.Open(p.APIKey); err != nil {
+			return nil, apperr.New(apperr.KindUnavailable, "the LLM provider's API key can't be read, save it again")
+		}
 	}
 	return llm.New(llm.Config{Kind: p.Kind, BaseURL: p.BaseURL, APIKey: key, Model: p.Model, HTTPClient: a.HTTPClient})
 }

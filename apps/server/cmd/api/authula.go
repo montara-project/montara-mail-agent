@@ -31,6 +31,8 @@ import (
 	oauth2plugin "github.com/Authula/authula/plugins/oauth2"
 	oauth2plugintypes "github.com/Authula/authula/plugins/oauth2/types"
 	sessionplugin "github.com/Authula/authula/plugins/session"
+	totpplugin "github.com/Authula/authula/plugins/totp"
+	totpplugintypes "github.com/Authula/authula/plugins/totp/types"
 
 	"montara-mail-agent/server/internal/config"
 	"montara-mail-agent/server/internal/lib/constant"
@@ -46,6 +48,7 @@ var (
 	sessionAuth         = sessionplugin.HookIDSessionAuth.String()
 	sessionAuthOptional = sessionplugin.HookIDSessionAuthOptional.String()
 	bearerAuthOptional  = bearerplugin.HookIDBearerAuthOptional.String()
+	totpIntercept       = totpplugin.HookIDTOTPIntercept.String()
 )
 
 // authRouteMappings attaches auth capabilities to Authula's routes. Paths
@@ -67,22 +70,36 @@ var authRouteMappings = []authulamodels.RouteMapping{
 	{
 		Paths: []string{
 			"POST:/email-password/sign-up",
-			"POST:/email-password/sign-in",
 			"GET:/email-password/verify-email",
 			"POST:/email-password/request-password-reset",
 			"POST:/email-password/change-password",
+		},
+		Plugins: []string{sessionAuthOptional},
+	},
+	// Every way to sign in stops at the second step for a user with
+	// two-factor sign-in, so none of them goes around it.
+	{
+		Paths: []string{
+			"POST:/email-password/sign-in",
 			"/magic-link/*",
 			"/oauth2/*",
 		},
-		Plugins: []string{sessionAuthOptional},
+		Plugins: []string{sessionAuthOptional, totpIntercept},
 	},
 	{
 		Paths: []string{
 			"POST:/email-password/send-email-verification",
 			"POST:/email-password/request-email-change",
+			"POST:/totp/enable",
+			"POST:/totp/disable",
+			"GET:/totp/get-uri",
+			"POST:/totp/generate-backup-codes",
 		},
 		Plugins: []string{bearerAuthOptional, sessionAuth},
 	},
+	// POST /totp/verify and /totp/verify-backup-code carry no mapping on
+	// purpose: they identify the user by the pending-token cookie that a
+	// sign-in or /totp/enable set, and refuse a caller already signed in.
 }
 
 // authSchema is the PostgreSQL schema holding Authula's tables. It keeps them
@@ -384,6 +401,15 @@ func newAuth(cfg config.Config, mirror func(*authulamodels.User) error, logger *
 						},
 					},
 				},
+			}),
+			// Two-factor sign-in with an authenticator app. A sign-in of a user
+			// who enabled it answers {"totp_redirect": true} and a pending-token
+			// cookie instead of a session; POST /totp/verify then completes it.
+			// Enabling takes a code too, so a botched scan can't lock anyone out.
+			totpplugin.New(totpplugintypes.TOTPPluginConfig{
+				Enabled:                   true,
+				TrustedDevicesAutoCleanup: true,
+				SecureCookie:              cfg.App.Env != config.EnvDevelopment,
 			}),
 			magiclinkplugin.New(magiclinkplugintypes.MagicLinkPluginConfig{
 				Enabled:   true,

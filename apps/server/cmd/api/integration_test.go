@@ -356,6 +356,7 @@ func TestIntegration(t *testing.T) {
 
 	testMailFlow(t, call, application, userToken, userOrg, superOrg)
 	testIMAPSync(t, application, userOrg)
+	testAccountSettings(t, call, func() string { return cookies }, db, userEmail, userPass)
 
 	// Signing out revokes the access token.
 	if status, out := call(http.MethodPost, "/api/v1/auth/sign-out", superToken, map[string]any{}); status != http.StatusOK {

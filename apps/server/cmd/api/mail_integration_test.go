@@ -307,8 +307,34 @@ func testMailFlow(t *testing.T, call callFunc, application *app.Application, tok
 	if status, out := call(http.MethodPut, llmPath, token, map[string]any{"kind": "openai", "model": "gpt-test", "api_key": "sk-x", "base_url": "https://llm.example.com/v1"}); status != http.StatusOK || data(out)["has_api_key"] != true || data(out)["api_key"] != nil {
 		t.Fatalf("save provider: %d %v", status, out)
 	}
-	if status, out := call(http.MethodPut, llmPath, token, map[string]any{"kind": "anthropic", "model": "claude-test"}); status != http.StatusOK || data(out)["kind"] != "anthropic" {
+	if status, out := call(http.MethodPut, llmPath, token, map[string]any{"kind": "openai", "model": "gpt-other", "base_url": "https://llm.example.com/v1"}); status != http.StatusOK || data(out)["model"] != "gpt-other" || data(out)["has_api_key"] != true {
 		t.Fatalf("update keeping the key: %d %v", status, out)
+	}
+	// The saved key never goes to another provider than the one it was saved for.
+	for _, body := range []map[string]any{
+		{"kind": "anthropic", "model": "claude-test"},
+		{"kind": "openai", "model": "gpt-test", "base_url": "https://evil.example.com/v1"},
+	} {
+		if status, _ := call(http.MethodPut, llmPath, token, body); status != http.StatusBadRequest {
+			t.Fatalf("saved key reused for %v: %d, want 400", body, status)
+		}
+		if status, _ := call(http.MethodPost, llmPath+"/models", token, body); status != http.StatusBadRequest {
+			t.Fatalf("saved key listed models for %v: %d, want 400", body, status)
+		}
+	}
+	// A self-hosted model needs a base URL and may go without a key, even over http.
+	if status, _ := call(http.MethodPut, llmPath, token, map[string]any{"kind": "self_hosted", "model": "llama3.2"}); status != http.StatusBadRequest {
+		t.Fatalf("self-hosted without a base URL: %d, want 400", status)
+	}
+	if status, out := call(http.MethodPut, llmPath, token, map[string]any{"kind": "self_hosted", "model": "llama3.2", "base_url": "http://ollama.example.com:11434/v1"}); status != http.StatusOK || data(out)["has_api_key"] != false {
+		t.Fatalf("self-hosted without a key: %d %v", status, out)
+	}
+	if status, out := call(http.MethodGet, llmPath, token, nil); status != http.StatusOK || data(out)["has_api_key"] != false || out["metadata"].(map[string]any)["private_hosts"] != false {
+		t.Fatalf("self-hosted read back: %d %v", status, out)
+	}
+	// The guarded dialer keeps the server off its own network.
+	if status, _ := call(http.MethodPost, llmPath+"/models", token, map[string]any{"kind": "self_hosted", "base_url": "http://127.0.0.1:11434/v1"}); status != http.StatusBadGateway {
+		t.Fatalf("models from loopback: %d, want 502", status)
 	}
 	if status, out := call(http.MethodDelete, llmPath, token, nil); status != http.StatusOK {
 		t.Fatalf("remove provider: %d %v", status, out)

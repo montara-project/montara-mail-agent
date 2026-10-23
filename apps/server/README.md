@@ -74,7 +74,8 @@ LLM provider. Someone else's organization, account or mail answers 404.
 | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | `GET /api/v1/organizations/:id/stats`                   | Unread inbox mail, spam and connected accounts.                                                |
 | `GET, POST /api/v1/organizations/:id/email-accounts`    | List accounts, or connect one: signs in over IMAP first, then syncs in the background.          |
-| `GET, PUT, DELETE /api/v1/organizations/:id/llm-provider` | The model for AI features: `openai` or `anthropic` wire format, any compatible base URL.       |
+| `GET, PUT, DELETE /api/v1/organizations/:id/llm-provider` | The model for AI features: `openai` or `anthropic` wire format, any compatible base URL, or `self_hosted` (OpenAI format on your own server, key optional). A saved key is reused only for the same kind and base URL. |
+| `POST /api/v1/organizations/:id/llm-provider/models`    | The models a provider offers, for the form's unsaved kind, base URL and key.                   |
 | `GET /api/v1/email-accounts/:id/mails`                  | One folder (`inbox`, `sent`, `drafts`, `spam`, `trash`), filtered by `importance` and `search`. |
 | `POST /api/v1/email-accounts/:id/sync`                  | Sync now. `DELETE /api/v1/email-accounts/:id` disconnects and drops the synced mail.           |
 | `POST /api/v1/email-accounts/:id/send`                  | Send a new mail through the account's SMTP server: To and Cc (20 addresses in all), subject, text and HTML. |
@@ -101,6 +102,21 @@ inbox mail as `important` or `low_priority`. Read and starred states are
 taken from the server when a message is first synced; changing them in the
 app writes them back in the background. Gmail archives into All Mail, which
 is not synced, so archived Gmail mail leaves the app.
+
+## Account settings
+
+| Route                                | What it does                                                                                       |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `GET /api/v1/me/security`            | Whether the user has a password (not Google or magic link only) and two-factor sign-in.            |
+| `PATCH /api/v1/me`                   | Change the name and avatar (an `https` URL, or empty to remove it).                                |
+| `PUT /api/v1/me/password`            | Change the password after checking the current one; ends every session, so the user signs in again. |
+| `POST /api/v1/auth/totp/enable`      | Start two-factor sign-in: the `otpauth://` URI and backup codes. It is on once `POST /totp/verify` accepts a first code. |
+| `POST /api/v1/auth/totp/disable`, `/generate-backup-codes` | Turn it off, or replace the backup codes.                                    |
+
+With two-factor sign-in on, every sign-in (password, magic link, Google)
+answers `{"totp_redirect": true}` and a short-lived pending cookie instead of
+tokens; `POST /api/v1/auth/totp/verify` (or `/verify-backup-code`) with the
+code then answers like a sign-in.
 
 ## Authentication
 
