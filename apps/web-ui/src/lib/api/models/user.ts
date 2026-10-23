@@ -29,3 +29,24 @@ export interface RefreshData {
   access_token: string
   refresh_token: string
 }
+
+/**
+ * A sign-in of a user with two-factor sign-in on: no tokens yet, only a
+ * pending cookie for POST /totp/verify.
+ */
+export interface TOTPRedirect {
+  totp_redirect: true
+}
+
+/** GET /api/v1/me/security. */
+export interface UserSecurity {
+  /** False for a user who only signs in with Google or a magic link. */
+  has_password: boolean
+  totp_enabled: boolean
+}
+
+/** POST /api/v1/auth/totp/enable: on once a first code is verified. */
+export interface TOTPSetup {
+  totp_uri: string
+  backup_codes: string[]
+}

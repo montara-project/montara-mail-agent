@@ -4,6 +4,9 @@ export namespace Models {
   export type User = import('./user').User
   export type MeData = import('./user').MeData
   export type SignInData = import('./user').SignInData
+  export type TOTPRedirect = import('./user').TOTPRedirect
+  export type UserSecurity = import('./user').UserSecurity
+  export type TOTPSetup = import('./user').TOTPSetup
   export type Organization = import('./organization').Organization
   export type OrganizationStats = import('./organization').OrganizationStats
   export type EmailAccount = import('./email-account').EmailAccount

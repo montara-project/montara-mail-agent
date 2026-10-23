@@ -8,6 +8,7 @@ const resources = (): LLMProviderResources => ({
   get: (organizationId) => api.get(path(organizationId)),
   save: (organizationId, body) => api.put(path(organizationId), body),
   delete: (organizationId) => api.delete(path(organizationId)),
+  models: (organizationId, body) => api.post(`${path(organizationId)}/models`, body),
 })
 
 export const llmProviderServices = resources()

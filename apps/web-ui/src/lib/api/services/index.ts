@@ -4,6 +4,7 @@ import { healthServices } from './health'
 import { llmProviderServices } from './llm-provider'
 import { mailServices } from './mail'
 import { organizationServices } from './organization'
+import { profileServices } from './profile'
 
 export const services = {
   health: healthServices,
@@ -12,4 +13,5 @@ export const services = {
   emailAccounts: emailAccountServices,
   mails: mailServices,
   llmProvider: llmProviderServices,
+  profile: profileServices,
 } as const

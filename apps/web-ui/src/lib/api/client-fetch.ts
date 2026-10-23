@@ -68,7 +68,9 @@ api.interceptors.response.use(undefined, async (error: AxiosError) => {
     error.response?.status === 401 &&
     config !== undefined &&
     !url.startsWith(`${AUTH_PATH}/email-password/sign-in`) &&
-    !url.startsWith(`${AUTH_PATH}/token/refresh`)
+    !url.startsWith(`${AUTH_PATH}/token/refresh`) &&
+    // A wrong two-factor code answers 401 too; it must not sign anyone out.
+    !url.startsWith(`${AUTH_PATH}/totp/verify`)
 
   if (!recoverable) {
     return Promise.reject(error)

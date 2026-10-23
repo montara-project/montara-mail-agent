@@ -2,7 +2,7 @@ import { mutationOptions, queryOptions } from '@tanstack/react-query'
 
 import { getQueryClient } from '@/lib/providers/react-query'
 
-import type { LLMProviderBody } from '../services/types/llm-provider'
+import type { LLMModelsBody, LLMProviderBody } from '../services/types/llm-provider'
 
 import { services } from '../services'
 
@@ -43,4 +43,18 @@ const del = (organizationId: string) => {
   })
 }
 
-export const llmProviderQueries = { get, save, delete: del } as const
+/** The models a provider offers; cached per kind, base URL and key. */
+const models = (organizationId: string, body: LLMModelsBody, enabled: boolean) =>
+  queryOptions({
+    queryKey: [LLM_PROVIDER_QUERY_KEY, organizationId, 'models', body],
+    queryFn: async () => {
+      const res = await services.llmProvider.models(organizationId, body)
+      return res.data.data
+    },
+    enabled,
+    // A wrong URL or key will not fix itself; the form offers a retry.
+    retry: false,
+    staleTime: 5 * 60_000,
+  })
+
+export const llmProviderQueries = { get, save, delete: del, models } as const

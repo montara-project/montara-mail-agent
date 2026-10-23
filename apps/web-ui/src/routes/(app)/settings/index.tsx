@@ -1,11 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router'
-
-import LLMProviderSettings from '@/components/block/settings/llm-provider-form'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/(app)/settings/')({
-  component: RouteComponent,
+  beforeLoad: () => {
+    throw redirect({ to: '/settings/general', replace: true })
+  },
 })
-
-function RouteComponent() {
-  return <LLMProviderSettings />
-}
