@@ -181,7 +181,8 @@ export default function ComposeSheet({
             </p>
           )}
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        {/* The editor takes the rest of the sheet; its text scrolls on its own. */}
+        <div className="min-h-0 flex-1 p-4">
           <React.Suspense
             fallback={
               <div className="grid gap-2" aria-busy="true">
@@ -191,6 +192,7 @@ export default function ComposeSheet({
             }
           >
             <MailEditor
+              fill
               initial={initial}
               placeholder="Write your message..."
               cancelLabel="Close"

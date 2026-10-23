@@ -63,6 +63,8 @@ export type MailEditorProps = {
   header?: React.ReactNode
   /** First in the bottom bar, before the formatting buttons, e.g. the AI menu. */
   leading?: React.ReactNode
+  /** Fill the parent's height, the text growing to meet the bottom bar (compose). */
+  fill?: boolean
 }
 
 function EditorBody({
@@ -74,6 +76,7 @@ function EditorBody({
   cancelLabel = 'Cancel',
   header,
   leading,
+  fill,
 }: MailEditorProps) {
   const { commands, activeStates, lexical: editor } = useEditor()
   const [empty, setEmpty] = React.useState(!(initial.state || initial.text))
@@ -140,7 +143,7 @@ function EditorBody({
 
   return (
     <div
-      className="grid gap-3"
+      className={cn('flex flex-col gap-3', fill && 'h-full')}
       onKeyDown={(event) => {
         if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) send()
         if (event.key === 'Escape') cancel()
@@ -151,9 +154,11 @@ function EditorBody({
       <RichText
         placeholder={placeholder}
         classNames={{
-          container: 'relative',
-          contentEditable:
-            'max-h-80 min-h-32 overflow-y-auto py-1 text-sm leading-relaxed outline-none',
+          container: cn('relative', fill && 'min-h-0 flex-1'),
+          contentEditable: cn(
+            'overflow-y-auto py-1 text-sm leading-relaxed outline-none',
+            fill ? 'h-full' : 'max-h-80 min-h-32'
+          ),
           // Same padding, size and line height as the text, so the hint sits
           // exactly where the first typed line and the caret appear.
           placeholder:
