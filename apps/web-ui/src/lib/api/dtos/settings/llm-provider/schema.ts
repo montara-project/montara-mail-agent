@@ -19,16 +19,3 @@ export const LLMProviderFormSchema = z.object({
 })
 
 export type LLMProviderFormDto = z.infer<typeof LLMProviderFormSchema>
-
-/** A model on the user's own server: OpenAI format, the base URL required, the key optional. */
-export const SelfHostedFormSchema = z.object({
-  kind: z.literal('self_hosted'),
-  base_url: z
-    .string()
-    .trim()
-    .regex(/^https?:\/\/\S+$/, 'The base URL must start with http:// or https://.'),
-  model: requiredString('model'),
-  api_key: z.string().trim(),
-})
-
-export type SelfHostedFormDto = z.infer<typeof SelfHostedFormSchema>

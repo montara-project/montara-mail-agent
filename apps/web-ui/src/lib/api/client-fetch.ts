@@ -1,7 +1,5 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 
-import { env } from '@/config/env'
-
 import type { RefreshData } from './models/user'
 
 import {
@@ -10,6 +8,7 @@ import {
   getStoredRefreshToken,
   setAuthTokens,
 } from '../auth/token-storage'
+import { SERVER_URL } from './server-url'
 
 /** Path the browser is sent to when the session cannot be recovered. */
 export const SIGN_IN_PATH = '/sign-in'
@@ -20,10 +19,10 @@ const TIME_OUT = 5 * 60_000 // 5 minutes
 /**
  * The one axios instance every service uses. The access token issued at
  * sign-in is kept by `token-storage.ts` and sent as a Bearer header, so the API
- * may live on another origin (VITE_API_URL) as well as behind the Vite proxy.
+ * may live on another origin (the chosen server) as well as behind the Vite proxy.
  */
 export const api = axios.create({
-  baseURL: env.VITE_API_URL || undefined,
+  baseURL: SERVER_URL,
   timeout: TIME_OUT,
 })
 

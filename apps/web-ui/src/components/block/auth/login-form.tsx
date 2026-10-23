@@ -7,8 +7,10 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { ServerURLForm } from '@/components/block/settings/server-url-form'
 import { useAppForm } from '@/hooks/form'
 import { SignInSchema } from '@/lib/api/dtos/auth/schema'
+import { DEFAULT_SERVER_URL, SERVER_URL } from '@/lib/api/server-url'
 import { signInWithEmail, verifyTOTP } from '@/lib/auth/email-auth'
 import { cn } from '@/lib/utils'
 
@@ -99,6 +101,8 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
   const [isLoading, setIsLoading] = useState(false)
   // Set once the password was right but the account asks for a code too.
   const [needsCode, setNeedsCode] = useState(false)
+  // Choosing a server here, since an account on a self-hosted one can't reach settings first.
+  const [pickServer, setPickServer] = useState(false)
 
   const enter = async () => {
     await router.invalidate()
@@ -141,11 +145,17 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
           </div>
           <h1 className="text-xl font-bold">Vine</h1>
           <FieldDescription>
-            {needsCode ? 'Two-factor sign-in' : 'Sign in to continue'}
+            {pickServer
+              ? 'Choose your Montara server'
+              : needsCode
+                ? 'Two-factor sign-in'
+                : 'Sign in to continue'}
           </FieldDescription>
         </div>
 
-        {needsCode ? (
+        {pickServer ? (
+          <ServerURLForm onCancel={() => setPickServer(false)} />
+        ) : needsCode ? (
           <TOTPStep onDone={enter} onBack={() => setNeedsCode(false)} />
         ) : (
           <form
@@ -177,6 +187,15 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
           </form>
         )}
       </FieldGroup>
+      {!pickServer && (
+        <p className="text-muted-foreground flex flex-wrap items-center justify-center gap-x-1 text-center text-sm">
+          Server: <span className="text-foreground">{new URL(SERVER_URL).host}</span>
+          {SERVER_URL === DEFAULT_SERVER_URL ? '' : ' (self hosted)'}
+          <Button mode="link" underline="solid" onClick={() => setPickServer(true)}>
+            Change
+          </Button>
+        </p>
+      )}
     </div>
   )
 }
