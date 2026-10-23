@@ -17,12 +17,12 @@ type EmailAccountRepository struct {
 
 const emailAccountColumns = `
 	a.id, a.created_at, a.updated_at, a.organization_id, a.provider, a.label, a.email,
-	a.imap_host, a.imap_port, a.username, a.password, a.synced_at, a.sync_error`
+	a.imap_host, a.imap_port, a.username, a.password, a.synced_at, a.sync_error, a.smtp_host, a.smtp_port`
 
 func scanEmailAccount(row rowScanner) (models.EmailAccount, error) {
 	var a models.EmailAccount
 	err := row.Scan(&a.ID, &a.CreatedAt, &a.UpdatedAt, &a.OrganizationID, &a.Provider, &a.Label, &a.Email,
-		&a.IMAPHost, &a.IMAPPort, &a.Username, &a.Password, &a.SyncedAt, &a.SyncError)
+		&a.IMAPHost, &a.IMAPPort, &a.Username, &a.Password, &a.SyncedAt, &a.SyncError, &a.SMTPHost, &a.SMTPPort)
 	return a, translateNotFound("email_accounts", err)
 }
 
@@ -30,9 +30,9 @@ func scanEmailAccount(row rowScanner) (models.EmailAccount, error) {
 // organization is a conflict.
 func (r *EmailAccountRepository) Insert(ctx context.Context, a models.EmailAccount) error {
 	_, err := r.execContext(ctx, `
-		INSERT INTO email_accounts (id, organization_id, provider, label, email, imap_host, imap_port, username, password)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-		a.ID, a.OrganizationID, a.Provider, a.Label, a.Email, a.IMAPHost, a.IMAPPort, a.Username, a.Password,
+		INSERT INTO email_accounts (id, organization_id, provider, label, email, imap_host, imap_port, username, password, smtp_host, smtp_port)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+		a.ID, a.OrganizationID, a.Provider, a.Label, a.Email, a.IMAPHost, a.IMAPPort, a.Username, a.Password, a.SMTPHost, a.SMTPPort,
 	)
 	return translateUnique(err, "this email account is already connected")
 }
@@ -61,7 +61,7 @@ func (r *EmailAccountRepository) ListByOrganization(ctx context.Context, organiz
 	return collectRows(rows, func(row rowScanner) (models.EmailAccount, error) {
 		var a models.EmailAccount
 		err := row.Scan(&a.ID, &a.CreatedAt, &a.UpdatedAt, &a.OrganizationID, &a.Provider, &a.Label, &a.Email,
-			&a.IMAPHost, &a.IMAPPort, &a.Username, &a.Password, &a.SyncedAt, &a.SyncError, &a.Unread, &a.Spam)
+			&a.IMAPHost, &a.IMAPPort, &a.Username, &a.Password, &a.SyncedAt, &a.SyncError, &a.SMTPHost, &a.SMTPPort, &a.Unread, &a.Spam)
 		return a, err
 	})
 }

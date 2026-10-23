@@ -10,16 +10,20 @@ import (
 	"crypto/x509"
 	"math/big"
 	"net"
+	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/emersion/go-imap/v2"
+	"github.com/emersion/go-imap/v2/imapclient"
 	"github.com/emersion/go-imap/v2/imapserver"
 	"github.com/emersion/go-imap/v2/imapserver/imapmemserver"
 	"github.com/google/uuid"
 
 	"montara-mail-agent/server/internal/app"
+	"montara-mail-agent/server/internal/lib/apperr"
 	"montara-mail-agent/server/internal/lib/constant"
 	"montara-mail-agent/server/internal/mailsync"
 	"montara-mail-agent/server/internal/models"
@@ -105,7 +109,7 @@ func testIMAPSync(t *testing.T, application *app.Application, organizationID str
 	ctx := context.Background()
 
 	user := imapmemserver.NewUser("sync@example.com", "app-password")
-	for name, attr := range map[string]imap.MailboxAttr{"INBOX": "", "Junk": imap.MailboxAttrJunk, "Sent": imap.MailboxAttrSent} {
+	for name, attr := range map[string]imap.MailboxAttr{"INBOX": "", "Junk": imap.MailboxAttrJunk, "Sent": imap.MailboxAttrSent, "Trash": imap.MailboxAttrTrash} {
 		var opts *imap.CreateOptions
 		if attr != "" {
 			opts = &imap.CreateOptions{SpecialUse: []imap.MailboxAttr{attr}}
@@ -238,6 +242,60 @@ Content-Type: text/html
 		t.Fatalf("after second sync: %d inbox mails, want 3", len(inbox))
 	}
 
+	// Changes go to the server. Read and starred are flags on the message.
+	read, starred := true, true
+	if err := syncer.SetFlags(ctx, account, contract, &read, &starred); err != nil {
+		t.Fatalf("set flags: %v", err)
+	}
+	if flags := serverFlags(t, port, pool, "INBOX", contract.UID); !slices.Contains(flags, imap.FlagSeen) || !slices.Contains(flags, imap.FlagFlagged) {
+		t.Fatalf("flags on the server: %v", flags)
+	}
+
+	// A move carries the mail's importance and summary to its copy.
+	if err := application.Repositories.Mail.SetSummary(ctx, contract.ID, "kept summary"); err != nil {
+		t.Fatal(err)
+	}
+	if err := syncer.Move(ctx, account, contract, constant.FolderSpam); err != nil {
+		t.Fatalf("move to spam: %v", err)
+	}
+	spam := folder(constant.FolderSpam)
+	if len(folder(constant.FolderInbox)) != 2 || len(spam) != 2 {
+		t.Fatalf("after the move: inbox %d, spam %d", len(folder(constant.FolderInbox)), len(spam))
+	}
+	var moved models.Mail
+	for _, m := range spam {
+		if full, _ := application.Repositories.Mail.Get(ctx, m.ID); full.FromEmail == "boss@example.com" {
+			moved = full
+		}
+	}
+	if moved.Summary == nil || *moved.Summary != "kept summary" || moved.Importance == nil || !moved.IsRead || !moved.IsStarred {
+		t.Fatalf("moved mail lost its state: %+v", moved)
+	}
+	if _, err := application.Repositories.Mail.Get(ctx, contract.ID); !apperr.IsNotFound(err) {
+		t.Fatalf("the old row stayed: %v", err)
+	}
+
+	// No archive folder (and no Gmail All Mail) on this server.
+	if err := syncer.Move(ctx, account, moved, constant.FolderArchive); err == nil || !strings.Contains(err.Error(), "no archive folder") {
+		t.Fatalf("archive without the folder: %v", err)
+	}
+
+	// Trash, then delete for good: gone from the server and the app.
+	if err := syncer.Move(ctx, account, moved, constant.FolderTrash); err != nil {
+		t.Fatalf("move to trash: %v", err)
+	}
+	trash := folder(constant.FolderTrash)
+	if len(trash) != 1 {
+		t.Fatalf("trash: %d mails", len(trash))
+	}
+	trashed, _ := application.Repositories.Mail.Get(ctx, trash[0].ID)
+	if err := syncer.Delete(ctx, account, trashed); err != nil {
+		t.Fatalf("delete: %v", err)
+	}
+	if len(folder(constant.FolderTrash)) != 0 || serverFlags(t, port, pool, "Trash", trashed.UID) != nil {
+		t.Fatal("deleted mail is still there")
+	}
+
 	// A failed sync is recorded on the account.
 	account.Password = application.Secrets.Seal("revoked")
 	if err := syncer.Sync(ctx, account); err == nil {
@@ -251,4 +309,29 @@ Content-Type: text/html
 	if err := application.Repositories.EmailAccount.Delete(ctx, account.ID); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// serverFlags returns a message's flags as the test server holds them, nil
+// when the message is gone.
+func serverFlags(t *testing.T, port int, pool *x509.CertPool, mailbox string, uid uint32) []imap.Flag {
+	t.Helper()
+	c, err := imapclient.DialTLS("127.0.0.1:"+strconv.Itoa(port), &imapclient.Options{TLSConfig: &tls.Config{RootCAs: pool}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+	if err := c.Login("sync@example.com", "app-password").Wait(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.Select(mailbox, nil).Wait(); err != nil {
+		t.Fatal(err)
+	}
+	msgs, err := c.Fetch(imap.UIDSetNum(imap.UID(uid)), &imap.FetchOptions{Flags: true}).Collect()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(msgs) == 0 {
+		return nil
+	}
+	return msgs[0].Flags
 }

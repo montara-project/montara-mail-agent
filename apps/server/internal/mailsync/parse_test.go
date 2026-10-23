@@ -20,12 +20,14 @@ func TestFolderMailboxes(t *testing.T) {
 		{Mailbox: "[Gmail]/Spam", Delim: '/', Attrs: []imap.MailboxAttr{imap.MailboxAttrJunk}},
 		{Mailbox: "Projects/Spam", Delim: '/'},
 		{Mailbox: "[Gmail]/Bin", Delim: '/', Attrs: []imap.MailboxAttr{imap.MailboxAttrTrash}},
+		{Mailbox: "[Gmail]/All Mail", Delim: '/', Attrs: []imap.MailboxAttr{imap.MailboxAttrAll}},
 	}
 	want := map[string]string{
 		constant.FolderInbox: "INBOX",
 		constant.FolderSent:  "[Gmail]/Sent Mail",
 		constant.FolderSpam:  "[Gmail]/Spam",
 		constant.FolderTrash: "[Gmail]/Bin",
+		allMail:              "[Gmail]/All Mail",
 	}
 	if got := folderMailboxes(gmail); !reflect.DeepEqual(got, want) {
 		t.Fatalf("gmail: %v, want %v", got, want)
@@ -37,12 +39,14 @@ func TestFolderMailboxes(t *testing.T) {
 		{Mailbox: "INBOX.Sent Items", Delim: '.'},
 		{Mailbox: "INBOX.Junk E-mail", Delim: '.'},
 		{Mailbox: "Drafts", Delim: '.'},
+		{Mailbox: "INBOX.Archive", Delim: '.'},
 	}
 	want = map[string]string{
-		constant.FolderInbox:  "INBOX",
-		constant.FolderSent:   "INBOX.Sent Items",
-		constant.FolderSpam:   "INBOX.Junk E-mail",
-		constant.FolderDrafts: "Drafts",
+		constant.FolderInbox:   "INBOX",
+		constant.FolderSent:    "INBOX.Sent Items",
+		constant.FolderSpam:    "INBOX.Junk E-mail",
+		constant.FolderDrafts:  "Drafts",
+		constant.FolderArchive: "INBOX.Archive",
 	}
 	if got := folderMailboxes(plain); !reflect.DeepEqual(got, want) {
 		t.Fatalf("plain: %v, want %v", got, want)

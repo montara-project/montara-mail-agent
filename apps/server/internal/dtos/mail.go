@@ -11,7 +11,7 @@ type MailListQuery struct {
 
 func (dto MailListQuery) Validate(v *validator.MapValidator) {
 	dto.base(v)
-	v.Field("folder").Regex(`^(inbox|sent|drafts|spam|trash)$`)
+	v.Field("folder").Regex(`^(inbox|archive|sent|drafts|spam|trash)$`)
 	v.Field("importance").Regex(`^(important|low_priority)$`)
 }
 
@@ -24,4 +24,27 @@ type MailPatchBody struct {
 
 func (dto MailPatchBody) Validate(v *validator.MapValidator) {
 	v.Field("importance").Regex(`^(important|low_priority)$`)
+}
+
+// MailMoveBody names the folder a mail moves to.
+type MailMoveBody struct {
+	Folder string `json:"folder"`
+}
+
+func (dto MailMoveBody) Validate(v *validator.MapValidator) {
+	v.Field("folder").Required().Regex(`^(inbox|archive|spam|trash)$`)
+}
+
+// maxForwardRecipients bounds one forward, so it can't become a mass mailer.
+const maxForwardRecipients = 20
+
+// MailForwardBody forwards a mail to up to 20 addresses with an optional note.
+type MailForwardBody struct {
+	To   []string `json:"to"`
+	Note string   `json:"note"`
+}
+
+func (dto MailForwardBody) Validate(v *validator.MapValidator) {
+	v.Field("to").Required().ArrayOf(maxForwardRecipients, `^[^@\s<>,;]+@[^@\s<>,;]+\.[^@\s<>,;]+$`)
+	v.Field("note").String().MaxLen(10000)
 }

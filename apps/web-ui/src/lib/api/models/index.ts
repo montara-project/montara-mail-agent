@@ -11,6 +11,7 @@ export namespace Models {
   export type Mail = import('./mail').Mail
   export type MailContact = import('./mail').MailContact
   export type MailFolder = import('./mail').MailFolder
+  export type MailMoveTarget = import('./mail').MailMoveTarget
   export type MailImportance = import('./mail').MailImportance
   export type LLMProvider = import('./llm-provider').LLMProvider
   export type LLMProviderKind = import('./llm-provider').LLMProviderKind

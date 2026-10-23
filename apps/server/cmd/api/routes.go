@@ -82,6 +82,10 @@ func routes(r *fiber.App, app *app.Application) {
 	mails := v1.Group("/mails", m.Authorization)
 	mails.Get("/:id", h.Mail.Get)
 	mails.Patch("/:id", idempotent, h.Mail.Patch)
+	// Each of these talks to the mail server, so they share the slow budget.
+	mails.Delete("/:id", slow, idempotent, h.Mail.Delete)
+	mails.Post("/:id/move", slow, idempotent, h.Mail.Move)
+	mails.Post("/:id/forward", slow, idempotent, h.Mail.Forward)
 	mails.Post("/:id/summary", slow, h.Mail.Summary)
 	mails.Post("/:id/reply-suggestions", slow, h.Mail.ReplySuggestions)
 }

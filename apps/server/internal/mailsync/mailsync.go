@@ -122,29 +122,41 @@ func (s *Syncer) Sync(ctx context.Context, account models.EmailAccount) error {
 	return nil
 }
 
-func (s *Syncer) pull(ctx context.Context, account models.EmailAccount) error {
+// connect signs in to an account's IMAP server with its saved password; the
+// caller closes the client.
+func (s *Syncer) connect(ctx context.Context, account models.EmailAccount) (*imapclient.Client, error) {
 	password, err := s.app.Secrets.Open(account.Password)
 	if err != nil {
-		return errors.New("the saved password can't be read, connect the account again")
+		return nil, errors.New("the saved password can't be read, connect the account again")
 	}
+	return s.login(ctx, account.IMAPHost, account.IMAPPort, account.Username, password)
+}
 
-	c, err := s.login(ctx, account.IMAPHost, account.IMAPPort, account.Username, password)
-	if err != nil {
-		return err
-	}
-	defer c.Close()
-	defer c.Logout()
-
+// mailboxes returns the server's mailbox name of each folder (see folderMailboxes).
+func mailboxes(c *imapclient.Client) (map[string]string, error) {
 	var opts *imap.ListOptions
 	if c.Caps().Has(imap.CapSpecialUse) {
 		opts = &imap.ListOptions{ReturnSpecialUse: true}
 	}
 	list, err := c.List("", "*", opts).Collect()
 	if err != nil {
-		return fmt.Errorf("list folders: %w", err)
+		return nil, fmt.Errorf("list folders: %w", err)
 	}
+	return folderMailboxes(list), nil
+}
 
-	mailboxes := folderMailboxes(list)
+func (s *Syncer) pull(ctx context.Context, account models.EmailAccount) error {
+	c, err := s.connect(ctx, account)
+	if err != nil {
+		return err
+	}
+	defer c.Close()
+	defer c.Logout()
+
+	mailboxes, err := mailboxes(c)
+	if err != nil {
+		return err
+	}
 	for _, folder := range constant.Folders {
 		if mailbox, ok := mailboxes[folder]; ok {
 			if err := s.pullFolder(ctx, c, account, folder, mailbox); err != nil {

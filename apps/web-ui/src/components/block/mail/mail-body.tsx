@@ -5,7 +5,7 @@ import React from 'react'
 // open in a new tab. allow-same-origin only lets this page read the frame's
 // height: without allow-scripts the email can't use it.
 const SANDBOX = 'allow-same-origin allow-popups allow-popups-to-escape-sandbox'
-const CSP =
+export const CSP =
   "default-src 'none'; img-src https: http: data: cid:; style-src 'unsafe-inline' https:; font-src https: data:"
 
 // An email that styles its own dark mode says so in its CSS or meta tags.

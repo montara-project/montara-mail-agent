@@ -13,6 +13,10 @@ type EmailAccountBody struct {
 	Password string `json:"password"`
 	IMAPHost string `json:"imap_host"`
 	IMAPPort int    `json:"imap_port"`
+	// SMTP is for custom IMAP accounts too; it defaults to the IMAP host
+	// with "smtp." in front, on 465.
+	SMTPHost string `json:"smtp_host"`
+	SMTPPort int    `json:"smtp_port"`
 }
 
 func (dto EmailAccountBody) Validate(v *validator.MapValidator) {
@@ -23,4 +27,6 @@ func (dto EmailAccountBody) Validate(v *validator.MapValidator) {
 	v.Field("password").Required().String().MaxLen(1000)
 	v.Field("imap_host").String().MaxLen(253).Regex(`^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$`)
 	v.Field("imap_port").IntRange(1, 65535)
+	v.Field("smtp_host").String().MaxLen(253).Regex(`^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$`)
+	v.Field("smtp_port").IntRange(1, 65535)
 }

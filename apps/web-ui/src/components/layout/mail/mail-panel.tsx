@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useSearch } from '@tanstack/react-router'
 import {
+  Archive,
   Check,
   ChevronsUpDown,
   File,
@@ -46,6 +47,7 @@ import { IMPORTANCE_LABELS } from './mail-data'
 // The folders the server syncs; IMAP has one junk folder, shown as Spam.
 export const MAIL_FOLDERS: { id: Models.MailFolder; title: string; icon: typeof Inbox }[] = [
   { id: 'inbox', title: 'Inbox', icon: Inbox },
+  { id: 'archive', title: 'Archive', icon: Archive },
   { id: 'drafts', title: 'Drafts', icon: File },
   { id: 'sent', title: 'Sent', icon: Send },
   { id: 'spam', title: 'Spam', icon: OctagonAlert },

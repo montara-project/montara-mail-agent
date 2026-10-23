@@ -19,6 +19,9 @@ export type EmailAccountBody = {
   /** Custom IMAP only; the known providers' servers are built in. */
   imap_host?: string
   imap_port?: number
+  /** Custom IMAP only; defaults to the IMAP host with "smtp." in front, on 465. */
+  smtp_host?: string
+  smtp_port?: number
 }
 
 export type MailListParams = {

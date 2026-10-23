@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"cmp"
 	"context"
 	"strings"
 
@@ -86,16 +87,16 @@ func (h *emailAccountHandler) Create(c fiber.Ctx) error {
 		Label:          strings.TrimSpace(body.Label),
 		Username:       strings.TrimSpace(body.Username),
 	}
-	if server, ok := constant.ProviderServers[body.Provider]; ok {
-		account.IMAPHost, account.IMAPPort = server.Host, server.Port
+	if servers, ok := constant.ProviderServers[body.Provider]; ok {
+		account.IMAPHost, account.IMAPPort = servers.IMAP.Host, servers.IMAP.Port
+		account.SMTPHost, account.SMTPPort = servers.SMTP.Host, servers.SMTP.Port
 	} else {
 		if body.IMAPHost == "" {
 			return apperr.New(apperr.KindBadRequest, "imap_host is required for a custom IMAP account")
 		}
-		account.IMAPHost, account.IMAPPort = body.IMAPHost, body.IMAPPort
-		if account.IMAPPort == 0 {
-			account.IMAPPort = 993
-		}
+		account.IMAPHost, account.IMAPPort = body.IMAPHost, cmp.Or(body.IMAPPort, 993)
+		account.SMTPHost = cmp.Or(body.SMTPHost, "smtp."+strings.TrimPrefix(body.IMAPHost, "imap."))
+		account.SMTPPort = cmp.Or(body.SMTPPort, 465)
 	}
 	if account.Username == "" {
 		account.Username = account.Email

@@ -14,11 +14,12 @@ type Handlers struct {
 }
 
 func New(app *app.Application) *Handlers {
+	sync := mailsync.New(app)
 	return &Handlers{
 		Health:       &healthHandler{app: app},
 		Organization: &organizationHandler{app: app},
-		EmailAccount: &emailAccountHandler{app: app, sync: mailsync.New(app)},
-		Mail:         &mailHandler{app: app},
+		EmailAccount: &emailAccountHandler{app: app, sync: sync},
+		Mail:         &mailHandler{app: app, sync: sync},
 		LLMProvider:  &llmProviderHandler{app: app},
 	}
 }

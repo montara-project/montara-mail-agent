@@ -237,6 +237,46 @@ func (r *MailRepository) Patch(ctx context.Context, id uuid.UUID, p MailPatch) e
 	return requireAffected(res, "mail")
 }
 
+// Replace hands a moved mail's importance and summary to its copy in folder
+// (uid there, as the sync stored it) and drops the old row. With uid 0 there
+// is no copy to hand them to, and the old row just goes.
+func (r *MailRepository) Replace(ctx context.Context, old models.Mail, folder string, uid uint32) error {
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Read from the old row itself, not the caller's copy, which may predate
+	// a summary or importance stored since.
+	if uid != 0 {
+		if _, err := tx.ExecContext(ctx, `
+			UPDATE mails AS copy
+			SET importance = COALESCE(old.importance, copy.importance),
+				importance_by = COALESCE(old.importance_by, copy.importance_by),
+				summary = COALESCE(old.summary, copy.summary), updated_at = now()
+			FROM mails AS old
+			WHERE old.id = $4 AND copy.email_account_id = $1 AND copy.folder = $2 AND copy.uid = $3`,
+			old.EmailAccountID, folder, uid, old.ID,
+		); err != nil {
+			return err
+		}
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM mails WHERE id = $1`, old.ID); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// Delete removes one mail row.
+func (r *MailRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	res, err := r.execContext(ctx, `DELETE FROM mails WHERE id = $1`, id)
+	if err != nil {
+		return err
+	}
+	return requireAffected(res, "mail")
+}
+
 // SetSummary caches a mail's AI summary.
 func (r *MailRepository) SetSummary(ctx context.Context, id uuid.UUID, summary string) error {
 	_, err := r.execContext(ctx, `UPDATE mails SET summary = $2, updated_at = now() WHERE id = $1`, id, summary)

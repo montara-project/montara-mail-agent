@@ -2,14 +2,17 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { format } from 'date-fns'
 import {
+  Archive,
   ArrowLeft,
+  Check,
   ChevronDown,
   ChevronUp,
-  EllipsisVertical,
   FolderInput,
   Forward,
   Mail as MailIcon,
+  MailOpen,
   OctagonAlert,
+  ShieldCheck,
   Printer,
   RotateCcw,
   Sparkles,
@@ -19,16 +22,29 @@ import {
   Trash2,
 } from 'lucide-react'
 import React from 'react'
+import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
 
 import Markdown from '@/components/block/common/markdown'
+import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
+import ForwardDialog from '@/components/block/mail/forward-dialog'
 import MailBody from '@/components/block/mail/mail-body'
 import { useMailPage } from '@/components/block/mail/mail-list'
+import { printMail } from '@/components/block/mail/print-mail'
 import ReplyComposer from '@/components/block/mail/reply-composer'
 import { IMPORTANCE_LABELS, mailInitials, senderName } from '@/components/layout/mail/mail-data'
+import { MAIL_FOLDERS, MAIL_LABELS } from '@/components/layout/mail/mail-panel'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { axiosErrorMessage, toastAxiosError } from '@/lib/api/axios-error'
@@ -58,6 +74,9 @@ function Contacts({ contacts }: { contacts: Models.MailContact[] }) {
   ))
 }
 
+const MOVE_TARGETS: Models.MailMoveTarget[] = ['inbox', 'archive', 'spam', 'trash']
+const folderTitle = (id: Models.MailFolder) => MAIL_FOLDERS.find((f) => f.id === id)?.title ?? id
+
 const OTHER_IMPORTANCE: Record<Models.MailImportance, Models.MailImportance> = {
   important: 'low_priority',
   low_priority: 'important',
@@ -68,6 +87,10 @@ export default function MailReader({ mailId }: { mailId: string }) {
   const navigate = useNavigate()
   const { data: mail, isPending, isError, error } = useQuery(queries.mails.get(mailId))
   const patch = useMutation(queries.mails.patch(mailId))
+  const move = useMutation(queries.mails.move(mailId))
+  const remove = useMutation(queries.mails.delete(mailId))
+  const [confirmingDelete, setConfirmingDelete] = React.useState(false)
+  const [forwarding, setForwarding] = React.useState(false)
   // A kept summary shows right away; otherwise the panel waits for a click.
   const [summaryToggled, setSummaryOpen] = React.useState<boolean | null>(null)
   const summaryOpen = summaryToggled ?? !!mail?.summary
@@ -92,6 +115,28 @@ export default function MailReader({ mailId }: { mailId: string }) {
   const next = index >= 0 ? pageMails[index + 1] : undefined
 
   const backToList = () => navigate({ to: '/mail', search: (s) => ({ ...s, mail: undefined }) })
+  // Once the mail leaves this folder, the reader moves on to its neighbour, or back to the list.
+  const leave = () =>
+    navigate({ to: '/mail', search: (s) => ({ ...s, mail: next?.id ?? prev?.id }) })
+  // Each of these signs in to the mail server, so the buttons wait for one to finish.
+  const busy = move.isPending || remove.isPending
+
+  const moveTo = (folder: Models.MailMoveTarget) =>
+    move.mutate(folder, {
+      onSuccess: () => {
+        toast.success(`Moved to ${folderTitle(folder)}`)
+        leave()
+      },
+      onError: toastAxiosError,
+    })
+  const deleteMail = () =>
+    remove.mutate(undefined, {
+      onSuccess: (res) => {
+        toast.success(res.message ?? 'Deleted')
+        leave()
+      },
+      onError: toastAxiosError,
+    })
   const update = (body: Parameters<typeof patch.mutate>[0], then?: () => void) =>
     patch.mutate(body, { onSuccess: then, onError: toastAxiosError })
 
@@ -113,29 +158,78 @@ export default function MailReader({ mailId }: { mailId: string }) {
 
   return (
     <div className="flex min-w-0 flex-1 flex-col">
-      {/* ponytail: report, delete and move need IMAP write-back; until then they do nothing. */}
       <div className="flex h-14 shrink-0 items-center justify-between border-b px-3">
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-0.5" aria-busy={busy}>
           <IconButton label="Back to list" onClick={backToList}>
             <ArrowLeft />
           </IconButton>
           <Separator orientation="vertical" className="mx-1.5 data-[orientation=vertical]:h-5" />
-          <IconButton label="Report spam">
-            <OctagonAlert />
-          </IconButton>
-          <IconButton label="Mark as unread" onClick={() => update({ is_read: false }, backToList)}>
-            <MailIcon />
-          </IconButton>
-          <IconButton label="Delete">
+          {mail.folder !== 'archive' && (
+            <IconButton label="Archive" disabled={busy} onClick={() => moveTo('archive')}>
+              <Archive />
+            </IconButton>
+          )}
+          {mail.folder === 'spam' ? (
+            <IconButton label="Not spam" disabled={busy} onClick={() => moveTo('inbox')}>
+              <ShieldCheck />
+            </IconButton>
+          ) : (
+            <IconButton label="Report spam" disabled={busy} onClick={() => moveTo('spam')}>
+              <OctagonAlert />
+            </IconButton>
+          )}
+          <IconButton
+            label={mail.folder === 'trash' ? 'Delete forever' : 'Delete'}
+            disabled={busy}
+            onClick={() => (mail.folder === 'trash' ? setConfirmingDelete(true) : deleteMail())}
+          >
             <Trash2 />
           </IconButton>
+          {mail.is_read ? (
+            <IconButton
+              label="Mark as unread"
+              onClick={() => update({ is_read: false }, backToList)}
+            >
+              <MailIcon />
+            </IconButton>
+          ) : (
+            <IconButton label="Mark as read" onClick={() => update({ is_read: true })}>
+              <MailOpen />
+            </IconButton>
+          )}
           <Separator orientation="vertical" className="mx-1.5 data-[orientation=vertical]:h-5" />
-          <IconButton label="Move to folder">
-            <FolderInput />
-          </IconButton>
-          <IconButton label="More actions">
-            <EllipsisVertical />
-          </IconButton>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <IconButton label="Move to" disabled={busy}>
+                <FolderInput />
+              </IconButton>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48">
+              <DropdownMenuLabel className="text-muted-foreground text-xs">
+                Move to
+              </DropdownMenuLabel>
+              {MOVE_TARGETS.filter((folder) => folder !== mail.folder).map((folder) => {
+                const Icon = MAIL_FOLDERS.find((f) => f.id === folder)!.icon
+                return (
+                  <DropdownMenuItem key={folder} onSelect={() => moveTo(folder)}>
+                    <Icon />
+                    {folderTitle(folder)}
+                  </DropdownMenuItem>
+                )
+              })}
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-muted-foreground text-xs">
+                Label as
+              </DropdownMenuLabel>
+              {MAIL_LABELS.map((label) => (
+                <DropdownMenuItem key={label.id} onSelect={() => update({ importance: label.id })}>
+                  <span className={`${label.color} size-2.5 shrink-0 rounded-sm`} />
+                  {label.title}
+                  {mail.importance === label.id && <Check className="ml-auto" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <div className="flex items-center gap-0.5">
           <IconButton label="Previous mail" disabled={!prev} asChild={!!prev}>
@@ -189,10 +283,10 @@ export default function MailReader({ mailId }: { mailId: string }) {
           </div>
           <div className="text-muted-foreground flex shrink-0 items-center gap-0.5 text-sm">
             <span className="mr-1.5">{format(new Date(mail.received_at), 'MMM d, HH.mm')}</span>
-            <IconButton label="Print" onClick={() => window.print()}>
+            <IconButton label="Print" onClick={() => printMail(mail)}>
               <Printer />
             </IconButton>
-            <IconButton label="Forward">
+            <IconButton label="Forward" onClick={() => setForwarding(true)}>
               <Forward />
             </IconButton>
             <IconButton
@@ -287,6 +381,16 @@ export default function MailReader({ mailId }: { mailId: string }) {
       </div>
 
       <ReplyComposer key={mail.id} mailId={mail.id} />
+
+      {forwarding && <ForwardDialog mail={mail} onClose={() => setForwarding(false)} />}
+      <SimpleAlertDialog
+        open={confirmingDelete}
+        onOpenChange={setConfirmingDelete}
+        title="Delete this email forever?"
+        description="It is removed from the mail server too, and can't be brought back."
+        confirmText="Delete forever"
+        onConfirm={deleteMail}
+      />
     </div>
   )
 }

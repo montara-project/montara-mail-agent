@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 
 	"github.com/gofiber/fiber/v3"
@@ -9,14 +10,17 @@ import (
 	"montara-mail-agent/server/internal/dtos"
 	"montara-mail-agent/server/internal/lib"
 	"montara-mail-agent/server/internal/lib/apperr"
+	"montara-mail-agent/server/internal/lib/constant"
 	"montara-mail-agent/server/internal/lib/llm"
 	"montara-mail-agent/server/internal/mailai"
+	"montara-mail-agent/server/internal/mailsync"
 	"montara-mail-agent/server/internal/models"
 	"montara-mail-agent/server/internal/repositories"
 )
 
 type mailHandler struct {
-	app *app.Application
+	app  *app.Application
+	sync *mailsync.Syncer
 }
 
 func (h *mailHandler) repo() *repositories.MailRepository {
@@ -67,6 +71,21 @@ func (h *mailHandler) Patch(c fiber.Ctx) error {
 		return err
 	}
 
+	// The app answers at once; the mail server gets the read and starred
+	// states in the background, and a failure there only costs the next
+	// sync's view of the flag.
+	if body.IsRead != nil || body.IsStarred != nil {
+		go func(m models.Mail) {
+			account, err := h.app.Repositories.EmailAccount.Get(context.Background(), m.EmailAccountID)
+			if err == nil {
+				err = h.sync.SetFlags(context.Background(), account, m, body.IsRead, body.IsStarred)
+			}
+			if err != nil {
+				h.app.Logger.Warn("mail flags not written to the server", "mail", m.ID, "error", err)
+			}
+		}(m)
+	}
+
 	m, err = h.repo().Get(c.Context(), m.ID)
 	if err != nil {
 		return err
@@ -74,9 +93,92 @@ func (h *mailHandler) Patch(c fiber.Ctx) error {
 	return dtos.OK(c, m)
 }
 
+// account returns the account a mail belongs to.
+func (h *mailHandler) account(c fiber.Ctx, m models.Mail) (models.EmailAccount, error) {
+	return h.app.Repositories.EmailAccount.Get(c.Context(), m.EmailAccountID)
+}
+
+// serverError keeps typed errors (no such folder, stale folder) and reports
+// anything else as the mail server's refusal.
+func serverError(err error) error {
+	var ae *apperr.Error
+	if errors.As(err, &ae) {
+		return err
+	}
+	return apperr.New(apperr.KindBadGateway, "the mail server refused: %v", err)
+}
+
+// Move moves a mail to the inbox, archive, spam or trash, on the server too.
+func (h *mailHandler) Move(c fiber.Ctx) error {
+	m, err := h.mail(c)
+	if err != nil {
+		return err
+	}
+	var body dtos.MailMoveBody
+	if err := lib.ValidateRequestBody(c, &body); err != nil {
+		return err
+	}
+	if body.Folder == m.Folder {
+		return apperr.New(apperr.KindBadRequest, "the mail is already in %s", m.Folder)
+	}
+
+	account, err := h.account(c, m)
+	if err != nil {
+		return err
+	}
+	if err := h.sync.Move(c.Context(), account, m, body.Folder); err != nil {
+		return serverError(err)
+	}
+	return dtos.Message(c, fiber.StatusOK, "mail moved to "+body.Folder)
+}
+
+// Delete moves a mail to the trash, or deletes it for good when it is already there.
+func (h *mailHandler) Delete(c fiber.Ctx) error {
+	m, err := h.mail(c)
+	if err != nil {
+		return err
+	}
+	account, err := h.account(c, m)
+	if err != nil {
+		return err
+	}
+
+	if m.Folder != constant.FolderTrash {
+		if err := h.sync.Move(c.Context(), account, m, constant.FolderTrash); err != nil {
+			return serverError(err)
+		}
+		return dtos.Message(c, fiber.StatusOK, "mail moved to trash")
+	}
+	if err := h.sync.Delete(c.Context(), account, m); err != nil {
+		return serverError(err)
+	}
+	return dtos.Message(c, fiber.StatusOK, "mail deleted")
+}
+
+// Forward sends the mail on from its account to other addresses.
+func (h *mailHandler) Forward(c fiber.Ctx) error {
+	m, err := h.mail(c)
+	if err != nil {
+		return err
+	}
+	var body dtos.MailForwardBody
+	if err := lib.ValidateRequestBody(c, &body); err != nil {
+		return err
+	}
+
+	account, err := h.account(c, m)
+	if err != nil {
+		return err
+	}
+	if err := h.sync.Forward(c.Context(), account, m, body.To, body.Note); err != nil {
+		return serverError(err)
+	}
+	return dtos.Message(c, fiber.StatusOK, "mail forwarded")
+}
+
 // llmFor returns the model of the mail's organization.
 func (h *mailHandler) llmFor(c fiber.Ctx, m models.Mail) (llm.Client, error) {
-	account, err := h.app.Repositories.EmailAccount.Get(c.Context(), m.EmailAccountID)
+	account, err := h.account(c, m)
 	if err != nil {
 		return nil, err
 	}

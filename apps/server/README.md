@@ -79,6 +79,8 @@ LLM provider. Someone else's organization, account or mail answers 404.
 | `POST /api/v1/email-accounts/:id/sync`                  | Sync now. `DELETE /api/v1/email-accounts/:id` disconnects and drops the synced mail.           |
 | `GET, PATCH /api/v1/mails/:id`                          | Read a mail; mark it read or starred, or set its importance (the AI never overrides the user). |
 | `POST /api/v1/mails/:id/summary`, `/reply-suggestions`  | AI summary (kept after the first call) and up to three short replies.                          |
+| `POST /api/v1/mails/:id/move`, `DELETE /api/v1/mails/:id` | Move to `inbox`, `archive`, `spam` or `trash` on the mail server too; delete moves to the trash, or deletes for good from it. |
+| `POST /api/v1/mails/:id/forward`                        | Forward to up to 20 addresses through the account's SMTP server, with an optional note.         |
 
 Every provider (Gmail, Outlook, Yahoo, iCloud, or any IMAP server) connects
 with the address and an app password; the known providers' servers are
@@ -89,8 +91,9 @@ accounts and saving the providers again.
 The sync takes the newest 50 messages of each folder the first time and
 everything new after that, then has the organization's model classify new
 inbox mail as `important` or `low_priority`. Read and starred states are
-taken from the server once, when a message is first synced; marking a mail
-read in the app does not write back to the server.
+taken from the server when a message is first synced; changing them in the
+app writes them back in the background. Gmail archives into All Mail, which
+is not synced, so archived Gmail mail leaves the app.
 
 ## Authentication
 

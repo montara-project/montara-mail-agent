@@ -2,15 +2,19 @@ package constant
 
 // Mail folders synced from IMAP. Spam is the server's \Junk folder.
 const (
-	FolderInbox  = "inbox"
-	FolderSent   = "sent"
-	FolderDrafts = "drafts"
-	FolderSpam   = "spam"
-	FolderTrash  = "trash"
+	FolderInbox   = "inbox"
+	FolderArchive = "archive"
+	FolderSent    = "sent"
+	FolderDrafts  = "drafts"
+	FolderSpam    = "spam"
+	FolderTrash   = "trash"
 )
 
 // Folders lists every synced folder.
-var Folders = []string{FolderInbox, FolderSent, FolderDrafts, FolderSpam, FolderTrash}
+var Folders = []string{FolderInbox, FolderArchive, FolderSent, FolderDrafts, FolderSpam, FolderTrash}
+
+// MoveTargets are the folders a user may move a mail to.
+var MoveTargets = []string{FolderInbox, FolderArchive, FolderSpam, FolderTrash}
 
 // Mail importance, set by the AI or the user.
 const (
@@ -24,8 +28,9 @@ const (
 	ImportanceByUser = "user"
 )
 
-// IMAPServer is where a provider's mail lives.
-type IMAPServer struct {
+// MailServer is a host and port; for SMTP, 465 means implicit TLS and any
+// other port STARTTLS.
+type MailServer struct {
 	Host string
 	Port int
 }
@@ -40,10 +45,11 @@ const (
 	ProviderIMAP    = "imap"
 )
 
-// ProviderServers are the fixed IMAP servers of the known providers.
-var ProviderServers = map[string]IMAPServer{
-	ProviderGmail:   {Host: "imap.gmail.com", Port: 993},
-	ProviderOutlook: {Host: "outlook.office365.com", Port: 993},
-	ProviderYahoo:   {Host: "imap.mail.yahoo.com", Port: 993},
-	ProviderICloud:  {Host: "imap.mail.me.com", Port: 993},
+// ProviderServers are the fixed IMAP and SMTP servers of the known providers
+// (migration 000009 copies the SMTP ones).
+var ProviderServers = map[string]struct{ IMAP, SMTP MailServer }{
+	ProviderGmail:   {IMAP: MailServer{"imap.gmail.com", 993}, SMTP: MailServer{"smtp.gmail.com", 465}},
+	ProviderOutlook: {IMAP: MailServer{"outlook.office365.com", 993}, SMTP: MailServer{"smtp.office365.com", 587}},
+	ProviderYahoo:   {IMAP: MailServer{"imap.mail.yahoo.com", 993}, SMTP: MailServer{"smtp.mail.yahoo.com", 465}},
+	ProviderICloud:  {IMAP: MailServer{"imap.mail.me.com", 993}, SMTP: MailServer{"smtp.mail.me.com", 587}},
 }

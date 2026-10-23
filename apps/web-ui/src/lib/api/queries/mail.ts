@@ -4,7 +4,7 @@ import { getQueryClient } from '@/lib/providers/react-query'
 
 import type { Models } from '../models'
 import type { MailListParams } from '../services/types/email-account'
-import type { MailPatchBody } from '../services/types/mail'
+import type { MailForwardBody, MailPatchBody } from '../services/types/mail'
 
 import { services } from '../services'
 import { ORGANIZATION_QUERY_KEY } from './organization'
@@ -44,11 +44,7 @@ const patch = (id: string) => {
     },
     onSuccess: (mail) => {
       qc.setQueryData([MAIL_QUERY_KEY, 'detail', id], mail)
-      qc.invalidateQueries({ queryKey: [MAIL_QUERY_KEY, 'list'] })
-      // Unread counts live on the accounts and the dashboard. The account key is
-      // spelled out: importing it would make the two query modules import each other.
-      qc.invalidateQueries({ queryKey: ['email-accounts'] })
-      qc.invalidateQueries({ queryKey: [ORGANIZATION_QUERY_KEY, 'stats'] })
+      invalidateMailboxes()
     },
   })
 }
@@ -82,4 +78,51 @@ const replySuggestions = (id: string) =>
     retry: false,
   })
 
-export const mailQueries = { list, get, patch, summary, replySuggestions } as const
+/**
+ * After a mail changes or leaves its folder: lists, unread counts and the
+ * dashboard. The account key is spelled out: importing it would make the two
+ * query modules import each other.
+ */
+function invalidateMailboxes() {
+  const qc = getQueryClient()
+  qc.invalidateQueries({ queryKey: [MAIL_QUERY_KEY, 'list'] })
+  qc.invalidateQueries({ queryKey: ['email-accounts'] })
+  qc.invalidateQueries({ queryKey: [ORGANIZATION_QUERY_KEY, 'stats'] })
+}
+
+const move = (id: string) =>
+  mutationOptions({
+    mutationFn: async (folder: Models.MailMoveTarget) => {
+      const res = await services.mails.move(id, folder)
+      return res.data
+    },
+    onSuccess: invalidateMailboxes,
+  })
+
+const remove = (id: string) =>
+  mutationOptions({
+    mutationFn: async () => {
+      const res = await services.mails.delete(id)
+      return res.data
+    },
+    onSuccess: invalidateMailboxes,
+  })
+
+const forward = (id: string) =>
+  mutationOptions({
+    mutationFn: async (body: MailForwardBody) => {
+      const res = await services.mails.forward(id, body)
+      return res.data
+    },
+  })
+
+export const mailQueries = {
+  list,
+  get,
+  patch,
+  summary,
+  replySuggestions,
+  move,
+  delete: remove,
+  forward,
+} as const

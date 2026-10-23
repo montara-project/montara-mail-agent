@@ -103,7 +103,15 @@ function ConnectForm({ connector, onClose }: { connector: Connector; onClose: ()
   const schema = isImap ? ImapAccountFormSchema : EmailAccountFormSchema
 
   const form = useAppForm({
-    defaultValues: { email: '', password: '', label: '', imap_host: '', imap_port: '993' },
+    defaultValues: {
+      email: '',
+      password: '',
+      label: '',
+      imap_host: '',
+      imap_port: '993',
+      smtp_host: '',
+      smtp_port: '465',
+    },
     validators: { onSubmit: schema, onChange: schema },
     onSubmit: async ({ value }) => {
       try {
@@ -113,7 +121,12 @@ function ConnectForm({ connector, onClose }: { connector: Connector; onClose: ()
           email: dto.email,
           password: dto.password,
           label: dto.label || undefined,
-          ...(isImap && { imap_host: dto.imap_host, imap_port: Number(dto.imap_port) }),
+          ...(isImap && {
+            imap_host: dto.imap_host,
+            imap_port: Number(dto.imap_port),
+            smtp_host: dto.smtp_host || undefined,
+            smtp_port: Number(dto.smtp_port),
+          }),
         })
         toast.success(`${account.email} connected; its mail is syncing`)
         onClose()
@@ -158,18 +171,32 @@ function ConnectForm({ connector, onClose }: { connector: Connector; onClose: ()
           )}
         />
         {isImap && (
-          <div className="grid grid-cols-[1fr_6rem] gap-3">
-            <form.AppField
-              name="imap_host"
-              children={(field) => (
-                <field.TextField asterisk label="IMAP server" placeholder="imap.example.com" />
-              )}
-            />
-            <form.AppField
-              name="imap_port"
-              children={(field) => <field.TextField asterisk label="Port" inputMode="numeric" />}
-            />
-          </div>
+          <>
+            <div className="grid grid-cols-[1fr_6rem] gap-3">
+              <form.AppField
+                name="imap_host"
+                children={(field) => (
+                  <field.TextField asterisk label="IMAP server" placeholder="imap.example.com" />
+                )}
+              />
+              <form.AppField
+                name="imap_port"
+                children={(field) => <field.TextField asterisk label="Port" inputMode="numeric" />}
+              />
+            </div>
+            <div className="grid grid-cols-[1fr_6rem] gap-3">
+              <form.AppField
+                name="smtp_host"
+                children={(field) => (
+                  <field.TextField label="SMTP server" placeholder="smtp. + the IMAP server" />
+                )}
+              />
+              <form.AppField
+                name="smtp_port"
+                children={(field) => <field.TextField label="Port" inputMode="numeric" />}
+              />
+            </div>
+          </>
         )}
         <form.AppField
           name="label"

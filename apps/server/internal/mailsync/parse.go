@@ -18,16 +18,24 @@ import (
 	"montara-mail-agent/server/internal/models"
 )
 
-// folderMailboxes maps each synced folder to the server's mailbox name: by
-// SPECIAL-USE attribute first, then by the usual names of servers without it.
+// allMail is Gmail's All Mail, keyed apart from the synced folders: archiving
+// there takes a mail out of the inbox, but syncing it would copy every mail.
+const allMail = "all"
+
+// folderMailboxes maps each synced folder (and allMail) to the server's
+// mailbox name: by SPECIAL-USE attribute first, then by the usual names of
+// servers without it.
 func folderMailboxes(list []*imap.ListData) map[string]string {
 	byAttr := map[imap.MailboxAttr]string{
-		imap.MailboxAttrSent:   constant.FolderSent,
-		imap.MailboxAttrDrafts: constant.FolderDrafts,
-		imap.MailboxAttrJunk:   constant.FolderSpam,
-		imap.MailboxAttrTrash:  constant.FolderTrash,
+		imap.MailboxAttrArchive: constant.FolderArchive,
+		imap.MailboxAttrAll:     allMail,
+		imap.MailboxAttrSent:    constant.FolderSent,
+		imap.MailboxAttrDrafts:  constant.FolderDrafts,
+		imap.MailboxAttrJunk:    constant.FolderSpam,
+		imap.MailboxAttrTrash:   constant.FolderTrash,
 	}
 	byName := map[string]string{
+		"archive": constant.FolderArchive, "archives": constant.FolderArchive,
 		"sent": constant.FolderSent, "sent items": constant.FolderSent, "sent messages": constant.FolderSent, "sent mail": constant.FolderSent,
 		"drafts": constant.FolderDrafts, "draft": constant.FolderDrafts,
 		"junk": constant.FolderSpam, "spam": constant.FolderSpam, "junk e-mail": constant.FolderSpam, "junk email": constant.FolderSpam, "bulk": constant.FolderSpam, "bulk mail": constant.FolderSpam,

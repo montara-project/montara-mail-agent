@@ -9,6 +9,9 @@ const resources = (): MailResources => ({
   patch: (id, body) => api.patch(`${path}/${id}`, body),
   summary: (id) => api.post(`${path}/${id}/summary`),
   replySuggestions: (id) => api.post(`${path}/${id}/reply-suggestions`),
+  move: (id, folder) => api.post(`${path}/${id}/move`, { folder }),
+  delete: (id) => api.delete(`${path}/${id}`),
+  forward: (id, body) => api.post(`${path}/${id}/forward`, body),
 })
 
 export const mailServices = resources()

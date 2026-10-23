@@ -14,6 +14,9 @@ export interface EmailAccount {
   imap_host: string
   imap_port: number
   username: string
+  /** Where forwards are sent from; 465 is TLS, 587 STARTTLS. */
+  smtp_host: string
+  smtp_port: number
   /** Last successful sync; null until the first one finishes. */
   synced_at: ISO8601DateString | null
   /** Why the last sync failed; null when it succeeded. */

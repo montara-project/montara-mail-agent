@@ -16,6 +16,8 @@ type EmailAccount struct {
 	IMAPHost       string    `db:"imap_host" json:"imap_host"`
 	IMAPPort       int       `db:"imap_port" json:"imap_port"`
 	Username       string    `db:"username" json:"username"`
+	SMTPHost       string    `db:"smtp_host" json:"smtp_host"`
+	SMTPPort       int       `db:"smtp_port" json:"smtp_port"`
 	// Password is sealed (see lib.SecretBox) and never serialized.
 	Password  []byte     `db:"password" json:"-"`
 	SyncedAt  *time.Time `db:"synced_at" json:"synced_at"`

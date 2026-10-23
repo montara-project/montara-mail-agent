@@ -51,6 +51,10 @@ func TestIntegration(t *testing.T) {
 			// Fiber's test connection comes from 0.0.0.0; trusting it lets the
 			// test send X-Forwarded-For the way a reverse proxy would.
 			TrustedProxies: "0.0.0.0",
+			// The flow makes more model and mail-server calls than one
+			// minute's budget allows; the rate-limit check sends its own
+			// X-Forwarded-For, so it is still counted.
+			RateLimitExemptIPs: "0.0.0.0",
 		},
 		DB: config.ConfigDB{DSN: dsn, MaxOpenConns: 5, MaxIdleConns: 5},
 		Auth: config.ConfigAuth{

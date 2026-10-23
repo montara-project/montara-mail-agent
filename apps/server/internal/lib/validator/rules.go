@@ -70,3 +70,25 @@ func (v *FieldValidator) IntRange(lo, hi int) *FieldValidator {
 	})
 	return v
 }
+
+// ArrayOf reports a failure when the value is not a list of 1 to max strings
+// that each match pattern. JSON arrays decode as []interface{}.
+func (v *FieldValidator) ArrayOf(max int, pattern string) *FieldValidator {
+	re := regexp.MustCompile(pattern)
+	v.registerRule(func(key string, data interface{}) (string, bool) {
+		if data == nil {
+			return "", true
+		}
+		items, ok := data.([]interface{})
+		if !ok || len(items) == 0 || len(items) > max {
+			return fmt.Sprintf("%s must be a list of 1 to %d items", key, max), false
+		}
+		for i, item := range items {
+			if s, ok := item.(string); !ok || !re.MatchString(s) {
+				return fmt.Sprintf("%s item %d is invalid", key, i+1), false
+			}
+		}
+		return "", true
+	})
+	return v
+}

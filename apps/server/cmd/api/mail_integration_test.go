@@ -38,9 +38,13 @@ func seedAccount(t *testing.T, application *app.Application, organizationID stri
 		Provider:       constant.ProviderGmail,
 		Label:          "Work",
 		Email:          uuid.NewString()[:8] + "@example.com",
-		IMAPHost:       "imap.gmail.com",
-		IMAPPort:       993,
-		Password:       application.Secrets.Seal("app-password"),
+		// Loopback, which the guarded dialer refuses: write-backs the tests
+		// trigger fail fast instead of reaching a real server.
+		IMAPHost: "127.0.0.1",
+		IMAPPort: 9,
+		SMTPHost: "127.0.0.1",
+		SMTPPort: 9,
+		Password: application.Secrets.Seal("app-password"),
 	}
 	account.ID = uuid.Must(uuid.NewV7())
 	account.Username = account.Email
@@ -130,7 +134,7 @@ func testMailFlow(t *testing.T, call callFunc, application *app.Application, tok
 	if status, out := call(http.MethodGet, accountPath+"/mails?search=sale", token, nil); status != http.StatusOK || len(list(out)) != 1 {
 		t.Fatalf("search: %d %v", status, out)
 	}
-	if status, _ := call(http.MethodGet, accountPath+"/mails?folder=archive", token, nil); status != http.StatusUnprocessableEntity {
+	if status, _ := call(http.MethodGet, accountPath+"/mails?folder=junk", token, nil); status != http.StatusUnprocessableEntity {
 		t.Fatalf("unknown folder: %d, want 422", status)
 	}
 
@@ -180,6 +184,23 @@ func testMailFlow(t *testing.T, call callFunc, application *app.Application, tok
 		t.Fatalf("reply suggestions: %d %v", status, out)
 	}
 
+	// Moving and forwarding validate first, then answer for the mail server.
+	if status, _ := call(http.MethodPost, mailPath+"/move", token, map[string]any{"folder": "sent"}); status != http.StatusUnprocessableEntity {
+		t.Fatalf("move to sent: %d, want 422", status)
+	}
+	if status, _ := call(http.MethodPost, mailPath+"/move", token, map[string]any{"folder": "inbox"}); status != http.StatusBadRequest {
+		t.Fatalf("move to its own folder: %d, want 400", status)
+	}
+	if status, out := call(http.MethodPost, mailPath+"/move", token, map[string]any{"folder": "spam"}); status != http.StatusBadGateway {
+		t.Fatalf("move with the server unreachable: %d %v, want 502", status, out)
+	}
+	if status, _ := call(http.MethodPost, mailPath+"/forward", token, map[string]any{"to": []string{"not an address"}}); status != http.StatusUnprocessableEntity {
+		t.Fatalf("forward to a bad address: %d, want 422", status)
+	}
+	if status, _ := call(http.MethodPost, mailPath+"/forward", token, map[string]any{"to": []string{}}); status != http.StatusUnprocessableEntity {
+		t.Fatalf("forward to nobody: %d, want 422", status)
+	}
+
 	// Another organization's account and mail look missing.
 	other := seedAccount(t, application, otherOrg, models.Mail{Folder: constant.FolderInbox, Subject: "Private"})
 	otherMails, err := application.Repositories.Mail.List(context.Background(), other.ID, mailListAll())
@@ -191,6 +212,8 @@ func testMailFlow(t *testing.T, call callFunc, application *app.Application, tok
 		{http.MethodDelete, "/api/v1/email-accounts/" + other.ID.String()},
 		{http.MethodGet, "/api/v1/mails/" + otherMails[0].ID.String()},
 		{http.MethodPost, "/api/v1/mails/" + otherMails[0].ID.String() + "/summary"},
+		{http.MethodDelete, "/api/v1/mails/" + otherMails[0].ID.String()},
+		{http.MethodPost, "/api/v1/mails/" + otherMails[0].ID.String() + "/forward"},
 	} {
 		if status, _ := call(req.method, req.path, token, nil); status != http.StatusNotFound {
 			t.Fatalf("%s %s by a non-member: %d, want 404", req.method, req.path, status)
