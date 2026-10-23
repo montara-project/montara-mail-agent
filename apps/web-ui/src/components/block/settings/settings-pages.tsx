@@ -1,5 +1,4 @@
 import SectionCard from '@/components/block/common/section-card'
-import { OrganizationSettings } from '@/components/block/settings/general-settings'
 import LLMProviderSettings from '@/components/block/settings/llm-provider-form'
 import OrganizationList from '@/components/block/settings/organization-list'
 import PasswordSettings from '@/components/block/settings/password-form'
@@ -45,7 +44,6 @@ export function SecuritySettings() {
 export function OrganizationPageSettings() {
   return (
     <div className="grid gap-4">
-      <OrganizationSettings />
       <OrganizationList />
       {/* The Community Edition has one user and is its own server. */}
       {!COMMUNITY && (
