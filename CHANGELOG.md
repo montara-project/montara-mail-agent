@@ -1,0 +1,63 @@
+# Changelog
+
+All notable changes to this project are documented in this file. Versions follow the git tags (`v*`); Docker images are published to ghcr.io with the same version.
+
+
+## 0.1.0 (2026-10-23)
+
+### Features
+
+* add Lark and Zoho mail connectors ([69970bd](https://github.com/montara-project/montara-mail-agent/commit/69970bdd79b9ccc6d733f1c9492efcfa42e10968))
+* build cloud and community editions ([6ae05c9](https://github.com/montara-project/montara-mail-agent/commit/6ae05c9bd21f3274d02007d606f2b980c9fc22e0))
+* initial project ([4f2746d](https://github.com/montara-project/montara-mail-agent/commit/4f2746dd1d8a281777ea70f9fbb6bbe866795ac7))
+* **mail:** attach files to new mails and replies ([d50e970](https://github.com/montara-project/montara-mail-agent/commit/d50e970c669efc219f576bd4b61d2da2cdb99ec9))
+* **mail:** compose and send new mail ([0120828](https://github.com/montara-project/montara-mail-agent/commit/012082829ddef3d773bd6f536a2d6f00e90611fd))
+* **mail:** return the kept AI summary with each mail ([ff00b76](https://github.com/montara-project/montara-mail-agent/commit/ff00b763cd893af49cc6544aec6cde5cc4bd5b30))
+* **mail:** send replies from the reply composer ([95d7221](https://github.com/montara-project/montara-mail-agent/commit/95d72213b363e90c2ecc13d391c96afe712a6b07))
+* **mail:** wire email actions to the mail server ([417f46f](https://github.com/montara-project/montara-mail-agent/commit/417f46feafa36c9bf4b7aef2a3d749fe9304d3be))
+* **main-web:** redesign landing page around AI email management ([d41a2f6](https://github.com/montara-project/montara-mail-agent/commit/d41a2f6b5337238542380c814269358934cd1406))
+* **server:** add account settings, TOTP and self-hosted LLM models ([e51de2d](https://github.com/montara-project/montara-mail-agent/commit/e51de2d2501738233700d26c642e30dcada32a5d))
+* **server:** add AI mail summary endpoint ([893a774](https://github.com/montara-project/montara-mail-agent/commit/893a7748f2db2bbb6726978910f4efc97e199cf8))
+* **server:** add email accounts, IMAP mail sync and per-organization AI ([408bc6e](https://github.com/montara-project/montara-mail-agent/commit/408bc6e6622f5818fc043b4aab1b36e0e01a3cb0))
+* **server:** let replies choose their To and Cc ([9570052](https://github.com/montara-project/montara-mail-agent/commit/957005246145b4f31b4577c27023408a3e0ff88f))
+* **server:** replace categories with organizations ([db3ac63](https://github.com/montara-project/montara-mail-agent/commit/db3ac631e50dca9f5a94b0e24d8eba8301226f47))
+* **web-ui:** add a settings sidebar with account, LLM and TOTP pages ([4710679](https://github.com/montara-project/montara-mail-agent/commit/4710679cb316ff82171c6639859d63803002ceb9))
+* **web-ui:** add AI header and attachment section to mail reader ([c02b4eb](https://github.com/montara-project/montara-mail-agent/commit/c02b4eb447068ea0e08702437ce8d4d5f1a8216f))
+* **web-ui:** add animated theme toggler above nav user ([638711f](https://github.com/montara-project/montara-mail-agent/commit/638711f603ca5cdb9a1b696b4fd2a4f85a149283))
+* **web-ui:** add collapsible reply composer with LexKit editor ([2072aab](https://github.com/montara-project/montara-mail-agent/commit/2072aabccf24cd86ba9378d4ba3c2088301a797a))
+* **web-ui:** add email account cards and three-column mailbox ([3a6e690](https://github.com/montara-project/montara-mail-agent/commit/3a6e690e05ae5d8163ca33265005a592787eb424))
+* **web-ui:** add mailbox view using shadcn sidebar-09 ([e4514a4](https://github.com/montara-project/montara-mail-agent/commit/e4514a4dc312eb4d0b275a16f2dc957fe69bd9d6))
+* **web-ui:** add organization switcher to sidebar panels ([e7be432](https://github.com/montara-project/montara-mail-agent/commit/e7be43210df35445b2eedcfb500d40ae155c84f9))
+* **web-ui:** add Platform panel to sidebar ([7413dd0](https://github.com/montara-project/montara-mail-agent/commit/7413dd0db89d38272858ab2fe62264b63ede1a85))
+* **web-ui:** choose a self-hosted server URL in settings and at sign-in ([b7e1f47](https://github.com/montara-project/montara-mail-agent/commit/b7e1f47c4eb47ea44383fa05a9d6dd7f4c979360))
+* **web-ui:** let the compose editor fill the sheet's height ([f4e6aff](https://github.com/montara-project/montara-mail-agent/commit/f4e6aff7afc6336e31d69ebdf93923a14081a304))
+* **web-ui:** move email accounts to account page and add mail stats ([ba18f92](https://github.com/montara-project/montara-mail-agent/commit/ba18f920afffb63b78bc4edc62d51758d0e87bf3))
+* **web-ui:** offer Forward beside Reply below a mail ([7ff8ccb](https://github.com/montara-project/montara-mail-agent/commit/7ff8ccb41408e90348032f8ad2589429575e8799))
+* **web-ui:** open organization create and edit forms in a dialog ([14548ef](https://github.com/montara-project/montara-mail-agent/commit/14548ef6d4c29b7970e2d695449b0da8330e8245))
+* **web-ui:** paginate mail list by 10 items ([6a7fa74](https://github.com/montara-project/montara-mail-agent/commit/6a7fa747445557aab90ad3e7196a6a74411769a2))
+* **web-ui:** redesign mailbox list and reading pane ([14b21b5](https://github.com/montara-project/montara-mail-agent/commit/14b21b5b791373f0e04bfc71e62176e6b3664358))
+* **web-ui:** redesign the reply panel behind a Reply button ([0f6f3d7](https://github.com/montara-project/montara-mail-agent/commit/0f6f3d74e7b2a1f0e5433350502cc774f68d1878))
+* **web-ui:** show AI mail summary as highlighted markdown ([3d8652b](https://github.com/montara-project/montara-mail-agent/commit/3d8652b3822d8900da3ad22949519a0bc2bc7809))
+* **web-ui:** show provider logos on connected accounts ([cfabb10](https://github.com/montara-project/montara-mail-agent/commit/cfabb109ed942ed18be8152a77784a8940848f20))
+* **web-ui:** trim platform menu and add storage usage ([5d331cc](https://github.com/montara-project/montara-mail-agent/commit/5d331ccca010a4cfef6eee49d290accaa3600a8a))
+* **web-ui:** use sidebar-09 shell across app pages ([c5b20a8](https://github.com/montara-project/montara-mail-agent/commit/c5b20a8e1a69f770b6b41d456539301ded4832d3))
+* **web-ui:** wire mail, accounts, dashboard and settings to the API ([52eeec3](https://github.com/montara-project/montara-mail-agent/commit/52eeec35381289a0289a3e6ee503a9d0e1e3900a))
+
+### Bug Fixes
+
+* **mail:** render email HTML in a sandboxed frame ([531a3c7](https://github.com/montara-project/montara-mail-agent/commit/531a3c705ef54258231521ac3620787d8ea1ab98))
+* **server:** let the TOTP step work when the web app is on another site ([c8ea434](https://github.com/montara-project/montara-mail-agent/commit/c8ea434f10fd191aca9e16336311d3b02a4b83ec))
+* update cf domain ([c236a63](https://github.com/montara-project/montara-mail-agent/commit/c236a6349c0129ffaae0b8ed1b37894a59a5ef4f))
+* update claude setting ([69520b8](https://github.com/montara-project/montara-mail-agent/commit/69520b8179941fa098056e4ccb2ee01cb1feea9c))
+* update claude skills ([8041a8a](https://github.com/montara-project/montara-mail-agent/commit/8041a8a394145b1222e10e2a595a1985217479ad))
+* update config ([5fb6877](https://github.com/montara-project/montara-mail-agent/commit/5fb687768eee4876c0bba80e471b3efa96326bf0))
+* update migrations ([ea6ba9d](https://github.com/montara-project/montara-mail-agent/commit/ea6ba9dab54198d81be6985c57363bbe39db7d7c))
+* update package name ([95c110d](https://github.com/montara-project/montara-mail-agent/commit/95c110d4cf26f8b5d7228f1796bccd8e25c1f185))
+* update setting page ([88d74f0](https://github.com/montara-project/montara-mail-agent/commit/88d74f04d3cdc3b7ebcb2343ea0c9013a1abfa41))
+* update setting pages ([163e457](https://github.com/montara-project/montara-mail-agent/commit/163e457e0e47bc700d91e569919735441bed7594))
+* update version ([7c7a88a](https://github.com/montara-project/montara-mail-agent/commit/7c7a88ae18dad3a08ce9dc3d218191601b686a98))
+* **web-ui:** align auth client with Authula endpoints ([16479b9](https://github.com/montara-project/montara-mail-agent/commit/16479b9fa9d1e2350e677a533fb70be527077ca8))
+* **web-ui:** align organization switcher border with page header ([8e829cf](https://github.com/montara-project/montara-mail-agent/commit/8e829cf47b3ef7d73bd0cfe8db76596760da2441))
+* **web-ui:** align the rich editor's placeholder with the text ([ca234d8](https://github.com/montara-project/montara-mail-agent/commit/ca234d86c7b89f9ad974cdc91ff64dc16e695d00)), references [#999](https://github.com/montara-project/montara-mail-agent/issues/999)
+* **web-ui:** drop email frame scrollbar and follow the app theme ([9f066cc](https://github.com/montara-project/montara-mail-agent/commit/9f066ccced005e406deea887eea13ad65a5783a3))
+* **web-ui:** show progress while mail actions run ([89f2552](https://github.com/montara-project/montara-mail-agent/commit/89f255298a5b46b43c406bf5578d6db389dab96d))
