@@ -12,6 +12,7 @@ import { useAppForm } from '@/hooks/form'
 import { SignInSchema } from '@/lib/api/dtos/auth/schema'
 import { DEFAULT_SERVER_URL, SERVER_URL } from '@/lib/api/server-url'
 import { signInWithEmail, verifyTOTP } from '@/lib/auth/email-auth'
+import { COMMUNITY } from '@/lib/constants/edition'
 import { cn } from '@/lib/utils'
 
 /**
@@ -187,7 +188,7 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
           </form>
         )}
       </FieldGroup>
-      {!pickServer && (
+      {!pickServer && !COMMUNITY && (
         <p className="text-muted-foreground flex flex-wrap items-center justify-center gap-x-1 text-center text-sm">
           Server: <span className="text-foreground">{new URL(SERVER_URL).host}</span>
           {SERVER_URL === DEFAULT_SERVER_URL ? '' : ' (self hosted)'}

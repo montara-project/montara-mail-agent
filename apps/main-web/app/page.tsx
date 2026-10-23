@@ -276,13 +276,13 @@ export default function Home() {
             approve.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Button size="lg" radius="md" asChild>
+            <Button size="lg" asChild>
               <Link href="/contact">
                 Get early access
                 <IconArrowRight />
               </Link>
             </Button>
-            <Button size="lg" radius="md" variant="outline" asChild>
+            <Button size="lg" variant="outline" asChild>
               <Link href="#how-it-works">See how it works</Link>
             </Button>
           </div>
@@ -470,7 +470,7 @@ export default function Home() {
             drafts.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Button size="lg" radius="md" asChild>
+            <Button size="lg" asChild>
               <Link href="/contact">
                 Get early access
                 <IconArrowRight />
@@ -478,7 +478,7 @@ export default function Home() {
             </Button>
             <Button
               size="lg"
-              radius="md"
+
               variant="ghost"
               className="text-white hover:bg-white/10 hover:text-white"
               asChild

@@ -1,4 +1,5 @@
 import { env } from '@/config/env'
+import { COMMUNITY } from '@/lib/constants/edition'
 
 import { clearAuthTokens } from '../auth/token-storage'
 
@@ -15,8 +16,11 @@ function storedServerURL() {
   }
 }
 
-/** The server this browser talks to; read once, since switching reloads the app. */
-export const SERVER_URL = storedServerURL() || DEFAULT_SERVER_URL
+/**
+ * The server this browser talks to; read once, since switching reloads the
+ * app. The Community Edition always uses its own server.
+ */
+export const SERVER_URL = (!COMMUNITY && storedServerURL()) || DEFAULT_SERVER_URL
 
 /** `https://mail.example.com/` → `https://mail.example.com`. */
 export function normalizeServerURL(url: string) {

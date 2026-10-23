@@ -1,6 +1,6 @@
 {
   "name": "@montara-mail/server",
-  "version": "2.7.0",
+  "version": "0.0.0",
   "private": true,
   "scripts": {
     "dev": "make run",

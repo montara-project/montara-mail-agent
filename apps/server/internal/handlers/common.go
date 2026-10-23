@@ -24,7 +24,7 @@ import (
 // pathID parses the :id path parameter, naming the resource in the error so a
 // malformed id reads as "invalid organization id".
 func pathID(c fiber.Ctx, resource string) (uuid.UUID, error) {
-	id, err := lib.ContextParamUUID(c, "id")
+	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		return uuid.Nil, apperr.New(apperr.KindBadRequest, "invalid %s id", resource)
 	}

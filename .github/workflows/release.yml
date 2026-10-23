@@ -1,12 +1,14 @@
-# Publishes the Docker image to GitHub Container Registry and deploys the
+# Publishes the Docker images to GitHub Container Registry and deploys the
 # marketing site to Cloudflare Workers.
 #
 # Triggers:
 #   - a semver tag (v1.2.3) publishes v1.2.3, v1.2 and latest
 #   - a manual run publishes the short commit SHA, plus any tag you pass in
 #
-# Image:
-#   ghcr.io/<owner>/montara-mail-agent   the Go API serving the web app (apps/server + apps/web-ui)
+# Images, named <product>/<edition>, both the Go API serving the web app
+# (apps/server + apps/web-ui):
+#   ghcr.io/<owner>/montara-mail-agent/cloud      Cloud Edition: open sign-up
+#   ghcr.io/<owner>/montara-mail-agent/community  Community Edition: one self-hosted user, no sign-up
 
 name: Release
 
@@ -27,17 +29,21 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE: ${{ github.repository_owner }}/montara-mail-agent
+  IMAGE_OWNER: ${{ github.repository_owner }}
   PLATFORMS: linux/amd64
 
 jobs:
-  release-image:
-    name: Release image
+  release-images:
+    name: Release ${{ matrix.edition }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       # Required to push the image to ghcr.io with the workflow's GITHUB_TOKEN.
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        edition: [cloud, community]
 
     steps:
       - name: Checkout
@@ -57,7 +63,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/montara-mail-agent/${{ matrix.edition }}
           tags: |
             type=semver,pattern={{raw}}
             type=semver,pattern=v{{major}}.{{minor}}
@@ -74,16 +80,19 @@ jobs:
           platforms: ${{ env.PLATFORMS }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # Vite bakes the VITE_* values into the web app inside the image.
-          # An empty VITE_API_URL keeps the app's default server (see
-          # apps/web-ui/src/config/env.ts); set the repo Variable to point the
-          # image at another API.
+          # Vite bakes the VITE_* values into the web app inside the image and
+          # EDITION goes into both it and the Go binary. An empty VITE_API_URL
+          # keeps the edition's default server (apps/web-ui/src/config/env.ts);
+          # the repo Variable only points the Cloud image at another API, as
+          # the Community image always talks to itself.
           build-args: |
             VITE_APP_NAME=${{ vars.VITE_APP_NAME || 'Montara Mail' }}
-            VITE_API_URL=${{ vars.VITE_API_URL || '' }}
+            VITE_API_URL=${{ matrix.edition == 'cloud' && vars.VITE_API_URL || '' }}
+            EDITION=${{ matrix.edition }}
           push: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # One cache scope per image, or the builds evict each other.
+          cache-from: type=gha,scope=${{ matrix.edition }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.edition }}
 
   # Deploys the marketing site on every release run (tag push or manual
   # dispatch); the workflow itself never triggers on branch pushes.

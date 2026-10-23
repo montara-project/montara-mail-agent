@@ -1,6 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ChevronDown, Forward, Reply as ReplyIcon, RotateCcw, Sparkles } from 'lucide-react'
-import { motion, MotionConfig } from 'motion/react'
 import React from 'react'
 
 import type { Models } from '@/lib/api/models'
@@ -172,71 +171,66 @@ export default function ReplyComposer({
 
   const user = me?.user
   return (
-    <MotionConfig reducedMotion="user">
-      <motion.div
-        ref={cardRef}
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.2, ease: 'easeOut' }}
-        className="bg-card mt-6 rounded-xl border p-4 shadow-sm"
+    <div
+      ref={cardRef}
+      className="bg-card animate-in fade-in slide-in-from-bottom-2 mt-6 rounded-xl border p-4 shadow-sm duration-200 ease-out motion-reduce:animate-none"
+    >
+      <React.Suspense
+        fallback={
+          <div className="grid gap-3" aria-busy="true">
+            <Skeleton className="h-8 w-1/2" />
+            <Skeleton className="h-32 w-full" />
+          </div>
+        }
       >
-        <React.Suspense
-          fallback={
-            <div className="grid gap-3" aria-busy="true">
-              <Skeleton className="h-8 w-1/2" />
-              <Skeleton className="h-32 w-full" />
-            </div>
-          }
-        >
-          <MailEditor
-            initial={initial}
-            placeholder="Write your reply..."
-            onSend={send}
-            onCancel={close}
-            sending={reply.isPending}
-            attachments={attachments}
-            onAttachmentsChange={setAttachments}
-            leading={<AiMenu mailId={mail.id} onPick={(text) => setInitial({ text })} />}
-            header={
-              <div className="grid gap-2">
-                <div className="flex items-start gap-3">
-                  <Avatar className="mt-0.5 size-9">
-                    {user?.image && <AvatarImage src={user.image} alt="" />}
-                    <AvatarFallback>{mailInitials(user?.name ?? 'Me')}</AvatarFallback>
-                  </Avatar>
-                  <div className="grid min-w-0 flex-1 gap-2">
+        <MailEditor
+          initial={initial}
+          placeholder="Write your reply..."
+          onSend={send}
+          onCancel={close}
+          sending={reply.isPending}
+          attachments={attachments}
+          onAttachmentsChange={setAttachments}
+          leading={<AiMenu mailId={mail.id} onPick={(text) => setInitial({ text })} />}
+          header={
+            <div className="grid gap-2">
+              <div className="flex items-start gap-3">
+                <Avatar className="mt-0.5 size-9">
+                  {user?.image && <AvatarImage src={user.image} alt="" />}
+                  <AvatarFallback>{mailInitials(user?.name ?? 'Me')}</AvatarFallback>
+                </Avatar>
+                <div className="grid min-w-0 flex-1 gap-2">
+                  <RecipientInput
+                    label="To"
+                    value={to}
+                    onChange={setTo}
+                    names={names}
+                    placeholder="Add a recipient"
+                  />
+                  {showCc && (
                     <RecipientInput
-                      label="To"
-                      value={to}
-                      onChange={setTo}
-                      names={names}
+                      label="Cc"
+                      value={cc}
+                      onChange={setCc}
                       placeholder="Add a recipient"
                     />
-                    {showCc && (
-                      <RecipientInput
-                        label="Cc"
-                        value={cc}
-                        onChange={setCc}
-                        placeholder="Add a recipient"
-                      />
-                    )}
-                  </div>
-                  {!showCc && (
-                    <Button type="button" variant="ghost" size="sm" onClick={() => setShowCc(true)}>
-                      Cc
-                    </Button>
                   )}
                 </div>
-                {problem && (
-                  <p role="alert" className="text-destructive text-sm">
-                    {problem}
-                  </p>
+                {!showCc && (
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setShowCc(true)}>
+                    Cc
+                  </Button>
                 )}
               </div>
-            }
-          />
-        </React.Suspense>
-      </motion.div>
-    </MotionConfig>
+              {problem && (
+                <p role="alert" className="text-destructive text-sm">
+                  {problem}
+                </p>
+              )}
+            </div>
+          }
+        />
+      </React.Suspense>
+    </div>
   )
 }

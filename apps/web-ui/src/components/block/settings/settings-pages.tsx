@@ -1,11 +1,12 @@
 import SectionCard from '@/components/block/common/section-card'
-import { OrganizationSettings } from '@/components/block/settings/general-settings'
 import LLMProviderSettings from '@/components/block/settings/llm-provider-form'
+import OrganizationList from '@/components/block/settings/organization-list'
 import PasswordSettings from '@/components/block/settings/password-form'
 import ServerSettings from '@/components/block/settings/server-url-form'
 import TOTPSettings from '@/components/block/settings/totp-settings'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { COMMUNITY } from '@/lib/constants/edition'
 
 /** A settings section that has no backend yet. */
 function SoonCard({ title, description }: { title: string; description: string }) {
@@ -43,10 +44,18 @@ export function SecuritySettings() {
 export function OrganizationPageSettings() {
   return (
     <div className="grid gap-4">
-      <OrganizationSettings />
-      <SoonCard title="Members" description="Invite people and manage who's in the organization." />
-      <SoonCard title="Roles & permissions" description="What each member is allowed to do." />
-      <ServerSettings />
+      <OrganizationList />
+      {/* The Community Edition has one user and is its own server. */}
+      {!COMMUNITY && (
+        <>
+          <SoonCard
+            title="Members"
+            description="Invite people and manage who's in the organization."
+          />
+          <SoonCard title="Roles & permissions" description="What each member is allowed to do." />
+          <ServerSettings />
+        </>
+      )}
       <LLMProviderSettings />
       <SoonCard title="Audit logs" description="Every change made in the organization." />
     </div>

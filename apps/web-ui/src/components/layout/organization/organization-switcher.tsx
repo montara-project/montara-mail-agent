@@ -6,7 +6,7 @@ import type { Models } from '@/lib/api/models'
 import {
   AddOrganizationForm,
   EditOrganizationForm,
-} from '@/components/block/master/organization/form'
+} from '@/components/block/settings/organization-form'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Separator } from '@/components/ui/separator'

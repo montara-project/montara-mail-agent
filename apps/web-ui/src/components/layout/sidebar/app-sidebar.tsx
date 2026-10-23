@@ -22,7 +22,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar'
-import { getSidebarMenu } from '@/data/sidebar-menu'
+import { NAV_ITEMS } from '@/data/sidebar-menu'
+import { COMMUNITY } from '@/lib/constants/edition'
 
 import NavUser from './nav-user'
 
@@ -80,14 +81,6 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
       }
     : undefined
 
-  // ponytail: GET /me carries no app role yet, so everyone gets the default menu.
-  // The rail has no room for nesting, so grouped items show their children.
-  const navItems = getSidebarMenu().navMenu.overview.flatMap((item) =>
-    item.items.length > 0
-      ? item.items.map((sub) => ({ ...sub, icon: sub.icon ?? item.icon }))
-      : [item]
-  )
-
   return (
     <Sidebar
       collapsible="icon"
@@ -106,7 +99,7 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">Montara</span>
-                    <span className="truncate text-xs">Mail</span>
+                    <span className="truncate text-xs">{COMMUNITY ? 'Community' : 'Mail'}</span>
                   </div>
                 </Link>
               </SidebarMenuButton>
@@ -117,7 +110,7 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
           <SidebarGroup>
             <SidebarGroupContent className="px-1.5 md:px-0">
               <SidebarMenu>
-                {navItems.map((item) => (
+                {NAV_ITEMS.map((item) => (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton
                       asChild

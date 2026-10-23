@@ -13,7 +13,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import ErrorPage from '@/components/block/common/error-page'
 import NotFoundPage from '@/components/block/common/not-found-page'
 import { Toaster } from '@/components/ui/sonner'
-import DecorationProvider from '@/lib/providers/decoration'
+import ThemeProvider from '@/lib/providers/themes'
 
 /**
  * Root layout component that serves as the main wrapper for the application.
@@ -26,7 +26,7 @@ import DecorationProvider from '@/lib/providers/decoration'
  * @see https://tanstack.com/router/latest/docs/framework/react/routing/routing-concepts
  */
 const RootLayout = () => (
-  <DecorationProvider>
+  <ThemeProvider>
     {/* outlet = react children */}
     <Outlet />
     <Toaster position="bottom-right" richColors closeButton />
@@ -49,7 +49,7 @@ const RootLayout = () => (
         ]}
       />
     )}
-  </DecorationProvider>
+  </ThemeProvider>
 )
 
 export interface RouterContext {

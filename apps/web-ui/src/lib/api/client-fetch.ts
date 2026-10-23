@@ -11,7 +11,7 @@ import {
 import { SERVER_URL } from './server-url'
 
 /** Path the browser is sent to when the session cannot be recovered. */
-export const SIGN_IN_PATH = '/sign-in'
+const SIGN_IN_PATH = '/sign-in'
 
 const AUTH_PATH = '/api/v1/auth'
 const TIME_OUT = 5 * 60_000 // 5 minutes

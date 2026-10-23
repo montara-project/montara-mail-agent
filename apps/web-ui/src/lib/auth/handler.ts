@@ -56,14 +56,6 @@ export async function requireSession(): Promise<AuthSession> {
 }
 
 /**
- * Get current session.
- * @returns Session object or null if not authenticated.
- */
-export async function getSession(): Promise<AuthSession | null> {
-  return getBackendSession()
-}
-
-/**
  * Redirect to `href` if the user is already authenticated.
  */
 export async function redirectIfAuthenticated(href: string) {

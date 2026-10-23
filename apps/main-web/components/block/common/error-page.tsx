@@ -3,8 +3,8 @@
 import { IconAlertTriangle, IconArrowLeft, IconRefresh } from '@tabler/icons-react'
 import Link from 'next/link'
 
-import EmptyState from '@/components/block/common/empty-state'
 import { Button } from '@/components/ui/button'
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 
 interface ErrorPageProps {
   error: unknown
@@ -21,25 +21,27 @@ export default function ErrorPage({ error, onRetry }: ErrorPageProps) {
 
   return (
     <div className="flex py-24 items-center justify-center p-6">
-      <EmptyState
-        icon={IconAlertTriangle}
-        title="Something went wrong"
-        description={description}
-        action={
-          <div className="flex gap-2">
-            <Button onClick={onRetry}>
-              <IconRefresh />
-              <span>Try again</span>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href="/">
-                <IconArrowLeft />
-                <span>Back to home</span>
-              </Link>
-            </Button>
-          </div>
-        }
-      />
+      <Empty className="py-14">
+        <EmptyHeader>
+          <EmptyMedia variant="icon" className="size-12 rounded-full">
+            <IconAlertTriangle />
+          </EmptyMedia>
+          <EmptyTitle>Something went wrong</EmptyTitle>
+          <EmptyDescription>{description}</EmptyDescription>
+        </EmptyHeader>
+        <div className="flex gap-2">
+          <Button onClick={onRetry}>
+            <IconRefresh />
+            <span>Try again</span>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/">
+              <IconArrowLeft />
+              <span>Back to home</span>
+            </Link>
+          </Button>
+        </div>
+      </Empty>
     </div>
   )
 }

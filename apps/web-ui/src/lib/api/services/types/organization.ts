@@ -1,20 +1,16 @@
-import type { AxiosItemResponse, HTTP_METHOD, Resources } from '@/types/api'
+import type { AxiosDeleteResponse, AxiosItemResponse, AxiosListResponse } from '@/types/api'
 
+import type { OrganizationFormDto } from '../../dtos/organization/schema'
+import type { PaginateDto } from '../../dtos/paginate'
 import type { Models } from '../../models'
 
-/**
- * The methods `organizationServices` actually builds. Declaring them keeps the
- * type honest: `resource()` only creates the methods it was given, so listing
- * more here (for example `edit`, which the service does not request) would
- * typecheck and then fail at runtime.
- */
-export type OrganizationMethods = [
-  HTTP_METHOD.GET,
-  HTTP_METHOD.POST,
-  HTTP_METHOD.PUT,
-  HTTP_METHOD.DELETE,
-]
+export type OrganizationListParams = PaginateDto & { search?: string; sorted?: string }
 
-export type OrganizationResources = Resources<OrganizationMethods, Models.Organization> & {
+export type OrganizationResources = {
+  list: (params: OrganizationListParams) => Promise<AxiosListResponse<Models.Organization>>
+  get: (id: string) => Promise<AxiosItemResponse<Models.Organization>>
+  store: (body: OrganizationFormDto) => Promise<AxiosItemResponse<Models.Organization>>
+  update: (id: string, body: OrganizationFormDto) => Promise<AxiosItemResponse<Models.Organization>>
+  delete: (id: string) => Promise<AxiosDeleteResponse>
   stats: (id: string) => Promise<AxiosItemResponse<Models.OrganizationStats>>
 }

@@ -3,9 +3,8 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
-@custom-variant dark (&:is(.dark *));
-
 :root {
+  color-scheme: light dark;
   --background: #f7f7f6;
   --foreground: #151515;
   --card: #ffffff;
@@ -39,36 +38,38 @@
   --warning-bg: #fef6e0;
 }
 
-.dark {
-  --background: #0c0c0f;
-  --foreground: #ededec;
-  --card: #141417;
-  --card-foreground: #ededec;
-  --popover: #141417;
-  --popover-foreground: #ededec;
-  --primary: #1c4bb0;
-  --primary-foreground: #ffffff;
-  --secondary: #1e1e23;
-  --secondary-foreground: #ededec;
-  --muted: #1e1e23;
-  --muted-foreground: #9a9a94;
-  --accent: #28282e;
-  --accent-foreground: #ededec;
-  --destructive: #f87171;
-  --destructive-foreground: #0c0c0f;
-  --border: #222227;
-  --input: #27272d;
-  --ring: #60a5fa;
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0c0c0f;
+    --foreground: #ededec;
+    --card: #141417;
+    --card-foreground: #ededec;
+    --popover: #141417;
+    --popover-foreground: #ededec;
+    --primary: #1c4bb0;
+    --primary-foreground: #ffffff;
+    --secondary: #1e1e23;
+    --secondary-foreground: #ededec;
+    --muted: #1e1e23;
+    --muted-foreground: #9a9a94;
+    --accent: #28282e;
+    --accent-foreground: #ededec;
+    --destructive: #f87171;
+    --destructive-foreground: #0c0c0f;
+    --border: #222227;
+    --input: #27272d;
+    --ring: #60a5fa;
 
-  --halo-core: #2b2f78;
-  --halo-soft: #171936;
-  --halo-warm: #3a2a22;
-  --success: #4ade80;
-  --success-bg: #12291c;
-  --info: #60a5fa;
-  --info-bg: #1b2a45;
-  --warning: #fbbf24;
-  --warning-bg: #3a2a0c;
+    --halo-core: #2b2f78;
+    --halo-soft: #171936;
+    --halo-warm: #3a2a22;
+    --success: #4ade80;
+    --success-bg: #12291c;
+    --info: #60a5fa;
+    --info-bg: #1b2a45;
+    --warning: #fbbf24;
+    --warning-bg: #3a2a0c;
+  }
 }
 
 @theme inline {

@@ -6,7 +6,7 @@ import type { LLMModelsBody, LLMProviderBody } from '../services/types/llm-provi
 
 import { services } from '../services'
 
-export const LLM_PROVIDER_QUERY_KEY = 'llm-provider'
+const LLM_PROVIDER_QUERY_KEY = 'llm-provider'
 
 /** The organization's provider (data null when it has none) and whether a fallback exists. */
 const get = (organizationId?: string) =>
