@@ -21,6 +21,7 @@ import {
 } from '@/lib/api/dtos/account/email-account/schema'
 import { parseDto } from '@/lib/api/dtos/parse'
 import { queries } from '@/lib/api/queries'
+import { cn } from '@/lib/utils'
 
 type Connector = {
   id: Models.EmailProvider
@@ -68,6 +69,31 @@ export const CONNECTORS: Connector[] = [
     help: 'Use the IMAP server your provider documents. The connection always uses TLS.',
   },
 ]
+
+/** A provider's brand logo on a tile; custom IMAP gets a generic server icon. */
+export function ProviderIcon({
+  provider,
+  className,
+}: {
+  provider: Models.EmailProvider
+  className?: string
+}) {
+  const logo = CONNECTORS.find((c) => c.id === provider)?.logo
+  return (
+    <span
+      className={cn(
+        'bg-muted flex size-10 shrink-0 items-center justify-center rounded-lg',
+        className
+      )}
+    >
+      {logo ? (
+        <img src={logo} alt="" className="size-3/5 object-contain" />
+      ) : (
+        <IconServer className="size-1/2" />
+      )}
+    </span>
+  )
+}
 
 /** Connects one provider's mailbox: signs in over IMAP first, so a wrong password is caught here. */
 function ConnectForm({ connector, onClose }: { connector: Connector; onClose: () => void }) {
@@ -177,13 +203,7 @@ export default function ConnectorList() {
             onClick={() => setConnecting(connector)}
             className="bg-card hover:bg-accent/50 focus-visible:ring-ring/50 flex items-center gap-3 rounded-xl border p-4 text-left text-sm transition-colors outline-none focus-visible:ring-[3px]"
           >
-            <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-lg">
-              {connector.logo ? (
-                <img src={connector.logo} alt="" className="size-6 object-contain" />
-              ) : (
-                <IconServer className="size-5" />
-              )}
-            </div>
+            <ProviderIcon provider={connector.id} />
             <div className="grid min-w-0 flex-1">
               <span className="truncate font-semibold">{connector.name}</span>
               <span className="text-muted-foreground truncate text-xs">

@@ -8,8 +8,6 @@ import { toast } from 'sonner'
 import type { Models } from '@/lib/api/models'
 
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
-import { mailInitials } from '@/components/layout/mail/mail-data'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -17,7 +15,7 @@ import { useActiveOrganization } from '@/hooks/use-active-organization'
 import { axiosErrorMessage, toastAxiosError } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
 
-import { CONNECTORS } from './connector-list'
+import { CONNECTORS, ProviderIcon } from './connector-list'
 
 /** When the account last synced, or why it could not. */
 function SyncStatus({ account }: { account: Models.EmailAccount }) {
@@ -80,9 +78,7 @@ export default function MailAccountList() {
                 search={{ account: account.id }}
                 className="focus-visible:ring-ring/50 -m-1 flex items-center gap-3 rounded-lg p-1 outline-none focus-visible:ring-[3px]"
               >
-                <Avatar className="size-10">
-                  <AvatarFallback>{mailInitials(account.label)}</AvatarFallback>
-                </Avatar>
+                <ProviderIcon provider={account.provider} />
                 <div className="grid min-w-0 flex-1">
                   <span className="truncate font-semibold hover:underline">{account.label}</span>
                   <span className="text-muted-foreground truncate text-xs">{account.email}</span>

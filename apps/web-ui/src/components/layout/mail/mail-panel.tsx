@@ -15,8 +15,8 @@ import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
 
+import { ProviderIcon } from '@/components/block/account/connector-list'
 import OrganizationSwitcher from '@/components/layout/organization/organization-switcher'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -41,7 +41,7 @@ import {
 import { useActiveOrganization } from '@/hooks/use-active-organization'
 import { queries } from '@/lib/api/queries'
 
-import { IMPORTANCE_LABELS, mailInitials } from './mail-data'
+import { IMPORTANCE_LABELS } from './mail-data'
 
 // The folders the server syncs; IMAP has one junk folder, shown as Spam.
 export const MAIL_FOLDERS: { id: Models.MailFolder; title: string; icon: typeof Inbox }[] = [
@@ -105,9 +105,7 @@ function AccountSwitcher() {
           aria-label="Switch email account"
           className="hover:bg-sidebar-accent focus-visible:ring-ring/50 flex w-full items-center gap-2.5 rounded-lg border p-2 text-left text-sm outline-none focus-visible:ring-[3px]"
         >
-          <Avatar className="size-8 rounded-md">
-            <AvatarFallback className="rounded-md">{mailInitials(account.label)}</AvatarFallback>
-          </Avatar>
+          <ProviderIcon provider={account.provider} className="size-8 rounded-md" />
           <span className="grid min-w-0 flex-1 leading-tight">
             <span className="truncate font-medium">{account.label}</span>
             <span className="text-muted-foreground truncate text-xs">{account.email}</span>
