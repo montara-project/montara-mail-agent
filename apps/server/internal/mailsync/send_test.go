@@ -195,16 +195,17 @@ func TestReply(t *testing.T) {
 		ReceivedAt: time.Date(2026, 10, 22, 10, 6, 0, 0, time.UTC),
 	}
 
-	if err := syncer.Reply(context.Background(), account, m, "**Signed.**", "<p><b>Signed.</b></p>"); err != nil {
+	if err := syncer.Reply(context.Background(), account, m, []string{"boss@example.com"}, []string{"hr@example.com"}, "**Signed.**", "<p><b>Signed.</b></p>"); err != nil {
 		t.Fatalf("reply: %v", err)
 	}
 	<-smtpServer.done
 
-	if len(smtpServer.to) != 1 || !strings.Contains(smtpServer.to[0], "<boss@example.com>") {
-		t.Fatalf("reply went to %q, want the sender", smtpServer.to)
+	if len(smtpServer.to) != 2 || !strings.Contains(smtpServer.to[0], "<boss@example.com>") || !strings.Contains(smtpServer.to[1], "<hr@example.com>") {
+		t.Fatalf("reply went to %q, want the sender and the cc", smtpServer.to)
 	}
 	for _, want := range []string{
 		"Subject: Re: Contract",
+		"Cc: <hr@example.com>",
 		"In-Reply-To: <1@example.com>",
 		"References: <1@example.com>",
 		"**Signed.**",
@@ -217,8 +218,8 @@ func TestReply(t *testing.T) {
 		}
 	}
 
-	if err := syncer.Reply(context.Background(), account, models.Mail{}, "hi", ""); err == nil {
-		t.Fatal("a mail without a sender was replied to")
+	if err := syncer.Reply(context.Background(), account, models.Mail{}, nil, nil, "hi", ""); err == nil {
+		t.Fatal("a reply without recipients was sent")
 	}
 }
 

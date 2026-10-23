@@ -177,7 +177,7 @@ func (h *mailHandler) Forward(c fiber.Ctx) error {
 	return dtos.Message(c, fiber.StatusOK, "mail forwarded")
 }
 
-// Reply sends a reply to the mail's sender from its account.
+// Reply sends a reply from the mail's account, by default to its sender.
 func (h *mailHandler) Reply(c fiber.Ctx) error {
 	m, err := h.mail(c)
 	if err != nil {
@@ -186,6 +186,17 @@ func (h *mailHandler) Reply(c fiber.Ctx) error {
 	var body dtos.MailReplyBody
 	if err := lib.ValidateRequestBody(c, &body); err != nil {
 		return err
+	}
+
+	to := body.To
+	if len(to) == 0 {
+		if m.FromEmail == "" {
+			return apperr.New(apperr.KindBadRequest, "this email has no sender to reply to")
+		}
+		to = []string{m.FromEmail}
+	}
+	if len(to)+len(body.Cc) > dtos.MaxRecipients {
+		return apperr.New(apperr.KindBadRequest, "a mail goes to at most %d addresses", dtos.MaxRecipients)
 	}
 
 	account, err := h.account(c, m)
@@ -197,7 +208,7 @@ func (h *mailHandler) Reply(c fiber.Ctx) error {
 	if htmlBody == "" {
 		htmlBody = `<div style="white-space:pre-wrap">` + html.EscapeString(body.Text) + "</div>"
 	}
-	if err := h.sync.Reply(c.Context(), account, m, body.Text, htmlBody); err != nil {
+	if err := h.sync.Reply(c.Context(), account, m, to, body.Cc, body.Text, htmlBody); err != nil {
 		return serverError(err)
 	}
 	return dtos.Message(c, fiber.StatusOK, "reply sent")

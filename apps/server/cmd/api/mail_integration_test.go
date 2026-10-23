@@ -204,6 +204,9 @@ func testMailFlow(t *testing.T, call callFunc, application *app.Application, tok
 	if status, _ := call(http.MethodPost, mailPath+"/reply", token, map[string]any{"html": "<p>no text</p>"}); status != http.StatusUnprocessableEntity {
 		t.Fatalf("reply without text: %d, want 422", status)
 	}
+	if status, _ := call(http.MethodPost, mailPath+"/reply", token, map[string]any{"text": "Hi", "cc": []string{"bad"}}); status != http.StatusUnprocessableEntity {
+		t.Fatalf("reply with a bad cc: %d, want 422", status)
+	}
 	if status, out := call(http.MethodPost, mailPath+"/reply", token, map[string]any{"text": "Thanks"}); status != http.StatusBadGateway {
 		t.Fatalf("reply with the server unreachable: %d %v, want 502", status, out)
 	}
@@ -219,6 +222,9 @@ func testMailFlow(t *testing.T, call callFunc, application *app.Application, tok
 	}
 	if status, _ := call(http.MethodPost, send, token, map[string]any{"to": many[:11], "cc": many[11:], "text": "Hello"}); status != http.StatusBadRequest {
 		t.Fatalf("send to 21 addresses: %d, want 400", status)
+	}
+	if status, _ := call(http.MethodPost, mailPath+"/reply", token, map[string]any{"text": "Hi", "to": many[:11], "cc": many[11:]}); status != http.StatusBadRequest {
+		t.Fatalf("reply to 21 addresses: %d, want 400", status)
 	}
 	if status, out := call(http.MethodPost, send, token, map[string]any{"to": []string{"a@example.com"}, "text": "Hello"}); status != http.StatusBadGateway {
 		t.Fatalf("send with the server unreachable: %d %v, want 502", status, out)

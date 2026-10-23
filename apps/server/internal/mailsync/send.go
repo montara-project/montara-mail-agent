@@ -42,11 +42,12 @@ func (s *Syncer) Forward(ctx context.Context, account models.EmailAccount, m mod
 	return s.send(ctx, account, password, recipients, msg)
 }
 
-// Reply sends a reply to m's sender from the account. The reply comes as
-// text and as the HTML the editor made; the original is quoted below it.
-func (s *Syncer) Reply(ctx context.Context, account models.EmailAccount, m models.Mail, text, htmlBody string) error {
-	if m.FromEmail == "" {
-		return apperr.New(apperr.KindBadRequest, "this email has no sender to reply to")
+// Reply sends a reply to m from the account, to `to` and `cc`. The reply
+// comes as text and as the HTML the editor made; the original is quoted
+// below it.
+func (s *Syncer) Reply(ctx context.Context, account models.EmailAccount, m models.Mail, to, cc []string, text, htmlBody string) error {
+	if len(to) == 0 {
+		return apperr.New(apperr.KindBadRequest, "a reply needs a recipient")
 	}
 	ctx, cancel := context.WithTimeout(ctx, actionTimeout)
 	defer cancel()
@@ -55,11 +56,11 @@ func (s *Syncer) Reply(ctx context.Context, account models.EmailAccount, m model
 	if err != nil {
 		return errors.New("the saved password can't be read, connect the account again")
 	}
-	msg, err := replyMessage(account.Email, m, text, htmlBody, time.Now())
+	msg, err := replyMessage(account.Email, m, to, cc, text, htmlBody, time.Now())
 	if err != nil {
 		return err
 	}
-	return s.send(ctx, account, password, []string{m.FromEmail}, msg)
+	return s.send(ctx, account, password, append(slices.Clone(to), cc...), msg)
 }
 
 // Compose sends a new mail from the account to `to` and `cc`, as text and
@@ -221,23 +222,30 @@ func composeMessage(from string, to, cc []string, subject, text, htmlBody string
 	if err != nil {
 		return nil, err
 	}
-	if len(cc) > 0 {
-		addrs := make([]*mail.Address, len(cc))
-		for i, c := range cc {
-			addrs[i] = &mail.Address{Address: c}
-		}
-		h.SetAddressList("Cc", addrs)
-	}
+	setCc(&h, cc)
 	return writeAlternative(h, text, htmlBody)
 }
 
-// replyMessage builds a reply to m's sender: the reply on top, the original
-// quoted below, and the headers that thread it under m in mail clients.
-func replyMessage(from string, m models.Mail, replyText, replyHTML string, now time.Time) ([]byte, error) {
-	h, err := newHeader(from, []string{m.FromEmail}, withPrefix("Re:", m.Subject), now)
+// setCc lists cc in the header; the caller adds them to the envelope.
+func setCc(h *mail.Header, cc []string) {
+	if len(cc) == 0 {
+		return
+	}
+	addrs := make([]*mail.Address, len(cc))
+	for i, c := range cc {
+		addrs[i] = &mail.Address{Address: c}
+	}
+	h.SetAddressList("Cc", addrs)
+}
+
+// replyMessage builds a reply to m: the reply on top, the original quoted
+// below, and the headers that thread it under m in mail clients.
+func replyMessage(from string, m models.Mail, to, cc []string, replyText, replyHTML string, now time.Time) ([]byte, error) {
+	h, err := newHeader(from, to, withPrefix("Re:", m.Subject), now)
 	if err != nil {
 		return nil, err
 	}
+	setCc(&h, cc)
 	if id := strings.Trim(m.MessageID, "<> "); id != "" {
 		h.SetMsgIDList("In-Reply-To", []string{id})
 		h.SetMsgIDList("References", []string{id})

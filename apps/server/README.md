@@ -82,7 +82,7 @@ LLM provider. Someone else's organization, account or mail answers 404.
 | `POST /api/v1/mails/:id/summary`, `/reply-suggestions`  | AI summary (kept after the first call) and up to three short replies.                          |
 | `POST /api/v1/mails/:id/move`, `DELETE /api/v1/mails/:id` | Move to `inbox`, `archive`, `spam` or `trash` on the mail server too; delete moves to the trash, or deletes for good from it. |
 | `POST /api/v1/mails/:id/forward`                        | Forward to up to 20 addresses through the account's SMTP server, with an optional note.         |
-| `POST /api/v1/mails/:id/reply`                          | Reply to the sender through SMTP, threaded under the original (In-Reply-To) and quoting it.     |
+| `POST /api/v1/mails/:id/reply`                          | Reply through SMTP to the sender (or the given To, plus Cc), threaded under the original (In-Reply-To) and quoting it. |
 
 Every provider (Gmail, Outlook, Yahoo, iCloud, or any IMAP server) connects
 with the address and an app password; the known providers' servers are
