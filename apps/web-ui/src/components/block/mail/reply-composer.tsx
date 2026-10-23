@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { ChevronDown, Reply as ReplyIcon, RotateCcw, Sparkles } from 'lucide-react'
+import { ChevronDown, Forward, Reply as ReplyIcon, RotateCcw, Sparkles } from 'lucide-react'
 import { motion, MotionConfig } from 'motion/react'
 import React from 'react'
 
@@ -87,11 +87,18 @@ function AiMenu({ mailId, onPick }: { mailId: string; onPick: (text: string) => 
 }
 
 /**
- * Reply to a mail: a Reply button, then a card with the recipients as chips
- * (the sender to start with), the rich-text editor, the AI menu and Send.
- * Cancel drops the reply.
+ * Reply to a mail: Reply and Forward buttons, then for a reply a card with
+ * the recipients as chips (the sender to start with), the rich-text editor,
+ * the AI menu and Send. Cancel drops the reply.
  */
-export default function ReplyComposer({ mail }: { mail: Models.Mail }) {
+export default function ReplyComposer({
+  mail,
+  onForward,
+}: {
+  mail: Models.Mail
+  /** Opens the forward dialog, offered beside Reply. */
+  onForward: () => void
+}) {
   const sender = React.useMemo(() => (mail.from_email ? [mail.from_email] : []), [mail.from_email])
   const [open, setOpen] = React.useState(false)
   const [to, setTo] = React.useState(sender)
@@ -150,10 +157,14 @@ export default function ReplyComposer({ mail }: { mail: Models.Mail }) {
 
   if (!open) {
     return (
-      <div className="mt-6">
+      <div className="mt-6 flex flex-wrap gap-2">
         <Button variant="outline" onClick={() => setOpen(true)}>
           <ReplyIcon />
           Reply
+        </Button>
+        <Button variant="outline" onClick={onForward}>
+          <Forward />
+          Forward
         </Button>
       </div>
     )
