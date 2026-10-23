@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { format } from 'date-fns'
 import {
@@ -6,12 +6,10 @@ import {
   ChevronDown,
   ChevronUp,
   EllipsisVertical,
-  File as FileIcon,
   FolderInput,
   Forward,
   Mail as MailIcon,
   OctagonAlert,
-  Paperclip,
   Printer,
   RotateCcw,
   Sparkles,
@@ -21,76 +19,104 @@ import {
   Trash2,
 } from 'lucide-react'
 import React from 'react'
-import { toast } from 'sonner'
 
-import type { Mail, MailContact } from '@/components/layout/mail/mail-data'
+import type { Models } from '@/lib/api/models'
 
 import Markdown from '@/components/block/common/markdown'
+import { useMailPage } from '@/components/block/mail/mail-list'
 import ReplyComposer from '@/components/block/mail/reply-composer'
-import { mailInitials, MAILS } from '@/components/layout/mail/mail-data'
+import { IMPORTANCE_LABELS, mailInitials, senderName } from '@/components/layout/mail/mail-data'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
-import { axiosErrorMessage } from '@/lib/api/axios-error'
+import { axiosErrorMessage, toastAxiosError } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
 
 function IconButton({ label, ...props }: React.ComponentProps<typeof Button> & { label: string }) {
-  return <Button variant="ghost" size="icon" className="size-8" aria-label={label} title={label} {...props} />
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="size-8"
+      aria-label={label}
+      title={label}
+      {...props}
+    />
+  )
 }
 
 /** "Name email" pairs, as in the To and Cc lines. */
-function Contacts({ contacts }: { contacts: MailContact[] }) {
+function Contacts({ contacts }: { contacts: Models.MailContact[] }) {
   return contacts.map((contact, i) => (
     <React.Fragment key={contact.email}>
       {i > 0 && ', '}
-      <span className="text-foreground">{contact.name}</span> {contact.email}
+      {contact.name && <span className="text-foreground">{contact.name}</span>} {contact.email}
     </React.Fragment>
   ))
 }
 
-// ponytail: downloads need a file endpoint; until then they only explain that.
-const notAvailable = () => toast.info('Downloading attachments is not available yet')
+const OTHER_IMPORTANCE: Record<Models.MailImportance, Models.MailImportance> = {
+  important: 'low_priority',
+  low_priority: 'important',
+}
 
-/** Reading pane for one mail: toolbar, header, body, attachments and reply box. */
-export default function MailReader({ mail }: { mail: Mail }) {
+/** Reading pane for one mail: toolbar, header, AI importance and summary, body and reply box. */
+export default function MailReader({ mailId }: { mailId: string }) {
   const navigate = useNavigate()
-  const { data: meData } = useQuery(queries.auth.profile())
+  const { data: mail, isPending, isError, error } = useQuery(queries.mails.get(mailId))
+  const patch = useMutation(queries.mails.patch(mailId))
   const [summaryOpen, setSummaryOpen] = React.useState(false)
-  // Fetched on the first open only; the query keeps it for the session.
-  const summary = useQuery({
-    ...queries.ai.mailSummary(mail.id, {
-      from: `${mail.name} <${mail.email}>`,
-      subject: mail.subject,
-      body: mail.body,
-    }),
-    enabled: summaryOpen,
-  })
-  const [starred, setStarred] = React.useState(!!mail.starred)
-  // ponytail: importance feedback is local only; send it to the AI service once one exists.
-  const [feedback, setFeedback] = React.useState<'up' | 'down' | null>(null)
+  // Fetched on the first open only; the server keeps it after that.
+  const summary = useQuery({ ...queries.mails.summary(mailId), enabled: summaryOpen })
 
-  const index = MAILS.findIndex((item) => item.id === mail.id)
-  const prev = MAILS[index - 1]
-  const next = MAILS[index + 1]
+  // Opening a mail reads it.
+  const markRead = React.useEffectEvent(() => {
+    if (mail && !mail.is_read && !patch.isPending) patch.mutate({ is_read: true })
+  })
+  React.useEffect(() => markRead(), [mail?.id])
+
+  // Prev/next walk the list page the mail was opened from.
+  const { data: page } = useMailPage()
+  const pageMails = page?.data ?? []
+  const index = pageMails.findIndex((item) => item.id === mailId)
+  const prev = index > 0 ? pageMails[index - 1] : undefined
+  const next = index >= 0 ? pageMails[index + 1] : undefined
+
+  const backToList = () => navigate({ to: '/mail', search: (s) => ({ ...s, mail: undefined }) })
+  const update = (body: Parameters<typeof patch.mutate>[0], then?: () => void) =>
+    patch.mutate(body, { onSuccess: then, onError: toastAxiosError })
+
+  if (isPending || isError || !mail) {
+    return (
+      <div className="flex min-w-0 flex-1 flex-col gap-3 p-6" aria-busy={isPending}>
+        {isError ? (
+          <p className="text-destructive text-sm">{axiosErrorMessage(error)}</p>
+        ) : (
+          <>
+            <Skeleton className="h-10 w-1/2" />
+            <Skeleton className="h-8 w-3/4" />
+            <Skeleton className="h-40 w-full" />
+          </>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-w-0 flex-1 flex-col">
-      {/* ponytail: report, mark unread, move, delete and more have no backend yet. */}
+      {/* ponytail: report, delete and move need IMAP write-back; until then they do nothing. */}
       <div className="flex h-14 shrink-0 items-center justify-between border-b px-3">
         <div className="flex items-center gap-0.5">
-          <IconButton
-            label="Back to list"
-            onClick={() => navigate({ to: '/mail', search: (s) => ({ ...s, mail: undefined }) })}
-          >
+          <IconButton label="Back to list" onClick={backToList}>
             <ArrowLeft />
           </IconButton>
           <Separator orientation="vertical" className="mx-1.5 data-[orientation=vertical]:h-5" />
           <IconButton label="Report spam">
             <OctagonAlert />
           </IconButton>
-          <IconButton label="Mark as unread">
+          <IconButton label="Mark as unread" onClick={() => update({ is_read: false }, backToList)}>
             <MailIcon />
           </IconButton>
           <IconButton label="Delete">
@@ -129,73 +155,84 @@ export default function MailReader({ mail }: { mail: Mail }) {
       <div className="flex-1 overflow-y-auto px-6 py-5">
         <div className="flex flex-wrap items-start gap-3 border-b pb-4">
           <Avatar className="size-10">
-            <AvatarFallback>{mailInitials(mail.name)}</AvatarFallback>
+            <AvatarFallback>{mailInitials(senderName(mail))}</AvatarFallback>
           </Avatar>
           <div className="grid min-w-0 flex-1 gap-0.5 text-sm">
             <p className="truncate">
-              <span className="font-semibold">{mail.name}</span>{' '}
-              <span className="text-muted-foreground">{mail.email}</span>
+              <span className="font-semibold">{senderName(mail)}</span>{' '}
+              {mail.from_name && <span className="text-muted-foreground">{mail.from_email}</span>}
             </p>
-            <p className="text-muted-foreground">
-              {meData?.user && (
-                <>
-                  <span className="text-foreground font-medium">To:</span>{' '}
-                  <Contacts contacts={[{ name: meData.user.name, email: meData.user.email }]} />
-                </>
-              )}
-              {mail.cc && (
-                <>
-                  {meData?.user && '; '}
-                  <span className="text-foreground font-medium">Cc:</span>{' '}
-                  <Contacts contacts={mail.cc} />
-                </>
-              )}
-            </p>
+            {(mail.to.length > 0 || mail.cc.length > 0) && (
+              <p className="text-muted-foreground">
+                {mail.to.length > 0 && (
+                  <>
+                    <span className="text-foreground font-medium">To:</span>{' '}
+                    <Contacts contacts={mail.to} />
+                  </>
+                )}
+                {mail.cc.length > 0 && (
+                  <>
+                    {mail.to.length > 0 && '; '}
+                    <span className="text-foreground font-medium">Cc:</span>{' '}
+                    <Contacts contacts={mail.cc} />
+                  </>
+                )}
+              </p>
+            )}
           </div>
           <div className="text-muted-foreground flex shrink-0 items-center gap-0.5 text-sm">
-            {mail.attachments && <Paperclip className="mr-1.5 size-4" aria-label="Has attachments" />}
-            <span className="mr-1.5">{format(new Date(mail.receivedAt), 'MMM d, HH.mm')}</span>
+            <span className="mr-1.5">{format(new Date(mail.received_at), 'MMM d, HH.mm')}</span>
             <IconButton label="Print" onClick={() => window.print()}>
               <Printer />
             </IconButton>
             <IconButton label="Forward">
               <Forward />
             </IconButton>
-            {/* ponytail: star is local only; persist it once mail lives on the server. */}
-            <IconButton label={starred ? 'Unstar' : 'Star'} aria-pressed={starred} onClick={() => setStarred((on) => !on)}>
-              <Star className={cn(starred && 'fill-amber-400 text-amber-400')} />
+            <IconButton
+              label={mail.is_starred ? 'Unstar' : 'Star'}
+              aria-pressed={mail.is_starred}
+              onClick={() => update({ is_starred: !mail.is_starred })}
+            >
+              <Star className={cn(mail.is_starred && 'fill-amber-400 text-amber-400')} />
             </IconButton>
           </div>
         </div>
 
-        <h1 className="mt-5 text-2xl font-semibold">{mail.subject}</h1>
+        <h1 className="mt-5 text-2xl font-semibold">{mail.subject || '(no subject)'}</h1>
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="flex h-9 items-center gap-2 rounded-md border border-blue-500/30 bg-blue-500/10 px-3 text-sm text-blue-600 dark:text-blue-400">
               <Sparkles className="size-4" />
-              This email is considered as {mail.importance}
+              {mail.importance
+                ? `This email is considered as ${IMPORTANCE_LABELS[mail.importance].toLowerCase()}`
+                : 'This email has not been classified yet'}
             </span>
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Agree with importance"
-              aria-pressed={feedback === 'up'}
-              className={cn(feedback === 'up' && 'bg-accent')}
-              onClick={() => setFeedback((f) => (f === 'up' ? null : 'up'))}
-            >
-              <ThumbsUp />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Disagree with importance"
-              aria-pressed={feedback === 'down'}
-              className={cn(feedback === 'down' && 'bg-accent')}
-              onClick={() => setFeedback((f) => (f === 'down' ? null : 'down'))}
-            >
-              <ThumbsDown />
-            </Button>
+            {mail.importance && (
+              <>
+                {/* Agreeing pins the AI's label as the user's; disagreeing flips it. */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label="Agree with importance"
+                  aria-pressed={mail.importance_by === 'user'}
+                  className={cn(mail.importance_by === 'user' && 'bg-accent')}
+                  disabled={patch.isPending}
+                  onClick={() => update({ importance: mail.importance! })}
+                >
+                  <ThumbsUp />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label={`Disagree: mark as ${IMPORTANCE_LABELS[OTHER_IMPORTANCE[mail.importance]].toLowerCase()}`}
+                  disabled={patch.isPending}
+                  onClick={() => update({ importance: OTHER_IMPORTANCE[mail.importance!] })}
+                >
+                  <ThumbsDown />
+                </Button>
+              </>
+            )}
           </div>
           <Button
             variant="outline"
@@ -240,45 +277,9 @@ export default function MailReader({ mail }: { mail: Mail }) {
         )}
 
         <div className="max-w-3xl text-[15px] leading-relaxed whitespace-pre-line">{mail.body}</div>
-
-        {mail.attachments && (
-          <>
-            <Separator className="my-5" />
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold">Attachments</p>
-              <button
-                type="button"
-                className="text-sm text-blue-600 hover:underline dark:text-blue-400"
-                onClick={notAvailable}
-              >
-                Download All ({mail.attachments.length})
-              </button>
-            </div>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {mail.attachments.map((file) => (
-                <button
-                  key={file.name}
-                  type="button"
-                  onClick={notAvailable}
-                  className="bg-muted/40 hover:bg-accent/50 flex items-center gap-3 rounded-xl border p-2 text-left text-sm"
-                >
-                  <span className="bg-muted flex size-12 shrink-0 items-center justify-center rounded-lg">
-                    <FileIcon className="text-muted-foreground size-5" />
-                  </span>
-                  <span className="grid min-w-0">
-                    <span className="truncate font-medium">{file.name}</span>
-                    <span className="text-muted-foreground text-xs">
-                      {file.name.split('.').pop()?.toUpperCase()} · {file.size}
-                    </span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
       </div>
 
-      <ReplyComposer key={mail.id} />
+      <ReplyComposer key={mail.id} mailId={mail.id} />
     </div>
   )
 }

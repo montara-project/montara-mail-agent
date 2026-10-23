@@ -14,11 +14,10 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
 
-// ponytail: Settings has no page yet; give it a url once its route exists.
 const PLATFORM_ITEMS = [
   { title: 'Dashboard', icon: LayoutDashboard, url: '/dashboard' },
   { title: 'Account', icon: UserRound, url: '/account' },
-  { title: 'Settings', icon: Settings },
+  { title: 'Settings', icon: Settings, url: '/settings' },
 ]
 
 const STORAGE_LIMIT_GB = 5
@@ -41,19 +40,12 @@ export default function PlatformPanel() {
             <SidebarMenu>
               {PLATFORM_ITEMS.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  {item.url ? (
-                    <SidebarMenuButton asChild isActive={pathname.startsWith(item.url)}>
-                      <Link to={item.url}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  ) : (
-                    <SidebarMenuButton>
+                  <SidebarMenuButton asChild isActive={pathname.startsWith(item.url)}>
+                    <Link to={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  )}
+                    </Link>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>

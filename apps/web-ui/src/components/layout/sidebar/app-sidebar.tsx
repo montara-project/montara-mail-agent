@@ -43,7 +43,8 @@ function ThemeToggle() {
 /** The second panel shown next to the rail for a path, if any. */
 function sidebarPanel(pathname: string) {
   if (pathname.startsWith('/mail')) return <MailPanel />
-  if (pathname.startsWith('/dashboard') || pathname.startsWith('/account')) return <PlatformPanel />
+  if (['/dashboard', '/account', '/settings'].some((path) => pathname.startsWith(path)))
+    return <PlatformPanel />
   return null
 }
 
@@ -82,7 +83,9 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
   // ponytail: GET /me carries no app role yet, so everyone gets the default menu.
   // The rail has no room for nesting, so grouped items show their children.
   const navItems = getSidebarMenu().navMenu.overview.flatMap((item) =>
-    item.items.length > 0 ? item.items.map((sub) => ({ ...sub, icon: sub.icon ?? item.icon })) : [item]
+    item.items.length > 0
+      ? item.items.map((sub) => ({ ...sub, icon: sub.icon ?? item.icon }))
+      : [item]
   )
 
   return (

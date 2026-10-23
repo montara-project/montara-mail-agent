@@ -1,6 +1,19 @@
+import { useQuery } from '@tanstack/react-query'
 import { Link, useSearch } from '@tanstack/react-router'
-import { ArchiveX, Check, ChevronsUpDown, File, Inbox, OctagonAlert, Send, SquarePen, Trash2 } from 'lucide-react'
+import {
+  Check,
+  ChevronsUpDown,
+  File,
+  Inbox,
+  OctagonAlert,
+  Plus,
+  Send,
+  SquarePen,
+  Trash2,
+} from 'lucide-react'
 import { toast } from 'sonner'
+
+import type { Models } from '@/lib/api/models'
 
 import OrganizationSwitcher from '@/components/layout/organization/organization-switcher'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -10,6 +23,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
@@ -24,22 +38,24 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
+import { useActiveOrganization } from '@/hooks/use-active-organization'
+import { queries } from '@/lib/api/queries'
 
-import { MAIL_ACCOUNTS, mailInitials, MAILS, type MailTab } from './mail-data'
+import { IMPORTANCE_LABELS, mailInitials } from './mail-data'
 
-export const MAIL_FOLDERS = [
+// The folders the server syncs; IMAP has one junk folder, shown as Spam.
+export const MAIL_FOLDERS: { id: Models.MailFolder; title: string; icon: typeof Inbox }[] = [
   { id: 'inbox', title: 'Inbox', icon: Inbox },
   { id: 'drafts', title: 'Drafts', icon: File },
   { id: 'sent', title: 'Sent', icon: Send },
-  { id: 'junk', title: 'Junk', icon: ArchiveX },
   { id: 'spam', title: 'Spam', icon: OctagonAlert },
   { id: 'trash', title: 'Trash', icon: Trash2 },
 ]
 
-export const MAIL_LABELS: { id: MailTab; title: string; color: string }[] = [
-  { id: 'focused', title: 'Focused', color: 'bg-violet-500' },
-  { id: 'archive', title: 'Archive', color: 'bg-amber-500' },
-  { id: 'others', title: 'Others', color: 'bg-emerald-500' },
+/** Labels filter the list by the importance the AI or the user gave a mail. */
+export const MAIL_LABELS: { id: Models.MailImportance; title: string; color: string }[] = [
+  { id: 'important', title: IMPORTANCE_LABELS.important, color: 'bg-violet-500' },
+  { id: 'low_priority', title: IMPORTANCE_LABELS.low_priority, color: 'bg-emerald-500' },
 ]
 
 /** The folder named by ?folder=, falling back to the inbox. */
@@ -48,15 +64,38 @@ export function useMailFolder() {
   return MAIL_FOLDERS.find((item) => item.id === folder) ?? MAIL_FOLDERS[0]
 }
 
-/** The account named by ?account=, falling back to the first one. */
+/** The active organization's email accounts. */
+export function useMailAccounts() {
+  const { organization } = useActiveOrganization()
+  return useQuery(queries.emailAccounts.list(organization?.id))
+}
+
+/** The account named by ?account=, falling back to the first one; undefined while loading or when none is connected. */
 export function useMailAccount() {
   const { account } = useSearch({ strict: false })
-  return MAIL_ACCOUNTS.find((item) => item.id === account) ?? MAIL_ACCOUNTS[0]
+  const { data } = useMailAccounts()
+  return data?.find((item) => item.id === account) ?? data?.[0]
 }
 
 /** Shows the open account and switches to another one. */
 function AccountSwitcher() {
+  const { data: accounts, isPending } = useMailAccounts()
   const account = useMailAccount()
+
+  if (!account) {
+    return (
+      <Button variant="outline" className="w-full" asChild={!isPending} disabled={isPending}>
+        {isPending ? (
+          <span>Loading accounts...</span>
+        ) : (
+          <Link to="/account">
+            <Plus />
+            Connect an email account
+          </Link>
+        )}
+      </Button>
+    )
+  }
 
   return (
     <DropdownMenu>
@@ -77,8 +116,10 @@ function AccountSwitcher() {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-(--radix-dropdown-menu-trigger-width)">
-        <DropdownMenuLabel className="text-muted-foreground text-xs">Email accounts</DropdownMenuLabel>
-        {MAIL_ACCOUNTS.map((item) => (
+        <DropdownMenuLabel className="text-muted-foreground text-xs">
+          Email accounts
+        </DropdownMenuLabel>
+        {accounts?.map((item) => (
           <DropdownMenuItem key={item.id} asChild>
             <Link to="/mail" search={{ account: item.id }}>
               <span className="grid min-w-0 flex-1 leading-tight">
@@ -89,6 +130,13 @@ function AccountSwitcher() {
             </Link>
           </DropdownMenuItem>
         ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to="/account">
+            <Plus />
+            Connect an account
+          </Link>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -97,8 +145,12 @@ function AccountSwitcher() {
 /** Second panel of the sidebar-09 shell on /mail: compose, folders and labels. */
 export default function MailPanel() {
   const folder = useMailFolder()
+  const account = useMailAccount()
   const { label } = useSearch({ strict: false })
-  const unreadCount = MAILS.filter((mail) => !mail.read).length
+  const badges: Partial<Record<Models.MailFolder, number>> = {
+    inbox: account?.unread,
+    spam: account?.spam,
+  }
 
   return (
     <Sidebar collapsible="none" className="hidden flex-1 md:flex">
@@ -106,7 +158,10 @@ export default function MailPanel() {
         <OrganizationSwitcher />
         <AccountSwitcher />
         {/* ponytail: no send endpoint yet; open a compose view once it exists. */}
-        <Button className="w-full" onClick={() => toast.info('Composing mail is not available yet')}>
+        <Button
+          className="w-full"
+          onClick={() => toast.info('Composing mail is not available yet')}
+        >
           <SquarePen />
           Compose
         </Button>
@@ -118,15 +173,15 @@ export default function MailPanel() {
               {MAIL_FOLDERS.map((item) => (
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton asChild isActive={folder.id === item.id}>
-                    <Link to="/mail" search={(prev) => ({ account: prev.account, folder: item.id })}>
+                    <Link
+                      to="/mail"
+                      search={(prev) => ({ account: prev.account, folder: item.id })}
+                    >
                       <item.icon />
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
-                  {/* ponytail: sample mails are all in the inbox; count per folder once mail has one. */}
-                  {item.id === 'inbox' && unreadCount > 0 && (
-                    <SidebarMenuBadge>{unreadCount}</SidebarMenuBadge>
-                  )}
+                  {!!badges[item.id] && <SidebarMenuBadge>{badges[item.id]}</SidebarMenuBadge>}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
@@ -151,7 +206,6 @@ export default function MailPanel() {
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
-                  <SidebarMenuBadge>{MAILS.filter((mail) => mail.tab === item.id).length}</SidebarMenuBadge>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>

@@ -7,3 +7,10 @@ export interface Organization {
   updated_at: ISO8601DateString
   deleted_at?: ISO8601DateString | null
 }
+
+/** Dashboard totals of one organization. */
+export interface OrganizationStats {
+  unread: number
+  spam: number
+  accounts: number
+}

@@ -1,4 +1,3 @@
-import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, Pencil, Plus } from 'lucide-react'
 import React from 'react'
 
@@ -11,45 +10,19 @@ import {
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Separator } from '@/components/ui/separator'
-import { queries } from '@/lib/api/queries'
+import { setActiveOrganizationId, useActiveOrganization } from '@/hooks/use-active-organization'
 import { cn } from '@/lib/utils'
-
-const ACTIVE_ORGANIZATION_KEY = 'activeOrganizationId'
-
-// Storage can throw (private mode, blocked site data); the switcher then just forgets.
-function readActiveId() {
-  try {
-    return localStorage.getItem(ACTIVE_ORGANIZATION_KEY)
-  } catch {
-    return null
-  }
-}
-
-function writeActiveId(id: string) {
-  try {
-    localStorage.setItem(ACTIVE_ORGANIZATION_KEY, id)
-  } catch {
-    // Ignore: the selection still holds for this visit.
-  }
-}
 
 /** Picks the active organization; shown at the top of every sidebar panel. */
 export default function OrganizationSwitcher() {
-  // ponytail: first 100 only (the API's limit cap); add search once accounts outgrow it.
-  const { data, isPending, isError } = useQuery(
-    queries.organizations.list({ offset: 0, limit: 100 })
-  )
-  const organizations = data?.data ?? []
+  const { organization: active, organizations, isPending, isError } = useActiveOrganization()
 
   const [open, setOpen] = React.useState(false)
   // The open dialog: create when record is absent, edit otherwise.
   const [dialog, setDialog] = React.useState<{ record?: Models.Organization } | null>(null)
-  const [activeId, setActiveId] = React.useState(readActiveId)
-  const active = organizations.find((org) => org.id === activeId) ?? organizations[0]
 
   const select = (id: string) => {
-    setActiveId(id)
-    writeActiveId(id)
+    setActiveOrganizationId(id)
     setOpen(false)
   }
 
