@@ -8,8 +8,10 @@ import type { Models } from '@/lib/api/models'
 
 import gmailLogo from '@/assets/connectors/gmail.svg'
 import icloudLogo from '@/assets/connectors/icloud.svg'
+import larkLogo from '@/assets/connectors/lark.svg'
 import outlookLogo from '@/assets/connectors/outlook.svg'
 import yahooLogo from '@/assets/connectors/yahoo.svg'
+import zohoLogo from '@/assets/connectors/zoho.svg'
 import SimpleAlertScrollableDialogForm from '@/components/block/common/simple-alert-scrollable-dialog-form'
 import { FieldDescription } from '@/components/ui/field'
 import { useAppForm } from '@/hooks/form'
@@ -61,6 +63,20 @@ export const CONNECTORS: Connector[] = [
     description: 'iCloud Mail',
     logo: icloudLogo,
     help: 'Create an app-specific password at account.apple.com › Sign-In and Security.',
+  },
+  {
+    id: 'lark',
+    name: 'Lark',
+    description: 'Lark Mail',
+    logo: larkLogo,
+    help: 'In Lark Mail, open Settings › Third-party email client, turn on IMAP/SMTP, and generate a password for this device.',
+  },
+  {
+    id: 'zoho',
+    name: 'Zoho',
+    description: 'Zoho Mail',
+    logo: zohoLogo,
+    help: 'Turn on IMAP access in Zoho Mail settings, then create an app password under Zoho Accounts › Security › App passwords. Custom-domain or non-US accounts: use IMAP with the servers shown in Zoho Mail settings.',
   },
   {
     id: 'imap',
