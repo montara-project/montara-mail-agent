@@ -46,10 +46,8 @@ export function OrganizationPageSettings() {
       <OrganizationSettings />
       <SoonCard title="Members" description="Invite people and manage who's in the organization." />
       <SoonCard title="Roles & permissions" description="What each member is allowed to do." />
-      <SoonCard title="Billing" description="Who pays for the organization and how." />
-      <SoonCard title="Plan & usage" description="Your plan and how much of it is used." />
-      <LLMProviderSettings />
       <ServerSettings />
+      <LLMProviderSettings />
       <SoonCard title="Audit logs" description="Every change made in the organization." />
     </div>
   )
@@ -58,6 +56,8 @@ export function OrganizationPageSettings() {
 export function BillingSettings() {
   return (
     <div className="grid gap-4">
+      <SoonCard title="Billing" description="Who pays for the organization and how." />
+      <SoonCard title="Plan & usage" description="Your plan and how much of it is used." />
       <SoonCard title="Payment methods" description="Cards and accounts you pay with." />
       <SoonCard title="Invoices" description="Download the invoices for each payment." />
       <SoonCard title="Usage reports" description="What was used in each billing period." />
