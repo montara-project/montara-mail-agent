@@ -1,23 +1,9 @@
 import { IconCheck } from '@tabler/icons-react'
 
-export type NavSubItem = {
-  title: string
-  url: string
-  icon?: typeof IconCheck
-}
-
-export type NavMainItem = {
+export type NavItem = {
   title: string
   url: string
   icon: typeof IconCheck
-  isActive?: boolean
-  items: NavSubItem[]
-}
-
-export type SidebarMenuData = {
-  navMenu: {
-    overview: NavMainItem[]
-  }
 }
 
 export type UserInfo = {

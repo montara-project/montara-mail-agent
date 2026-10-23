@@ -11,7 +11,7 @@ interface SignInWithEmailParams {
 }
 
 /** Store the token pair a completed sign-in answers with. */
-export function storeSignIn(payload?: SignInData) {
+function storeSignIn(payload?: SignInData) {
   if (!payload?.access_token) {
     throw new Error('Sign-in response did not include an access token')
   }

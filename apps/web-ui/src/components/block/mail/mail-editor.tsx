@@ -62,7 +62,7 @@ export type Draft = { state: string; preview: string }
 /** A mail ready to send: Markdown for the text part, HTML for the formatted one. */
 export type Reply = { text: string; html: string }
 
-export type MailEditorProps = {
+type MailEditorProps = {
   /** A saved draft, or text to start from (a picked suggestion). A new object reloads it. */
   initial: { state?: string; text?: string }
   onSend: (reply: Reply) => void

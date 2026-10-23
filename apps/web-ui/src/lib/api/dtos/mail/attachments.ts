@@ -1,6 +1,6 @@
 /** The API's limits on one mail's attachments (dtos.MaxAttachments, dtos.MaxAttachmentBytes). */
-export const MAX_ATTACHMENTS = 10
-export const MAX_ATTACHMENT_BYTES = 18 * 1024 * 1024
+const MAX_ATTACHMENTS = 10
+const MAX_ATTACHMENT_BYTES = 18 * 1024 * 1024
 
 /** A file size as people read it, e.g. "2.5 MB". */
 export function formatBytes(bytes: number) {

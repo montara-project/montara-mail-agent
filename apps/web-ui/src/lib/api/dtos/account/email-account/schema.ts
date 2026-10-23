@@ -26,5 +26,3 @@ export const ImapAccountFormSchema = EmailAccountFormSchema.extend({
     .regex(/^$|^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$/, 'The SMTP server must be a host name.'),
   smtp_port: requiredString('SMTP port').regex(/^\d{1,5}$/, 'The SMTP port must be a number.'),
 })
-
-export type EmailAccountFormDto = z.infer<typeof EmailAccountFormSchema>

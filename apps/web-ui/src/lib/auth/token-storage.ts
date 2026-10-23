@@ -6,7 +6,7 @@ const isBrowser = typeof window !== 'undefined'
 const DEFAULT_ACCESS_TOKEN_MAX_AGE = 60 * 60 // 1 hour
 const REFRESH_TOKEN_MAX_AGE = 60 * 60 * 24 * 30 // 30 days
 
-export interface AuthTokens {
+interface AuthTokens {
   accessToken: string
   refreshToken?: string
   idToken?: string

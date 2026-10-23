@@ -11,5 +11,3 @@ export const ForwardFormSchema = z.object({
   }, `Enter up to ${MAX_RECIPIENTS} email addresses, separated by commas.`),
   note: z.string(),
 })
-
-export type ForwardFormDto = z.infer<typeof ForwardFormSchema>

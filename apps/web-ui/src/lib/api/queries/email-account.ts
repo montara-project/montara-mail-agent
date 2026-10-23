@@ -8,7 +8,7 @@ import { services } from '../services'
 import { MAIL_QUERY_KEY } from './mail'
 import { ORGANIZATION_QUERY_KEY } from './organization'
 
-export const EMAIL_ACCOUNT_QUERY_KEY = 'email-accounts'
+const EMAIL_ACCOUNT_QUERY_KEY = 'email-accounts'
 
 /** Everything a connect, sync or disconnect changes: accounts, their mail, the dashboard. */
 function invalidateMailboxes() {

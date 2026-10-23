@@ -30,7 +30,7 @@ const PLACEHOLDERS: Record<'openai' | 'anthropic', { baseURL: string; model: str
 }
 
 /** Whether the saved provider's key is the one the form would use: same kind and base URL. */
-export function keyIsSaved(provider: Models.LLMProvider | null, kind: string, baseURL: string) {
+function keyIsSaved(provider: Models.LLMProvider | null, kind: string, baseURL: string) {
   return !!provider?.has_api_key && provider.kind === kind && provider.base_url === baseURL.trim()
 }
 
@@ -38,7 +38,7 @@ export function keyIsSaved(provider: Models.LLMProvider | null, kind: string, ba
  * The models the provider in the form offers, fetched again once its kind,
  * base URL and key have settled, so the model list follows the form.
  */
-export function useProviderModels(organizationId: string, body: LLMModelsBody, ready: boolean) {
+function useProviderModels(organizationId: string, body: LLMModelsBody, ready: boolean) {
   // A string, so the debounce sees a change only when a value changes.
   const settled = useDebounce({ value: JSON.stringify(body), delay: 600 })
   const current = settled === JSON.stringify(body)
@@ -49,7 +49,7 @@ export function useProviderModels(organizationId: string, body: LLMModelsBody, r
  * Below the model field: the provider's models as the field's suggestions
  * (a native datalist, so any id can still be typed), and how the list went.
  */
-export function ModelSuggestions({
+function ModelSuggestions({
   listId,
   models,
   idleHint,
@@ -241,7 +241,7 @@ function providerStatus(data?: LLMProviderResponse) {
  * The active organization's provider, loaded, around one of its forms. Only
  * the organization's owner can change it.
  */
-export function ProviderSettings({
+function ProviderSettings({
   title,
   children,
 }: {
