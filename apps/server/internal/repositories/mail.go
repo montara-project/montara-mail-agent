@@ -18,20 +18,21 @@ type MailRepository struct {
 
 const mailColumns = `
 	id, created_at, updated_at, email_account_id, folder, uid_validity, uid, message_id,
-	from_name, from_email, "to", cc, subject, body, received_at, is_read, is_starred,
+	from_name, from_email, "to", cc, subject, body, body_html, received_at, is_read, is_starred,
 	importance, importance_by, summary`
 
-// mailListColumns swaps the body for a 200-character, one-line teaser.
+// mailListColumns swaps the body for a 200-character, one-line teaser and
+// leaves the HTML out.
 const mailListColumns = `
 	id, created_at, updated_at, email_account_id, folder, uid_validity, uid, message_id,
-	from_name, from_email, "to", cc, subject, left(regexp_replace(body, '\s+', ' ', 'g'), 200), received_at, is_read, is_starred,
+	from_name, from_email, "to", cc, subject, left(regexp_replace(body, '\s+', ' ', 'g'), 200), NULL, received_at, is_read, is_starred,
 	importance, importance_by, summary`
 
 func scanMail(row rowScanner) (models.Mail, error) {
 	var m models.Mail
 	var to, cc []byte
 	err := row.Scan(&m.ID, &m.CreatedAt, &m.UpdatedAt, &m.EmailAccountID, &m.Folder, &m.UIDValidity, &m.UID, &m.MessageID,
-		&m.FromName, &m.FromEmail, &to, &cc, &m.Subject, &m.Body, &m.ReceivedAt, &m.IsRead, &m.IsStarred,
+		&m.FromName, &m.FromEmail, &to, &cc, &m.Subject, &m.Body, &m.BodyHTML, &m.ReceivedAt, &m.IsRead, &m.IsStarred,
 		&m.Importance, &m.ImportanceBy, &m.Summary)
 	if err != nil {
 		return m, translateNotFound("mails", err)
@@ -90,16 +91,56 @@ func (r *MailRepository) InsertMany(ctx context.Context, mails []models.Mail) er
 		}
 		if _, err := tx.ExecContext(ctx, `
 			INSERT INTO mails (id, email_account_id, folder, uid_validity, uid, message_id, from_name, from_email,
-				"to", cc, subject, body, received_at, is_read, is_starred)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+				"to", cc, subject, body, body_html, received_at, is_read, is_starred)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 			ON CONFLICT (email_account_id, folder, uid) DO NOTHING`,
 			m.ID, m.EmailAccountID, m.Folder, m.UIDValidity, m.UID, m.MessageID, m.FromName, m.FromEmail,
-			to, cc, m.Subject, m.Body, m.ReceivedAt, m.IsRead, m.IsStarred,
+			to, cc, m.Subject, m.Body, m.BodyHTML, m.ReceivedAt, m.IsRead, m.IsStarred,
 		); err != nil {
 			return err
 		}
 	}
 	return tx.Commit()
+}
+
+// MissingHTML returns up to limit uids of a folder's mail synced before the
+// HTML part was kept, newest first.
+func (r *MailRepository) MissingHTML(ctx context.Context, accountID uuid.UUID, folder string, limit int) ([]int64, error) {
+	rows, err := r.queryContext(ctx, `
+		SELECT uid FROM mails
+		WHERE email_account_id = $1 AND folder = $2 AND body_html IS NULL
+		ORDER BY uid DESC
+		LIMIT $3`,
+		accountID, folder, limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return collectRows(rows, func(row rowScanner) (int64, error) {
+		var uid int64
+		return uid, row.Scan(&uid)
+	})
+}
+
+// SetBodies replaces the bodies of one synced mail.
+func (r *MailRepository) SetBodies(ctx context.Context, accountID uuid.UUID, folder string, uid uint32, body, bodyHTML string) error {
+	_, err := r.execContext(ctx, `
+		UPDATE mails SET body = $4, body_html = $5, updated_at = now()
+		WHERE email_account_id = $1 AND folder = $2 AND uid = $3`,
+		accountID, folder, uid, body, bodyHTML,
+	)
+	return err
+}
+
+// MarkNoHTML records "no HTML part" on the given uids still missing one, so
+// messages the server no longer returns are not asked for again.
+func (r *MailRepository) MarkNoHTML(ctx context.Context, accountID uuid.UUID, folder string, uids []int64) error {
+	_, err := r.execContext(ctx, `
+		UPDATE mails SET body_html = ''
+		WHERE email_account_id = $1 AND folder = $2 AND uid = ANY($3) AND body_html IS NULL`,
+		accountID, folder, uids,
+	)
+	return err
 }
 
 // MailListParams are the list controls plus the folder and importance filters.

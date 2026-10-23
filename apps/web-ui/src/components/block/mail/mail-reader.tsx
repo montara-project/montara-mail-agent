@@ -23,6 +23,7 @@ import React from 'react'
 import type { Models } from '@/lib/api/models'
 
 import Markdown from '@/components/block/common/markdown'
+import MailBody from '@/components/block/mail/mail-body'
 import { useMailPage } from '@/components/block/mail/mail-list'
 import ReplyComposer from '@/components/block/mail/reply-composer'
 import { IMPORTANCE_LABELS, mailInitials, senderName } from '@/components/layout/mail/mail-data'
@@ -276,7 +277,7 @@ export default function MailReader({ mailId }: { mailId: string }) {
           </section>
         )}
 
-        <div className="max-w-3xl text-[15px] leading-relaxed whitespace-pre-line">{mail.body}</div>
+        <MailBody html={mail.body_html} text={mail.body} />
       </div>
 
       <ReplyComposer key={mail.id} mailId={mail.id} />

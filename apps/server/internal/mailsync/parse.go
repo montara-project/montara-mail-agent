@@ -78,10 +78,11 @@ func toMail(env *imap.Envelope, flags []imap.Flag, internalDate time.Time, raw [
 		ReceivedAt: internalDate,
 		IsRead:     slices.Contains(flags, imap.FlagSeen),
 		IsStarred:  slices.Contains(flags, imap.FlagFlagged),
-		Body:       clean(messageText(raw)),
 		To:         []models.MailContact{},
 		Cc:         []models.MailContact{},
 	}
+	text, htmlBody := messageBodies(raw)
+	m.Body, m.BodyHTML = clean(text), new(clean(htmlBody))
 	if env != nil {
 		m.Subject, m.MessageID = clean(env.Subject), clean(env.MessageID)
 		m.To, m.Cc = contacts(env.To), contacts(env.Cc)
@@ -98,16 +99,17 @@ func toMail(env *imap.Envelope, flags []imap.Flag, internalDate time.Time, raw [
 	return m
 }
 
-// messageText returns a message's readable text: its first text/plain part,
-// else its first text/html part as text. The download may be cut at
-// maxMessageBytes, so a broken part ends the walk instead of failing it.
-func messageText(raw []byte) string {
+// messageBodies returns a message's readable text and its first text/html
+// part ("" when it has none). The text is the first text/plain part, else the
+// HTML as text. The download may be cut at maxMessageBytes, so a broken part
+// ends the walk instead of failing it.
+func messageBodies(raw []byte) (text, htmlBody string) {
 	r, err := mail.CreateReader(bytes.NewReader(raw))
 	if err != nil {
-		return ""
+		return "", ""
 	}
 
-	var plain, htmlBody string
+	var plain string
 	for {
 		part, err := r.NextPart()
 		if err != nil {
@@ -125,14 +127,27 @@ func messageText(raw []byte) string {
 		case contentType == "text/html" && htmlBody == "":
 			htmlBody = string(body)
 		}
-		if plain != "" {
+		if plain != "" && htmlBody != "" {
 			break
 		}
 	}
-	if plain != "" {
-		return strings.TrimSpace(plain)
+	htmlBody = strings.TrimSpace(htmlBody)
+	if text = plainText(plain); text == "" {
+		text = htmlText(htmlBody)
 	}
-	return htmlText(htmlBody)
+	return text, htmlBody
+}
+
+var htmlComment = regexp.MustCompile(`(?s)<!--.*?-->`)
+
+// plainText tidies a text/plain part. Senders that generate it from their
+// HTML template (Google among them) leave its conditional comments and runs
+// of blank lines in.
+func plainText(s string) string {
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	s = htmlComment.ReplaceAllString(s, "")
+	s = htmlBlankRuns.ReplaceAllString(s, "\n\n")
+	return strings.TrimSpace(s)
 }
 
 var (

@@ -70,26 +70,45 @@ Content-Transfer-Encoding: quoted-printable
 Ol=E1, plain text
 --b--
 `)
-	if got := messageText(multipart); got != "Olá, plain text" {
-		t.Fatalf("multipart: %q", got)
+	if text, htmlBody := messageBodies(multipart); text != "Olá, plain text" || htmlBody != "<p>Hello <b>HTML</b></p>" {
+		t.Fatalf("multipart: %q, %q", text, htmlBody)
 	}
 
 	htmlOnly := crlf(`Content-Type: text/html
 
 <html><head><style>p{color:red}</style></head><body><p>Line&nbsp;one</p><p>Line &amp; two</p><script>x()</script></body></html>
 `)
-	if got := messageText(htmlOnly); got != "Line one\nLine & two" {
+	if got, _ := messageBodies(htmlOnly); got != "Line\u00a0one\nLine & two" {
 		t.Fatalf("html only: %q", got)
+	}
+
+	// Google builds its text/plain part from the HTML template and leaves
+	// conditional comments and blank runs in it.
+	google := crlf(`Content-Type: text/plain; charset=utf-8
+
+Keep track of your Google Account data
+
+
+
+<!--[if !mso]><!-->
+
+<!--[if false]><!-->
+
+
+You're receiving this email
+`)
+	if got, _ := messageBodies(google); got != "Keep track of your Google Account data\n\nYou're receiving this email" {
+		t.Fatalf("google plain text: %q", got)
 	}
 
 	// A download cut inside a part still yields the text before the cut.
 	cut := multipart[:len(multipart)-40]
-	if got := messageText(cut); !strings.HasPrefix(got, "Hello HTML") && !strings.HasPrefix(got, "Olá") {
-		t.Fatalf("cut message: %q", got)
+	if _, htmlBody := messageBodies(cut); htmlBody != "<p>Hello <b>HTML</b></p>" {
+		t.Fatalf("cut message lost the part before the cut: %q", htmlBody)
 	}
 
-	if got := messageText(nil); got != "" {
-		t.Fatalf("empty message: %q", got)
+	if text, htmlBody := messageBodies(nil); text != "" || htmlBody != "" {
+		t.Fatalf("empty message: %q, %q", text, htmlBody)
 	}
 }
 

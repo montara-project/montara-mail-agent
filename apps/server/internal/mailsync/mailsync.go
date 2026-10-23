@@ -34,7 +34,13 @@ const (
 	syncTimeout     = 2 * time.Minute
 	// classifyRounds bounds the LLM calls per sync; the rest waits for the next run.
 	classifyRounds = 3
+	// backfillLimit is how many old mails per folder get their HTML re-read per run.
+	backfillLimit = 50
 )
+
+// bodySection is the start of the whole message; Peek leaves it unread on
+// the server.
+var bodySection = &imap.FetchItemBodySection{Peek: true, Partial: &imap.SectionPartial{Size: maxMessageBytes}}
 
 // Syncer syncs accounts of one application.
 type Syncer struct {
@@ -150,15 +156,22 @@ func (s *Syncer) pull(ctx context.Context, account models.EmailAccount) error {
 }
 
 func (s *Syncer) pullFolder(ctx context.Context, c *imapclient.Client, account models.EmailAccount, folder, mailbox string) error {
-	repo := &s.app.Repositories.Mail
-
 	sel, err := c.Select(mailbox, &imap.SelectOptions{ReadOnly: true}).Wait()
 	if err != nil {
 		return fmt.Errorf("open: %w", err)
 	}
-	if err := repo.DropStale(ctx, account.ID, folder, sel.UIDValidity); err != nil {
+	if err := s.app.Repositories.Mail.DropStale(ctx, account.ID, folder, sel.UIDValidity); err != nil {
 		return err
 	}
+	if err := s.pullNew(ctx, c, account, folder, sel); err != nil {
+		return err
+	}
+	return s.backfill(ctx, c, account, folder)
+}
+
+// pullNew stores the folder's messages that arrived since the last sync.
+func (s *Syncer) pullNew(ctx context.Context, c *imapclient.Client, account models.EmailAccount, folder string, sel *imap.SelectData) error {
+	repo := &s.app.Repositories.Mail
 	last, err := repo.MaxUID(ctx, account.ID, folder)
 	if err != nil {
 		return err
@@ -180,14 +193,12 @@ func (s *Syncer) pullFolder(ctx context.Context, c *imapclient.Client, account m
 		return nil
 	}
 
-	// Peek leaves the message unread on the server.
-	section := &imap.FetchItemBodySection{Peek: true, Partial: &imap.SectionPartial{Size: maxMessageBytes}}
 	msgs, err := c.Fetch(imap.UIDSetNum(uids...), &imap.FetchOptions{
 		UID:          true,
 		Flags:        true,
 		Envelope:     true,
 		InternalDate: true,
-		BodySection:  []*imap.FetchItemBodySection{section},
+		BodySection:  []*imap.FetchItemBodySection{bodySection},
 	}).Collect()
 	if err != nil {
 		return fmt.Errorf("fetch: %w", err)
@@ -195,7 +206,7 @@ func (s *Syncer) pullFolder(ctx context.Context, c *imapclient.Client, account m
 
 	mails := make([]models.Mail, 0, len(msgs))
 	for _, msg := range msgs {
-		m := toMail(msg.Envelope, msg.Flags, msg.InternalDate, msg.FindBodySection(section))
+		m := toMail(msg.Envelope, msg.Flags, msg.InternalDate, msg.FindBodySection(bodySection))
 		if m.ID, err = uuid.NewV7(); err != nil {
 			return err
 		}
@@ -203,6 +214,36 @@ func (s *Syncer) pullFolder(ctx context.Context, c *imapclient.Client, account m
 		mails = append(mails, m)
 	}
 	return repo.InsertMany(ctx, mails)
+}
+
+// backfill re-reads the bodies of mail synced before the HTML part was kept,
+// a batch per run, so it renders like newly synced mail.
+func (s *Syncer) backfill(ctx context.Context, c *imapclient.Client, account models.EmailAccount, folder string) error {
+	repo := &s.app.Repositories.Mail
+	missing, err := repo.MissingHTML(ctx, account.ID, folder, backfillLimit)
+	if err != nil || len(missing) == 0 {
+		return err
+	}
+
+	uids := make([]imap.UID, len(missing))
+	for i, uid := range missing {
+		uids[i] = imap.UID(uid)
+	}
+	msgs, err := c.Fetch(imap.UIDSetNum(uids...), &imap.FetchOptions{
+		UID:         true,
+		BodySection: []*imap.FetchItemBodySection{bodySection},
+	}).Collect()
+	if err != nil {
+		return fmt.Errorf("fetch bodies: %w", err)
+	}
+	for _, msg := range msgs {
+		text, htmlBody := messageBodies(msg.FindBodySection(bodySection))
+		if err := repo.SetBodies(ctx, account.ID, folder, uint32(msg.UID), clean(text), clean(htmlBody)); err != nil {
+			return err
+		}
+	}
+	// What the server no longer has keeps its old body.
+	return repo.MarkNoHTML(ctx, account.ID, folder, missing)
 }
 
 // newUIDs keeps the uids after last, ascending as the server sent them, and

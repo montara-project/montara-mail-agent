@@ -205,6 +205,9 @@ Content-Type: text/html
 	if sale.Body != "50% off" || !sale.IsRead || !sale.IsStarred {
 		t.Fatalf("html mail: %+v", sale)
 	}
+	if contract.BodyHTML == nil || *contract.BodyHTML != "<p>Please sign it.</p>" || sale.BodyHTML == nil || *sale.BodyHTML != "<p>50% off</p>" {
+		t.Fatalf("HTML parts not kept: %q, %q", *contract.BodyHTML, *sale.BodyHTML)
+	}
 	for _, m := range []models.Mail{contract, sale} {
 		if m.Importance == nil || *m.ImportanceBy != constant.ImportanceByAI {
 			t.Fatalf("mail not classified by the AI: %+v", m)
@@ -213,6 +216,17 @@ Content-Type: text/html
 	synced, err := application.Repositories.EmailAccount.Get(ctx, account.ID)
 	if err != nil || synced.SyncedAt == nil || synced.SyncError != nil {
 		t.Fatalf("sync outcome: %+v %v", synced, err)
+	}
+
+	// Mail synced before the HTML part was kept gets its bodies re-read.
+	if _, err := application.DB.Exec(`UPDATE mails SET body = 'old', body_html = NULL WHERE email_account_id = $1`, account.ID); err != nil {
+		t.Fatal(err)
+	}
+	if err := syncer.Sync(ctx, account); err != nil {
+		t.Fatalf("backfill sync: %v", err)
+	}
+	if again, _ := application.Repositories.Mail.Get(ctx, contract.ID); again.Body != "Please sign it." || again.BodyHTML == nil || *again.BodyHTML != "<p>Please sign it.</p>" {
+		t.Fatalf("backfill: %q %v", again.Body, again.BodyHTML)
 	}
 
 	// The next run takes only what is new.

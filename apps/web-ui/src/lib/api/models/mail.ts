@@ -22,6 +22,8 @@ export interface Mail {
   cc: MailContact[]
   subject: string
   body?: string
+  /** The text/html part; "" when the mail has none, absent in lists. */
+  body_html?: string | null
   teaser?: string
   received_at: ISO8601DateString
   is_read: boolean

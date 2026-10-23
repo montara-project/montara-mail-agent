@@ -26,7 +26,10 @@ type Mail struct {
 	Cc             []MailContact `db:"cc" json:"cc"`
 	Subject        string        `db:"subject" json:"subject"`
 	// Body is left out of list answers, which carry Teaser instead.
-	Body         string    `db:"body" json:"body,omitempty"`
+	Body string `db:"body" json:"body,omitempty"`
+	// BodyHTML is the text/html part, "" when there is none; nil in list
+	// answers and for mail synced before it was kept (see migration 000008).
+	BodyHTML     *string   `db:"body_html" json:"body_html,omitempty"`
 	Teaser       string    `db:"-" json:"teaser,omitempty"`
 	ReceivedAt   time.Time `db:"received_at" json:"received_at"`
 	IsRead       bool      `db:"is_read" json:"is_read"`
