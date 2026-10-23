@@ -3,7 +3,7 @@ package repositories
 import (
 	"context"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/models"
+	"montara-mail-agent/server/internal/models"
 
 	"github.com/google/uuid"
 )
@@ -57,4 +57,12 @@ func (r *UserRepository) Role(ctx context.Context, id uuid.UUID) (string, error)
 	var role string
 	err := r.queryRowContext(ctx, `SELECT role FROM users WHERE id = $1`, id).Scan(&role)
 	return role, translateNotFound("users", err)
+}
+
+// TOTPEnabled reports whether the user confirmed two-factor sign-in, from the
+// table Authula's totp plugin keeps in its schema.
+func (r *UserRepository) TOTPEnabled(ctx context.Context, id uuid.UUID) (bool, error) {
+	var enabled bool
+	err := r.queryRowContext(ctx, `SELECT EXISTS (SELECT 1 FROM authula.totp WHERE user_id = $1 AND enabled)`, id).Scan(&enabled)
+	return enabled, err
 }

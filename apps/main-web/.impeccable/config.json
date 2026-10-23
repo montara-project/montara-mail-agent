@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "plus jakarta sans",
+        "createdAt": "2026-10-22T07:43:34.793Z",
+        "reason": "agent decision: font copied from the user-provided reference design (edgeway.nextjsshop-preview.workers.dev uses Plus Jakarta Sans for body text)"
+      }
+    ]
+  }
+}

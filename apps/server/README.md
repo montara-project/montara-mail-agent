@@ -28,12 +28,15 @@ secret is passed as a process argument.
 | `SEED_ON_BOOT`                           | Run the seeders before serving; needs `SUPER_USER`.                                                                                                                  |
 | `SUPER_USER`                             | `email:password`, password of 12 to 128 characters.                                                                                                                  |
 | `SENTRY_DSN`                             | Optional; panics are reported when set.                                                                                                                              |
+| `MAIL_SYNC_INTERVAL`                     | How often every connected mailbox is synced, e.g. `5m` (the default). `0` disables the background sync; at least `1m` otherwise.                                     |
+| `ALLOW_PRIVATE_HOSTS`                    | Lets IMAP servers and LLM base URLs typed in by users reach loopback or private addresses, and LLM base URLs use `http`. Off by default; turn on for a local Ollama.  |
+| `ANTHROPIC_API_KEY`                      | Optional fallback model for organizations without their own LLM provider. Without it, those organizations get no AI features.                                        |
 
 ## Database
 
 ```sh
 make db/migrations/up            # apply migrations
-make db/migrations/up/seed       # ... and seed the categories
+make db/migrations/up/seed       # ... and seed the default organization
 make db/migrations/force version=N   # after a failed migration
 make db/migrations/refresh       # roll back everything and reapply
 ```
@@ -49,8 +52,9 @@ create and update and repaired on every boot.
 ## Super user
 
 With `SEED_ON_BOOT=true` the API creates the `SUPER_USER` account through
-Authula, with a verified email, and gives it the `super_user` role. Only that
-role may create, update or delete categories; everyone can read them.
+Authula, with a verified email, and gives it the `super_user` role. A super
+user sees and manages every organization; everyone else only the ones they
+belong to.
 
 `SUPER_USER` is the source of truth for the password: if the account's
 password differs, the next seeded boot resets it and ends every session of
@@ -58,6 +62,70 @@ that account, so rotating a leaked password locks the holder out. An account
 someone registered with that email before the first seed is taken over the
 same way: verified, reset and signed out. `cmd/migrate --seed` does not create
 the super user, because that needs a running Authula.
+
+## Organizations and mail
+
+Any signed-in user can create an organization and becomes its owner; a user
+can belong to many. Members read and manage the organization's email accounts
+and mail. Only the owner (or a super user) renames or deletes it and sets its
+LLM provider. Someone else's organization, account or mail answers 404.
+
+| Route                                                   | What it does                                                                                   |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `GET /api/v1/organizations/:id/stats`                   | Unread inbox mail, spam and connected accounts.                                                |
+| `GET, POST /api/v1/organizations/:id/email-accounts`    | List accounts, or connect one: signs in over IMAP first, then syncs in the background.          |
+| `GET, PUT, DELETE /api/v1/organizations/:id/llm-provider` | The model for AI features: `openai` or `anthropic` wire format, any compatible base URL, or `self_hosted` (OpenAI format on your own server, key optional). A saved key is reused only for the same kind and base URL. |
+| `POST /api/v1/organizations/:id/llm-provider/models`    | The models a provider offers, for the form's unsaved kind, base URL and key.                   |
+| `GET /api/v1/email-accounts/:id/mails`                  | One folder (`inbox`, `sent`, `drafts`, `spam`, `trash`), filtered by `importance` and `search`. |
+| `POST /api/v1/email-accounts/:id/sync`                  | Sync now. `DELETE /api/v1/email-accounts/:id` disconnects and drops the synced mail.           |
+| `POST /api/v1/email-accounts/:id/send`                  | Send a new mail through the account's SMTP server: To and Cc (20 addresses in all), subject, text and HTML. |
+| `GET, PATCH /api/v1/mails/:id`                          | Read a mail; mark it read or starred, or set its importance (the AI never overrides the user). |
+| `POST /api/v1/mails/:id/summary`, `/reply-suggestions`  | AI summary (kept after the first call) and up to three short replies.                          |
+| `POST /api/v1/mails/:id/move`, `DELETE /api/v1/mails/:id` | Move to `inbox`, `archive`, `spam` or `trash` on the mail server too; delete moves to the trash, or deletes for good from it. |
+| `POST /api/v1/mails/:id/forward`                        | Forward to up to 20 addresses through the account's SMTP server, with an optional note.         |
+| `POST /api/v1/mails/:id/reply`                          | Reply through SMTP to the sender (or the given To, plus Cc), threaded under the original (In-Reply-To) and quoting it. |
+
+Send and reply take JSON, or, to carry files, a `multipart/form-data` body
+with that JSON in a `payload` field and the files in `attachments`: at most
+10 files of 18 MB in all, which base64 grows to just under the 25 MB most
+providers accept.
+
+Every provider (Gmail, Outlook, Yahoo, iCloud, or any IMAP server) connects
+with the address and an app password; the known providers' servers are
+built in. Passwords and LLM API keys are sealed in the database with a key
+derived from `APP_SECRET`, so rotating `APP_SECRET` means connecting the
+accounts and saving the providers again.
+
+The sync takes the newest 50 messages of each folder the first time and
+everything new after that, then has the organization's model classify new
+inbox mail as `important` or `low_priority`. Read and starred states are
+taken from the server when a message is first synced; changing them in the
+app writes them back in the background. Gmail archives into All Mail, which
+is not synced, so archived Gmail mail leaves the app.
+
+## Account settings
+
+| Route                                | What it does                                                                                       |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `GET /api/v1/me/security`            | Whether the user has a password (not Google or magic link only) and two-factor sign-in.            |
+| `PATCH /api/v1/me`                   | Change the name and avatar (an `https` URL, or empty to remove it).                                |
+| `PUT /api/v1/me/password`            | Change the password after checking the current one; ends every session, so the user signs in again. |
+| `POST /api/v1/auth/totp/enable`      | Start two-factor sign-in: the `otpauth://` URI and backup codes. It is on once `POST /totp/verify` accepts a first code. |
+| `POST /api/v1/auth/totp/disable`, `/generate-backup-codes` | Turn it off, or replace the backup codes.                                    |
+
+With two-factor sign-in on, every sign-in (password, magic link, Google)
+answers `{"totp_redirect": true}` and a short-lived pending cookie instead of
+tokens; `POST /api/v1/auth/totp/verify` (or `/verify-backup-code`) with the
+code then answers like a sign-in.
+
+### Self-hosting behind the hosted web app
+
+Each browser picks its server under Settings > Self hosted (or "Change" on the
+sign-in page); the default is `https://app.montaramail.web.id`. To use the
+hosted web app with your own server, serve the API over https and add
+`https://app.montaramail.web.id` to `CORS_ALLOWED_ORIGINS`. Outside
+development the TOTP pending cookie is `SameSite=None`, so the two-factor step
+works across sites too.
 
 ## Authentication
 
@@ -94,12 +162,12 @@ The API accepts either the cookie or `Authorization: Bearer <access_token>`.
 
 ## Idempotent writes
 
-A write to `/api/v1/categories` accepts an idempotency key, so a retried request
+A write to `/api/v1/organizations` (or any other write route) accepts an idempotency key, so a retried request
 does not apply twice. Send the key on the first attempt and repeat it verbatim
 on every retry:
 
 ```sh
-curl -X POST http://localhost:8080/api/v1/categories \
+curl -X POST http://localhost:8080/api/v1/organizations \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H 'Content-Type: application/json' \
   -H "X-Idempotency-Key: 8e03978e-40d5-43e8-bc93-6894a57f9324" \

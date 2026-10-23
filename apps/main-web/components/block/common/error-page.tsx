@@ -20,7 +20,7 @@ export default function ErrorPage({ error, onRetry }: ErrorPageProps) {
       : 'An unexpected error occurred. Please try again.'
 
   return (
-    <div className="flex min-h-svh items-center justify-center p-6">
+    <div className="flex py-24 items-center justify-center p-6">
       <EmptyState
         icon={IconAlertTriangle}
         title="Something went wrong"
@@ -32,9 +32,9 @@ export default function ErrorPage({ error, onRetry }: ErrorPageProps) {
               <span>Try again</span>
             </Button>
             <Button variant="outline" asChild>
-              <Link href="/dashboard">
+              <Link href="/">
                 <IconArrowLeft />
-                <span>Back to dashboard</span>
+                <span>Back to home</span>
               </Link>
             </Button>
           </div>

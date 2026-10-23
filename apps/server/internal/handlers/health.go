@@ -3,8 +3,8 @@ package handlers
 import (
 	"github.com/gofiber/fiber/v3"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/app"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/dtos"
+	"montara-mail-agent/server/internal/app"
+	"montara-mail-agent/server/internal/dtos"
 )
 
 type healthHandler struct {

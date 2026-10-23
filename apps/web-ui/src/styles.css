@@ -110,12 +110,25 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    /* Thin scrollbar on a transparent track, faint until its container is hovered. */
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  *:hover {
+    scrollbar-color: color-mix(in oklch, var(--muted-foreground) 50%, transparent) transparent;
   }
   body {
     @apply bg-background text-foreground;
     margin: 0;
     min-height: 100vh;
   }
+}
+
+/* Magic UI animated theme toggler: the toggler animates the clip-path itself. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }
 
 @utility no-scrollbar {

@@ -21,8 +21,9 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/requestid"
 	"github.com/gofiber/fiber/v3/middleware/static"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/app"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/middlewares"
+	"montara-mail-agent/server/internal/app"
+	"montara-mail-agent/server/internal/mailsync"
+	"montara-mail-agent/server/internal/middlewares"
 )
 
 // serve runs the HTTP server until SIGINT/SIGTERM, then drains in-flight
@@ -37,6 +38,10 @@ func serve(app *app.Application) error {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	if every := app.Config.App.MailSyncInterval; every > 0 {
+		go mailsync.New(app).Run(ctx, every)
+	}
 
 	app.Logger.Info("starting server", "port", app.Config.App.Port, "env", app.Config.App.Env, "auth", authBasePath)
 	return server.Listen(fmt.Sprintf(":%d", app.Config.App.Port), fiber.ListenConfig{GracefulContext: ctx})
@@ -56,6 +61,9 @@ func newServer(app *app.Application) (*fiber.App, error) {
 		// whatever it likes, so every request gets a fresh rate-limit key.
 		EnableIPValidation: true,
 		// Bound how long a slow client can hold a connection.
+		// Room for a mail's attachments (dtos.MaxAttachmentBytes) and the
+		// multipart framing around them; Fiber's default is 4 MB.
+		BodyLimit:    20 << 20,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  60 * time.Second,

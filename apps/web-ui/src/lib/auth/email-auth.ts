@@ -1,3 +1,6 @@
+import type { SignInData, TOTPRedirect } from '../api/models/user'
+import type { TOTPVerifyBody } from '../api/services/types/auth'
+
 import { throwAxiosError } from '../api/axios-error'
 import { services } from '../api/services'
 import { clearAuthTokens, setAuthTokens } from './token-storage'
@@ -7,28 +10,50 @@ interface SignInWithEmailParams {
   password: string
 }
 
+/** Store the token pair a completed sign-in answers with. */
+export function storeSignIn(payload?: SignInData) {
+  if (!payload?.access_token) {
+    throw new Error('Sign-in response did not include an access token')
+  }
+
+  setAuthTokens({
+    accessToken: payload.access_token,
+    refreshToken: payload.refresh_token,
+    expiresIn: payload.expires_in,
+  })
+}
+
 /**
  * Authenticate against the Go API (VITE_API_URL) with email + password.
  * On success the returned tokens are stored and attached to subsequent API requests
- * by the axios interceptor in `client-fetch.ts`.
+ * by the axios interceptor in `client-fetch.ts`. A user with two-factor
+ * sign-in gets no tokens yet: the answer is `{ totp_redirect: true }`, and
+ * `verifyTOTP` finishes the sign-in.
  */
-export async function signInWithEmail({ email, password }: SignInWithEmailParams) {
+export async function signInWithEmail({
+  email,
+  password,
+}: SignInWithEmailParams): Promise<SignInData | TOTPRedirect | undefined> {
   try {
     const res = await services.auth.signIn({ email, password })
-    const payload = res?.data?.data
+    const payload = res?.data
 
-    if (!payload?.access_token) {
-      throw new Error('Sign-in response did not include an access token')
+    if (payload && 'totp_redirect' in payload && payload.totp_redirect) {
+      return payload
     }
+    storeSignIn(payload as SignInData)
+    return payload
+  } catch (error) {
+    throwAxiosError(error as Error)
+  }
+}
 
-    setAuthTokens({
-      accessToken: payload.access_token,
-      refreshToken: payload.refresh_token,
-      idToken: payload.id_token,
-      expiresIn: payload.expires_in,
-    })
-
-    return res?.data
+/** The second step of a sign-in: a code from the app, or a backup code. */
+export async function verifyTOTP(body: TOTPVerifyBody, backup = false) {
+  try {
+    const res = await services.auth.totpVerify(body, backup)
+    storeSignIn(res.data)
+    return res.data
   } catch (error) {
     throwAxiosError(error as Error)
   }

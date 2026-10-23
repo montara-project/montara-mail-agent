@@ -1,15 +1,27 @@
 package handlers
 
-import "github.com/masb0ymas/montara-mail-agent/apps/server/internal/app"
+import (
+	"montara-mail-agent/server/internal/app"
+	"montara-mail-agent/server/internal/mailsync"
+)
 
 type Handlers struct {
-	Health   *healthHandler
-	Category *categoryHandler
+	Health       *healthHandler
+	Organization *organizationHandler
+	EmailAccount *emailAccountHandler
+	Mail         *mailHandler
+	LLMProvider  *llmProviderHandler
+	Profile      *profileHandler
 }
 
 func New(app *app.Application) *Handlers {
+	sync := mailsync.New(app)
 	return &Handlers{
-		Health:   &healthHandler{app: app},
-		Category: &categoryHandler{app: app},
+		Health:       &healthHandler{app: app},
+		Organization: &organizationHandler{app: app},
+		EmailAccount: &emailAccountHandler{app: app, sync: sync},
+		Mail:         &mailHandler{app: app, sync: sync},
+		LLMProvider:  &llmProviderHandler{app: app},
+		Profile:      &profileHandler{app: app},
 	}
 }

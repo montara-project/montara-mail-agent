@@ -14,8 +14,9 @@ import { Separator } from '@/components/ui/separator'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { queries } from '@/lib/api/queries'
 import { capitalizeFirstLetter } from '@/lib/string'
+import { cn } from '@/lib/utils'
 
-import AppSidebar from './app-sidebar'
+import AppSidebar, { hasSidebarPanel } from './app-sidebar'
 
 interface SidebarLayoutProps {
   children: React.ReactNode
@@ -23,6 +24,8 @@ interface SidebarLayoutProps {
 
 export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const pathname = useLocation().pathname
+  // Pages without a second panel show just the icon rail.
+  const hasPanel = hasSidebarPanel(pathname)
 
   const { data: meData, isError, refetch } = useQuery(queries.auth.profile())
 
@@ -85,23 +88,27 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
     <SidebarProvider
       style={
         {
-          '--sidebar-width': '19rem',
+          // Rail plus panel; shared by every panel (Platform, Mail) so they line up.
+          '--sidebar-width': hasPanel ? '340px' : 'calc(var(--sidebar-width-icon) + 1px)',
         } as React.CSSProperties
       }
     >
       <AppSidebar
-        user={meData?.data}
-        userError={isError && !meData?.data}
+        user={meData?.user}
+        userError={isError && !meData?.user}
         onRetryUser={() => void refetch()}
       />
       <SidebarInset>
         <header className="sticky bg-background top-0 z-20 flex h-16 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex w-full items-center justify-between px-4">
             <div className="flex items-center justify-center gap-2">
-              <SidebarTrigger className="-ml-1" />
+              <SidebarTrigger className={cn('-ml-1', !hasPanel && 'md:hidden')} />
               <Separator
                 orientation="vertical"
-                className="my-auto mr-2 data-[orientation=vertical]:h-4"
+                className={cn(
+                  'my-auto mr-2 data-[orientation=vertical]:h-4',
+                  !hasPanel && 'md:hidden'
+                )}
               />
               {renderBreadcrumb()}
             </div>

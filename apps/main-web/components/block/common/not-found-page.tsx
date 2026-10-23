@@ -9,16 +9,16 @@ import { Button } from '@/components/ui/button'
 /** Full-page 404 for routes that do not exist. */
 export default function NotFoundPage() {
   return (
-    <div className="flex min-h-svh items-center justify-center p-6">
+    <div className="flex py-24 items-center justify-center p-6">
       <EmptyState
         icon={IconError404}
         title="Page not found"
         description="The page you are looking for does not exist or has been moved."
         action={
           <Button asChild>
-            <Link href="/dashboard">
+            <Link href="/">
               <IconArrowLeft />
-              <span>Back to dashboard</span>
+              <span>Back to home</span>
             </Link>
           </Button>
         }

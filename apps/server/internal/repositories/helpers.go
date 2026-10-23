@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib/apperr"
+	"montara-mail-agent/server/internal/lib/apperr"
 
 	"github.com/jackc/pgx/v5/pgconn"
 )
@@ -30,6 +30,19 @@ const pgForeignKeyViolation = "23503"
 func translateForeignKey(err error, message string) error {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == pgForeignKeyViolation {
+		return apperr.New(apperr.KindConflict, "%s", message)
+	}
+	return err
+}
+
+// pgUniqueViolation is the Postgres SQLSTATE for a unique-constraint violation.
+const pgUniqueViolation = "23505"
+
+// translateUnique maps a unique violation onto a typed 409; any other error
+// passes through unchanged.
+func translateUnique(err error, message string) error {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == pgUniqueViolation {
 		return apperr.New(apperr.KindConflict, "%s", message)
 	}
 	return err

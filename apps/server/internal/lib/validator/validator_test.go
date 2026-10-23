@@ -20,6 +20,17 @@ func TestRules(t *testing.T) {
 		{"maxlen absent passes", func(fv *FieldValidator) { fv.MaxLen(3) }, nil, true},
 		{"regex ok", func(fv *FieldValidator) { fv.Regex(`^\d+$`) }, "42", true},
 		{"regex bad", func(fv *FieldValidator) { fv.Regex(`^\d+$`) }, "x", false},
+		{"intrange in range passes", func(fv *FieldValidator) { fv.IntRange(1, 65535) }, float64(993), true},
+		{"intrange absent passes", func(fv *FieldValidator) { fv.IntRange(1, 65535) }, nil, true},
+		{"intrange too big fails", func(fv *FieldValidator) { fv.IntRange(1, 65535) }, float64(70000), false},
+		{"intrange fraction fails", func(fv *FieldValidator) { fv.IntRange(1, 65535) }, float64(1.5), false},
+		{"intrange string fails", func(fv *FieldValidator) { fv.IntRange(1, 65535) }, "993", false},
+		{"arrayof valid passes", func(fv *FieldValidator) { fv.ArrayOf(2, `^\w+$`) }, []interface{}{"a", "b"}, true},
+		{"arrayof too many fails", func(fv *FieldValidator) { fv.ArrayOf(2, `^\w+$`) }, []interface{}{"a", "b", "c"}, false},
+		{"arrayof empty fails", func(fv *FieldValidator) { fv.ArrayOf(2, `^\w+$`) }, []interface{}{}, false},
+		{"arrayof bad item fails", func(fv *FieldValidator) { fv.ArrayOf(2, `^\w+$`) }, []interface{}{"a", "b c"}, false},
+		{"arrayof non-string fails", func(fv *FieldValidator) { fv.ArrayOf(2, `^\w+$`) }, []interface{}{float64(1)}, false},
+		{"arrayof string fails", func(fv *FieldValidator) { fv.ArrayOf(2, `^\w+$`) }, "a", false},
 	}
 
 	for _, tc := range cases {

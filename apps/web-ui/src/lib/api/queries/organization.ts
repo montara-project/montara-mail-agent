@@ -78,4 +78,15 @@ const del = () => {
   })
 }
 
-export const organizationQueries = { list, get, create, update, delete: del } as const
+/** Dashboard totals: unread inbox mail, spam and connected accounts. */
+const stats = (id?: string) =>
+  queryOptions({
+    queryKey: [ORGANIZATION_QUERY_KEY, 'stats', id],
+    queryFn: async () => {
+      const res = await services.organizations.stats(id!)
+      return res.data.data
+    },
+    enabled: !!id,
+  })
+
+export const organizationQueries = { list, get, create, update, delete: del, stats } as const

@@ -3,7 +3,7 @@ package seeders
 import (
 	"context"
 	"database/sql"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib"
+	"montara-mail-agent/server/internal/lib"
 	"time"
 )
 
@@ -12,7 +12,7 @@ import (
 // running Authula instance, so the API appends SuperUserSeeder itself.
 func All(db *sql.DB) []Seeder {
 	return []Seeder{
-		CategorySeeder{DB: db},
+		OrganizationSeeder{DB: db},
 	}
 }
 

@@ -20,6 +20,12 @@ type Config struct {
 	DB     ConfigDB
 	Auth   ConfigAuth
 	Sentry ConfigSentry
+	AI     ConfigAI
+}
+
+// ConfigAI configures the Claude-backed AI features; an empty key disables them.
+type ConfigAI struct {
+	AnthropicAPIKey string
 }
 
 // ConfigAuth configures the embedded Authula server.
@@ -47,6 +53,12 @@ type ConfigApp struct {
 	// SPADir is the build output of a single-page app served at /; empty
 	// disables it.
 	SPADir string
+	// AllowPrivateHosts lets user-supplied hosts (IMAP servers, LLM base
+	// URLs) resolve to loopback or private addresses, e.g. a local Ollama.
+	AllowPrivateHosts bool
+	// MailSyncInterval is how often every account is synced; 0 disables
+	// the background sync.
+	MailSyncInterval time.Duration
 }
 
 type ConfigDB struct {

@@ -12,8 +12,8 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib/apperr"
+	"montara-mail-agent/server/internal/lib"
+	"montara-mail-agent/server/internal/lib/apperr"
 )
 
 func TestScopedIdempotencyKey(t *testing.T) {
@@ -22,23 +22,23 @@ func TestScopedIdempotencyKey(t *testing.T) {
 	clientKey := uuid.MustParse("33333333-3333-3333-3333-333333333333")
 	otherKey := uuid.MustParse("44444444-4444-4444-4444-444444444444")
 
-	base := scopedIdempotencyKey(uid, fiber.MethodPost, "/v1/categories", clientKey)
+	base := scopedIdempotencyKey(uid, fiber.MethodPost, "/v1/organizations", clientKey)
 
 	if _, err := uuid.Parse(base); err != nil {
 		t.Fatalf("derived key %q is not a UUID: %v", base, err)
 	}
 	// A retry of the same request must land on the same entry.
-	if got := scopedIdempotencyKey(uid, fiber.MethodPost, "/v1/categories", clientKey); got != base {
+	if got := scopedIdempotencyKey(uid, fiber.MethodPost, "/v1/organizations", clientKey); got != base {
 		t.Errorf("same request derived %q, want %q", got, base)
 	}
 
 	// Each component is part of the scope: reusing a key must not reach an
 	// entry another caller or route owns.
 	cases := map[string]string{
-		"other caller": scopedIdempotencyKey(other, fiber.MethodPost, "/v1/categories", clientKey),
-		"other method": scopedIdempotencyKey(uid, fiber.MethodPut, "/v1/categories", clientKey),
-		"other route":  scopedIdempotencyKey(uid, fiber.MethodPost, "/v1/categories/1", clientKey),
-		"other key":    scopedIdempotencyKey(uid, fiber.MethodPost, "/v1/categories", otherKey),
+		"other caller": scopedIdempotencyKey(other, fiber.MethodPost, "/v1/organizations", clientKey),
+		"other method": scopedIdempotencyKey(uid, fiber.MethodPut, "/v1/organizations", clientKey),
+		"other route":  scopedIdempotencyKey(uid, fiber.MethodPost, "/v1/organizations/1", clientKey),
+		"other key":    scopedIdempotencyKey(uid, fiber.MethodPost, "/v1/organizations", otherKey),
 	}
 	for name, got := range cases {
 		if got == base {
@@ -235,6 +235,6 @@ func BenchmarkIdempotencyScopedKey(b *testing.B) {
 	clientKey := uuid.MustParse("33333333-3333-3333-3333-333333333333")
 	b.ReportAllocs()
 	for b.Loop() {
-		_ = scopedIdempotencyKey(uid, fiber.MethodPost, "/v1/categories", clientKey)
+		_ = scopedIdempotencyKey(uid, fiber.MethodPost, "/v1/organizations", clientKey)
 	}
 }

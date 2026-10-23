@@ -1,6 +1,6 @@
 package middlewares
 
-import "github.com/masb0ymas/montara-mail-agent/apps/server/internal/app"
+import "montara-mail-agent/server/internal/app"
 
 type Middlewares struct {
 	app *app.Application

@@ -16,12 +16,12 @@ import (
 	authulamodels "github.com/Authula/authula/models"
 	"github.com/gofiber/fiber/v3"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/app"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/config"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib/constant"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/repositories"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/seeders"
+	"montara-mail-agent/server/internal/app"
+	"montara-mail-agent/server/internal/config"
+	"montara-mail-agent/server/internal/lib"
+	"montara-mail-agent/server/internal/lib/constant"
+	"montara-mail-agent/server/internal/repositories"
+	"montara-mail-agent/server/internal/seeders"
 )
 
 // TestIntegration runs the boot sequence and the auth flow against a real
@@ -51,6 +51,10 @@ func TestIntegration(t *testing.T) {
 			// Fiber's test connection comes from 0.0.0.0; trusting it lets the
 			// test send X-Forwarded-For the way a reverse proxy would.
 			TrustedProxies: "0.0.0.0",
+			// The flow makes more model and mail-server calls than one
+			// minute's budget allows; the rate-limit check sends its own
+			// X-Forwarded-For, so it is still counted.
+			RateLimitExemptIPs: "0.0.0.0",
 		},
 		DB: config.ConfigDB{DSN: dsn, MaxOpenConns: 5, MaxIdleConns: 5},
 		Auth: config.ConfigAuth{
@@ -164,7 +168,13 @@ func TestIntegration(t *testing.T) {
 		t.Fatalf("reseed: %v", err)
 	}
 
-	server, err := newServer(&app.Application{Config: cfg, Logger: logger, DB: db, Repositories: repos, Auth: auth})
+	secrets, err := lib.NewSecretBox(cfg.App.Secret)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// No fallback model at first: AI requests answer 503 until one is set.
+	application := &app.Application{Config: cfg, Logger: logger, DB: db, Repositories: repos, Auth: auth, Secrets: secrets, HTTPClient: outboundClient(false)}
+	server, err := newServer(application)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -176,7 +186,11 @@ func TestIntegration(t *testing.T) {
 	call := func(method, path, token string, body any, headers ...string) (int, map[string]any) {
 		t.Helper()
 		var payload io.Reader
-		if body != nil {
+		// A []byte body goes as is (a multipart form, with its Content-Type
+		// passed in headers); anything else as JSON.
+		if raw, ok := body.([]byte); ok {
+			payload = bytes.NewReader(raw)
+		} else if body != nil {
 			raw, _ := json.Marshal(body)
 			payload = bytes.NewReader(raw)
 		}
@@ -268,51 +282,87 @@ func TestIntegration(t *testing.T) {
 		t.Fatalf("refresh: %d %v", status, out)
 	}
 
-	// Category writes: super user only.
-	category := map[string]string{"name": "Integration"}
-	if status, _ := call(http.MethodPost, "/api/v1/categories", "", category); status != http.StatusUnauthorized {
+	// Organizations: every signed-in user creates their own and sees only those.
+	organization := map[string]string{"name": "Integration"}
+	if status, _ := call(http.MethodPost, "/api/v1/organizations", "", organization); status != http.StatusUnauthorized {
 		t.Fatalf("create without auth: %d, want 401", status)
 	}
-	if status, _ := call(http.MethodPost, "/api/v1/categories", userToken, category); status != http.StatusForbidden {
-		t.Fatalf("create as plain user: %d, want 403", status)
+	if status, _ := call(http.MethodGet, "/api/v1/organizations", "", nil); status != http.StatusUnauthorized {
+		t.Fatalf("list without auth: %d, want 401", status)
 	}
-	if status, out := call(http.MethodPost, "/api/v1/categories", superToken, category); status != http.StatusCreated {
+	status, out = call(http.MethodPost, "/api/v1/organizations", userToken, map[string]string{"name": "User Org"})
+	if status != http.StatusCreated {
+		t.Fatalf("create as plain user: %d %v", status, out)
+	}
+	userOrg := out["data"].(map[string]any)["id"].(string)
+	status, out = call(http.MethodPost, "/api/v1/organizations", superToken, organization)
+	if status != http.StatusCreated {
 		t.Fatalf("create as super user: %d %v", status, out)
 	}
-	if status, out := call(http.MethodGet, "/api/v1/categories?search=Integration", "", nil); status != http.StatusOK || len(out["data"].([]any)) != 1 {
+	superOrg := out["data"].(map[string]any)["id"].(string)
+
+	if status, out := call(http.MethodGet, "/api/v1/organizations", userToken, nil); status != http.StatusOK || len(out["data"].([]any)) != 1 {
+		t.Fatalf("plain user lists only their organization: %d %v", status, out)
+	}
+	// The super user sees every organization, the seeded one included.
+	if status, out := call(http.MethodGet, "/api/v1/organizations", superToken, nil); status != http.StatusOK || len(out["data"].([]any)) != 3 {
+		t.Fatalf("super user lists all: %d %v", status, out)
+	}
+	if status, out := call(http.MethodGet, "/api/v1/organizations?search=Integration", superToken, nil); status != http.StatusOK || len(out["data"].([]any)) != 1 {
 		t.Fatalf("list: %d %v", status, out)
+	}
+	for _, req := range []struct{ method, path string }{
+		{http.MethodGet, "/api/v1/organizations/" + superOrg},
+		{http.MethodPut, "/api/v1/organizations/" + superOrg},
+		{http.MethodGet, "/api/v1/organizations/" + superOrg + "/stats"},
+		{http.MethodGet, "/api/v1/organizations/" + superOrg + "/email-accounts"},
+		{http.MethodGet, "/api/v1/organizations/" + superOrg + "/llm-provider"},
+	} {
+		if status, _ := call(req.method, req.path, userToken, organization); status != http.StatusNotFound {
+			t.Fatalf("%s %s by a non-member: %d, want 404", req.method, req.path, status)
+		}
+	}
+	if status, out := call(http.MethodPut, "/api/v1/organizations/"+userOrg, userToken, map[string]string{"name": "Renamed"}); status != http.StatusOK {
+		t.Fatalf("owner renames: %d %v", status, out)
+	}
+	if status, out := call(http.MethodGet, "/api/v1/organizations/"+userOrg, superToken, nil); status != http.StatusOK {
+		t.Fatalf("super user reads any organization: %d %v", status, out)
 	}
 
 	// Idempotent create: the same key replays the first answer instead of
 	// inserting a second row, and the reply is marked as replayed.
 	const idempotencyKey = "8e03978e-40d5-43e8-bc93-6894a57f9324"
 	retried := map[string]string{"name": "Retried"}
-	firstStatus, firstOut := call(http.MethodPost, "/api/v1/categories", superToken, retried, "X-Idempotency-Key", idempotencyKey)
+	firstStatus, firstOut := call(http.MethodPost, "/api/v1/organizations", superToken, retried, "X-Idempotency-Key", idempotencyKey)
 	if firstStatus != http.StatusCreated {
 		t.Fatalf("idempotent create: %d %v", firstStatus, firstOut)
 	}
-	retryStatus, retryOut := call(http.MethodPost, "/api/v1/categories", superToken, retried, "X-Idempotency-Key", idempotencyKey)
+	retryStatus, retryOut := call(http.MethodPost, "/api/v1/organizations", superToken, retried, "X-Idempotency-Key", idempotencyKey)
 	if retryStatus != firstStatus || retryOut["data"].(map[string]any)["id"] != firstOut["data"].(map[string]any)["id"] {
 		t.Fatalf("idempotent retry: %d %v, want the first answer %v", retryStatus, retryOut, firstOut)
 	}
-	if status, out := call(http.MethodGet, "/api/v1/categories?search=Retried", "", nil); status != http.StatusOK || len(out["data"].([]any)) != 1 {
+	if status, out := call(http.MethodGet, "/api/v1/organizations?search=Retried", superToken, nil); status != http.StatusOK || len(out["data"].([]any)) != 1 {
 		t.Fatalf("the retry inserted a second row: %d %v", status, out)
 	}
 	// A malformed key is refused before the write is attempted.
-	if status, _ := call(http.MethodPost, "/api/v1/categories", superToken, map[string]string{"name": "Bad"}, "X-Idempotency-Key", "not-a-uuid"); status != http.StatusBadRequest {
+	if status, _ := call(http.MethodPost, "/api/v1/organizations", superToken, map[string]string{"name": "Bad"}, "X-Idempotency-Key", "not-a-uuid"); status != http.StatusBadRequest {
 		t.Fatalf("malformed idempotency key: %d, want 400", status)
 	}
 
 	// A browser request from another site is refused before it is authenticated.
-	if status, _ := call(http.MethodPost, "/api/v1/categories", superToken, category, "Sec-Fetch-Site", "cross-site", "Origin", "https://evil.example"); status != http.StatusForbidden {
+	if status, _ := call(http.MethodPost, "/api/v1/organizations", superToken, organization, "Sec-Fetch-Site", "cross-site", "Origin", "https://evil.example"); status != http.StatusForbidden {
 		t.Fatalf("cross-site create: %d, want 403", status)
 	}
+
+	testMailFlow(t, call, application, userToken, userOrg, superOrg)
+	testIMAPSync(t, application, userOrg)
+	testAccountSettings(t, call, func() string { return cookies }, db, userEmail, userPass)
 
 	// Signing out revokes the access token.
 	if status, out := call(http.MethodPost, "/api/v1/auth/sign-out", superToken, map[string]any{}); status != http.StatusOK {
 		t.Fatalf("sign out: %d %v", status, out)
 	}
-	if status, _ := call(http.MethodPost, "/api/v1/categories", superToken, category); status != http.StatusUnauthorized {
+	if status, _ := call(http.MethodPost, "/api/v1/organizations", superToken, organization); status != http.StatusUnauthorized {
 		t.Fatalf("create after sign out: %d, want 401", status)
 	}
 

@@ -12,7 +12,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
   return (
     <NextThemesProvider
       storageKey="vine-theme"
-      defaultTheme="dark"
+      defaultTheme="system"
       attribute="class"
       disableTransitionOnChange
       enableColorScheme

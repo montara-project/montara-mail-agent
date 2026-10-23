@@ -5,14 +5,33 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"net/http"
 	"os"
 	"time"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/app"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/config"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/repositories"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/seeders"
+	"montara-mail-agent/server/internal/app"
+	"montara-mail-agent/server/internal/config"
+	"montara-mail-agent/server/internal/lib"
+	"montara-mail-agent/server/internal/lib/llm"
+	"montara-mail-agent/server/internal/repositories"
+	"montara-mail-agent/server/internal/seeders"
 )
+
+// fallbackModel serves organizations without their own LLM provider.
+const fallbackModel = "claude-opus-5-5"
+
+// outboundClient calls user-supplied hosts, such as an organization's LLM
+// base URL, through the guarded dialer.
+func outboundClient(allowPrivate bool) *http.Client {
+	return &http.Client{
+		Timeout: 2 * time.Minute,
+		Transport: &http.Transport{
+			DialContext:         lib.GuardedDialer(allowPrivate).DialContext,
+			TLSHandshakeTimeout: 15 * time.Second,
+			ForceAttemptHTTP2:   true,
+		},
+	}
+}
 
 func main() {
 	if err := run(); err != nil {
@@ -76,11 +95,34 @@ func run() error {
 		}
 	}
 
+	var ai llm.Client
+	if cfg.AI.AnthropicAPIKey != "" {
+		ai, err = llm.New(llm.Config{
+			Kind:       llm.KindAnthropic,
+			APIKey:     cfg.AI.AnthropicAPIKey,
+			Model:      fallbackModel,
+			HTTPClient: &http.Client{Timeout: 2 * time.Minute},
+		})
+		if err != nil {
+			return err
+		}
+	} else {
+		logger.Warn("no fallback AI: anthropic-api-key is not set, so only organizations with their own LLM provider get AI features")
+	}
+
+	secrets, err := lib.NewSecretBox(cfg.App.Secret)
+	if err != nil {
+		return err
+	}
+
 	return serve(&app.Application{
 		Config:       cfg,
 		Logger:       logger,
 		DB:           db,
 		Repositories: repos,
 		Auth:         auth,
+		AI:           ai,
+		Secrets:      secrets,
+		HTTPClient:   outboundClient(cfg.App.AllowPrivateHosts),
 	})
 }

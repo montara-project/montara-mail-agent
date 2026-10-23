@@ -22,6 +22,8 @@ type TResponse = Models.Organization
 type AbstractFormProps = BaseAbstractForm<TModel, TMutation, TDto, TResponse> & {
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Called with the saved organization, e.g. to select a new one. */
+  onSaved?: (record: TResponse) => void
 }
 
 function AbstractForm({
@@ -31,6 +33,7 @@ function AbstractForm({
   schema,
   mutation,
   isEdit,
+  onSaved,
 }: AbstractFormProps) {
   const form = useAppForm({
     defaultValues,
@@ -40,7 +43,8 @@ function AbstractForm({
     },
     onSubmit: async ({ value }) => {
       try {
-        await mutation.mutateAsync(parseDto(schema, value))
+        const res = await mutation.mutateAsync(parseDto(schema, value))
+        if (res) onSaved?.(res.data)
         toast.success(`Organization ${isEdit ? 'updated' : 'created'} successfully`)
         onOpenChange(false)
         form.reset()
@@ -76,9 +80,10 @@ function AbstractForm({
 type AddOrganizationFormProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onSaved?: (record: Models.Organization) => void
 }
 
-export function AddOrganizationForm({ open, onOpenChange }: AddOrganizationFormProps) {
+export function AddOrganizationForm({ open, onOpenChange, onSaved }: AddOrganizationFormProps) {
   const mutation = useMutation(queries.organizations.create())
 
   return (
@@ -90,6 +95,7 @@ export function AddOrganizationForm({ open, onOpenChange }: AddOrganizationFormP
       }}
       schema={OrganizationFormSchema}
       mutation={mutation}
+      onSaved={onSaved}
     />
   )
 }
@@ -98,7 +104,12 @@ type EditOrganizationFormProps = AddOrganizationFormProps & {
   record: Models.Organization
 }
 
-export function EditOrganizationForm({ open, onOpenChange, record }: EditOrganizationFormProps) {
+export function EditOrganizationForm({
+  open,
+  onOpenChange,
+  record,
+  onSaved,
+}: EditOrganizationFormProps) {
   const mutation = useMutation(queries.organizations.update(record.id))
 
   return (
@@ -108,6 +119,7 @@ export function EditOrganizationForm({ open, onOpenChange, record }: EditOrganiz
       defaultValues={{ ...record }}
       schema={OrganizationFormSchema}
       mutation={mutation}
+      onSaved={onSaved}
       isEdit
     />
   )

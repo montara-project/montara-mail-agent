@@ -37,3 +37,15 @@ export function throwAxiosError(error: unknown): never {
 export function toastAxiosError(error: unknown) {
   toast.error(axiosErrorMessage(error))
 }
+
+/**
+ * A loading toast for a slow request that turns, in place, into its outcome,
+ * so the user sees the work start, run and end in one message.
+ */
+export function toastProgress(pending: string) {
+  const id = toast.loading(pending)
+  return {
+    success: (message: string) => toast.success(message, { id }),
+    error: (error: unknown) => toast.error(axiosErrorMessage(error), { id }),
+  }
+}

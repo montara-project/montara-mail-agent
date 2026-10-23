@@ -1,8 +1,6 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 
-import { env } from '@/config/env'
-
-import type { SignInData } from './models/user'
+import type { RefreshData } from './models/user'
 
 import {
   clearAuthTokens,
@@ -10,6 +8,7 @@ import {
   getStoredRefreshToken,
   setAuthTokens,
 } from '../auth/token-storage'
+import { SERVER_URL } from './server-url'
 
 /** Path the browser is sent to when the session cannot be recovered. */
 export const SIGN_IN_PATH = '/sign-in'
@@ -20,10 +19,10 @@ const TIME_OUT = 5 * 60_000 // 5 minutes
 /**
  * The one axios instance every service uses. The access token issued at
  * sign-in is kept by `token-storage.ts` and sent as a Bearer header, so the API
- * may live on another origin (VITE_API_URL) as well as behind the Vite proxy.
+ * may live on another origin (the chosen server) as well as behind the Vite proxy.
  */
 export const api = axios.create({
-  baseURL: env.VITE_API_URL || undefined,
+  baseURL: SERVER_URL,
   timeout: TIME_OUT,
 })
 
@@ -42,16 +41,13 @@ async function refreshTokens() {
     throw new Error('No refresh token')
   }
 
-  const res = await api.post<{ data: SignInData }>(`${AUTH_PATH}/refresh`, {
+  const res = await api.post<RefreshData>(`${AUTH_PATH}/token/refresh`, {
     refresh_token: refreshToken,
   })
-  const payload = res.data.data
 
   setAuthTokens({
-    accessToken: payload.access_token,
-    refreshToken: payload.refresh_token,
-    idToken: payload.id_token,
-    expiresIn: payload.expires_in,
+    accessToken: res.data.access_token,
+    refreshToken: res.data.refresh_token,
   })
 }
 
@@ -70,8 +66,10 @@ api.interceptors.response.use(undefined, async (error: AxiosError) => {
   const recoverable =
     error.response?.status === 401 &&
     config !== undefined &&
-    !url.startsWith(`${AUTH_PATH}/sign-in`) &&
-    !url.startsWith(`${AUTH_PATH}/refresh`)
+    !url.startsWith(`${AUTH_PATH}/email-password/sign-in`) &&
+    !url.startsWith(`${AUTH_PATH}/token/refresh`) &&
+    // A wrong two-factor code answers 401 too; it must not sign anyone out.
+    !url.startsWith(`${AUTH_PATH}/totp/verify`)
 
   if (!recoverable) {
     return Promise.reject(error)

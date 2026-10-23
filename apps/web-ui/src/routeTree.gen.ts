@@ -11,8 +11,17 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as appRouteRouteImport } from './routes/(app)/route'
+import { Route as appSettingsRouteRouteImport } from './routes/(app)/settings/route'
 import { Route as SignInIndexRouteImport } from './routes/sign-in/index'
+import { Route as appAccountIndexRouteImport } from './routes/(app)/account/index'
 import { Route as appDashboardIndexRouteImport } from './routes/(app)/dashboard/index'
+import { Route as appMailIndexRouteImport } from './routes/(app)/mail/index'
+import { Route as appSettingsIndexRouteImport } from './routes/(app)/settings/index'
+import { Route as appSettingsGeneralRouteImport } from './routes/(app)/settings/general'
+import { Route as appSettingsLlmProviderRouteImport } from './routes/(app)/settings/llm-provider'
+import { Route as appSettingsPasswordRouteImport } from './routes/(app)/settings/password'
+import { Route as appSettingsSelfHostedRouteImport } from './routes/(app)/settings/self-hosted'
+import { Route as appSettingsTwoFactorRouteImport } from './routes/(app)/settings/two-factor'
 import { Route as appMasterOrganizationIndexRouteImport } from './routes/(app)/master/organization/index'
 
 const IndexRoute = IndexRouteImport.update({
@@ -24,15 +33,60 @@ const appRouteRoute = appRouteRouteImport.update({
   id: '/(app)',
   getParentRoute: () => rootRouteImport,
 } as any)
+const appSettingsRouteRoute = appSettingsRouteRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => appRouteRoute,
+} as any)
 const SignInIndexRoute = SignInIndexRouteImport.update({
   id: '/sign-in/',
   path: '/sign-in/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const appAccountIndexRoute = appAccountIndexRouteImport.update({
+  id: '/account/',
+  path: '/account/',
+  getParentRoute: () => appRouteRoute,
+} as any)
 const appDashboardIndexRoute = appDashboardIndexRouteImport.update({
   id: '/dashboard/',
   path: '/dashboard/',
   getParentRoute: () => appRouteRoute,
+} as any)
+const appMailIndexRoute = appMailIndexRouteImport.update({
+  id: '/mail/',
+  path: '/mail/',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appSettingsIndexRoute = appSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => appSettingsRouteRoute,
+} as any)
+const appSettingsGeneralRoute = appSettingsGeneralRouteImport.update({
+  id: '/general',
+  path: '/general',
+  getParentRoute: () => appSettingsRouteRoute,
+} as any)
+const appSettingsLlmProviderRoute = appSettingsLlmProviderRouteImport.update({
+  id: '/llm-provider',
+  path: '/llm-provider',
+  getParentRoute: () => appSettingsRouteRoute,
+} as any)
+const appSettingsPasswordRoute = appSettingsPasswordRouteImport.update({
+  id: '/password',
+  path: '/password',
+  getParentRoute: () => appSettingsRouteRoute,
+} as any)
+const appSettingsSelfHostedRoute = appSettingsSelfHostedRouteImport.update({
+  id: '/self-hosted',
+  path: '/self-hosted',
+  getParentRoute: () => appSettingsRouteRoute,
+} as any)
+const appSettingsTwoFactorRoute = appSettingsTwoFactorRouteImport.update({
+  id: '/two-factor',
+  path: '/two-factor',
+  getParentRoute: () => appSettingsRouteRoute,
 } as any)
 const appMasterOrganizationIndexRoute =
   appMasterOrganizationIndexRouteImport.update({
@@ -43,35 +97,95 @@ const appMasterOrganizationIndexRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/settings': typeof appSettingsRouteRouteWithChildren
   '/sign-in/': typeof SignInIndexRoute
+  '/settings/general': typeof appSettingsGeneralRoute
+  '/settings/llm-provider': typeof appSettingsLlmProviderRoute
+  '/settings/password': typeof appSettingsPasswordRoute
+  '/settings/self-hosted': typeof appSettingsSelfHostedRoute
+  '/settings/two-factor': typeof appSettingsTwoFactorRoute
+  '/account/': typeof appAccountIndexRoute
   '/dashboard/': typeof appDashboardIndexRoute
+  '/mail/': typeof appMailIndexRoute
+  '/settings/': typeof appSettingsIndexRoute
   '/master/organization/': typeof appMasterOrganizationIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/sign-in': typeof SignInIndexRoute
+  '/settings/general': typeof appSettingsGeneralRoute
+  '/settings/llm-provider': typeof appSettingsLlmProviderRoute
+  '/settings/password': typeof appSettingsPasswordRoute
+  '/settings/self-hosted': typeof appSettingsSelfHostedRoute
+  '/settings/two-factor': typeof appSettingsTwoFactorRoute
+  '/account': typeof appAccountIndexRoute
   '/dashboard': typeof appDashboardIndexRoute
+  '/mail': typeof appMailIndexRoute
+  '/settings': typeof appSettingsIndexRoute
   '/master/organization': typeof appMasterOrganizationIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/(app)': typeof appRouteRouteWithChildren
+  '/(app)/settings': typeof appSettingsRouteRouteWithChildren
   '/sign-in/': typeof SignInIndexRoute
+  '/(app)/settings/general': typeof appSettingsGeneralRoute
+  '/(app)/settings/llm-provider': typeof appSettingsLlmProviderRoute
+  '/(app)/settings/password': typeof appSettingsPasswordRoute
+  '/(app)/settings/self-hosted': typeof appSettingsSelfHostedRoute
+  '/(app)/settings/two-factor': typeof appSettingsTwoFactorRoute
+  '/(app)/account/': typeof appAccountIndexRoute
   '/(app)/dashboard/': typeof appDashboardIndexRoute
+  '/(app)/mail/': typeof appMailIndexRoute
+  '/(app)/settings/': typeof appSettingsIndexRoute
   '/(app)/master/organization/': typeof appMasterOrganizationIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/sign-in/' | '/dashboard/' | '/master/organization/'
+  fullPaths:
+    | '/'
+    | '/settings'
+    | '/sign-in/'
+    | '/settings/general'
+    | '/settings/llm-provider'
+    | '/settings/password'
+    | '/settings/self-hosted'
+    | '/settings/two-factor'
+    | '/account/'
+    | '/dashboard/'
+    | '/mail/'
+    | '/settings/'
+    | '/master/organization/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/sign-in' | '/dashboard' | '/master/organization'
+  to:
+    | '/'
+    | '/sign-in'
+    | '/settings/general'
+    | '/settings/llm-provider'
+    | '/settings/password'
+    | '/settings/self-hosted'
+    | '/settings/two-factor'
+    | '/account'
+    | '/dashboard'
+    | '/mail'
+    | '/settings'
+    | '/master/organization'
   id:
     | '__root__'
     | '/'
     | '/(app)'
+    | '/(app)/settings'
     | '/sign-in/'
+    | '/(app)/settings/general'
+    | '/(app)/settings/llm-provider'
+    | '/(app)/settings/password'
+    | '/(app)/settings/self-hosted'
+    | '/(app)/settings/two-factor'
+    | '/(app)/account/'
     | '/(app)/dashboard/'
+    | '/(app)/mail/'
+    | '/(app)/settings/'
     | '/(app)/master/organization/'
   fileRoutesById: FileRoutesById
 }
@@ -97,6 +211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof appRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(app)/settings': {
+      id: '/(app)/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof appSettingsRouteRouteImport
+      parentRoute: typeof appRouteRoute
+    }
     '/sign-in/': {
       id: '/sign-in/'
       path: '/sign-in'
@@ -104,12 +225,68 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignInIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(app)/account/': {
+      id: '/(app)/account/'
+      path: '/account'
+      fullPath: '/account/'
+      preLoaderRoute: typeof appAccountIndexRouteImport
+      parentRoute: typeof appRouteRoute
+    }
     '/(app)/dashboard/': {
       id: '/(app)/dashboard/'
       path: '/dashboard'
       fullPath: '/dashboard/'
       preLoaderRoute: typeof appDashboardIndexRouteImport
       parentRoute: typeof appRouteRoute
+    }
+    '/(app)/mail/': {
+      id: '/(app)/mail/'
+      path: '/mail'
+      fullPath: '/mail/'
+      preLoaderRoute: typeof appMailIndexRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/settings/': {
+      id: '/(app)/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof appSettingsIndexRouteImport
+      parentRoute: typeof appSettingsRouteRoute
+    }
+    '/(app)/settings/general': {
+      id: '/(app)/settings/general'
+      path: '/general'
+      fullPath: '/settings/general'
+      preLoaderRoute: typeof appSettingsGeneralRouteImport
+      parentRoute: typeof appSettingsRouteRoute
+    }
+    '/(app)/settings/llm-provider': {
+      id: '/(app)/settings/llm-provider'
+      path: '/llm-provider'
+      fullPath: '/settings/llm-provider'
+      preLoaderRoute: typeof appSettingsLlmProviderRouteImport
+      parentRoute: typeof appSettingsRouteRoute
+    }
+    '/(app)/settings/password': {
+      id: '/(app)/settings/password'
+      path: '/password'
+      fullPath: '/settings/password'
+      preLoaderRoute: typeof appSettingsPasswordRouteImport
+      parentRoute: typeof appSettingsRouteRoute
+    }
+    '/(app)/settings/self-hosted': {
+      id: '/(app)/settings/self-hosted'
+      path: '/self-hosted'
+      fullPath: '/settings/self-hosted'
+      preLoaderRoute: typeof appSettingsSelfHostedRouteImport
+      parentRoute: typeof appSettingsRouteRoute
+    }
+    '/(app)/settings/two-factor': {
+      id: '/(app)/settings/two-factor'
+      path: '/two-factor'
+      fullPath: '/settings/two-factor'
+      preLoaderRoute: typeof appSettingsTwoFactorRouteImport
+      parentRoute: typeof appSettingsRouteRoute
     }
     '/(app)/master/organization/': {
       id: '/(app)/master/organization/'
@@ -121,13 +298,40 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface appSettingsRouteRouteChildren {
+  appSettingsGeneralRoute: typeof appSettingsGeneralRoute
+  appSettingsLlmProviderRoute: typeof appSettingsLlmProviderRoute
+  appSettingsPasswordRoute: typeof appSettingsPasswordRoute
+  appSettingsSelfHostedRoute: typeof appSettingsSelfHostedRoute
+  appSettingsTwoFactorRoute: typeof appSettingsTwoFactorRoute
+  appSettingsIndexRoute: typeof appSettingsIndexRoute
+}
+
+const appSettingsRouteRouteChildren: appSettingsRouteRouteChildren = {
+  appSettingsGeneralRoute: appSettingsGeneralRoute,
+  appSettingsLlmProviderRoute: appSettingsLlmProviderRoute,
+  appSettingsPasswordRoute: appSettingsPasswordRoute,
+  appSettingsSelfHostedRoute: appSettingsSelfHostedRoute,
+  appSettingsTwoFactorRoute: appSettingsTwoFactorRoute,
+  appSettingsIndexRoute: appSettingsIndexRoute,
+}
+
+const appSettingsRouteRouteWithChildren =
+  appSettingsRouteRoute._addFileChildren(appSettingsRouteRouteChildren)
+
 interface appRouteRouteChildren {
+  appSettingsRouteRoute: typeof appSettingsRouteRouteWithChildren
+  appAccountIndexRoute: typeof appAccountIndexRoute
   appDashboardIndexRoute: typeof appDashboardIndexRoute
+  appMailIndexRoute: typeof appMailIndexRoute
   appMasterOrganizationIndexRoute: typeof appMasterOrganizationIndexRoute
 }
 
 const appRouteRouteChildren: appRouteRouteChildren = {
+  appSettingsRouteRoute: appSettingsRouteRouteWithChildren,
+  appAccountIndexRoute: appAccountIndexRoute,
   appDashboardIndexRoute: appDashboardIndexRoute,
+  appMailIndexRoute: appMailIndexRoute,
   appMasterOrganizationIndexRoute: appMasterOrganizationIndexRoute,
 }
 

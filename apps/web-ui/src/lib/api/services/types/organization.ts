@@ -1,4 +1,4 @@
-import type { HTTP_METHOD, Resources } from '@/types/api'
+import type { AxiosItemResponse, HTTP_METHOD, Resources } from '@/types/api'
 
 import type { Models } from '../../models'
 
@@ -15,4 +15,6 @@ export type OrganizationMethods = [
   HTTP_METHOD.DELETE,
 ]
 
-export type OrganizationResources = Resources<OrganizationMethods, Models.Organization>
+export type OrganizationResources = Resources<OrganizationMethods, Models.Organization> & {
+  stats: (id: string) => Promise<AxiosItemResponse<Models.OrganizationStats>>
+}

@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib/apperr"
+	"montara-mail-agent/server/internal/lib/apperr"
 )
 
 // rowScanner is the scan surface shared by *sql.Row and *sql.Rows, so a single

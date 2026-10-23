@@ -14,8 +14,8 @@ import (
 
 	authulaenv "github.com/Authula/authula/env"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/config"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/seeders"
+	"montara-mail-agent/server/internal/config"
+	"montara-mail-agent/server/internal/seeders"
 )
 
 // Every flag defaults to its environment variable, so `make run` (which exports
@@ -88,6 +88,10 @@ func parseFlag(cfg *config.Config) {
 	// SPA
 	flag.StringVar(&cfg.App.SPADir, "spa-dir", envString("SPA_DIR", ""), "Directory of a built single-page app served at / (empty disables)")
 
+	// Mail
+	flag.DurationVar(&cfg.App.MailSyncInterval, "mail-sync-interval", envDuration("MAIL_SYNC_INTERVAL", 5*time.Minute), "How often connected mailboxes are synced (0 disables the background sync)")
+	flag.BoolVar(&cfg.App.AllowPrivateHosts, "allow-private-hosts", envBool("ALLOW_PRIVATE_HOSTS", false), "Let IMAP servers and LLM base URLs resolve to loopback or private addresses")
+
 	// Database
 	flag.StringVar(&cfg.DB.DSN, "db-dsn", envString("DB_DSN", ""), "Database DSN")
 	flag.IntVar(&cfg.DB.MaxOpenConns, "db-max-open-conns", envInt("DB_MAX_OPEN_CONNS", 25), "Database max open connections")
@@ -105,6 +109,9 @@ func parseFlag(cfg *config.Config) {
 	flag.StringVar(&cfg.Auth.ResendAPIKey, "resend-api-key", envString("RESEND_API_KEY", ""), "Resend API key for auth emails")
 	flag.StringVar(&cfg.Auth.GoogleClientID, "google-client-id", envString("GOOGLE_CLIENT_ID", ""), "Google OAuth client ID (empty disables Google sign-in)")
 	flag.StringVar(&cfg.Auth.GoogleClientSecret, "google-client-secret", envString("GOOGLE_CLIENT_SECRET", ""), "Google OAuth client secret")
+
+	// AI
+	flag.StringVar(&cfg.AI.AnthropicAPIKey, "anthropic-api-key", envString("ANTHROPIC_API_KEY", ""), "Fallback Anthropic API key for organizations without their own LLM provider (empty: none)")
 
 	// Sentry
 	flag.StringVar(&cfg.Sentry.Dsn, "sentry-dsn", envString("SENTRY_DSN", ""), "Sentry DSN")
@@ -136,6 +143,10 @@ func validateFlag(cfg *config.Config) {
 	// drop the search_path that keeps its tables in their own schema.
 	if os.Getenv(authulaenv.EnvDatabaseURL) != "" {
 		log.Fatalf("env %s must not be set: Authula uses db-dsn", authulaenv.EnvDatabaseURL)
+	}
+
+	if cfg.App.MailSyncInterval != 0 && cfg.App.MailSyncInterval < time.Minute {
+		log.Fatalf("flag mail-sync-interval must be 0 or at least 1m, got %s", cfg.App.MailSyncInterval)
 	}
 
 	if cfg.App.Port <= 0 || cfg.App.Port > 65535 {

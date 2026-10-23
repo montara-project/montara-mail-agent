@@ -16,9 +16,12 @@ const parsed = createEnv({
   emptyStringAsUndefined: true,
 })
 
-// An empty VITE_API_URL means "same as the page origin" (dev proxies /api);
-// set it only for a split-origin setup.
+// The server a browser uses until it picks its own (see server-url.ts). Empty
+// means the hosted Montara server, or in development this origin, which
+// proxies /api to the local API.
 export const env = {
   ...parsed,
-  VITE_API_URL: parsed.VITE_API_URL || window.location.origin,
+  VITE_API_URL:
+    parsed.VITE_API_URL ||
+    (import.meta.env.DEV ? window.location.origin : 'https://app.montaramail.web.id'),
 }

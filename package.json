@@ -3,8 +3,10 @@
   "private": true,
   "packageManager": "pnpm@11.10.0",
   "scripts": {
-    "dev:main-web": "pnpm --filter main-web dev",
-    "dev:web-ui": "pnpm --filter web-ui dev",
+    "dev": "pnpm -r --parallel run dev",
+    "dev:main-web": "pnpm --filter @montara-mail/main-web dev",
+    "dev:web-ui": "pnpm --filter @montara-mail/web-ui dev",
+    "dev:server": "pnpm --filter @montara-mail/server dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r exec tsc --noEmit"
   }

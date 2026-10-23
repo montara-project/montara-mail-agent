@@ -8,9 +8,9 @@ import (
 
 	"github.com/golang-migrate/migrate/v4"
 
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/config"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/lib"
-	"github.com/masb0ymas/montara-mail-agent/apps/server/internal/seeders"
+	"montara-mail-agent/server/internal/config"
+	"montara-mail-agent/server/internal/lib"
+	"montara-mail-agent/server/internal/seeders"
 )
 
 func connectDB(cfg *config.ConfigDB) (*sql.DB, error) {
