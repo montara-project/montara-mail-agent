@@ -154,8 +154,14 @@ function EditorBody({
           container: 'relative',
           contentEditable:
             'max-h-80 min-h-32 overflow-y-auto py-1 text-sm leading-relaxed outline-none',
-          placeholder: 'text-muted-foreground pointer-events-none absolute top-1 left-0 text-sm',
+          // Same padding, size and line height as the text, so the hint sits
+          // exactly where the first typed line and the caret appear.
+          placeholder:
+            'text-muted-foreground pointer-events-none absolute inset-x-0 top-0 truncate py-1 text-sm leading-relaxed select-none',
         }}
+        // LexKit sets top, left and color inline, which would beat the
+        // classes above; undefined drops them.
+        styles={{ placeholder: { top: undefined, left: undefined, color: undefined } }}
       />
       <div className="flex flex-wrap items-center gap-1">
         {leading && <div className="mr-2">{leading}</div>}
