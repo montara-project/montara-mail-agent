@@ -1,0 +1,49 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "react", "jsx-a11y"],
+  "categories": {
+    "correctness": "error"
+  },
+  "jsPlugins": ["eslint-plugin-perfectionist"],
+  "rules": {
+    "perfectionist/sort-imports": [
+      "error",
+      {
+        "type": "natural",
+        "order": "asc"
+      }
+    ],
+    "react/no-children-prop": "off",
+    "jsx-a11y/no-autofocus": "off",
+    "jsx-a11y/prefer-tag-over-role": "off",
+    "react/set-state-in-effect": "warn"
+  },
+  "overrides": [
+    {
+      "files": ["apps/app/src/components/ui/**"],
+      "rules": {
+        "jsx-a11y/heading-has-content": "off"
+      }
+    }
+  ],
+  "env": {
+    "builtin": true,
+    "browser": true,
+    "node": true
+  },
+  "ignorePatterns": [
+    "**/routeTree.gen.ts",
+    "**/node_modules/",
+    "**/dist/",
+    "**/.next/",
+    "**/.source/",
+    "**/.vinext/",
+    "**/.cloudflare/",
+    "**/.wrangler/",
+    "**/next-env.d.ts",
+    "graft/",
+    ".claude/",
+    ".agents/",
+    ".omc/"
+  ]
+}

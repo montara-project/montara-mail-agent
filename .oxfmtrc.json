@@ -1,0 +1,28 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 100,
+  "tabWidth": 2,
+  "semi": false,
+  "singleQuote": true,
+  "trailingComma": "es5",
+  "ignorePatterns": [
+    "**/routeTree.gen.ts",
+    "**/node_modules/",
+    "**/dist/",
+    "**/.next/",
+    "**/.source/",
+    "**/.vinext/",
+    "**/.cloudflare/",
+    "**/.wrangler/",
+    "**/next-env.d.ts",
+    "**/*.tsbuildinfo",
+    "pnpm-lock.yaml",
+    "CHANGELOG.md",
+    "graft/",
+    ".claude/",
+    ".agents/",
+    ".omc/",
+    "**/*.md",
+    "**/*.mdx"
+  ]
+}
