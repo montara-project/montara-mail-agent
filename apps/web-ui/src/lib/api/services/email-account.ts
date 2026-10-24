@@ -15,6 +15,8 @@ const resources = (): EmailAccountResources => ({
   send: (id, { attachments, ...body }) =>
     api.post(`${path}/${id}/send`, withAttachments(body, attachments)),
   mails: (id, params) => api.get(`${path}/${id}/mails`, { params }),
+  oauthConnect: (organizationId, provider) =>
+    api.post(`${organizationPath(organizationId)}/oauth/${provider}`),
 })
 
 export const emailAccountServices = resources()

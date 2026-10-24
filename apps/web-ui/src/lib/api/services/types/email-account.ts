@@ -58,4 +58,14 @@ export type EmailAccountResources = {
     id: string,
     params: MailListParams
   ) => Promise<AxiosResponse<ApiListResponse<Models.Mail, Metadata & { unread: number }>>>
+  /**
+   * Asks the server for the provider's consent URL that connects a mailbox
+   * over OAuth. The browser then goes to that URL; the server owns the
+   * provider's OAuth client secret and receives the user back once the
+   * account is connected.
+   */
+  oauthConnect: (
+    organizationId: string,
+    provider: Models.EmailProvider
+  ) => Promise<AxiosItemResponse<{ auth_url: string }>>
 }

@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
 
+import googleLogo from '@/assets/brands/google.svg'
 import gmailLogo from '@/assets/connectors/gmail.svg'
 import icloudLogo from '@/assets/connectors/icloud.svg'
 import larkLogo from '@/assets/connectors/lark.svg'
@@ -25,11 +26,20 @@ import { parseDto } from '@/lib/api/dtos/parse'
 import { queries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
 
-type Connector = {
+import ProviderConnectDialog from './provider-connect-dialog'
+
+export type Connector = {
   id: Models.EmailProvider
   name: string
   description: string
   logo?: string
+  /**
+   * The brand a user signs in with over OAuth, e.g. a Gmail mailbox signs in
+   * at Google. Empty for IMAP, which has no OAuth hand-off.
+   */
+  oauthName?: string
+  /** The OAuth button's logo; falls back to the tile's brand logo. */
+  oauthLogo?: string
   /** Where the user gets the app password the connection signs in with. */
   help: string
 }
@@ -41,6 +51,8 @@ export const CONNECTORS: Connector[] = [
     name: 'Gmail',
     description: 'Google and Workspace mail',
     logo: gmailLogo,
+    oauthName: 'Google',
+    oauthLogo: googleLogo,
     help: 'Turn on 2-Step Verification, then create an app password under Google Account › Security › App passwords.',
   },
   {
@@ -48,6 +60,7 @@ export const CONNECTORS: Connector[] = [
     name: 'Outlook',
     description: 'Outlook.com and Microsoft 365',
     logo: outlookLogo,
+    oauthName: 'Microsoft',
     help: 'Create an app password under Microsoft account › Security › Advanced security options. Some Microsoft 365 organizations turn IMAP sign-in off.',
   },
   {
@@ -55,6 +68,7 @@ export const CONNECTORS: Connector[] = [
     name: 'Yahoo',
     description: 'Yahoo Mail',
     logo: yahooLogo,
+    oauthName: 'Yahoo',
     help: 'Create an app password under Yahoo Account Security › Generate app password.',
   },
   {
@@ -62,6 +76,7 @@ export const CONNECTORS: Connector[] = [
     name: 'iCloud',
     description: 'iCloud Mail',
     logo: icloudLogo,
+    oauthName: 'Apple',
     help: 'Create an app-specific password at account.apple.com › Sign-In and Security.',
   },
   {
@@ -69,6 +84,7 @@ export const CONNECTORS: Connector[] = [
     name: 'Lark',
     description: 'Lark Mail',
     logo: larkLogo,
+    oauthName: 'Lark',
     help: 'In Lark Mail, open Settings › Third-party email client, turn on IMAP/SMTP, and generate a password for this device.',
   },
   {
@@ -76,6 +92,7 @@ export const CONNECTORS: Connector[] = [
     name: 'Zoho',
     description: 'Zoho Mail',
     logo: zohoLogo,
+    oauthName: 'Zoho',
     help: 'Turn on IMAP access in Zoho Mail settings, then create an app password under Zoho Accounts › Security › App passwords. Custom-domain or non-US accounts: use IMAP with the servers shown in Zoho Mail settings.',
   },
   {
@@ -257,13 +274,22 @@ export default function ConnectorList() {
           </button>
         ))}
       </div>
-      {connecting && (
-        <ConnectForm
-          key={connecting.id}
-          connector={connecting}
-          onClose={() => setConnecting(null)}
-        />
-      )}
+      {connecting &&
+        (connecting.id === 'imap' ? (
+          // IMAP is a protocol, not a brand: there is no OAuth hand-off, so it
+          // only has the app password way in.
+          <ConnectForm
+            key={connecting.id}
+            connector={connecting}
+            onClose={() => setConnecting(null)}
+          />
+        ) : (
+          <ProviderConnectDialog
+            key={connecting.id}
+            connector={connecting}
+            onClose={() => setConnecting(null)}
+          />
+        ))}
     </section>
   )
 }
