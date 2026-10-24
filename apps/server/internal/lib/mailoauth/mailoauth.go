@@ -135,7 +135,12 @@ func (p Provider) ConsentURL(creds Credentials, redirectURI, state, verifier str
 	if p.PKCE && verifier != "" {
 		opts = append(opts, oauth2.S256ChallengeOption(verifier))
 	}
-	return p.config(creds, redirectURI).AuthCodeURL(state, opts...)
+	consent := p.config(creds, redirectURI).AuthCodeURL(state, opts...)
+	// x/oauth2 form-encodes the scope's spaces as "+", which Yahoo's authorize
+	// endpoint reads literally and answers with "invalid scope"; %20 is the
+	// query-safe space every provider here accepts, and nothing else in the
+	// URL carries a "+" (state and the PKCE challenge are base64url).
+	return strings.ReplaceAll(consent, "+", "%20")
 }
 
 // Exchange trades the consent code for tokens; the verifier completes the
