@@ -113,6 +113,18 @@ func parseFlag(cfg *config.Config) {
 	// AI
 	flag.StringVar(&cfg.AI.AnthropicAPIKey, "anthropic-api-key", envString("ANTHROPIC_API_KEY", ""), "Fallback Anthropic API key for organizations without their own LLM provider (empty: none)")
 
+	// Mail OAuth. Each pair enables that provider's OAuth mailbox sign-in;
+	// the callback URL <auth-base-url>/api/v1/email-accounts/oauth/<provider>/callback
+	// must be registered with the provider's client.
+	flag.StringVar(&cfg.MailOAuth.GoogleClientID, "oauth-google-client-id", envString("OAUTH_GOOGLE_CLIENT_ID", ""), "Google OAuth client ID that connects Gmail mailboxes (empty disables)")
+	flag.StringVar(&cfg.MailOAuth.GoogleClientSecret, "oauth-google-client-secret", envString("OAUTH_GOOGLE_CLIENT_SECRET", ""), "Google OAuth client secret")
+	flag.StringVar(&cfg.MailOAuth.MicrosoftClientID, "oauth-microsoft-client-id", envString("OAUTH_MICROSOFT_CLIENT_ID", ""), "Microsoft OAuth client ID that connects Outlook mailboxes (empty disables)")
+	flag.StringVar(&cfg.MailOAuth.MicrosoftClientSecret, "oauth-microsoft-client-secret", envString("OAUTH_MICROSOFT_CLIENT_SECRET", ""), "Microsoft OAuth client secret")
+	flag.StringVar(&cfg.MailOAuth.YahooClientID, "oauth-yahoo-client-id", envString("OAUTH_YAHOO_CLIENT_ID", ""), "Yahoo OAuth client ID that connects Yahoo mailboxes (empty disables)")
+	flag.StringVar(&cfg.MailOAuth.YahooClientSecret, "oauth-yahoo-client-secret", envString("OAUTH_YAHOO_CLIENT_SECRET", ""), "Yahoo OAuth client secret")
+	flag.StringVar(&cfg.MailOAuth.ZohoClientID, "oauth-zoho-client-id", envString("OAUTH_ZOHO_CLIENT_ID", ""), "Zoho OAuth client ID that connects Zoho mailboxes (empty disables)")
+	flag.StringVar(&cfg.MailOAuth.ZohoClientSecret, "oauth-zoho-client-secret", envString("OAUTH_ZOHO_CLIENT_SECRET", ""), "Zoho OAuth client secret")
+
 	// Sentry
 	flag.StringVar(&cfg.Sentry.Dsn, "sentry-dsn", envString("SENTRY_DSN", ""), "Sentry DSN")
 
@@ -203,6 +215,19 @@ func validateFlag(cfg *config.Config) {
 
 	if (cfg.Auth.GoogleClientID == "") != (cfg.Auth.GoogleClientSecret == "") {
 		log.Fatal("flags google-client-id and google-client-secret must be provided together")
+	}
+
+	// A half-configured OAuth client would fail at consent time, far from
+	// where the mistake was made.
+	for _, p := range []struct{ id, secret, name string }{
+		{cfg.MailOAuth.GoogleClientID, cfg.MailOAuth.GoogleClientSecret, "oauth-google"},
+		{cfg.MailOAuth.MicrosoftClientID, cfg.MailOAuth.MicrosoftClientSecret, "oauth-microsoft"},
+		{cfg.MailOAuth.YahooClientID, cfg.MailOAuth.YahooClientSecret, "oauth-yahoo"},
+		{cfg.MailOAuth.ZohoClientID, cfg.MailOAuth.ZohoClientSecret, "oauth-zoho"},
+	} {
+		if (p.id == "") != (p.secret == "") {
+			log.Fatalf("flags %s-client-id and %s-client-secret must be provided together", p.name, p.name)
+		}
 	}
 
 	// Entries feed fiber.TrustProxyConfig.Proxies — a malformed one panics in

@@ -13,7 +13,9 @@ import (
 	"montara-mail-agent/server/internal/app"
 	"montara-mail-agent/server/internal/config"
 	"montara-mail-agent/server/internal/lib"
+	"montara-mail-agent/server/internal/lib/constant"
 	"montara-mail-agent/server/internal/lib/llm"
+	"montara-mail-agent/server/internal/lib/mailoauth"
 	"montara-mail-agent/server/internal/repositories"
 	"montara-mail-agent/server/internal/seeders"
 )
@@ -132,6 +134,15 @@ func run() error {
 		return err
 	}
 
+	// Only the providers with a configured client take part in OAuth mailbox
+	// sign-in; the rest answer their OAuth button with a clear error.
+	mailOAuth := mailoauth.Clients{
+		constant.ProviderGmail:   {ClientID: cfg.MailOAuth.GoogleClientID, ClientSecret: cfg.MailOAuth.GoogleClientSecret},
+		constant.ProviderOutlook: {ClientID: cfg.MailOAuth.MicrosoftClientID, ClientSecret: cfg.MailOAuth.MicrosoftClientSecret},
+		constant.ProviderYahoo:   {ClientID: cfg.MailOAuth.YahooClientID, ClientSecret: cfg.MailOAuth.YahooClientSecret},
+		constant.ProviderZoho:    {ClientID: cfg.MailOAuth.ZohoClientID, ClientSecret: cfg.MailOAuth.ZohoClientSecret},
+	}
+
 	return serve(&app.Application{
 		Config:       cfg,
 		Logger:       logger,
@@ -140,6 +151,7 @@ func run() error {
 		Auth:         auth,
 		AI:           ai,
 		Secrets:      secrets,
+		MailOAuth:    mailOAuth,
 		HTTPClient:   outboundClient(cfg.App.AllowPrivateHosts),
 	})
 }

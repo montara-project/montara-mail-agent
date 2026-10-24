@@ -19,8 +19,44 @@ import (
 
 	"montara-mail-agent/server/internal/lib"
 	"montara-mail-agent/server/internal/lib/apperr"
+	"montara-mail-agent/server/internal/lib/mailoauth"
 	"montara-mail-agent/server/internal/models"
 )
+
+// xoauth2SMTPAuth answers SMTP's XOAUTH2 SASL mechanism with a bearer token.
+type xoauth2SMTPAuth struct {
+	username string
+	token    string
+}
+
+func (a xoauth2SMTPAuth) Start(*smtp.ServerInfo) (string, []byte, error) {
+	return "XOAUTH2", []byte("user=" + a.username + "\x01auth=Bearer " + a.token + "\x01\x01"), nil
+}
+
+func (a xoauth2SMTPAuth) Next(fromServer []byte, more bool) ([]byte, error) {
+	if !more {
+		return nil, nil
+	}
+	return nil, errors.New("unexpected XOAUTH2 challenge")
+}
+
+// smtpAuth builds the SASL mechanism the account signs in to SMTP with: its
+// saved password, or a fresh OAuth token for the providers connected over
+// OAuth.
+func (s *Syncer) smtpAuth(ctx context.Context, account models.EmailAccount) (smtp.Auth, error) {
+	if len(account.OAuthAccessToken) > 0 || len(account.OAuthRefreshToken) > 0 {
+		token, err := mailoauth.AccessToken(ctx, s.app.MailOAuth, s.app.Secrets, &s.app.Repositories.EmailAccount, account)
+		if err != nil {
+			return nil, err
+		}
+		return xoauth2SMTPAuth{username: account.Username, token: token}, nil
+	}
+	password, err := s.app.Secrets.Open(account.Password)
+	if err != nil {
+		return nil, errors.New("the saved password can't be read, connect the account again")
+	}
+	return smtp.PlainAuth("", account.Username, password, account.SMTPHost), nil
+}
 
 // Forward sends m from the account to recipients, with the note on top and
 // the original quoted below it.
@@ -31,15 +67,15 @@ func (s *Syncer) Forward(ctx context.Context, account models.EmailAccount, m mod
 	ctx, cancel := context.WithTimeout(ctx, actionTimeout)
 	defer cancel()
 
-	password, err := s.app.Secrets.Open(account.Password)
+	auth, err := s.smtpAuth(ctx, account)
 	if err != nil {
-		return errors.New("the saved password can't be read, connect the account again")
+		return err
 	}
 	msg, err := forwardMessage(account.Email, m, recipients, note, time.Now())
 	if err != nil {
 		return err
 	}
-	return s.send(ctx, account, password, recipients, msg)
+	return s.send(ctx, account, auth, recipients, msg)
 }
 
 // Reply sends a reply to m from the account, to `to` and `cc`. The reply
@@ -52,15 +88,15 @@ func (s *Syncer) Reply(ctx context.Context, account models.EmailAccount, m model
 	ctx, cancel := context.WithTimeout(ctx, actionTimeout)
 	defer cancel()
 
-	password, err := s.app.Secrets.Open(account.Password)
+	auth, err := s.smtpAuth(ctx, account)
 	if err != nil {
-		return errors.New("the saved password can't be read, connect the account again")
+		return err
 	}
 	msg, err := replyMessage(account.Email, m, to, cc, text, htmlBody, attachments, time.Now())
 	if err != nil {
 		return err
 	}
-	return s.send(ctx, account, password, append(slices.Clone(to), cc...), msg)
+	return s.send(ctx, account, auth, append(slices.Clone(to), cc...), msg)
 }
 
 // Compose sends a new mail from the account to `to` and `cc`, as text and
@@ -69,21 +105,21 @@ func (s *Syncer) Compose(ctx context.Context, account models.EmailAccount, to, c
 	ctx, cancel := context.WithTimeout(ctx, actionTimeout)
 	defer cancel()
 
-	password, err := s.app.Secrets.Open(account.Password)
+	auth, err := s.smtpAuth(ctx, account)
 	if err != nil {
-		return errors.New("the saved password can't be read, connect the account again")
+		return err
 	}
 	msg, err := composeMessage(account.Email, to, cc, subject, text, htmlBody, attachments, time.Now())
 	if err != nil {
 		return err
 	}
-	return s.send(ctx, account, password, append(slices.Clone(to), cc...), msg)
+	return s.send(ctx, account, auth, append(slices.Clone(to), cc...), msg)
 }
 
 // send delivers msg over the account's SMTP server. Ports 587 and 25 upgrade
 // with STARTTLS, any other port (465) speaks TLS from the start; either way
-// the password only crosses an encrypted connection.
-func (s *Syncer) send(ctx context.Context, account models.EmailAccount, password string, recipients []string, msg []byte) error {
+// the credentials only cross an encrypted connection.
+func (s *Syncer) send(ctx context.Context, account models.EmailAccount, auth smtp.Auth, recipients []string, msg []byte) error {
 	host := account.SMTPHost
 	conn, err := lib.GuardedDialer(s.app.Config.App.AllowPrivateHosts).DialContext(ctx, "tcp", net.JoinHostPort(host, strconv.Itoa(account.SMTPPort)))
 	if err != nil {
@@ -118,7 +154,7 @@ func (s *Syncer) send(ctx context.Context, account models.EmailAccount, password
 			return fmt.Errorf("starttls: %w", err)
 		}
 	}
-	if err := c.Auth(smtp.PlainAuth("", account.Username, password, host)); err != nil {
+	if err := c.Auth(auth); err != nil {
 		return fmt.Errorf("sign in: %w", err)
 	}
 	if err := c.Mail(account.Email); err != nil {

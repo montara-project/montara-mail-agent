@@ -19,6 +19,7 @@ import (
 	"montara-mail-agent/server/internal/app"
 	"montara-mail-agent/server/internal/lib"
 	"montara-mail-agent/server/internal/lib/constant"
+	"montara-mail-agent/server/internal/lib/mailoauth"
 	"montara-mail-agent/server/internal/mailai"
 	"montara-mail-agent/server/internal/models"
 )
@@ -84,6 +85,23 @@ func (s *Syncer) login(ctx context.Context, host string, port int, username, pas
 	return c, nil
 }
 
+// xoauth2Client answers IMAP's XOAUTH2 SASL mechanism with the user and the
+// bearer token (see Google's "SASL XOAUTH2" mechanism document).
+type xoauth2Client struct {
+	username string
+	token    string
+}
+
+func (c xoauth2Client) Start() (string, []byte, error) {
+	return "XOAUTH2", []byte("user=" + c.username + "\x01auth=Bearer " + c.token + "\x01\x01"), nil
+}
+
+// Next answers the failure notice a refusing server sends as a challenge
+// with an empty client response, which ends the exchange with that error.
+func (c xoauth2Client) Next(challenge []byte) ([]byte, error) {
+	return nil, nil
+}
+
 // Verify checks that the credentials sign in, before an account is saved.
 func (s *Syncer) Verify(ctx context.Context, host string, port int, username, password string) error {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -92,6 +110,24 @@ func (s *Syncer) Verify(ctx context.Context, host string, port int, username, pa
 	c, err := s.login(ctx, host, port, username, password)
 	if err != nil {
 		return err
+	}
+	_ = c.Logout().Wait()
+	return c.Close()
+}
+
+// VerifyOAuth checks that a fresh access token signs in, before an
+// OAuth-connected account is saved.
+func (s *Syncer) VerifyOAuth(ctx context.Context, host string, port int, username, accessToken string) error {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	c, err := s.dial(ctx, host, port)
+	if err != nil {
+		return fmt.Errorf("connect to %s: %w", host, err)
+	}
+	if err := c.Authenticate(xoauth2Client{username: username, token: accessToken}); err != nil {
+		c.Close()
+		return fmt.Errorf("sign in: %w", err)
 	}
 	_ = c.Logout().Wait()
 	return c.Close()
@@ -122,14 +158,36 @@ func (s *Syncer) Sync(ctx context.Context, account models.EmailAccount) error {
 	return nil
 }
 
-// connect signs in to an account's IMAP server with its saved password; the
-// caller closes the client.
+// connect signs in to an account's IMAP server — with its saved password, or
+// with its OAuth token for the providers connected over OAuth; the caller
+// closes the client.
 func (s *Syncer) connect(ctx context.Context, account models.EmailAccount) (*imapclient.Client, error) {
+	if len(account.OAuthAccessToken) > 0 || len(account.OAuthRefreshToken) > 0 {
+		return s.connectOAuth(ctx, account)
+	}
 	password, err := s.app.Secrets.Open(account.Password)
 	if err != nil {
 		return nil, errors.New("the saved password can't be read, connect the account again")
 	}
 	return s.login(ctx, account.IMAPHost, account.IMAPPort, account.Username, password)
+}
+
+// connectOAuth signs in with the account's access token, refreshed first
+// when it has expired; a fresh pair is stored on the account.
+func (s *Syncer) connectOAuth(ctx context.Context, account models.EmailAccount) (*imapclient.Client, error) {
+	token, err := mailoauth.AccessToken(ctx, s.app.MailOAuth, s.app.Secrets, &s.app.Repositories.EmailAccount, account)
+	if err != nil {
+		return nil, err
+	}
+	c, err := s.dial(ctx, account.IMAPHost, account.IMAPPort)
+	if err != nil {
+		return nil, fmt.Errorf("connect to %s: %w", account.IMAPHost, err)
+	}
+	if err := c.Authenticate(xoauth2Client{username: account.Username, token: token}); err != nil {
+		c.Close()
+		return nil, fmt.Errorf("sign in: %w", err)
+	}
+	return c, nil
 }
 
 // mailboxes returns the server's mailbox name of each folder (see folderMailboxes).
