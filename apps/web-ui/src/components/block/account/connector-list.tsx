@@ -35,7 +35,8 @@ export type Connector = {
   logo?: string
   /**
    * The brand a user signs in with over OAuth, e.g. a Gmail mailbox signs in
-   * at Google. Empty for IMAP, which has no OAuth hand-off.
+   * at Google. Empty for the providers with no OAuth sign-in: iCloud and
+   * Lark offer none publicly, and IMAP is a protocol, not a brand.
    */
   oauthName?: string
   /** The OAuth button's logo; falls back to the tile's brand logo. */
@@ -76,7 +77,6 @@ export const CONNECTORS: Connector[] = [
     name: 'iCloud',
     description: 'iCloud Mail',
     logo: icloudLogo,
-    oauthName: 'Apple',
     help: 'Create an app-specific password at account.apple.com › Sign-In and Security.',
   },
   {
@@ -84,7 +84,6 @@ export const CONNECTORS: Connector[] = [
     name: 'Lark',
     description: 'Lark Mail',
     logo: larkLogo,
-    oauthName: 'Lark',
     help: 'In Lark Mail, open Settings › Third-party email client, turn on IMAP/SMTP, and generate a password for this device.',
   },
   {
@@ -275,16 +274,17 @@ export default function ConnectorList() {
         ))}
       </div>
       {connecting &&
-        (connecting.id === 'imap' ? (
-          // IMAP is a protocol, not a brand: there is no OAuth hand-off, so it
-          // only has the app password way in.
-          <ConnectForm
+        (connecting.oauthName ? (
+          <ProviderConnectDialog
             key={connecting.id}
             connector={connecting}
             onClose={() => setConnecting(null)}
           />
         ) : (
-          <ProviderConnectDialog
+          // IMAP is a protocol and iCloud and Lark offer no public IMAP
+          // OAuth: they only have the app password way in, straight to the
+          // form.
+          <ConnectForm
             key={connecting.id}
             connector={connecting}
             onClose={() => setConnecting(null)}
