@@ -13,6 +13,7 @@ import (
 	"montara-mail-agent/server/internal/lib"
 	"montara-mail-agent/server/internal/lib/apperr"
 	"montara-mail-agent/server/internal/lib/llm"
+	"montara-mail-agent/server/internal/lib/mailoauth"
 	"montara-mail-agent/server/internal/repositories"
 )
 
@@ -27,6 +28,9 @@ type Application struct {
 	AI llm.Client
 	// Secrets seals stored credentials (IMAP passwords, LLM API keys).
 	Secrets *lib.SecretBox
+	// MailOAuth holds the configured providers' OAuth clients; a provider
+	// missing from it answers its OAuth sign-in with a clear error.
+	MailOAuth mailoauth.Clients
 	// HTTPClient calls user-supplied hosts, such as an LLM base URL, through
 	// lib.GuardedDialer.
 	HTTPClient *http.Client

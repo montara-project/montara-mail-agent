@@ -299,7 +299,7 @@ func (i tokenIssuer) route() authulamodels.Route {
 // through Resend. Authula migrates its own tables (users, accounts, sessions,
 // verifications) into authSchema of the app database when it starts, and
 // mirror runs after every user it creates or updates.
-func newAuth(cfg config.Config, mirror func(*authulamodels.User) error, logger *slog.Logger) *authula.Auth {
+func newAuth(cfg config.Config, mirror func(*authulamodels.User) error, activities *repositories.ActivityLogRepository, logger *slog.Logger) *authula.Auth {
 	// Assigned below; the hooks that use it only run once requests arrive.
 	var auth *authula.Auth
 
@@ -489,5 +489,67 @@ func newAuth(cfg config.Config, mirror func(*authulamodels.User) error, logger *
 		Order:   20,
 	})
 
+	// The activity log's sign-in entries: after the minting hooks, so the
+	// token pair is already in Values for the matcher to see.
+	auth.RegisterHook(authulamodels.Hook{
+		Stage: authulamodels.HookAfter,
+		Matcher: func(reqCtx *authulamodels.RequestContext) bool {
+			access, _ := reqCtx.Values[jwtplugintypes.JWTTokenTypeAccess.String()].(string)
+			if access == "" {
+				return false
+			}
+			for _, path := range signInPaths {
+				if strings.HasPrefix(reqCtx.Path, path) {
+					return true
+				}
+			}
+			return false
+		},
+		Handler: recordSignIn(activities),
+		Order:   30,
+	})
+
 	return auth
+}
+
+// signInPaths are the routes that complete a sign-in. reqCtx.Path carries the
+// full URL path, so these are built on authBasePath. The sign-in hook records
+// an entry only for these, so a token refresh or a TOTP setup never reads as
+// a sign-in.
+var signInPaths = []string{
+	authBasePath + "/email-password/sign-in",
+	authBasePath + "/magic-link/verify",
+	authBasePath + "/magic-link/exchange",
+	authBasePath + "/oauth2/callback/",
+	authBasePath + "/totp/verify",
+	authBasePath + "/totp/verify-backup-code",
+}
+
+// recordSignIn returns the after-hook that logs every completed sign-in. The
+// matcher lets through only a request the jwt plugin minted a token pair for,
+// which a successful sign-in does and a failed one doesn't. The write runs in
+// the background, so a slow database never delays the sign-in itself.
+func recordSignIn(activities *repositories.ActivityLogRepository) authulamodels.HookHandler {
+	return func(reqCtx *authulamodels.RequestContext) error {
+		if reqCtx.Actor == nil || reqCtx.Actor.Type != authulamodels.ActorUser {
+			return nil
+		}
+		uid, err := uuid.Parse(reqCtx.Actor.ID)
+		if err != nil {
+			return nil
+		}
+		entry := models.ActivityLog{
+			UserID:      &uid,
+			Action:      constant.ActivityAuthSignIn,
+			Description: "Signed in",
+			IP:          reqCtx.ClientIP,
+			UserAgent:   reqCtx.Request.Header.Get("User-Agent"),
+		}
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			activities.Record(ctx, entry)
+		}()
+		return nil
+	}
 }

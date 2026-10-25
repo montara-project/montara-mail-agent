@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -17,22 +18,26 @@ type EmailAccountRepository struct {
 
 const emailAccountColumns = `
 	a.id, a.created_at, a.updated_at, a.organization_id, a.provider, a.label, a.email,
-	a.imap_host, a.imap_port, a.username, a.password, a.synced_at, a.sync_error, a.smtp_host, a.smtp_port`
+	a.imap_host, a.imap_port, a.username, a.password, a.oauth_access_token, a.oauth_refresh_token,
+	a.oauth_token_expiry, a.synced_at, a.sync_error, a.smtp_host, a.smtp_port`
 
 func scanEmailAccount(row rowScanner) (models.EmailAccount, error) {
 	var a models.EmailAccount
 	err := row.Scan(&a.ID, &a.CreatedAt, &a.UpdatedAt, &a.OrganizationID, &a.Provider, &a.Label, &a.Email,
-		&a.IMAPHost, &a.IMAPPort, &a.Username, &a.Password, &a.SyncedAt, &a.SyncError, &a.SMTPHost, &a.SMTPPort)
+		&a.IMAPHost, &a.IMAPPort, &a.Username, &a.Password, &a.OAuthAccessToken, &a.OAuthRefreshToken,
+		&a.OAuthTokenExpiry, &a.SyncedAt, &a.SyncError, &a.SMTPHost, &a.SMTPPort)
 	return a, translateNotFound("email_accounts", err)
 }
 
 // Insert persists a new account; the same address twice in one
-// organization is a conflict.
+// organization is a conflict. An OAuth-connected account carries tokens
+// instead of a password.
 func (r *EmailAccountRepository) Insert(ctx context.Context, a models.EmailAccount) error {
 	_, err := r.execContext(ctx, `
-		INSERT INTO email_accounts (id, organization_id, provider, label, email, imap_host, imap_port, username, password, smtp_host, smtp_port)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+		INSERT INTO email_accounts (id, organization_id, provider, label, email, imap_host, imap_port, username, password, smtp_host, smtp_port, oauth_access_token, oauth_refresh_token, oauth_token_expiry)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
 		a.ID, a.OrganizationID, a.Provider, a.Label, a.Email, a.IMAPHost, a.IMAPPort, a.Username, a.Password, a.SMTPHost, a.SMTPPort,
+		a.OAuthAccessToken, a.OAuthRefreshToken, a.OAuthTokenExpiry,
 	)
 	return translateUnique(err, "this email account is already connected")
 }
@@ -61,7 +66,8 @@ func (r *EmailAccountRepository) ListByOrganization(ctx context.Context, organiz
 	return collectRows(rows, func(row rowScanner) (models.EmailAccount, error) {
 		var a models.EmailAccount
 		err := row.Scan(&a.ID, &a.CreatedAt, &a.UpdatedAt, &a.OrganizationID, &a.Provider, &a.Label, &a.Email,
-			&a.IMAPHost, &a.IMAPPort, &a.Username, &a.Password, &a.SyncedAt, &a.SyncError, &a.SMTPHost, &a.SMTPPort, &a.Unread, &a.Spam)
+			&a.IMAPHost, &a.IMAPPort, &a.Username, &a.Password, &a.OAuthAccessToken, &a.OAuthRefreshToken,
+			&a.OAuthTokenExpiry, &a.SyncedAt, &a.SyncError, &a.SMTPHost, &a.SMTPPort, &a.Unread, &a.Spam)
 		return a, err
 	})
 }
@@ -84,6 +90,19 @@ func (r *EmailAccountRepository) SetSynced(ctx context.Context, id uuid.UUID, sy
 			sync_error = $2, updated_at = now()
 		WHERE id = $1`,
 		id, syncErr,
+	)
+	return err
+}
+
+// SetOAuthTokens stores a refreshed token pair, sealed by the caller; it
+// also clears the sync error so a token hiccup doesn't outlive its fix.
+func (r *EmailAccountRepository) SetOAuthTokens(ctx context.Context, id uuid.UUID, access, refresh []byte, expiry time.Time) error {
+	_, err := r.execContext(ctx, `
+		UPDATE email_accounts
+		SET oauth_access_token = $2, oauth_refresh_token = $3, oauth_token_expiry = $4,
+			sync_error = NULL, updated_at = now()
+		WHERE id = $1`,
+		id, access, refresh, expiry,
 	)
 	return err
 }

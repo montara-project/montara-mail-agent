@@ -1,10 +1,23 @@
 import { AUTH_STORAGE_KEYS } from '../constants/auth'
 
+/**
+ * Tokens live in non-HttpOnly cookies on purpose: the UI talks to an API that
+ * may sit on another origin (the self-hosted case), where an HttpOnly session
+ * cookie cannot carry a Bearer header. The cost is that an XSS in this app
+ * could read them; the XSS surface is kept small elsewhere (email HTML runs
+ * in a sandboxed frame without scripts, no dangerouslySetInnerHTML in the
+ * codebase). For a same-origin hosted deployment the tighter design is a
+ * BFF-held refresh cookie; revisit if the hosted edition grows one.
+ */
+
 const isBrowser = typeof window !== 'undefined'
 
 // Access/id tokens are short lived; refresh token needs to outlive them.
 const DEFAULT_ACCESS_TOKEN_MAX_AGE = 60 * 60 // 1 hour
-const REFRESH_TOKEN_MAX_AGE = 60 * 60 * 24 * 30 // 30 days
+// Matches the API's refresh-token TTL (apps/server cmd/api refreshTokenTTL):
+// the server refuses an older refresh token anyway, so a longer cookie only
+// leaves a live-looking token a successful XSS could exfiltrate.
+const REFRESH_TOKEN_MAX_AGE = 60 * 60 * 24 // 24 hours
 
 interface AuthTokens {
   accessToken: string

@@ -6,7 +6,10 @@ import (
 	"github.com/google/uuid"
 )
 
-// EmailAccount is a mailbox connected over IMAP (see migration 000005).
+// EmailAccount is a mailbox connected over IMAP (see migration 000005). It
+// signs in either with a sealed password or, for the providers that offer
+// OAuth, with sealed tokens (see migration 000008); exactly one of the two
+// is set.
 type EmailAccount struct {
 	Base
 	OrganizationID uuid.UUID `db:"organization_id" json:"organization_id"`
@@ -18,10 +21,16 @@ type EmailAccount struct {
 	Username       string    `db:"username" json:"username"`
 	SMTPHost       string    `db:"smtp_host" json:"smtp_host"`
 	SMTPPort       int       `db:"smtp_port" json:"smtp_port"`
-	// Password is sealed (see lib.SecretBox) and never serialized.
-	Password  []byte     `db:"password" json:"-"`
-	SyncedAt  *time.Time `db:"synced_at" json:"synced_at"`
-	SyncError *string    `db:"sync_error" json:"sync_error"`
+	// Password is sealed (see lib.SecretBox) and never serialized; nil for an
+	// OAuth-connected account.
+	Password []byte `db:"password" json:"-"`
+	// The OAuth tokens are sealed like the password and never serialized;
+	// the access one is refreshed when it expires.
+	OAuthAccessToken  []byte     `db:"oauth_access_token" json:"-"`
+	OAuthRefreshToken []byte     `db:"oauth_refresh_token" json:"-"`
+	OAuthTokenExpiry  *time.Time `db:"oauth_token_expiry" json:"-"`
+	SyncedAt          *time.Time `db:"synced_at" json:"synced_at"`
+	SyncError         *string    `db:"sync_error" json:"sync_error"`
 
 	// Counts filled by list queries; not columns.
 	Unread int `db:"-" json:"unread"`

@@ -1,4 +1,4 @@
-import { IconBox } from '@tabler/icons-react'
+import { IconBox, IconBrandGoogle } from '@tabler/icons-react'
 import { useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -8,10 +8,12 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { Separator } from '@/components/ui/separator'
 import { useAppForm } from '@/hooks/form'
 import { SignInSchema } from '@/lib/api/dtos/auth/schema'
 import { DEFAULT_SERVER_URL, SERVER_URL } from '@/lib/api/server-url'
 import { signInWithEmail, verifyTOTP } from '@/lib/auth/email-auth'
+import { startGoogleSignIn } from '@/lib/auth/google-auth'
 import { COMMUNITY } from '@/lib/constants/edition'
 import { cn } from '@/lib/utils'
 
@@ -104,10 +106,23 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
   const [needsCode, setNeedsCode] = useState(false)
   // Choosing a server here, since an account on a self-hosted one can't reach settings first.
   const [pickServer, setPickServer] = useState(false)
+  // Stays set on success: the browser leaves for Google's consent screen.
+  const [googleLoading, setGoogleLoading] = useState(false)
 
   const enter = async () => {
     await router.invalidate()
     await router.navigate({ to: '/dashboard' })
+  }
+
+  const signInWithGoogle = async () => {
+    setGoogleLoading(true)
+    try {
+      const authUrl = await startGoogleSignIn()
+      window.location.assign(authUrl)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'An error occurred')
+      setGoogleLoading(false)
+    }
   }
 
   const form = useAppForm({
@@ -185,6 +200,22 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
                 {isLoading ? 'Signing in...' : 'Login'}
               </Button>
             </Field>
+
+            <div className="flex items-center gap-3">
+              <Separator className="flex-1" />
+              <span className="text-muted-foreground text-xs">or</span>
+              <Separator className="flex-1" />
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              disabled={googleLoading}
+              onClick={() => void signInWithGoogle()}
+            >
+              <IconBrandGoogle />
+              {googleLoading ? 'Redirecting...' : 'Login with Google'}
+            </Button>
           </form>
         )}
       </FieldGroup>

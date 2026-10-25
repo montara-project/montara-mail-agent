@@ -63,6 +63,7 @@ func routes(r *fiber.App, app *app.Application) {
 	// budget, which also slows guessing the current password.
 	me := v1.Group("/me", m.Authorization)
 	me.Get("/security", h.Profile.Security)
+	me.Get("/activity-logs", h.ActivityLog.ListMine)
 	me.Patch("/", idempotent, h.Profile.Update)
 	me.Put("/password", slow, idempotent, h.Profile.ChangePassword)
 
@@ -75,12 +76,21 @@ func routes(r *fiber.App, app *app.Application) {
 	organizations.Put("/:id/restore", idempotent, h.Organization.Restore)
 	organizations.Delete("/:id/force", idempotent, h.Organization.DeletePermanently)
 	organizations.Get("/:id/stats", h.Organization.Stats)
+	organizations.Get("/:id/activity-logs", h.ActivityLog.ListByOrganization)
 	organizations.Get("/:id/email-accounts", h.EmailAccount.List)
 	organizations.Post("/:id/email-accounts", slow, idempotent, h.EmailAccount.Create)
+	organizations.Post("/:id/email-accounts/oauth/:provider", h.EmailAccount.OAuthStart)
 	organizations.Get("/:id/llm-provider", h.LLMProvider.Get)
 	organizations.Put("/:id/llm-provider", idempotent, h.LLMProvider.Put)
 	organizations.Delete("/:id/llm-provider", idempotent, h.LLMProvider.Delete)
 	organizations.Post("/:id/llm-provider/models", slow, h.LLMProvider.Models)
+
+	// The OAuth consent flow's return address: a browser navigation from the
+	// provider, so no signed-in caller and no API envelope — the handler
+	// redirects to the web app either way. Registered before the
+	// email-accounts group below: that group's authorization middleware
+	// mounts on the shared prefix and would otherwise run for it too.
+	v1.Get("/email-accounts/oauth/:provider/callback", h.EmailAccount.OAuthCallback)
 
 	emailAccounts := v1.Group("/email-accounts", m.Authorization)
 	emailAccounts.Get("/:id/mails", h.EmailAccount.Mails)

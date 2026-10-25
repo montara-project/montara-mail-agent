@@ -3,7 +3,9 @@ package handlers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"html"
+	"strings"
 
 	"github.com/gofiber/fiber/v3"
 
@@ -153,6 +155,12 @@ func (h *mailHandler) Delete(c fiber.Ctx) error {
 	if err := h.sync.Delete(c.Context(), account, m); err != nil {
 		return serverError(err)
 	}
+	description := "Deleted a mail"
+	if m.Subject != "" {
+		description = fmt.Sprintf("Deleted %q", m.Subject)
+	}
+	recordActivity(c, h.app, account.OrganizationID, constant.ActivityMailDeleted, description,
+		map[string]any{"subject": m.Subject, "from": m.FromEmail})
 	return dtos.Message(c, fiber.StatusOK, "mail deleted")
 }
 
@@ -174,6 +182,8 @@ func (h *mailHandler) Forward(c fiber.Ctx) error {
 	if err := h.sync.Forward(c.Context(), account, m, body.To, body.Note); err != nil {
 		return serverError(err)
 	}
+	recordActivity(c, h.app, account.OrganizationID, constant.ActivityMailForwarded,
+		mailSentence("Forwarded", m.Subject, body.To), map[string]any{"subject": m.Subject, "to": body.To})
 	return dtos.Message(c, fiber.StatusOK, "mail forwarded")
 }
 
@@ -212,6 +222,9 @@ func (h *mailHandler) Reply(c fiber.Ctx) error {
 	if err := h.sync.Reply(c.Context(), account, m, to, body.Cc, body.Text, htmlBody, attachments); err != nil {
 		return serverError(err)
 	}
+	recordActivity(c, h.app, account.OrganizationID, constant.ActivityMailReplied,
+		fmt.Sprintf("Replied to %s", strings.Join(to, ", ")),
+		map[string]any{"subject": m.Subject, "to": to})
 	return dtos.Message(c, fiber.StatusOK, "reply sent")
 }
 

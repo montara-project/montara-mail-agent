@@ -17,4 +17,6 @@ export namespace Models {
   export type MailImportance = import('./mail').MailImportance
   export type LLMProvider = import('./llm-provider').LLMProvider
   export type LLMProviderKind = import('./llm-provider').LLMProviderKind
+  export type ActivityLog = import('./activity-log').ActivityLog
+  export type ActivityAction = import('./activity-log').ActivityAction
 }

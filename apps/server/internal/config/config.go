@@ -42,16 +42,33 @@ func Community() bool {
 const SessionCookieName = "authula.session_token"
 
 type Config struct {
-	App    ConfigApp
-	DB     ConfigDB
-	Auth   ConfigAuth
-	Sentry ConfigSentry
-	AI     ConfigAI
+	App       ConfigApp
+	DB        ConfigDB
+	Auth      ConfigAuth
+	Sentry    ConfigSentry
+	AI        ConfigAI
+	MailOAuth ConfigMailOAuth
 }
 
 // ConfigAI configures the Claude-backed AI features; an empty key disables them.
 type ConfigAI struct {
 	AnthropicAPIKey string
+}
+
+// ConfigMailOAuth configures the OAuth clients that connect mailboxes for
+// the providers that offer it (Google, Microsoft, Yahoo, Zoho); a provider
+// with no client id answers its OAuth button with a clear error, and its
+// app password way in keeps working. iCloud and Lark offer no public IMAP
+// OAuth at all, so they take no entry.
+type ConfigMailOAuth struct {
+	GoogleClientID        string
+	GoogleClientSecret    string
+	MicrosoftClientID     string
+	MicrosoftClientSecret string
+	YahooClientID         string
+	YahooClientSecret     string
+	ZohoClientID          string
+	ZohoClientSecret      string
 }
 
 // ConfigAuth configures the embedded Authula server.
@@ -85,6 +102,10 @@ type ConfigApp struct {
 	// MailSyncInterval is how often every account is synced; 0 disables
 	// the background sync.
 	MailSyncInterval time.Duration
+	// ActivityLogRetention is how long activity log entries are kept before
+	// a daily sweep deletes them; the entries carry IPs and mail subjects,
+	// so forever is rarely wanted. 0 keeps the log forever.
+	ActivityLogRetention time.Duration
 }
 
 type ConfigDB struct {

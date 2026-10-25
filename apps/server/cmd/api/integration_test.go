@@ -92,7 +92,7 @@ func TestIntegration(t *testing.T) {
 
 	repos := repositories.New(db)
 	mirror := mirrorUser(&repos.User)
-	auth := newAuth(cfg, mirror, logger)
+	auth := newAuth(cfg, mirror, &repos.ActivityLog, logger)
 	defer auth.CloseSystems()
 	defer auth.ClosePlugins()
 
@@ -356,6 +356,7 @@ func TestIntegration(t *testing.T) {
 
 	testMailFlow(t, call, application, userToken, userOrg, superOrg)
 	testIMAPSync(t, application, userOrg)
+	testActivityLogs(t, call, userToken, superToken, userOrg, superOrg, userEmail)
 	testAccountSettings(t, call, func() string { return cookies }, db, userEmail, userPass)
 
 	// Signing out revokes the access token.

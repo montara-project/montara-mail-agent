@@ -42,9 +42,46 @@ func serve(app *app.Application) error {
 	if every := app.Config.App.MailSyncInterval; every > 0 {
 		go mailsync.New(app).Run(ctx, every)
 	}
+	go sweepActivityLogs(ctx, app)
 
 	app.Logger.Info("starting server", "port", app.Config.App.Port, "env", app.Config.App.Env, "auth", authBasePath)
 	return server.Listen(fmt.Sprintf(":%d", app.Config.App.Port), fiber.ListenConfig{GracefulContext: ctx})
+}
+
+// sweepActivityLogs deletes activity log entries older than the configured
+// retention, once at boot and then once a day; the entries carry IPs and
+// mail subjects, so they are not kept forever by default. Retention 0 (or a
+// negative value) keeps the log forever and makes this a no-op.
+func sweepActivityLogs(ctx context.Context, app *app.Application) {
+	retention := app.Config.App.ActivityLogRetention
+	if retention <= 0 {
+		return
+	}
+
+	sweep := func() {
+		sweepCtx, cancel := context.WithTimeout(ctx, time.Minute)
+		defer cancel()
+		deleted, err := app.Repositories.ActivityLog.DeleteOlderThan(sweepCtx, time.Now().Add(-retention))
+		if err != nil {
+			app.Logger.Warn("activity log retention sweep failed", "error", err)
+			return
+		}
+		if deleted > 0 {
+			app.Logger.Info("activity log retention sweep", "deleted", deleted, "retention", retention)
+		}
+	}
+
+	sweep()
+	ticker := time.NewTicker(24 * time.Hour)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			sweep()
+		}
+	}
 }
 
 // newServer builds the Fiber app with its middleware and routes.
@@ -76,6 +113,24 @@ func newServer(app *app.Application) (*fiber.App, error) {
 		// The default require-corp blocks cross-origin images, fonts and
 		// scripts an SPA loads from a CDN; the API's JSON is unaffected.
 		CrossOriginEmbedderPolicy: "unsafe-none",
+		// HSTS is ignored by browsers over plain http, so sending it in
+		// development is harmless; behind TLS it closes the downgrade door.
+		HSTSMaxAge: 31536000,
+		// The API serves the SPA (and its user-chosen API server), so the
+		// page's own origin plus https covers everything it talks to. The
+		// inline script is next-themes' bootstrap; the inline styles are
+		// Tailwind's and the component library's. Email HTML renders in a
+		// sandboxed srcdoc frame, which inherits this policy, so img-src
+		// keeps http: (old newsletters) and font-src keeps https: (remote
+		// fonts in email templates); scripts stay blocked in that frame by
+		// its sandbox attribute, not by CSP.
+		ContentSecurityPolicy: "default-src 'self'; " +
+			"script-src 'self' 'unsafe-inline'; " +
+			"style-src 'self' 'unsafe-inline'; " +
+			"img-src 'self' data: https: http:; " +
+			"font-src 'self' data: https:; " +
+			"connect-src 'self' https: http://localhost:* http://127.0.0.1:*; " +
+			"object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'",
 	}))
 	server.Use(requestid.New())
 	server.Use(compress.New())

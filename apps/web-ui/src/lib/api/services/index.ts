@@ -1,3 +1,4 @@
+import { activityLogServices } from './activity-log'
 import { authServices } from './auth'
 import { emailAccountServices } from './email-account'
 import { llmProviderServices } from './llm-provider'
@@ -12,4 +13,5 @@ export const services = {
   mails: mailServices,
   llmProvider: llmProviderServices,
   profile: profileServices,
+  activityLog: activityLogServices,
 } as const

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
@@ -10,6 +11,7 @@ import (
 	"montara-mail-agent/server/internal/dtos"
 	"montara-mail-agent/server/internal/lib"
 	"montara-mail-agent/server/internal/lib/apperr"
+	"montara-mail-agent/server/internal/lib/constant"
 	"montara-mail-agent/server/internal/models"
 	"montara-mail-agent/server/internal/repositories"
 )
@@ -99,6 +101,8 @@ func (h *organizationHandler) Create(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	recordActivity(c, h.app, organization.ID, constant.ActivityOrganizationCreated,
+		fmt.Sprintf("Created the organization %q", organization.Name), nil)
 	return dtos.Created(c, organization, "organization created")
 }
 
@@ -127,29 +131,50 @@ func (h *organizationHandler) Update(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	recordActivity(c, h.app, id, constant.ActivityOrganizationUpdated,
+		fmt.Sprintf("Renamed the organization to %q", organization.Name), nil)
 	return dtos.OK(c, organization)
 }
 
-// asOwner runs fn only for the organization's owner or a super user.
-func (h *organizationHandler) asOwner(c fiber.Ctx, fn func(context.Context, uuid.UUID) error) func(context.Context, uuid.UUID) error {
-	return func(ctx context.Context, id uuid.UUID) error {
-		if err := owner(c, h.app, id); err != nil {
-			return err
-		}
-		return fn(ctx, id)
+// mutateLogged runs an owner-guarded by-id write, records it in the activity
+// log naming the organization when readable, then answers with {message}.
+func (h *organizationHandler) mutateLogged(c fiber.Ctx, action, verb string, fn func(context.Context, uuid.UUID) error, message string) error {
+	id, err := pathID(c, "organization")
+	if err != nil {
+		return err
 	}
+	if err := owner(c, h.app, id); err != nil {
+		return err
+	}
+	name := ""
+	if org, err := h.repo().Get(c.Context(), id); err == nil {
+		name = org.Name
+	}
+	if err := fn(c.Context(), id); err != nil {
+		return err
+	}
+	recordActivity(c, h.app, id, action, orgSentence(verb, name), nil)
+	return dtos.Message(c, fiber.StatusOK, message)
+}
+
+// orgSentence names the organization an entry is about, when known.
+func orgSentence(verb, name string) string {
+	if name == "" {
+		return verb + " the organization"
+	}
+	return fmt.Sprintf("%s the organization %q", verb, name)
 }
 
 func (h *organizationHandler) Delete(c fiber.Ctx) error {
-	return mutateByID(c, "organization", h.asOwner(c, h.repo().Delete), "organization deleted")
+	return h.mutateLogged(c, constant.ActivityOrganizationDeleted, "Deleted", h.repo().Delete, "organization deleted")
 }
 
 func (h *organizationHandler) Restore(c fiber.Ctx) error {
-	return mutateByID(c, "organization", h.asOwner(c, h.repo().Restore), "organization restored")
+	return h.mutateLogged(c, constant.ActivityOrganizationRestored, "Restored", h.repo().Restore, "organization restored")
 }
 
 func (h *organizationHandler) DeletePermanently(c fiber.Ctx) error {
-	return mutateByID(c, "organization", h.asOwner(c, h.repo().ForceDelete), "organization permanently deleted")
+	return h.mutateLogged(c, constant.ActivityOrganizationPurged, "Permanently deleted", h.repo().ForceDelete, "organization permanently deleted")
 }
 
 // Stats returns the dashboard totals: unread inbox mail, spam and connected accounts.

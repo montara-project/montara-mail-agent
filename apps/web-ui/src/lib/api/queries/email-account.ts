@@ -2,6 +2,7 @@ import { mutationOptions, queryOptions } from '@tanstack/react-query'
 
 import { getQueryClient } from '@/lib/providers/react-query'
 
+import type { Models } from '../models'
 import type { EmailAccountBody, MailSendBody } from '../services/types/email-account'
 
 import { services } from '../services'
@@ -49,6 +50,19 @@ const sync = () =>
     onSettled: invalidateMailboxes,
   })
 
+/**
+ * Starts connecting a mailbox over OAuth: the server returns the provider's
+ * consent URL and the browser goes there. The account itself is created when
+ * the provider sends the user back to the server.
+ */
+const oauthConnect = (organizationId: string, provider: Models.EmailProvider) =>
+  mutationOptions({
+    mutationFn: async () => {
+      const res = await services.emailAccounts.oauthConnect(organizationId, provider)
+      return res.data.data.auth_url
+    },
+  })
+
 const del = () =>
   mutationOptions({
     mutationFn: async (id: string) => {
@@ -67,4 +81,4 @@ const send = () =>
     },
   })
 
-export const emailAccountQueries = { list, create, sync, send, delete: del } as const
+export const emailAccountQueries = { list, create, sync, oauthConnect, send, delete: del } as const

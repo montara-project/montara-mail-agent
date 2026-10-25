@@ -1,4 +1,5 @@
 import SectionCard from '@/components/block/common/section-card'
+import ActivityLogList from '@/components/block/settings/activity-log'
 import LLMProviderSettings from '@/components/block/settings/llm-provider-form'
 import OrganizationList from '@/components/block/settings/organization-list'
 import PasswordSettings from '@/components/block/settings/password-form'
@@ -6,6 +7,7 @@ import ServerSettings from '@/components/block/settings/server-url-form'
 import TOTPSettings from '@/components/block/settings/totp-settings'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { useActiveOrganization } from '@/hooks/use-active-organization'
 import { COMMUNITY } from '@/lib/constants/edition'
 
 /** A settings section that has no backend yet. */
@@ -30,18 +32,20 @@ export function SecuritySettings() {
     <div className="grid gap-4">
       <PasswordSettings />
       <TOTPSettings />
+      <ActivityLogList title="Activity log" description="Sign-ins and changes to your account." />
       <SoonCard
         title="Session management"
         description="See where you're signed in and sign out other devices."
       />
       <SoonCard title="API keys" description="Keys that let your scripts call the Montara API." />
       <SoonCard title="Connected apps" description="Apps you've given access to your account." />
-      <SoonCard title="Activity log" description="Sign-ins and changes to your account." />
     </div>
   )
 }
 
 export function OrganizationPageSettings() {
+  const { organization } = useActiveOrganization()
+
   return (
     <div className="grid gap-4">
       <OrganizationList />
@@ -57,7 +61,13 @@ export function OrganizationPageSettings() {
         </>
       )}
       <LLMProviderSettings />
-      <SoonCard title="Audit logs" description="Every change made in the organization." />
+      {organization && (
+        <ActivityLogList
+          title="Audit log"
+          description="Every change made in the organization."
+          organizationId={organization.id}
+        />
+      )}
     </div>
   )
 }
