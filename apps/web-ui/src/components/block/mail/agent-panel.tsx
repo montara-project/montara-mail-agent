@@ -9,6 +9,7 @@ import type { Models } from '@/lib/api/models'
 import Markdown from '@/components/block/common/markdown'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { streamAgentChat } from '@/lib/api/agent/stream'
 import { axiosErrorMessage } from '@/lib/api/axios-error'
@@ -26,6 +27,8 @@ const ACTION_LABELS: Record<Models.AgentActionKind, string> = {
 interface AgentPanelProps {
   /** The mailbox the conversation is bound to. */
   emailAccountId?: string
+  /** The organization whose draft queue the automation fills. */
+  organizationId?: string
   className?: string
 }
 
@@ -37,7 +40,8 @@ type LiveRow = { kind: 'tool' | 'action' | 'message' | 'error'; text?: string; p
  * progress shown as it works and its proposed outbound mail awaiting an
  * explicit approval. Desktop only — the mail layout's third pane.
  */
-export default function AgentPanel({ emailAccountId, className }: AgentPanelProps) {
+export default function AgentPanel({ emailAccountId, organizationId, className }: AgentPanelProps) {
+  const [tab, setTab] = React.useState<'chat' | 'drafts'>('chat')
   const [conversationId, setConversationId] = React.useState<string>()
   const [input, setInput] = React.useState('')
   const [streaming, setStreaming] = React.useState(false)
@@ -142,76 +146,179 @@ export default function AgentPanel({ emailAccountId, className }: AgentPanelProp
         </Button>
       </div>
 
-      {/* Conversation */}
-      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
-        {!conversationId && live.length === 0 ? (
-          <div className="text-muted-foreground mt-16 text-center text-sm">
-            <IconSparkles className="mx-auto mb-3 size-8 opacity-40" />
-            <p>Ask about this mailbox: find an email, summarize a thread,</p>
-            <p>draft a reply, or have mail moved out of the way.</p>
-          </div>
-        ) : (
-          <>
-            {messages.map((message) => (
-              <AgentMessageRow key={message.id} message={message} />
-            ))}
-            {actions.map((action) => (
-              <AgentActionCard key={action.id} action={action} />
-            ))}
-            {live.map((row, index) => (
-              <LiveRowView key={`live-${index}`} row={row} />
-            ))}
-            {turnError && <p className="text-destructive text-xs">{turnError}</p>}
-            {streaming && (
-              <div className="text-muted-foreground flex items-center gap-2 text-xs">
-                <IconLoader2 className="size-3.5 animate-spin" />
-                Working…
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Composer */}
-      <div className="border-t p-3">
-        <div className="relative">
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault()
-                void send()
-              }
-            }}
-            placeholder={emailAccountId ? 'Ask the assistant…' : 'Select a mailbox first'}
-            disabled={!emailAccountId || streaming}
-            className="max-h-40 min-h-16 pr-12"
-            rows={2}
-          />
-          {streaming ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-2 bottom-2 size-7"
-              aria-label="Stop"
-              onClick={stop}
+      {/* Tabs */}
+      <div className="border-b px-4 pb-2">
+        <div className="bg-muted flex rounded-lg p-0.5">
+          {(
+            [
+              ['chat', 'Chat'],
+              ['drafts', 'AI Drafts'],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTab(id)}
+              className={cn(
+                'flex-1 rounded-md px-2 py-1 text-xs font-medium transition-colors',
+                tab === id
+                  ? 'bg-background shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
             >
-              <IconSquare className="size-3.5" />
-            </Button>
-          ) : (
-            <Button
-              size="icon"
-              className="absolute right-2 bottom-2 size-7"
-              aria-label="Send"
-              disabled={!input.trim() || !emailAccountId}
-              onClick={() => void send()}
-            >
-              <IconSend className="size-3.5" />
-            </Button>
-          )}
+              {label}
+            </button>
+          ))}
         </div>
       </div>
+
+      {tab === 'drafts' ? (
+        <DraftsQueue organizationId={organizationId} />
+      ) : (
+        <>
+          {/* Conversation */}
+          <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+            {!conversationId && live.length === 0 ? (
+              <div className="text-muted-foreground mt-16 text-center text-sm">
+                <IconSparkles className="mx-auto mb-3 size-8 opacity-40" />
+                <p>Ask about this mailbox: find an email, summarize a thread,</p>
+                <p>draft a reply, or have mail moved out of the way.</p>
+              </div>
+            ) : (
+              <>
+                {messages.map((message) => (
+                  <AgentMessageRow key={message.id} message={message} />
+                ))}
+                {actions.map((action) => (
+                  <AgentActionCard key={action.id} action={action} />
+                ))}
+                {live.map((row, index) => (
+                  <LiveRowView key={`live-${index}`} row={row} />
+                ))}
+                {turnError && <p className="text-destructive text-xs">{turnError}</p>}
+                {streaming && (
+                  <div className="text-muted-foreground flex items-center gap-2 text-xs">
+                    <IconLoader2 className="size-3.5 animate-spin" />
+                    Working…
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Composer */}
+        </>
+      )}
+      {tab === 'chat' && (
+        <div className="border-t p-3">
+          <div className="relative">
+            <Textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  void send()
+                }
+              }}
+              placeholder={emailAccountId ? 'Ask the assistant…' : 'Select a mailbox first'}
+              disabled={!emailAccountId || streaming}
+              className="max-h-40 min-h-16 pr-12"
+              rows={2}
+            />
+            {streaming ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-2 bottom-2 size-7"
+                aria-label="Stop"
+                onClick={stop}
+              >
+                <IconSquare className="size-3.5" />
+              </Button>
+            ) : (
+              <Button
+                size="icon"
+                className="absolute right-2 bottom-2 size-7"
+                aria-label="Send"
+                disabled={!input.trim() || !emailAccountId}
+                onClick={() => void send()}
+              >
+                <IconSend className="size-3.5" />
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** The automation's review queue: drafted replies waiting to be sent. */
+function DraftsQueue({ organizationId }: { organizationId?: string }) {
+  const drafts = useQuery(queries.agent.drafts(organizationId, 'pending'))
+  const approve = useMutation(queries.agent.approveDraft())
+  const discard = useMutation(queries.agent.discardDraft())
+
+  const decide = async (decision: 'approve' | 'discard', id: string) => {
+    const mutation = decision === 'approve' ? approve : discard
+    try {
+      await mutation.mutateAsync(id)
+      toast.success(decision === 'approve' ? 'Draft sent' : 'Draft discarded')
+    } catch (error) {
+      toast.error(axiosErrorMessage(error))
+    }
+  }
+
+  if (!organizationId) {
+    return <p className="text-muted-foreground p-4 text-sm">No organization selected.</p>
+  }
+  if (drafts.isPending) {
+    return (
+      <div className="grid gap-3 p-4">
+        <Skeleton className="h-16" />
+        <Skeleton className="h-16" />
+      </div>
+    )
+  }
+  const rows = drafts.data?.data ?? []
+  if (rows.length === 0) {
+    return (
+      <div className="text-muted-foreground p-4 text-center text-sm">
+        No drafts waiting. The automation drafts replies for important mail here.
+      </div>
+    )
+  }
+  return (
+    <div className="flex-1 space-y-3 overflow-y-auto p-4">
+      {rows.map((draft) => (
+        <div key={draft.id} className="rounded-xl border p-3">
+          <p className="truncate text-sm font-medium">{draft.subject}</p>
+          <p className="text-muted-foreground mt-0.5 truncate text-xs">To: {draft.to.join(', ')}</p>
+          <p className="text-muted-foreground mt-1 line-clamp-3 whitespace-pre-line text-xs">
+            {draft.text}
+          </p>
+          <div className="mt-2 flex gap-2">
+            <Button
+              size="sm"
+              className="h-7"
+              disabled={approve.isPending}
+              onClick={() => void decide('approve', draft.id)}
+            >
+              Approve &amp; send
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7"
+              disabled={discard.isPending}
+              onClick={() => void decide('discard', draft.id)}
+            >
+              Discard
+            </Button>
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

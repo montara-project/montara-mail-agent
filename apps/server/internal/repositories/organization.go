@@ -97,6 +97,20 @@ func (r *OrganizationRepository) List(ctx context.Context, p ListParams, memberI
 	return collectRows(rows, scanOrganization)
 }
 
+// LiveIDs returns the id of every organization not deleted, for background
+// jobs that walk them all.
+func (r *OrganizationRepository) LiveIDs(ctx context.Context) ([]uuid.UUID, error) {
+	rows, err := r.queryContext(ctx, `SELECT id FROM organizations WHERE deleted_at IS NULL`)
+	if err != nil {
+		return nil, err
+	}
+	return collectRows(rows, func(row rowScanner) (uuid.UUID, error) {
+		var id uuid.UUID
+		err := row.Scan(&id)
+		return id, err
+	})
+}
+
 // Count returns how many live organizations match the List filters, for the
 // response meta block.
 func (r *OrganizationRepository) Count(ctx context.Context, p ListParams, memberID uuid.UUID) (int64, error) {

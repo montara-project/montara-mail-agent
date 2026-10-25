@@ -4,6 +4,7 @@ import AgentPanel from '@/components/block/mail/agent-panel'
 import MailList from '@/components/block/mail/mail-list'
 import MailReader from '@/components/block/mail/mail-reader'
 import { MAIL_LABELS, useMailAccount } from '@/components/layout/mail/mail-panel'
+import { useActiveOrganization } from '@/hooks/use-active-organization'
 import { cn } from '@/lib/utils'
 
 type MailSearch = {
@@ -45,6 +46,7 @@ export const Route = createFileRoute('/(app)/mail/')({
 function RouteComponent() {
   const { mail: mailId, agent } = Route.useSearch()
   const account = useMailAccount()
+  const { organization } = useActiveOrganization()
 
   return (
     // Viewport height minus the 4rem page header and 2rem of padding, so each column scrolls on its own.
@@ -61,6 +63,7 @@ function RouteComponent() {
       {agent && (
         <AgentPanel
           emailAccountId={account?.id}
+          organizationId={organization?.id}
           className="hidden w-80 shrink-0 border-l lg:flex xl:w-96"
         />
       )}

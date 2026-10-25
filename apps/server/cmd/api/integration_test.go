@@ -382,6 +382,7 @@ func TestIntegration(t *testing.T) {
 	testMailFlow(t, call, application, userToken, userOrg, superOrg)
 	testIMAPSync(t, application, userOrg)
 	testAgentFlow(t, call, callStream, application, userToken, userOrg)
+	testAgentDrafts(t, call, application, userToken, userOrg)
 	testActivityLogs(t, call, userToken, superToken, userOrg, superOrg, userEmail)
 	testAccountSettings(t, call, func() string { return cookies }, db, userEmail, userPass)
 

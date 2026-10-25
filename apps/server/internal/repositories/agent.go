@@ -294,13 +294,15 @@ func (r *AgentRepository) SetDraftStatus(ctx context.Context, id uuid.UUID, stat
 	return requireAffected(res, "agent draft")
 }
 
-// HasDraftForMail reports whether a mail already has a queued draft, so the
-// automation never proposes the same reply twice.
+// HasDraftForMail reports whether a mail already has a draft in any state,
+// so the automation never proposes the same reply twice — a sent draft means
+// the mail is answered, a pending one is waiting, a discarded one was
+// already refused once.
 func (r *AgentRepository) HasDraftForMail(ctx context.Context, mailID uuid.UUID) (bool, error) {
 	var found bool
 	err := r.queryRowContext(ctx, `
-		SELECT EXISTS (SELECT 1 FROM agent_drafts WHERE mail_id = $1 AND status <> $2)`,
-		mailID, models.AgentDraftDiscarded,
+		SELECT EXISTS (SELECT 1 FROM agent_drafts WHERE mail_id = $1)`,
+		mailID,
 	).Scan(&found)
 	return found, err
 }

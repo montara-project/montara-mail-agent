@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -10,8 +11,11 @@ import (
 	"testing"
 
 	"montara-mail-agent/server/internal/app"
+	"montara-mail-agent/server/internal/lib/constant"
 	"montara-mail-agent/server/internal/lib/llm"
+	"montara-mail-agent/server/internal/mailagent"
 	"montara-mail-agent/server/internal/models"
+	"montara-mail-agent/server/internal/repositories"
 )
 
 // scriptedAgent plays a three-step copilot turn: search the inbox, propose a
@@ -231,4 +235,104 @@ func slicesContains(list []string, want string) bool {
 		}
 	}
 	return false
+}
+
+// draftFake answers the automation's drafting prompt with one canned reply.
+type draftFake struct{}
+
+func (draftFake) Complete(context.Context, string, string, int64) (string, error) {
+	return "Thanks — the payment goes out this Friday.", nil
+}
+
+func (draftFake) Chat(context.Context, llm.ChatRequest) (llm.ChatResult, error) {
+	return llm.ChatResult{}, errors.New("chat not supported by this fake")
+}
+
+// testAgentDrafts walks the automation's review queue: one cycle drafts a
+// reply for the important mail, deduplicates on the next cycle, and the
+// queue's decisions work.
+func testAgentDrafts(t *testing.T, call callFunc, application *app.Application, userToken, orgID string) {
+	t.Helper()
+
+	important := constant.ImportanceImportant
+	mails := []models.Mail{{
+		FromEmail:  "boss@example.com",
+		FromName:   "The Boss",
+		Subject:    "Quarterly report due",
+		Body:       "Please send the quarterly report by Friday.",
+		Folder:     "inbox",
+		Importance: &important,
+	}}
+	seedAccount(t, application, orgID, mails...)
+	// InsertMany carries no importance: mark the mail important the way the
+	// classifier or a user would.
+	if err := application.Repositories.Mail.Patch(context.Background(), mails[0].ID, repositories.MailPatch{Importance: &important}); err != nil {
+		t.Fatal(err)
+	}
+
+	application.AI = draftFake{}
+	mailagent.AutoDraftOnce(context.Background(), application, 10)
+	application.AI = nil
+
+	status, out := call(http.MethodGet, "/api/v1/agent/drafts?organization_id="+orgID, userToken, nil)
+	rows := list(out)
+	if status != http.StatusOK || len(rows) != 1 {
+		t.Fatalf("agent drafts after one cycle: %d %v", status, out)
+	}
+	draft := rows[0].(map[string]any)
+	if draft["status"] != "pending" || draft["subject"] != "Re: Quarterly report due" {
+		t.Fatalf("queued draft: %v", draft)
+	}
+	if to := draft["to"].([]any); len(to) != 1 || to[0] != "boss@example.com" {
+		t.Fatalf("draft recipients: %v", draft["to"])
+	}
+
+	// A second cycle must not duplicate the draft for the same mail.
+	application.AI = draftFake{}
+	mailagent.AutoDraftOnce(context.Background(), application, 10)
+	application.AI = nil
+	if status, out = call(http.MethodGet, "/api/v1/agent/drafts?organization_id="+orgID, userToken, nil); len(list(out)) != 1 {
+		t.Fatalf("second cycle duplicated drafts: %d %v", status, out)
+	}
+
+	// Approving sends through the refused SMTP host and fails loudly.
+	draftID := draft["id"].(string)
+	if status, _ = call(http.MethodPost, "/api/v1/agent/drafts/"+draftID+"/approve", userToken, nil); status != http.StatusBadGateway {
+		t.Fatalf("approve draft against refused SMTP: %d, want 502", status)
+	}
+	// The approved draft reads as sent, and a second cycle leaves it alone:
+	// sent means the mail is answered, so the automation never redrafts it.
+	if status, out = call(http.MethodGet, "/api/v1/agent/drafts?organization_id="+orgID+"&status=sent", userToken, nil); status != http.StatusOK || len(list(out)) != 1 {
+		t.Fatalf("sent drafts: %d %v", status, out)
+	}
+	application.AI = draftFake{}
+	mailagent.AutoDraftOnce(context.Background(), application, 10)
+	application.AI = nil
+	if status, out = call(http.MethodGet, "/api/v1/agent/drafts?organization_id="+orgID, userToken, nil); len(list(out)) != 1 {
+		t.Fatalf("second cycle drafted again: %d %v", status, out)
+	}
+
+	// Discarding decides without sending, on the automation's next proposal
+	// for a different mail.
+	discardables := []models.Mail{{
+		FromEmail: "vendor@example.com",
+		FromName:  "The Vendor",
+		Subject:   "Renew your license",
+		Body:      "Your license is due for renewal.",
+		Folder:    "inbox",
+	}}
+	seedAccount(t, application, orgID, discardables...)
+	if err := application.Repositories.Mail.Patch(context.Background(), discardables[0].ID, repositories.MailPatch{Importance: &important}); err != nil {
+		t.Fatal(err)
+	}
+	application.AI = draftFake{}
+	mailagent.AutoDraftOnce(context.Background(), application, 10)
+	application.AI = nil
+	if status, out = call(http.MethodGet, "/api/v1/agent/drafts?organization_id="+orgID+"&status=pending", userToken, nil); len(list(out)) != 1 {
+		t.Fatalf("pending drafts for the second mail: %d %v", status, out)
+	}
+	pending := list(out)[0].(map[string]any)["id"].(string)
+	if status, out = call(http.MethodPost, "/api/v1/agent/drafts/"+pending+"/discard", userToken, nil); status != http.StatusOK || data(out)["status"] != "discarded" {
+		t.Fatalf("discard: %d %v", status, out)
+	}
 }

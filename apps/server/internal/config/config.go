@@ -106,6 +106,12 @@ type ConfigApp struct {
 	// a daily sweep deletes them; the entries carry IPs and mail subjects,
 	// so forever is rarely wanted. 0 keeps the log forever.
 	ActivityLogRetention time.Duration
+	// AgentAutoDraftInterval is how often the agent's background automation
+	// drafts replies for important mail; 0 disables the automation.
+	AgentAutoDraftInterval time.Duration
+	// AgentAutoDraftDailyCap bounds how many drafts the automation may queue
+	// per organization per day, so a chatty inbox cannot run up the bill.
+	AgentAutoDraftDailyCap int
 }
 
 type ConfigDB struct {

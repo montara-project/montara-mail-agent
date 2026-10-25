@@ -254,6 +254,11 @@ func (h *agentHandler) Chat(c fiber.Ctx) error {
 		if err := w.Flush(); err != nil {
 			return
 		}
+		// Name the conversation first: the client that opened a fresh one
+		// needs its id to keep talking into the same thread.
+		if raw, err := json.Marshal(fiber.Map{"id": session.Conversation.ID}); err == nil {
+			_ = emit(mailagent.Event{Type: mailagent.EventConversation, Payload: raw})
+		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), AgentChatStreamLimit)
 		defer cancel()
@@ -450,8 +455,11 @@ func (h *agentHandler) ApproveDraft(c fiber.Ctx) error {
 
 // DiscardDraft drops a queued draft.
 func (h *agentHandler) DiscardDraft(c fiber.Ctx) error {
-	_, err := h.decideDraft(c, models.AgentDraftDiscarded)
-	return err
+	draft, err := h.decideDraft(c, models.AgentDraftDiscarded)
+	if err != nil {
+		return err
+	}
+	return dtos.OK(c, draft)
 }
 
 // decideDraft loads a pending draft, checks the caller, and sets its new

@@ -25,6 +25,7 @@ import (
 
 	"montara-mail-agent/server/internal/app"
 	"montara-mail-agent/server/internal/handlers"
+	"montara-mail-agent/server/internal/mailagent"
 	"montara-mail-agent/server/internal/mailsync"
 	"montara-mail-agent/server/internal/middlewares"
 )
@@ -44,6 +45,9 @@ func serve(app *app.Application) error {
 
 	if every := app.Config.App.MailSyncInterval; every > 0 {
 		go mailsync.New(app).Run(ctx, every)
+	}
+	if every := app.Config.App.AgentAutoDraftInterval; every > 0 {
+		go mailagent.AutoDraftLoop(ctx, app, every, app.Config.App.AgentAutoDraftDailyCap)
 	}
 	go sweepActivityLogs(ctx, app)
 
