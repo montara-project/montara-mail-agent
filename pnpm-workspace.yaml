@@ -6,3 +6,12 @@ allowBuilds:
   lightningcss: true
   workerd: true
   sharp: true
+
+# Minimums that clear the advisories `pnpm audit --prod` reported (see
+# ISSUES.md S-6). Scoped ranges so only vulnerable installs are forced up;
+# drop an entry once the depending packages update on their own.
+overrides:
+  vite@<8.3.3: '>=8.3.3'
+  zod@>=4 <4.6.6: '>=4.6.6'
+  undici@<7.30.1: '>=7.30.1'
+  fflate@<0.7.5: '>=0.7.5'
