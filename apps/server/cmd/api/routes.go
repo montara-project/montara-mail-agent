@@ -108,4 +108,20 @@ func routes(r *fiber.App, app *app.Application) {
 	mails.Post("/:id/reply", slow, idempotent, h.Mail.Reply)
 	mails.Post("/:id/summary", slow, h.Mail.Summary)
 	mails.Post("/:id/reply-suggestions", slow, h.Mail.ReplySuggestions)
+
+	// The mail agent: a copilot over one mailbox, its conversation history,
+	// and the approvals its proposals wait for. The chat streams its answer
+	// over SSE, and one turn can run several model calls, so it shares the
+	// AI budget rather than the general one.
+	agent := v1.Group("/agent", m.Authorization, middlewares.RateLimit(aiRateLimit, exemptLoopback, exemptIPs))
+	agent.Get("/conversations", h.Agent.Conversations)
+	agent.Post("/conversations", h.Agent.CreateConversation)
+	agent.Get("/conversations/:id", h.Agent.Conversation)
+	agent.Delete("/conversations/:id", h.Agent.DeleteConversation)
+	agent.Post("/chat", h.Agent.Chat)
+	agent.Post("/actions/:id/approve", h.Agent.ApproveAction)
+	agent.Post("/actions/:id/deny", h.Agent.DenyAction)
+	agent.Get("/drafts", h.Agent.Drafts)
+	agent.Post("/drafts/:id/approve", h.Agent.ApproveDraft)
+	agent.Post("/drafts/:id/discard", h.Agent.DiscardDraft)
 }

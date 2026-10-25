@@ -114,7 +114,7 @@ func run() error {
 		}
 	}
 
-	var ai llm.Client
+	var ai llm.ChatClient
 	if cfg.AI.AnthropicAPIKey != "" {
 		ai, err = llm.New(llm.Config{
 			Kind:       llm.KindAnthropic,

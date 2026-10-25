@@ -13,6 +13,7 @@ type Handlers struct {
 	LLMProvider  *llmProviderHandler
 	Profile      *profileHandler
 	ActivityLog  *activityLogHandler
+	Agent        *agentHandler
 }
 
 func New(app *app.Application) *Handlers {
@@ -25,5 +26,6 @@ func New(app *app.Application) *Handlers {
 		LLMProvider:  &llmProviderHandler{app: app},
 		Profile:      &profileHandler{app: app},
 		ActivityLog:  &activityLogHandler{app: app},
+		Agent:        &agentHandler{app: app, sync: sync},
 	}
 }
