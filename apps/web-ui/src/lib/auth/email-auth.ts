@@ -1,4 +1,4 @@
-import type { SignInData, TOTPRedirect } from '../api/models/user'
+import type { SignInData, TokenPairData, TOTPRedirect } from '../api/models/user'
 import type { TOTPVerifyBody } from '../api/services/types/auth'
 
 import { throwAxiosError } from '../api/axios-error'
@@ -10,8 +10,11 @@ interface SignInWithEmailParams {
   password: string
 }
 
-/** Store the token pair a completed sign-in answers with. */
-function storeSignIn(payload?: SignInData) {
+/**
+ * Store the token pair a completed sign-in answers with. Both a sign-in body
+ * and the POST /token answer carry the same four fields.
+ */
+export function storeSignIn(payload?: SignInData | TokenPairData) {
   if (!payload?.access_token) {
     throw new Error('Sign-in response did not include an access token')
   }

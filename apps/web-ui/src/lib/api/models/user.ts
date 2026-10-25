@@ -31,6 +31,23 @@ export interface RefreshData {
 }
 
 /**
+ * POST /api/v1/auth/token: a token pair for the caller's session cookie, the
+ * answer Google sign-in trades for after the consent redirect. Authula adds
+ * the same fields a sign-in body carries, minus the user.
+ */
+export interface TokenPairData {
+  access_token: string
+  refresh_token: string
+  expires_at: ISO8601DateString
+  expires_in: number
+}
+
+/** GET /api/v1/auth/oauth2/authorize/google. Authula answers unwrapped. */
+export interface GoogleAuthUrl {
+  auth_url: string
+}
+
+/**
  * A sign-in of a user with two-factor sign-in on: no tokens yet, only a
  * pending cookie for POST /totp/verify.
  */
