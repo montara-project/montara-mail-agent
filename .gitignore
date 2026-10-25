@@ -8,3 +8,5 @@ dist/
 graft/
 .omc/
 .trail/
+# ZCode agent session data (local, regenerated per session)
+.zcode/
