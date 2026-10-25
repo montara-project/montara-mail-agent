@@ -3,10 +3,12 @@ import React from 'react'
 
 // No scripts, no forms, nothing loaded but images, styles and fonts; links
 // open in a new tab. allow-same-origin only lets this page read the frame's
-// height: without allow-scripts the email can't use it.
+// height: without allow-scripts the email can't use it. http: images stay
+// allowed — old newsletters embed them — but the frame's policy is the
+// intersection with the API's, which already limits what inherits.
 const SANDBOX = 'allow-same-origin allow-popups allow-popups-to-escape-sandbox'
 export const CSP =
-  "default-src 'none'; img-src https: http: data: cid:; style-src 'unsafe-inline' https:; font-src https: data:"
+  "default-src 'none'; img-src https: http: data:; style-src 'unsafe-inline' https:; font-src https: data:"
 
 // An email that styles its own dark mode says so in its CSS or meta tags.
 const OWN_DARK_MODE = /prefers-color-scheme\s*:\s*dark|color-scheme[^;>]*dark/i
