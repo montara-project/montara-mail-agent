@@ -1,4 +1,5 @@
 import { activityLogQueries } from './activity-log'
+import { agentQueries } from './agent'
 import { authQueries } from './auth'
 import { emailAccountQueries } from './email-account'
 import { llmProviderQueries } from './llm-provider'
@@ -14,4 +15,5 @@ export const queries = {
   llmProvider: llmProviderQueries,
   profile: profileQueries,
   activityLog: activityLogQueries,
+  agent: agentQueries,
 } as const

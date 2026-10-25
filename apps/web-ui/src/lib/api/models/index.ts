@@ -19,4 +19,11 @@ export namespace Models {
   export type LLMProviderKind = import('./llm-provider').LLMProviderKind
   export type ActivityLog = import('./activity-log').ActivityLog
   export type ActivityAction = import('./activity-log').ActivityAction
+  export type AgentConversation = import('./agent').AgentConversation
+  export type AgentMessage = import('./agent').AgentMessage
+  export type AgentAction = import('./agent').AgentAction
+  export type AgentActionKind = import('./agent').AgentActionKind
+  export type AgentActionStatus = import('./agent').AgentActionStatus
+  export type AgentActionPayload = import('./agent').AgentActionPayload
+  export type AgentDraft = import('./agent').AgentDraft
 }

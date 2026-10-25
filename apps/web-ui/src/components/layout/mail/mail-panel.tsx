@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link, useSearch } from '@tanstack/react-router'
+import { Link, useSearch, useNavigate } from '@tanstack/react-router'
 import {
   Archive,
   Check,
@@ -11,6 +11,7 @@ import {
   Send,
   SquarePen,
   Trash2,
+  Sparkles,
 } from 'lucide-react'
 import React from 'react'
 
@@ -150,6 +151,8 @@ export default function MailPanel() {
   const { label } = useSearch({ strict: false })
   const { data: accounts } = useMailAccounts()
   const [composing, setComposing] = React.useState(false)
+  const navigate = useNavigate()
+  const { agent } = useSearch({ strict: false })
   const badges: Partial<Record<Models.MailFolder, number>> = {
     inbox: account?.unread,
     spam: account?.spam,
@@ -160,10 +163,25 @@ export default function MailPanel() {
       <SidebarHeader className="gap-3.5 p-4 pb-2">
         <OrganizationSwitcher />
         <AccountSwitcher />
-        <Button className="w-full" onClick={() => setComposing(true)} disabled={!account}>
-          <SquarePen />
-          Compose
-        </Button>
+        <div className="flex w-full gap-2">
+          <Button className="flex-1" onClick={() => setComposing(true)} disabled={!account}>
+            <SquarePen />
+            Compose
+          </Button>
+          <Button
+            variant={agent ? 'secondary' : 'outline'}
+            aria-label="Toggle AI assistant"
+            title="AI assistant"
+            onClick={() =>
+              navigate({
+                to: '/mail',
+                search: (prev: Record<string, unknown>) => ({ ...prev, agent: !agent }),
+              })
+            }
+          >
+            <Sparkles />
+          </Button>
+        </div>
         <ComposeSheet
           open={composing}
           onOpenChange={setComposing}
