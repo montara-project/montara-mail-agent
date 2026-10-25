@@ -3,6 +3,7 @@ package handlers
 import (
 	"cmp"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html"
@@ -134,6 +135,9 @@ func (h *emailAccountHandler) Create(c fiber.Ctx) error {
 			h.app.Logger.Warn("first mail sync failed", "account", account.ID, "error", err)
 		}
 	}()
+	recordActivity(c, h.app, organizationID, constant.ActivityEmailAccountConnected,
+		fmt.Sprintf("Connected the mailbox %s (%s)", account.Email, body.Provider),
+		map[string]any{"provider": body.Provider, "email": account.Email})
 	return dtos.Created(c, account, "email account connected")
 }
 
@@ -146,6 +150,9 @@ func (h *emailAccountHandler) Delete(c fiber.Ctx) error {
 	if err := h.repo().Delete(c.Context(), account.ID); err != nil {
 		return err
 	}
+	recordActivity(c, h.app, account.OrganizationID, constant.ActivityEmailAccountDisonnected,
+		fmt.Sprintf("Disconnected the mailbox %s (%s)", account.Email, account.Provider),
+		map[string]any{"provider": account.Provider, "email": account.Email})
 	return dtos.Message(c, fiber.StatusOK, "email account disconnected")
 }
 
@@ -171,17 +178,23 @@ func (h *emailAccountHandler) OAuthStart(c fiber.Ctx) error {
 	}
 
 	// The state carries the flow between the two browser visits: which
-	// organization it is for, which web app to return to, and the PKCE
-	// verifier for the exchange.
+	// organization it is for, who started it (the callback has no caller of
+	// its own, so the activity log needs this), which web app to return to,
+	// and the PKCE verifier for the exchange.
 	origin, err := requestOrigin(c, h.app.Config.App.CORSAllowedOrigins)
 	if err != nil {
 		return err
+	}
+	uid, err := lib.ContextGetUID(c)
+	if err != nil {
+		return apperr.ErrUnauthorized
 	}
 	verifier := mailoauth.GenerateVerifier()
 	state, err := mailoauth.SignState(h.app.Config.App.Secret, mailoauth.State{
 		OrganizationID: organizationID.String(),
 		Provider:       provider,
 		Origin:         origin,
+		UserID:         uid.String(),
 		Verifier:       verifier,
 	})
 	if err != nil {
@@ -288,6 +301,22 @@ func (h *emailAccountHandler) OAuthCallback(c fiber.Ctx) error {
 		}
 	}()
 	h.app.Logger.Info("mailbox connected over OAuth", "account", account.ID, "provider", provider)
+	var metadata json.RawMessage
+	if raw, err := json.Marshal(map[string]any{"provider": provider, "email": email}); err == nil {
+		metadata = raw
+	}
+	entry := models.ActivityLog{
+		OrganizationID: &organizationID,
+		Action:         constant.ActivityEmailAccountConnected,
+		Description:    fmt.Sprintf("Connected the mailbox %s (%s) over OAuth", email, provider),
+		Metadata:       metadata,
+	}
+	if state.UserID != "" {
+		if uid, err := uuid.Parse(state.UserID); err == nil {
+			entry.UserID = &uid
+		}
+	}
+	h.app.Repositories.ActivityLog.Record(c.Context(), entry)
 	return toAccount(state.Origin, "connected="+url.QueryEscape(provider))
 }
 
@@ -409,5 +438,7 @@ func (h *emailAccountHandler) Send(c fiber.Ctx) error {
 	if err := h.sync.Compose(c.Context(), account, body.To, body.Cc, body.Subject, body.Text, htmlBody, attachments); err != nil {
 		return serverError(err)
 	}
+	recordActivity(c, h.app, account.OrganizationID, constant.ActivityMailSent,
+		mailSentence("Sent", body.Subject, body.To), map[string]any{"subject": body.Subject, "to": body.To})
 	return dtos.Message(c, fiber.StatusOK, "mail sent")
 }

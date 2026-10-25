@@ -1,0 +1,20 @@
+package constant
+
+// Actions recorded in activity_logs (see migration 000009). The verb before
+// the dot is the area, the noun after it the event.
+const (
+	ActivityAuthSignIn              = "auth.sign_in"
+	ActivityProfileUpdated          = "profile.updated"
+	ActivityPasswordChanged         = "password.changed"
+	ActivityOrganizationCreated     = "organization.created"
+	ActivityOrganizationUpdated     = "organization.updated"
+	ActivityOrganizationDeleted     = "organization.deleted"
+	ActivityOrganizationRestored    = "organization.restored"
+	ActivityOrganizationPurged      = "organization.purged"
+	ActivityEmailAccountConnected   = "email_account.connected"
+	ActivityEmailAccountDisonnected = "email_account.disconnected"
+	ActivityMailSent                = "mail.sent"
+	ActivityMailReplied             = "mail.replied"
+	ActivityMailForwarded           = "mail.forwarded"
+	ActivityMailDeleted             = "mail.deleted"
+)

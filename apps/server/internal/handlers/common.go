@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"io"
 	"mime"
 	"net/http"
@@ -18,6 +20,7 @@ import (
 	"montara-mail-agent/server/internal/lib/apperr"
 	"montara-mail-agent/server/internal/lib/constant"
 	"montara-mail-agent/server/internal/mailsync"
+	"montara-mail-agent/server/internal/models"
 	"montara-mail-agent/server/internal/repositories"
 )
 
@@ -34,19 +37,6 @@ func pathID(c fiber.Ctx, resource string) (uuid.UUID, error) {
 // listParams maps the clamped pagination query onto the repository controls.
 func listParams(q dtos.ListQuery) repositories.ListParams {
 	return repositories.ListParams{Offset: q.Offset, Limit: q.Limit, Search: q.Search, Sorted: q.Sorted}
-}
-
-// mutateByID runs a by-id write (delete, restore, permanent delete) on the
-// :id path parameter and answers with the bare {message} envelope.
-func mutateByID(c fiber.Ctx, resource string, fn func(context.Context, uuid.UUID) error, message string) error {
-	id, err := pathID(c, resource)
-	if err != nil {
-		return err
-	}
-	if err := fn(c.Context(), id); err != nil {
-		return err
-	}
-	return dtos.Message(c, fiber.StatusOK, message)
 }
 
 // isSuperUser reports whether uid is a super user; a user missing from the
@@ -96,6 +86,42 @@ func owner(c fiber.Ctx, app *app.Application, organizationID uuid.UUID) error {
 		return apperr.New(apperr.KindForbidden, "only the organization's owner can do this")
 	}
 	return nil
+}
+
+// recordActivity stores an activity entry for the signed-in user, naming the
+// organization the action happened in when it did. Best effort: a failed
+// write is logged by the repository, never fails the action it witnesses.
+func recordActivity(c fiber.Ctx, app *app.Application, organizationID uuid.UUID, action, description string, metadata map[string]any) {
+	uid, err := lib.ContextGetUID(c)
+	if err != nil {
+		return
+	}
+	entry := models.ActivityLog{
+		UserID:      &uid,
+		Action:      action,
+		Description: description,
+		IP:          c.IP(),
+		UserAgent:   c.Get(fiber.HeaderUserAgent),
+	}
+	if organizationID != uuid.Nil {
+		entry.OrganizationID = &organizationID
+	}
+	if len(metadata) > 0 {
+		if meta, err := json.Marshal(metadata); err == nil {
+			entry.Metadata = meta
+		}
+	}
+	app.Repositories.ActivityLog.Record(c.Context(), entry)
+}
+
+// mailSentence describes an outbound mail action for the activity log, with
+// the subject when the mail has one.
+func mailSentence(verb, subject string, to []string) string {
+	recipients := strings.Join(to, ", ")
+	if subject == "" {
+		return fmt.Sprintf("%s a mail to %s", verb, recipients)
+	}
+	return fmt.Sprintf("%s %q to %s", verb, subject, recipients)
 }
 
 // mailBody reads the body of a send or a reply: JSON, or, to carry files, a

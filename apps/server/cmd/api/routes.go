@@ -63,6 +63,7 @@ func routes(r *fiber.App, app *app.Application) {
 	// budget, which also slows guessing the current password.
 	me := v1.Group("/me", m.Authorization)
 	me.Get("/security", h.Profile.Security)
+	me.Get("/activity-logs", h.ActivityLog.ListMine)
 	me.Patch("/", idempotent, h.Profile.Update)
 	me.Put("/password", slow, idempotent, h.Profile.ChangePassword)
 
@@ -75,6 +76,7 @@ func routes(r *fiber.App, app *app.Application) {
 	organizations.Put("/:id/restore", idempotent, h.Organization.Restore)
 	organizations.Delete("/:id/force", idempotent, h.Organization.DeletePermanently)
 	organizations.Get("/:id/stats", h.Organization.Stats)
+	organizations.Get("/:id/activity-logs", h.ActivityLog.ListByOrganization)
 	organizations.Get("/:id/email-accounts", h.EmailAccount.List)
 	organizations.Post("/:id/email-accounts", slow, idempotent, h.EmailAccount.Create)
 	organizations.Post("/:id/email-accounts/oauth/:provider", h.EmailAccount.OAuthStart)

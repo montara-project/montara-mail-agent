@@ -27,7 +27,10 @@ type State struct {
 	Provider       string `json:"provider"`
 	// Origin is the web app's origin the browser returns to; the API learns
 	// it from the request that started the flow.
-	Origin   string `json:"origin"`
+	Origin string `json:"origin"`
+	// UserID is the member who started the flow, so the callback can name
+	// them in the activity log even though it has no caller of its own.
+	UserID   string `json:"user_id,omitempty"`
 	Verifier string `json:"verifier,omitempty"`
 	Exp      int64  `json:"exp"`
 }

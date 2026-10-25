@@ -92,6 +92,9 @@ func parseFlag(cfg *config.Config) {
 	flag.DurationVar(&cfg.App.MailSyncInterval, "mail-sync-interval", envDuration("MAIL_SYNC_INTERVAL", 5*time.Minute), "How often connected mailboxes are synced (0 disables the background sync)")
 	flag.BoolVar(&cfg.App.AllowPrivateHosts, "allow-private-hosts", envBool("ALLOW_PRIVATE_HOSTS", false), "Let IMAP servers and LLM base URLs resolve to loopback or private addresses")
 
+	// Activity log
+	flag.DurationVar(&cfg.App.ActivityLogRetention, "activity-log-retention", envDuration("ACTIVITY_LOG_RETENTION", 365*24*time.Hour), "How long activity log entries are kept before the daily sweep deletes them (0 keeps them forever)")
+
 	// Database
 	flag.StringVar(&cfg.DB.DSN, "db-dsn", envString("DB_DSN", ""), "Database DSN")
 	flag.IntVar(&cfg.DB.MaxOpenConns, "db-max-open-conns", envInt("DB_MAX_OPEN_CONNS", 25), "Database max open connections")

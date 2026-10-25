@@ -102,6 +102,10 @@ type ConfigApp struct {
 	// MailSyncInterval is how often every account is synced; 0 disables
 	// the background sync.
 	MailSyncInterval time.Duration
+	// ActivityLogRetention is how long activity log entries are kept before
+	// a daily sweep deletes them; the entries carry IPs and mail subjects,
+	// so forever is rarely wanted. 0 keeps the log forever.
+	ActivityLogRetention time.Duration
 }
 
 type ConfigDB struct {

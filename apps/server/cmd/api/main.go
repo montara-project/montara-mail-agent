@@ -72,7 +72,7 @@ func run() error {
 	mirror := mirrorUser(&repos.User)
 
 	// Creating the instance runs Authula's own migrations.
-	auth := newAuth(cfg, mirror, logger)
+	auth := newAuth(cfg, mirror, &repos.ActivityLog, logger)
 	defer auth.CloseSystems()
 	defer auth.ClosePlugins()
 

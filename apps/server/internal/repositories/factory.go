@@ -8,6 +8,7 @@ type Repositories struct {
 	EmailAccount EmailAccountRepository
 	Mail         MailRepository
 	LLMProvider  LLMProviderRepository
+	ActivityLog  ActivityLogRepository
 }
 
 // New builds every repository over db.
@@ -20,5 +21,6 @@ func New(db *sql.DB) Repositories {
 		EmailAccount: EmailAccountRepository{base},
 		Mail:         MailRepository{base},
 		LLMProvider:  LLMProviderRepository{base},
+		ActivityLog:  ActivityLogRepository{base},
 	}
 }

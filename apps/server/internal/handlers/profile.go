@@ -3,11 +3,13 @@ package handlers
 import (
 	authulamodels "github.com/Authula/authula/models"
 	"github.com/gofiber/fiber/v3"
+	"github.com/google/uuid"
 
 	"montara-mail-agent/server/internal/app"
 	"montara-mail-agent/server/internal/dtos"
 	"montara-mail-agent/server/internal/lib"
 	"montara-mail-agent/server/internal/lib/apperr"
+	"montara-mail-agent/server/internal/lib/constant"
 )
 
 // profileHandler serves the signed-in user's own account. Authula owns the
@@ -71,6 +73,7 @@ func (h *profileHandler) Update(c fiber.Ctx) error {
 	if user, err = users.Update(c.Context(), user); err != nil {
 		return err
 	}
+	recordActivity(c, h.app, uuid.Nil, constant.ActivityProfileUpdated, "Updated their profile", nil)
 	return dtos.OK(c, user)
 }
 
@@ -114,5 +117,6 @@ func (h *profileHandler) ChangePassword(c fiber.Ctx) error {
 	if err := services.SessionService.DeleteAllByUserID(c.Context(), uid.String()); err != nil {
 		return err
 	}
+	recordActivity(c, h.app, uuid.Nil, constant.ActivityPasswordChanged, "Changed their password", nil)
 	return dtos.Message(c, fiber.StatusOK, "password changed, sign in again")
 }
