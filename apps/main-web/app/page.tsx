@@ -157,7 +157,11 @@ function SectionHeading({
 }
 
 function Tile({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <div className={cn('rounded-xl border bg-card p-6 shadow-xs', className)}>{children}</div>
+  return (
+    <div className={cn('rounded-xl border bg-card p-6 shadow-xs text-pretty', className)}>
+      {children}
+    </div>
+  )
 }
 
 function LabelChip({ label }: { label: Label }) {
@@ -225,14 +229,14 @@ function InboxPreview() {
           </p>
           <div className="space-y-1.5">
             <p className="text-xs font-medium text-muted-foreground">Summary</p>
-            <p className="text-sm">
+            <p className="text-sm text-pretty">
               Sarah proposes a joint campaign for Q4 and asks for a call this week to agree on
               budget.
             </p>
           </div>
           <div className="space-y-1.5">
             <p className="text-xs font-medium text-muted-foreground">Draft reply</p>
-            <p className="rounded-lg border bg-muted/60 p-3 text-sm">
+            <p className="rounded-lg border bg-muted/60 p-3 text-sm text-pretty">
               Hi Sarah, thanks for sending this over. Thursday at 2pm works for me. I&apos;ll bring
               the budget numbers.
             </p>
@@ -312,14 +316,12 @@ export default function Home() {
         />
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {providers.map((p) => (
-            <Tile key={p.name} className="flex flex-col gap-4">
-              <span className="grid size-11 place-items-center rounded-lg border bg-background">
-                <p.icon className="size-6" style={{ color: p.color }} />
-              </span>
-              <div className="space-y-1">
+            <Tile key={p.name} className="flex flex-col gap-3">
+              <div className="flex items-center gap-2.5">
+                <p.icon className="size-5 shrink-0" style={{ color: p.color }} />
                 <h3 className="font-display text-lg font-semibold">{p.name}</h3>
-                <p className="text-sm text-muted-foreground">{p.text}</p>
               </div>
+              <p className="text-pretty text-sm text-muted-foreground">{p.text}</p>
               <span className="mt-auto flex items-center gap-1.5 text-xs font-medium text-success">
                 <IconPlug className="size-3.5" />
                 Supported
@@ -359,7 +361,7 @@ export default function Home() {
                 The agent writes context-aware replies in your tone. Review, tweak, and send in
                 seconds.
               </p>
-              <p className="mt-6 rounded-lg border bg-muted/60 p-3 font-mono text-xs leading-relaxed text-muted-foreground">
+              <p className="mt-6 rounded-lg border bg-muted/60 p-3 font-mono text-xs leading-relaxed text-pretty text-muted-foreground">
                 Hi Daniel, Wednesday morning works. I&apos;ll send a calendar invite for 10:00.
               </p>
             </Tile>
@@ -446,7 +448,7 @@ export default function Home() {
               <details key={f.q} className="group py-5">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium [&::-webkit-details-marker]:hidden">
                   {f.q}
-                  <IconChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+                  <IconChevronDown className="size-4 shrink-0 text-muted-foreground motion-safe:transition-transform motion-safe:group-open:rotate-180" />
                 </summary>
                 <p className="mt-3 text-sm text-muted-foreground">{f.a}</p>
               </details>
