@@ -1,5 +1,5 @@
-import { IconLoader2, IconPlus, IconSend, IconSparkles, IconSquare } from '@tabler/icons-react'
 import { useMutation, useQuery } from '@tanstack/react-query'
+import { ArrowUp, Inbox, Loader2, Plus, Sparkles, Square, Wrench } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
@@ -24,6 +24,27 @@ const ACTION_LABELS: Record<Models.AgentActionKind, string> = {
   forward: 'Forward',
 }
 
+/** A settled proposal's state, in the UI's words; pending shows its buttons instead. */
+const STATUS_LABELS: Record<Models.AgentActionStatus, string> = {
+  pending: 'Waiting',
+  approved: 'Approved',
+  denied: 'Denied',
+  done: 'Sent',
+  failed: 'Failed',
+}
+
+const TABS = [
+  ['chat', 'Chat'],
+  ['drafts', 'AI Drafts'],
+] as const
+
+/** Starting points for an empty chat; a click fills the composer, it does not send. */
+const STARTERS = ['Find an email', 'Summarize a thread', 'Draft a reply']
+
+/** "search_mails" → "Search mails": tool names as the chat shows them. */
+const toolLabel = (name?: string) =>
+  name ? name.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase()) : 'Tool'
+
 interface AgentPanelProps {
   /** The mailbox the conversation is bound to. */
   emailAccountId?: string
@@ -33,7 +54,7 @@ interface AgentPanelProps {
 }
 
 /** One streamed or persisted step the chat shows between prompt and answer. */
-type LiveRow = { kind: 'tool' | 'action' | 'message' | 'error'; text?: string; payload?: unknown }
+type LiveRow = { kind: 'tool' | 'action' | 'message'; text?: string; payload?: unknown }
 
 /**
  * The mail copilot: a chat bound to the active mailbox, with the agent's tool
@@ -51,6 +72,7 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
   const [turnError, setTurnError] = React.useState<string>()
   const abort = React.useRef<AbortController | null>(null)
   const scrollRef = React.useRef<HTMLDivElement>(null)
+  const inputRef = React.useRef<HTMLTextAreaElement>(null)
   // The id the running turn writes into: state would be stale in the stream's
   // closures, since the conversation event may set it mid-stream.
   const conversationIdRef = React.useRef<string | undefined>(undefined)
@@ -58,6 +80,8 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
   const detail = useQuery(queries.agent.conversation(conversationId))
   const messages = detail.data?.data.messages ?? []
   const actions = detail.data?.data.actions ?? []
+  // Shares the queue's cache entry, so the count and the Drafts tab stay in step.
+  const pendingDrafts = useQuery(queries.agent.drafts(organizationId, 'pending')).data?.data.length
 
   // Keep the newest message in view while the turn streams.
   React.useEffect(() => {
@@ -91,7 +115,7 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
           setConversationId(payload.id)
         }
       } else if (event.type === 'tool') {
-        setLive((prev) => [...prev, { kind: 'tool', text: event.text ?? event.name }])
+        setLive((prev) => [...prev, { kind: 'tool', text: event.text ?? toolLabel(event.name) }])
       } else if (event.type === 'action') {
         setLive((prev) => [...prev, { kind: 'action', payload: event.payload }])
       } else if (event.type === 'message') {
@@ -129,60 +153,117 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
 
   const stop = () => abort.current?.abort()
 
+  const ask = (prompt: string) => {
+    setInput(prompt)
+    inputRef.current?.focus()
+  }
+
+  const empty = !conversationId && live.length === 0
+
   return (
     <div className={cn('flex min-w-0 flex-col', className)} data-agent-panel>
-      {/* Header */}
-      <div className="flex items-center gap-2 border-b px-4 py-3">
-        <IconSparkles className="text-violet-600 dark:text-violet-400" />
+      {/* Header: the same 3.5rem as the list and reader toolbars, so the borders line up. */}
+      <div className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+        <Sparkles className="size-4 text-violet-600 dark:text-violet-400" aria-hidden />
         <h2 className="flex-1 text-sm font-semibold">AI Assistant</h2>
         <Button
           variant="ghost"
           size="icon"
-          className="size-7"
+          className="size-8"
           aria-label="New chat"
+          title="New chat"
+          disabled={streaming || (empty && !turnError)}
           onClick={startNewChat}
         >
-          <IconPlus className="size-4" />
+          <Plus />
         </Button>
       </div>
 
       {/* Tabs */}
-      <div className="border-b px-4 pb-2">
-        <div className="bg-muted flex rounded-lg p-0.5">
-          {(
-            [
-              ['chat', 'Chat'],
-              ['drafts', 'AI Drafts'],
-            ] as const
-          ).map(([id, label]) => (
+      <div className="shrink-0 border-b px-4 py-2">
+        <div role="tablist" aria-label="Assistant" className="bg-muted flex rounded-lg p-0.5">
+          {TABS.map(([id, label]) => (
             <button
               key={id}
+              id={`agent-tab-${id}`}
               type="button"
+              role="tab"
+              aria-selected={tab === id}
+              aria-controls={`agent-panel-${id}`}
+              tabIndex={tab === id ? 0 : -1}
               onClick={() => setTab(id)}
+              onKeyDown={(e) => {
+                if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+                const other = id === 'chat' ? 'drafts' : 'chat'
+                setTab(other)
+                document.getElementById(`agent-tab-${other}`)?.focus()
+              }}
               className={cn(
-                'flex-1 rounded-md px-2 py-1 text-xs font-medium transition-colors',
+                'focus-visible:ring-ring/50 flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors outline-none focus-visible:ring-[3px]',
                 tab === id
-                  ? 'bg-background shadow-sm'
+                  ? 'bg-background dark:bg-input shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
               {label}
+              {id === 'drafts' && !!pendingDrafts && (
+                <span className="rounded-full bg-violet-500/15 px-1.5 text-[11px] text-violet-700 tabular-nums dark:text-violet-300">
+                  {pendingDrafts}
+                </span>
+              )}
             </button>
           ))}
         </div>
       </div>
 
       {tab === 'drafts' ? (
-        <DraftsQueue organizationId={organizationId} />
+        <div
+          id="agent-panel-drafts"
+          role="tabpanel"
+          aria-labelledby="agent-tab-drafts"
+          className="flex min-h-0 flex-1 flex-col"
+        >
+          <DraftsQueue organizationId={organizationId} />
+        </div>
       ) : (
-        <>
+        <div
+          id="agent-panel-chat"
+          role="tabpanel"
+          aria-labelledby="agent-tab-chat"
+          className="flex min-h-0 flex-1 flex-col"
+        >
           {/* Conversation */}
-          <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
-            {!conversationId && live.length === 0 ? (
-              <div className="text-muted-foreground mt-16 text-center text-sm">
-                <IconSparkles className="mx-auto mb-3 size-8 opacity-40" />
-                <p>Ask about this mailbox: find an email, summarize a thread,</p>
-                <p>draft a reply, or have mail moved out of the way.</p>
+          <div
+            ref={scrollRef}
+            role="log"
+            aria-live="polite"
+            aria-busy={streaming}
+            className="flex-1 space-y-3 overflow-y-auto px-4 py-4"
+          >
+            {empty ? (
+              <div className="flex h-full flex-col items-center justify-center gap-4 px-2 text-center">
+                <div className="flex size-10 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400">
+                  <Sparkles className="size-5" aria-hidden />
+                </div>
+                <p className="text-muted-foreground max-w-64 text-sm text-balance">
+                  Ask about this mailbox: find an email, summarize a thread, draft a reply, or have
+                  mail moved out of the way.
+                </p>
+                {emailAccountId && (
+                  <div className="flex flex-wrap justify-center gap-1.5">
+                    {STARTERS.map((prompt) => (
+                      <Button
+                        key={prompt}
+                        variant="outline"
+                        size="sm"
+                        className="h-7 rounded-full text-xs font-normal"
+                        onClick={() => ask(prompt)}
+                      >
+                        {prompt}
+                      </Button>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               <>
@@ -195,10 +276,17 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
                 {live.map((row, index) => (
                   <LiveRowView key={`live-${index}`} row={row} />
                 ))}
-                {turnError && <p className="text-destructive text-xs">{turnError}</p>}
+                {turnError && (
+                  <p
+                    role="alert"
+                    className="text-destructive bg-destructive/5 rounded-lg px-3 py-2 text-xs"
+                  >
+                    {turnError}
+                  </p>
+                )}
                 {streaming && (
                   <div className="text-muted-foreground flex items-center gap-2 text-xs">
-                    <IconLoader2 className="size-3.5 animate-spin" />
+                    <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" />
                     Working…
                   </div>
                 )}
@@ -207,46 +295,51 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
           </div>
 
           {/* Composer */}
-        </>
-      )}
-      {tab === 'chat' && (
-        <div className="border-t p-3">
-          <div className="relative">
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  void send()
-                }
-              }}
-              placeholder={emailAccountId ? 'Ask the assistant…' : 'Select a mailbox first'}
-              disabled={!emailAccountId || streaming}
-              className="max-h-40 min-h-16 pr-12"
-              rows={2}
-            />
-            {streaming ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-2 bottom-2 size-7"
-                aria-label="Stop"
-                onClick={stop}
-              >
-                <IconSquare className="size-3.5" />
-              </Button>
-            ) : (
-              <Button
-                size="icon"
-                className="absolute right-2 bottom-2 size-7"
-                aria-label="Send"
-                disabled={!input.trim() || !emailAccountId}
-                onClick={() => void send()}
-              >
-                <IconSend className="size-3.5" />
-              </Button>
-            )}
+          <div className="shrink-0 border-t p-3">
+            <div className="relative">
+              <Textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                    e.preventDefault()
+                    void send()
+                  }
+                }}
+                aria-label="Message the assistant"
+                placeholder={emailAccountId ? 'Ask the assistant…' : 'Select a mailbox first'}
+                disabled={!emailAccountId || streaming}
+                className="field-sizing-content max-h-40 min-h-16 resize-none pr-12"
+                rows={2}
+              />
+              {streaming ? (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="absolute right-2 bottom-2 size-7"
+                  aria-label="Stop"
+                  title="Stop"
+                  onClick={stop}
+                >
+                  <Square className="size-3 fill-current" />
+                </Button>
+              ) : (
+                <Button
+                  size="icon"
+                  className="absolute right-2 bottom-2 size-7"
+                  aria-label="Send"
+                  title="Send"
+                  disabled={!input.trim() || !emailAccountId}
+                  onClick={() => void send()}
+                >
+                  <ArrowUp className="size-4" />
+                </Button>
+              )}
+            </div>
+            <p className="text-muted-foreground mt-1.5 px-0.5 text-[11px]">
+              Enter to send, Shift+Enter for a new line. Nothing goes out until you approve it.
+            </p>
           </div>
         </div>
       )}
@@ -260,6 +353,13 @@ function DraftsQueue({ organizationId }: { organizationId?: string }) {
   const approve = useMutation(queries.agent.approveDraft())
   const discard = useMutation(queries.agent.discardDraft())
 
+  // Only the draft being decided waits; the rest of the queue stays usable.
+  const deciding = approve.isPending
+    ? approve.variables
+    : discard.isPending
+      ? discard.variables
+      : undefined
+
   const decide = async (decision: 'approve' | 'discard', id: string) => {
     const mutation = decision === 'approve' ? approve : discard
     try {
@@ -271,7 +371,9 @@ function DraftsQueue({ organizationId }: { organizationId?: string }) {
   }
 
   if (!organizationId) {
-    return <p className="text-muted-foreground p-4 text-sm">No organization selected.</p>
+    return (
+      <p className="text-muted-foreground p-4 text-center text-sm">No organization selected.</p>
+    )
   }
   if (drafts.isPending) {
     return (
@@ -284,25 +386,30 @@ function DraftsQueue({ organizationId }: { organizationId?: string }) {
   const rows = drafts.data?.data ?? []
   if (rows.length === 0) {
     return (
-      <div className="text-muted-foreground p-4 text-center text-sm">
-        No drafts waiting. The automation drafts replies for important mail here.
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+        <Inbox className="text-muted-foreground size-6" aria-hidden />
+        <p className="text-muted-foreground max-w-64 text-sm text-balance">
+          No drafts waiting. The automation drafts replies for important mail here.
+        </p>
       </div>
     )
   }
   return (
     <div className="flex-1 space-y-3 overflow-y-auto p-4">
       {rows.map((draft) => (
-        <div key={draft.id} className="rounded-xl border p-3">
-          <p className="truncate text-sm font-medium">{draft.subject}</p>
+        <div key={draft.id} className="rounded-xl border p-3" aria-busy={deciding === draft.id}>
+          <p className="truncate text-sm font-medium" title={draft.subject}>
+            {draft.subject}
+          </p>
           <p className="text-muted-foreground mt-0.5 truncate text-xs">To: {draft.to.join(', ')}</p>
           <p className="text-muted-foreground mt-1 line-clamp-3 whitespace-pre-line text-xs">
             {draft.text}
           </p>
-          <div className="mt-2 flex gap-2">
+          <div className="mt-3 flex gap-2">
             <Button
               size="sm"
               className="h-7"
-              disabled={approve.isPending}
+              disabled={deciding === draft.id}
               onClick={() => void decide('approve', draft.id)}
             >
               Approve &amp; send
@@ -311,7 +418,7 @@ function DraftsQueue({ organizationId }: { organizationId?: string }) {
               size="sm"
               variant="ghost"
               className="h-7"
-              disabled={discard.isPending}
+              disabled={deciding === draft.id}
               onClick={() => void decide('discard', draft.id)}
             >
               Discard
@@ -336,8 +443,8 @@ function AgentMessageRow({ message }: { message: Models.AgentMessage }) {
   if (message.role === 'tool') {
     return (
       <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
-        <IconSparkles className="size-3 opacity-60" />
-        <span>{message.tool_name ?? 'tool'}</span>
+        <Wrench className="size-3 opacity-60" aria-hidden />
+        <span>{toolLabel(message.tool_name)}</span>
       </div>
     )
   }
@@ -356,16 +463,13 @@ function LiveRowView({ row }: { row: LiveRow }) {
   if (row.kind === 'tool') {
     return (
       <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
-        <IconLoader2 className="size-3 animate-spin opacity-60" />
+        <Loader2 className="size-3 animate-spin opacity-60 motion-reduce:animate-none" />
         <span>{row.text}</span>
       </div>
     )
   }
   if (row.kind === 'action') {
     return <AgentActionCard action={row.payload as Models.AgentAction} />
-  }
-  if (row.kind === 'error') {
-    return <p className="text-destructive text-xs">{row.text}</p>
   }
   return (
     <div className="max-w-[92%] rounded-2xl rounded-bl-sm bg-violet-500/5 px-3.5 py-2.5 text-sm dark:bg-violet-400/10">
@@ -389,6 +493,7 @@ function AgentActionCard({ action }: { action: Models.AgentAction }) {
   }
 
   const to = (action.payload.to ?? []).join(', ')
+  const deciding = approve.isPending || deny.isPending
 
   return (
     <div className="rounded-xl border border-violet-500/30 bg-violet-500/5 p-3 dark:bg-violet-400/10">
@@ -396,7 +501,10 @@ function AgentActionCard({ action }: { action: Models.AgentAction }) {
         <Badge variant="secondary" appearance="light">
           {ACTION_LABELS[action.kind]}
         </Badge>
-        <span className="min-w-0 flex-1 truncate text-xs font-medium">
+        <span
+          className="min-w-0 flex-1 truncate text-xs font-medium"
+          title={action.payload.subject}
+        >
           {action.payload.subject}
         </span>
         {action.status !== 'pending' && (
@@ -410,7 +518,7 @@ function AgentActionCard({ action }: { action: Models.AgentAction }) {
             }
             appearance="light"
           >
-            {action.status}
+            {STATUS_LABELS[action.status]}
           </Badge>
         )}
       </div>
@@ -422,11 +530,11 @@ function AgentActionCard({ action }: { action: Models.AgentAction }) {
       )}
       {action.error && <p className="text-destructive mt-1 text-xs">{action.error}</p>}
       {action.status === 'pending' && (
-        <div className="mt-2 flex gap-2">
+        <div className="mt-3 flex gap-2">
           <Button
             size="sm"
             className="h-7"
-            disabled={approve.isPending}
+            disabled={deciding}
             onClick={() => void decide('approve')}
           >
             Approve &amp; send
@@ -435,7 +543,7 @@ function AgentActionCard({ action }: { action: Models.AgentAction }) {
             size="sm"
             variant="ghost"
             className="h-7"
-            disabled={deny.isPending}
+            disabled={deciding}
             onClick={() => void decide('deny')}
           >
             Deny
