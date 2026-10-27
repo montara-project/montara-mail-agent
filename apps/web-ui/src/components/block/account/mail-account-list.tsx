@@ -47,6 +47,7 @@ export default function MailAccountList() {
     isPending,
     isError,
     error,
+    refetch,
   } = useQuery(queries.emailAccounts.list(organization?.id))
   const sync = useMutation(queries.emailAccounts.sync())
   const disconnect = useMutation(queries.emailAccounts.delete())
@@ -66,7 +67,13 @@ export default function MailAccountList() {
           <Skeleton className="h-32 rounded-xl" />
         </div>
       ) : isError ? (
-        <p className="text-destructive text-sm">{axiosErrorMessage(error)}</p>
+        <div role="alert" className="flex flex-wrap items-center gap-3 text-sm">
+          <p className="text-destructive">{axiosErrorMessage(error)}</p>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <RefreshCw />
+            Try again
+          </Button>
+        </div>
       ) : !accounts?.length ? (
         <p className="text-muted-foreground rounded-xl border border-dashed p-6 text-center text-sm">
           No account is connected yet. Pick a provider below.
@@ -104,7 +111,7 @@ export default function MailAccountList() {
                   disabled={sync.isPending && sync.variables === account.id}
                   onClick={() =>
                     sync.mutate(account.id, {
-                      onSuccess: () => toast.success(`${account.email} is up to date`),
+                      onSuccess: () => toast.success(`${mask(account.email)} is up to date`),
                       onError: toastAxiosError,
                     })
                   }
@@ -136,7 +143,7 @@ export default function MailAccountList() {
         onConfirm={() =>
           disconnecting &&
           disconnect.mutate(disconnecting.id, {
-            onSuccess: () => toast.success(`${disconnecting.email} disconnected`),
+            onSuccess: () => toast.success(`${mask(disconnecting.email)} disconnected`),
             onError: toastAxiosError,
           })
         }

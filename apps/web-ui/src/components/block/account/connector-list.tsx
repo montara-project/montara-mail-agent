@@ -17,6 +17,7 @@ import SimpleAlertScrollableDialogForm from '@/components/block/common/simple-al
 import { FieldDescription } from '@/components/ui/field'
 import { useAppForm } from '@/hooks/form'
 import { useActiveOrganization } from '@/hooks/use-active-organization'
+import { useHideEmails } from '@/hooks/use-hide-emails'
 import { toastAxiosError } from '@/lib/api/axios-error'
 import {
   EmailAccountFormSchema,
@@ -131,6 +132,7 @@ export function ProviderIcon({
 function ConnectForm({ connector, onClose }: { connector: Connector; onClose: () => void }) {
   const { organization } = useActiveOrganization()
   const mutation = useMutation(queries.emailAccounts.create(organization?.id ?? ''))
+  const { mask } = useHideEmails()
   const isImap = connector.id === 'imap'
   const schema = isImap ? ImapAccountFormSchema : EmailAccountFormSchema
 
@@ -160,7 +162,7 @@ function ConnectForm({ connector, onClose }: { connector: Connector; onClose: ()
             smtp_port: Number(dto.smtp_port),
           }),
         })
-        toast.success(`${account.email} connected; its mail is syncing`)
+        toast.success(`${mask(account.email)} connected; its mail is syncing`)
         onClose()
       } catch (error) {
         toastAxiosError(error)
@@ -264,12 +266,15 @@ export default function ConnectorList() {
           >
             <ProviderIcon provider={connector.id} />
             <div className="grid min-w-0 flex-1">
-              <span className="truncate font-semibold">{connector.name}</span>
+              <span className="truncate font-semibold">
+                <span className="sr-only">Connect </span>
+                {connector.name}
+              </span>
               <span className="text-muted-foreground truncate text-xs">
                 {connector.description}
               </span>
             </div>
-            <Plus className="text-muted-foreground size-4" />
+            <Plus className="text-muted-foreground size-4" aria-hidden />
           </button>
         ))}
       </div>
