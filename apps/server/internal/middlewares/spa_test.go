@@ -17,7 +17,7 @@ func TestSPA(t *testing.T) {
 		"favicon.ico":       {Data: []byte("ico")},
 	}
 
-	spa, err := SPA(SPAConfig{FS: files, Exclude: []string{"/v1", "/health"}})
+	spa, err := SPA(SPAConfig{FS: files, Exclude: []string{"/v1", "/health"}, Indexable: []string{"/sign-in"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,20 +30,23 @@ func TestSPA(t *testing.T) {
 		method, path string
 		status       int
 		body, cache  string
+		noindex      bool
 	}{
-		{"GET", "/", 200, shell, "no-cache"},
-		{"GET", "/index.html", 200, shell, "no-cache"},
-		{"GET", "/dashboard/settings", 200, shell, "no-cache"},
-		{"GET", "/assets/app-abc.js", 200, "console.log(1)", "public, max-age=31536000, immutable"},
-		{"GET", "/favicon.ico", 200, "ico", "no-cache"},
+		{"GET", "/", 200, shell, "no-cache", true},
+		{"GET", "/index.html", 200, shell, "no-cache", true},
+		{"GET", "/dashboard/settings", 200, shell, "no-cache", true},
+		// Only the listed paths may be indexed.
+		{"GET", "/sign-in", 200, shell, "no-cache", false},
+		{"GET", "/assets/app-abc.js", 200, "console.log(1)", "public, max-age=31536000, immutable", false},
+		{"GET", "/favicon.ico", 200, "ico", "no-cache", false},
 		// An old bundle hash must not come back as HTML.
-		{"GET", "/assets/app-old.js", 404, "", ""},
+		{"GET", "/assets/app-old.js", 404, "", "", false},
 		// The API keeps its own routes and its own 404s.
-		{"GET", "/v1/ping", 200, "pong", ""},
-		{"GET", "/v1/missing", 404, "", ""},
-		{"GET", "/health/deep", 404, "", ""},
+		{"GET", "/v1/ping", 200, "pong", "", false},
+		{"GET", "/v1/missing", 404, "", "", false},
+		{"GET", "/health/deep", 404, "", "", false},
 		// Writes are never answered by the app shell.
-		{"POST", "/dashboard", 404, "", ""},
+		{"POST", "/dashboard", 404, "", "", false},
 	}
 	for _, tc := range cases {
 		resp, err := app.Test(httptest.NewRequest(tc.method, tc.path, nil))
@@ -58,6 +61,9 @@ func TestSPA(t *testing.T) {
 		}
 		if tc.body != "" && string(body) != tc.body {
 			t.Errorf("%s %s: body %q, want %q", tc.method, tc.path, body, tc.body)
+		}
+		if got := resp.Header.Get("X-Robots-Tag") == "noindex"; got != tc.noindex {
+			t.Errorf("%s %s: noindex %v, want %v", tc.method, tc.path, got, tc.noindex)
 		}
 		if tc.cache != "" && resp.Header.Get(fiber.HeaderCacheControl) != tc.cache {
 			t.Errorf("%s %s: Cache-Control %q, want %q", tc.method, tc.path, resp.Header.Get(fiber.HeaderCacheControl), tc.cache)

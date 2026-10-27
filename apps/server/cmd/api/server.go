@@ -202,6 +202,8 @@ func newServer(app *app.Application) (*fiber.App, error) {
 		spa, err := middlewares.SPA(middlewares.SPAConfig{
 			FS:      os.DirFS(dir),
 			Exclude: []string{"/api", "/health"},
+			// The rest of the app sits behind sign-in.
+			Indexable: []string{"/sign-in"},
 		})
 		if err != nil {
 			return nil, err
