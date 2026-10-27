@@ -67,11 +67,11 @@ const summary = (id: string) =>
   })
 
 /** Up to three AI reply suggestions. Each call costs a model request, so they are kept for the session. */
-const replySuggestions = (id: string) =>
+const replySuggestions = (id: string, agentBotId = '') =>
   queryOptions({
-    queryKey: [MAIL_QUERY_KEY, 'reply-suggestions', id],
+    queryKey: [MAIL_QUERY_KEY, 'reply-suggestions', id, agentBotId],
     queryFn: async () => {
-      const res = await services.mails.replySuggestions(id)
+      const res = await services.mails.replySuggestions(id, agentBotId || undefined)
       return res.data.data.suggestions
     },
     staleTime: Infinity,

@@ -4,6 +4,7 @@ import React from 'react'
 
 import type { Models } from '@/lib/api/models'
 
+import AgentBotRadioGroup from '@/components/block/agent-bot/agent-bot-radio-group'
 import { mailInitials } from '@/components/layout/mail/mail-data'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -12,9 +13,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useActiveAgentBot } from '@/hooks/use-active-agent-bot'
 import { axiosErrorMessage, toastProgress } from '@/lib/api/axios-error'
 import { allEmails, MAX_RECIPIENTS } from '@/lib/api/dtos/mail/recipients'
 import { queries } from '@/lib/api/queries'
@@ -25,11 +28,16 @@ import RecipientInput from './recipient-input'
 
 const MailEditor = React.lazy(() => import('./mail-editor'))
 
-/** "Use AI": up to three suggested replies, asked for when the menu opens since each is a model call. */
+/**
+ * "Use AI": up to three suggested replies, asked for when the menu opens since
+ * each is a model call. With agent bots set up, a Persona section picks who
+ * writes them; a new pick asks again.
+ */
 function AiMenu({ mailId, onPick }: { mailId: string; onPick: (text: string) => void }) {
   const [open, setOpen] = React.useState(false)
+  const { bots, activeBotId } = useActiveAgentBot()
   const { data, isFetching, isError, error, refetch } = useQuery({
-    ...queries.mails.replySuggestions(mailId),
+    ...queries.mails.replySuggestions(mailId, activeBotId),
     enabled: open,
   })
 
@@ -47,6 +55,13 @@ function AiMenu({ mailId, onPick }: { mailId: string; onPick: (text: string) => 
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" side="top" className="w-80">
+        {bots.length > 0 && (
+          <>
+            <DropdownMenuLabel className="text-muted-foreground text-xs">Persona</DropdownMenuLabel>
+            <AgentBotRadioGroup keepOpen />
+            <DropdownMenuSeparator />
+          </>
+        )}
         <DropdownMenuLabel className="text-muted-foreground text-xs">
           Suggested replies
         </DropdownMenuLabel>

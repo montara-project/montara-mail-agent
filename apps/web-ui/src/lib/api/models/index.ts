@@ -26,4 +26,5 @@ export namespace Models {
   export type AgentActionStatus = import('./agent').AgentActionStatus
   export type AgentActionPayload = import('./agent').AgentActionPayload
   export type AgentDraft = import('./agent').AgentDraft
+  export type AgentBot = import('./agent-bot').AgentBot
 }

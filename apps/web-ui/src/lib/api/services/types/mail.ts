@@ -28,7 +28,11 @@ export type MailResources = {
   get: (id: string) => Promise<AxiosItemResponse<Models.Mail>>
   patch: (id: string, body: MailPatchBody) => Promise<AxiosItemResponse<Models.Mail>>
   summary: (id: string) => Promise<AxiosItemResponse<{ summary: string }>>
-  replySuggestions: (id: string) => Promise<AxiosItemResponse<{ suggestions: string[] }>>
+  /** Written by the agent bot's persona when one is named, else the built-in one. */
+  replySuggestions: (
+    id: string,
+    agentBotId?: string
+  ) => Promise<AxiosItemResponse<{ suggestions: string[] }>>
   /** Moves the mail on the mail server too. */
   move: (id: string, folder: Models.MailMoveTarget) => Promise<AxiosDeleteResponse>
   /** Moves the mail to the trash, or deletes it for good when it is there. */

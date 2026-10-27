@@ -18,6 +18,8 @@ type MailSearch = {
   q?: string
   /** The AI assistant pane is open. */
   agent?: boolean
+  /** The email attached to the assistant's next questions. */
+  about?: string
 }
 
 const str = (value: unknown) => (typeof value === 'string' && value !== '' ? value : undefined)
@@ -39,6 +41,7 @@ export const Route = createFileRoute('/(app)/mail/')({
       search.agent === true || search.agent === 1 || search.agent === '1' || search.agent === 'true'
         ? true
         : undefined,
+    about: str(search.about),
   }),
   component: RouteComponent,
 })

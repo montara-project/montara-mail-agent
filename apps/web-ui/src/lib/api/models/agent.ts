@@ -67,6 +67,8 @@ export interface AgentDraft {
   organization_id: string
   email_account_id: string
   mail_id?: string | null
+  /** The agent bot that drafted it; absent for the built-in persona. */
+  agent_bot_id?: string | null
   to: string[]
   cc?: string[]
   subject: string

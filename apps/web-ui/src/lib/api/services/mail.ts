@@ -9,7 +9,11 @@ const resources = (): MailResources => ({
   get: (id) => api.get(`${path}/${id}`),
   patch: (id, body) => api.patch(`${path}/${id}`, body),
   summary: (id) => api.post(`${path}/${id}/summary`),
-  replySuggestions: (id) => api.post(`${path}/${id}/reply-suggestions`),
+  replySuggestions: (id, agentBotId) =>
+    api.post(
+      `${path}/${id}/reply-suggestions`,
+      agentBotId ? { agent_bot_id: agentBotId } : undefined
+    ),
   move: (id, folder) => api.post(`${path}/${id}/move`, { folder }),
   delete: (id) => api.delete(`${path}/${id}`),
   forward: (id, body) => api.post(`${path}/${id}/forward`, body),

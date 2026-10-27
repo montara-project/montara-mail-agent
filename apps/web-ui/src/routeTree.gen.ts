@@ -14,6 +14,7 @@ import { Route as appRouteRouteImport } from './routes/(app)/route'
 import { Route as appSettingsRouteRouteImport } from './routes/(app)/settings/route'
 import { Route as SignInIndexRouteImport } from './routes/sign-in/index'
 import { Route as appAccountIndexRouteImport } from './routes/(app)/account/index'
+import { Route as appAgentBotsIndexRouteImport } from './routes/(app)/agent-bots/index'
 import { Route as appDashboardIndexRouteImport } from './routes/(app)/dashboard/index'
 import { Route as appMailIndexRouteImport } from './routes/(app)/mail/index'
 import { Route as appSettingsIndexRouteImport } from './routes/(app)/settings/index'
@@ -45,6 +46,11 @@ const SignInIndexRoute = SignInIndexRouteImport.update({
 const appAccountIndexRoute = appAccountIndexRouteImport.update({
   id: '/account/',
   path: '/account/',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appAgentBotsIndexRoute = appAgentBotsIndexRouteImport.update({
+  id: '/agent-bots/',
+  path: '/agent-bots/',
   getParentRoute: () => appRouteRoute,
 } as any)
 const appDashboardIndexRoute = appDashboardIndexRouteImport.update({
@@ -99,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/settings/profile': typeof appSettingsProfileRoute
   '/settings/security': typeof appSettingsSecurityRoute
   '/account/': typeof appAccountIndexRoute
+  '/agent-bots/': typeof appAgentBotsIndexRoute
   '/dashboard/': typeof appDashboardIndexRoute
   '/mail/': typeof appMailIndexRoute
   '/settings/': typeof appSettingsIndexRoute
@@ -112,6 +119,7 @@ export interface FileRoutesByTo {
   '/settings/profile': typeof appSettingsProfileRoute
   '/settings/security': typeof appSettingsSecurityRoute
   '/account': typeof appAccountIndexRoute
+  '/agent-bots': typeof appAgentBotsIndexRoute
   '/dashboard': typeof appDashboardIndexRoute
   '/mail': typeof appMailIndexRoute
   '/settings': typeof appSettingsIndexRoute
@@ -128,6 +136,7 @@ export interface FileRoutesById {
   '/(app)/settings/profile': typeof appSettingsProfileRoute
   '/(app)/settings/security': typeof appSettingsSecurityRoute
   '/(app)/account/': typeof appAccountIndexRoute
+  '/(app)/agent-bots/': typeof appAgentBotsIndexRoute
   '/(app)/dashboard/': typeof appDashboardIndexRoute
   '/(app)/mail/': typeof appMailIndexRoute
   '/(app)/settings/': typeof appSettingsIndexRoute
@@ -144,6 +153,7 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/security'
     | '/account/'
+    | '/agent-bots/'
     | '/dashboard/'
     | '/mail/'
     | '/settings/'
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/security'
     | '/account'
+    | '/agent-bots'
     | '/dashboard'
     | '/mail'
     | '/settings'
@@ -172,6 +183,7 @@ export interface FileRouteTypes {
     | '/(app)/settings/profile'
     | '/(app)/settings/security'
     | '/(app)/account/'
+    | '/(app)/agent-bots/'
     | '/(app)/dashboard/'
     | '/(app)/mail/'
     | '/(app)/settings/'
@@ -218,6 +230,13 @@ declare module '@tanstack/react-router' {
       path: '/account'
       fullPath: '/account/'
       preLoaderRoute: typeof appAccountIndexRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/agent-bots/': {
+      id: '/(app)/agent-bots/'
+      path: '/agent-bots'
+      fullPath: '/agent-bots/'
+      preLoaderRoute: typeof appAgentBotsIndexRouteImport
       parentRoute: typeof appRouteRoute
     }
     '/(app)/dashboard/': {
@@ -303,6 +322,7 @@ const appSettingsRouteRouteWithChildren =
 interface appRouteRouteChildren {
   appSettingsRouteRoute: typeof appSettingsRouteRouteWithChildren
   appAccountIndexRoute: typeof appAccountIndexRoute
+  appAgentBotsIndexRoute: typeof appAgentBotsIndexRoute
   appDashboardIndexRoute: typeof appDashboardIndexRoute
   appMailIndexRoute: typeof appMailIndexRoute
 }
@@ -310,6 +330,7 @@ interface appRouteRouteChildren {
 const appRouteRouteChildren: appRouteRouteChildren = {
   appSettingsRouteRoute: appSettingsRouteRouteWithChildren,
   appAccountIndexRoute: appAccountIndexRoute,
+  appAgentBotsIndexRoute: appAgentBotsIndexRoute,
   appDashboardIndexRoute: appDashboardIndexRoute,
   appMailIndexRoute: appMailIndexRoute,
 }

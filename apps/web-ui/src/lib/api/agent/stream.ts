@@ -48,7 +48,14 @@ async function refreshedAccessToken(): Promise<string | null> {
  * events.
  */
 export async function streamAgentChat(
-  body: { conversation_id?: string; email_account_id?: string; message: string },
+  body: {
+    conversation_id?: string
+    email_account_id?: string
+    mail_id?: string
+    /** The persona the turn speaks as; absent means the built-in one. */
+    agent_bot_id?: string
+    message: string
+  },
   onEvent: (event: AgentStreamEvent) => void,
   signal?: AbortSignal
 ): Promise<void> {
