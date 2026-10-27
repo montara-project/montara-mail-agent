@@ -4,6 +4,7 @@ import { IconArrowRight } from '@tabler/icons-react'
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
+import { SITE_NAME, SITE_URL } from '@/lib/seo'
 
 // Self-hosted variable fonts, imported here so the bundler rewrites each
 // `url()` and emits the woff2 files. Every face carries latin (+ ext) subsets
@@ -14,28 +15,14 @@ import '@fontsource-variable/jetbrains-mono'
 
 import './globals.css'
 
+// Canonical and Open Graph live on each page (lib/seo.ts): set here, every
+// page inherited the home page's canonical and told search engines it was a
+// duplicate of it.
 export const metadata: Metadata = {
-  metadataBase: new URL('https://montaramail.web.id'),
-  title: { default: 'Montara Mail: AI email management', template: '%s · Montara Mail' },
-  description:
-    'Connect Gmail, Outlook, Yahoo, Lark, or any IMAP inbox and let an AI agent sort, summarize, and draft your email.',
-  alternates: { canonical: '/' },
-  openGraph: {
-    type: 'website',
-    url: '/',
-    siteName: 'Montara Mail',
-    title: 'Montara Mail: AI email management',
-    description:
-      'Every inbox you own, one AI agent. It sorts new mail, summarizes long threads, and drafts replies for you to approve.',
-    images: [{ url: '/favicon/android-chrome-512x512.png', width: 512, height: 512 }],
-  },
-  twitter: {
-    card: 'summary',
-    title: 'Montara Mail: AI email management',
-    description:
-      'Every inbox you own, one AI agent. It sorts new mail, summarizes long threads, and drafts replies for you to approve.',
-    images: ['/favicon/android-chrome-512x512.png'],
-  },
+  metadataBase: new URL(SITE_URL),
+  title: { default: `${SITE_NAME}: AI email management`, template: `%s · ${SITE_NAME}` },
+  // X falls back to each page's og:title, og:description and og:image.
+  twitter: { card: 'summary_large_image' },
   icons: {
     icon: [
       { url: '/favicon/favicon.ico', sizes: 'any' },

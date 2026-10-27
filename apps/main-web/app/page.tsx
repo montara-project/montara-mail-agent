@@ -15,6 +15,7 @@ import {
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
+import { pageMetadata, SITE_NAME, SITE_URL } from '@/lib/seo'
 import { cn } from '@/lib/utils'
 
 // Brand tints only; no third-party logos are bundled.
@@ -101,7 +102,8 @@ const steps = [
   },
 ]
 
-const faqs = [
+// `text` is the plain answer for the FAQPage schema where `a` holds markup.
+const faqs: { q: string; a: React.ReactNode; text?: string }[] = [
   {
     q: 'Which email providers can I connect?',
     a: 'Gmail, Outlook, Yahoo, and Lark, plus any other provider that supports IMAP.',
@@ -125,6 +127,7 @@ const faqs = [
         for details.
       </>
     ),
+    text: 'We use it only to provide the service and never sell it. Read the Privacy Policy for details.',
   },
   {
     q: 'How do I get started?',
@@ -253,9 +256,52 @@ function InboxPreview() {
   )
 }
 
+const description =
+  'Connect Gmail, Outlook, Yahoo, Lark, or any IMAP inbox and let an AI agent sort, summarize, and draft your email.'
+
+export const metadata = pageMetadata({ path: '/', description })
+
+// Rendered on the server, so crawlers read it from the HTML without running scripts.
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': `${SITE_URL}/#organization`,
+      name: SITE_NAME,
+      url: SITE_URL,
+      logo: `${SITE_URL}/favicon/android-chrome-512x512.png`,
+      email: 'support@montaramail.web.id',
+    },
+    { '@type': 'WebSite', '@id': `${SITE_URL}/#website`, name: SITE_NAME, url: SITE_URL },
+    {
+      '@type': 'SoftwareApplication',
+      name: SITE_NAME,
+      url: SITE_URL,
+      description,
+      applicationCategory: 'BusinessApplication',
+      operatingSystem: 'Web',
+      publisher: { '@id': `${SITE_URL}/#organization` },
+    },
+    {
+      '@type': 'FAQPage',
+      mainEntity: faqs.map((f) => ({
+        '@type': 'Question',
+        name: f.q,
+        acceptedAnswer: { '@type': 'Answer', text: f.text ?? String(f.a) },
+      })),
+    },
+  ],
+}
+
 export default function Home() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        // Every value above is a literal from this file; `<` is escaped so none can close the tag.
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+      />
       {/* Hero */}
       <section className="relative isolate">
         <div

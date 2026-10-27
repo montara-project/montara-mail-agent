@@ -1,6 +1,11 @@
-import type { Metadata } from 'next'
+import { pageMetadata } from '@/lib/seo'
 
-export const metadata: Metadata = { title: 'Terms of Service' }
+export const metadata = pageMetadata({
+  path: '/terms',
+  title: 'Terms of Service',
+  description:
+    'The terms for using Montara Mail: your account, the content in your connected inboxes, availability, liability, and how these terms change.',
+})
 
 export default function TermsPage() {
   return (
