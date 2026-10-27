@@ -12,3 +12,15 @@ type ReplySuggestionsBody struct {
 func (dto ReplySuggestionsBody) Validate(v *validator.MapValidator) {
 	v.Field("agent_bot_id").Regex(optionalUUID)
 }
+
+// DraftReplyBody asks for a whole reply: what it should say or how it should
+// sound (empty means a sensible reply), and the persona that writes it.
+type DraftReplyBody struct {
+	Instruction string `json:"instruction"`
+	AgentBotID  string `json:"agent_bot_id"`
+}
+
+func (dto DraftReplyBody) Validate(v *validator.MapValidator) {
+	v.Field("instruction").String().MaxLen(2000)
+	v.Field("agent_bot_id").Regex(optionalUUID)
+}

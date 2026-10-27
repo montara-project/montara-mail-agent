@@ -110,6 +110,7 @@ func routes(r *fiber.App, app *app.Application) {
 	mails.Post("/:id/reply", slow, idempotent, h.Mail.Reply)
 	mails.Post("/:id/summary", slow, h.Mail.Summary)
 	mails.Post("/:id/reply-suggestions", slow, h.Mail.ReplySuggestions)
+	mails.Post("/:id/draft-reply", slow, h.Mail.DraftReply)
 
 	// Agent bots are organization settings, so the flat group lets the web app
 	// edit one by its own id without repeating the organization.

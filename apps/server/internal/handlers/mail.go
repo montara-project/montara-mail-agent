@@ -286,7 +286,14 @@ func (h *mailHandler) ReplySuggestions(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	bot, err := h.replyBot(c, account.OrganizationID)
+	// The body is optional: a client that sends none keeps the old behaviour.
+	var body dtos.ReplySuggestionsBody
+	if raw := c.Body(); len(raw) > 0 {
+		if err := lib.ValidateJSON(raw, &body); err != nil {
+			return err
+		}
+	}
+	bot, err := h.orgBot(c, account.OrganizationID, body.AgentBotID)
 	if err != nil {
 		return err
 	}
@@ -297,22 +304,44 @@ func (h *mailHandler) ReplySuggestions(c fiber.Ctx) error {
 	return dtos.OK(c, fiber.Map{"suggestions": suggestions})
 }
 
-// replyBot loads the agent bot an optional JSON body names, or nil for the
-// built-in persona. The body is optional: a client that sends none keeps the
-// old behaviour. A bot from another organization is a 404.
-func (h *mailHandler) replyBot(c fiber.Ctx, organizationID uuid.UUID) (*models.AgentBot, error) {
-	raw := c.Body()
-	if len(raw) == 0 {
+// DraftReply writes a whole reply to the mail from the user's instruction,
+// in the named agent bot's persona. Nothing is sent: the web app puts the
+// text in the reply editor for the user to review.
+func (h *mailHandler) DraftReply(c fiber.Ctx) error {
+	m, err := h.mail(c)
+	if err != nil {
+		return err
+	}
+	var body dtos.DraftReplyBody
+	if err := lib.ValidateRequestBody(c, &body); err != nil {
+		return err
+	}
+	client, err := h.llmFor(c, m)
+	if err != nil {
+		return err
+	}
+	account, err := h.account(c, m)
+	if err != nil {
+		return err
+	}
+	bot, err := h.orgBot(c, account.OrganizationID, body.AgentBotID)
+	if err != nil {
+		return err
+	}
+	text, err := mailai.DraftReply(c.Context(), client, m, bot, body.Instruction)
+	if err != nil {
+		return h.aiError("reply draft", err)
+	}
+	return dtos.OK(c, fiber.Map{"text": text})
+}
+
+// orgBot loads the agent bot a request names, or nil for the built-in
+// persona when it names none. A bot from another organization is a 404.
+func (h *mailHandler) orgBot(c fiber.Ctx, organizationID uuid.UUID, rawID string) (*models.AgentBot, error) {
+	if rawID == "" {
 		return nil, nil
 	}
-	var body dtos.ReplySuggestionsBody
-	if err := lib.ValidateJSON(raw, &body); err != nil {
-		return nil, err
-	}
-	if body.AgentBotID == "" {
-		return nil, nil
-	}
-	id, err := uuid.Parse(body.AgentBotID)
+	id, err := uuid.Parse(rawID)
 	if err != nil {
 		return nil, apperr.New(apperr.KindBadRequest, "invalid agent bot id")
 	}
