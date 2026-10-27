@@ -62,7 +62,7 @@ function Logo() {
       href="/"
       className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight"
     >
-      {/* 192px export of public/static/images/montara-mail-logo.png (444KB); its white tile is rounded like an app icon. */}
+      {/* 192px export of public/images/mail-agent-logo.png (400KB); its white tile is rounded like an app icon. */}
       <img
         src="/favicon/android-chrome-192x192.png"
         alt=""

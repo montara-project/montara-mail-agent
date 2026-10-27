@@ -1,4 +1,4 @@
-import { IconBox, IconBrandGoogle } from '@tabler/icons-react'
+import { IconBrandGoogle } from '@tabler/icons-react'
 import { useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -156,10 +156,8 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
     <div className={cn('flex flex-col gap-6', className)} {...props}>
       <FieldGroup>
         <div className="flex flex-col items-center gap-2 text-center">
-          <div className="flex size-8 items-center justify-center rounded-md">
-            <IconBox className="size-6" />
-          </div>
-          <h1 className="text-xl font-bold">Vine</h1>
+          <img src="/images/mail-agent-logo.png" alt="" className="size-12" />
+          <h1 className="text-xl font-bold">Montara</h1>
           <FieldDescription>
             {pickServer
               ? 'Choose your Montara server'

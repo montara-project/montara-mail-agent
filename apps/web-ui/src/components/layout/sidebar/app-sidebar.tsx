@@ -1,4 +1,3 @@
-import { IconMail } from '@tabler/icons-react'
 import { Link, useLocation } from '@tanstack/react-router'
 import { useTheme } from 'next-themes'
 import React from 'react'
@@ -98,9 +97,11 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
                 <Link to="/dashboard">
-                  <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                    <IconMail className="size-4" />
-                  </div>
+                  <img
+                    src="/images/mail-agent-logo.png"
+                    alt="Montara"
+                    className="aspect-square size-8 shrink-0"
+                  />
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">Montara</span>
                     <span className="truncate text-xs">{COMMUNITY ? 'Community' : 'Mail'}</span>
