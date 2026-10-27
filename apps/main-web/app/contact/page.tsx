@@ -1,8 +1,12 @@
-import type { Metadata } from 'next'
-
-export const metadata: Metadata = { title: 'Contact' }
+import { pageMetadata } from '@/lib/seo'
 
 const email = 'support@montaramail.web.id'
+
+export const metadata = pageMetadata({
+  path: '/contact',
+  title: 'Contact',
+  description: `Questions, feedback, or partnership requests for Montara Mail? Email ${email} and we will get back to you within two business days.`,
+})
 
 export default function ContactPage() {
   return (

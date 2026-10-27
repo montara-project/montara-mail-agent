@@ -8,9 +8,12 @@ import SectionCard from '@/components/block/common/section-card'
 import { mailInitials } from '@/components/layout/mail/mail-data'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { FieldDescription } from '@/components/ui/field'
+import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
 import { useAppForm } from '@/hooks/form'
 import { useActiveOrganization } from '@/hooks/use-active-organization'
+import { useHideEmails } from '@/hooks/use-hide-emails'
 import { toastAxiosError } from '@/lib/api/axios-error'
 import { OrganizationFormSchema } from '@/lib/api/dtos/organization/schema'
 import { parseDto } from '@/lib/api/dtos/parse'
@@ -19,6 +22,7 @@ import { queries } from '@/lib/api/queries'
 
 function ProfileForm({ user }: { user: Models.User }) {
   const update = useMutation(queries.profile.update())
+  const { mask } = useHideEmails()
 
   const form = useAppForm({
     defaultValues: { name: user.name, image: user.image ?? '' },
@@ -42,32 +46,35 @@ function ProfileForm({ user }: { user: Models.User }) {
         form.handleSubmit()
       }}
     >
-      <div className="flex items-center gap-3">
+      <div className="mb-2 flex items-center gap-3">
         <Avatar className="size-14">
           {/^https:\/\/\S+$/.test(image) && <AvatarImage src={image} alt="" />}
           <AvatarFallback>{mailInitials(name || user.email)}</AvatarFallback>
         </Avatar>
         <div className="grid min-w-0 text-sm">
-          <span className="truncate font-medium">{name || user.email}</span>
-          <span className="text-muted-foreground truncate">{user.email}</span>
+          <span className="truncate font-medium">{name || mask(user.email)}</span>
+          <span className="text-muted-foreground truncate">{mask(user.email)}</span>
         </div>
       </div>
       <form.AppField
         name="name"
         children={(field) => <field.TextField asterisk label="Name" autoComplete="name" />}
       />
-      <form.AppField
-        name="image"
-        children={(field) => (
-          <field.TextField
-            label="Avatar URL"
-            placeholder="https://example.com/me.png"
-            inputMode="url"
-          />
-        )}
-      />
-      <FieldDescription>Leave empty to show your initials.</FieldDescription>
-      <div>
+      <div className="grid gap-2">
+        <form.AppField
+          name="image"
+          children={(field) => (
+            <field.TextField
+              label="Avatar URL"
+              placeholder="https://example.com/me.png"
+              inputMode="url"
+              aria-describedby="avatar-url-hint"
+            />
+          )}
+        />
+        <FieldDescription id="avatar-url-hint">Leave empty to show your initials.</FieldDescription>
+      </div>
+      <div className="mt-2">
         <form.AppForm>
           <form.SubmitButton label="Save" />
         </form.AppForm>
@@ -132,7 +139,28 @@ export default function GeneralSettings() {
           <ProfileForm key={me.user.updated_at} user={me.user} />
         )}
       </SectionCard>
+      <PrivacySettings />
     </div>
+  )
+}
+
+/** Per browser: masks email addresses on screen, for screen sharing and demos. */
+function PrivacySettings() {
+  const { hidden, setHidden } = useHideEmails()
+
+  return (
+    <SectionCard title="Privacy" description="What this browser shows on screen.">
+      <div className="flex max-w-xl items-center justify-between gap-4">
+        <div className="grid gap-1 text-sm">
+          <Label htmlFor="hide-emails">Hide email addresses</Label>
+          <FieldDescription>
+            Masks your addresses in the sidebar and the mail account switcher, so they stay private
+            when you share your screen.
+          </FieldDescription>
+        </div>
+        <Switch id="hide-emails" checked={hidden} onCheckedChange={setHidden} />
+      </div>
+    </SectionCard>
   )
 }
 

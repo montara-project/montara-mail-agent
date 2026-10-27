@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button'
 import { FieldDescription } from '@/components/ui/field'
 import { useAppForm } from '@/hooks/form'
 import { useActiveOrganization } from '@/hooks/use-active-organization'
+import { useHideEmails } from '@/hooks/use-hide-emails'
 import { toastAxiosError } from '@/lib/api/axios-error'
 import { EmailAccountFormSchema } from '@/lib/api/dtos/account/email-account/schema'
 import { parseDto } from '@/lib/api/dtos/parse'
@@ -50,6 +51,7 @@ export default function ProviderConnectDialog({
     queries.emailAccounts.oauthConnect(organization?.id ?? '', connector.id)
   )
   const create = useMutation(queries.emailAccounts.create(organization?.id ?? ''))
+  const { mask } = useHideEmails()
 
   const form = useAppForm({
     defaultValues: {
@@ -71,7 +73,7 @@ export default function ProviderConnectDialog({
           password: dto.password,
           label: dto.label || undefined,
         })
-        toast.success(`${account.email} connected; its mail is syncing`)
+        toast.success(`${mask(account.email)} connected; its mail is syncing`)
         onClose()
       } catch (error) {
         toastAxiosError(error)

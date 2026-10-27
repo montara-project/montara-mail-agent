@@ -34,7 +34,11 @@ export default function TextField({
     <Field data-invalid={isInvalid}>
       <FieldLabel htmlFor={field.name} className="gap-1">
         {label}
-        {asterisk && <span className="text-destructive">*</span>}
+        {asterisk && (
+          <span className="text-destructive" aria-hidden>
+            *
+          </span>
+        )}
       </FieldLabel>
       <InputWrapper className="h-10">
         {props.icon && <props.icon />}
@@ -48,6 +52,7 @@ export default function TextField({
             onChange?.(e.target.value)
           }}
           aria-invalid={isInvalid}
+          aria-required={asterisk || undefined}
           placeholder={placeholder}
           variant="lg"
           disabled={disabled}

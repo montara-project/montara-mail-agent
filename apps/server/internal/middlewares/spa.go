@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/fs"
 	"path"
+	"slices"
 	"strings"
 
 	"github.com/gofiber/fiber/v3"
@@ -19,6 +20,11 @@ type SPAConfig struct {
 	// answers with the API's JSON 404 instead of the app shell, so a typo in
 	// an API call never comes back as HTML.
 	Exclude []string
+	// Indexable lists the app paths search engines may index (the sign-in
+	// page, so a search for the product's login finds it). Every other path
+	// the shell answers carries "X-Robots-Tag: noindex": it is a page behind
+	// sign-in, or a route that doesn't exist, and both render as the shell.
+	Indexable []string
 }
 
 // assetsPrefix holds the content-hashed files a bundler emits (Vite's
@@ -43,6 +49,9 @@ func SPA(cfg SPAConfig) (fiber.Handler, error) {
 	}
 
 	shell := func(c fiber.Ctx) error {
+		if !slices.Contains(cfg.Indexable, c.Path()) {
+			c.Set("X-Robots-Tag", "noindex")
+		}
 		c.Set(fiber.HeaderCacheControl, "no-cache")
 		c.Set(fiber.HeaderContentType, fiber.MIMETextHTMLCharsetUTF8)
 		return c.Status(fiber.StatusOK).Send(index)

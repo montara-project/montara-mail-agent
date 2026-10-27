@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 
 import ConnectorList from '@/components/block/account/connector-list'
 import MailAccountList from '@/components/block/account/mail-account-list'
+import { maskEmails, useHideEmails } from '@/hooks/use-hide-emails'
 
 // The OAuth callback returns the browser here with the flow's outcome in the
 // query, which the route toasts and strips.
@@ -20,12 +21,14 @@ export const Route = createFileRoute('/(app)/account/')({
 function OAuthOutcome() {
   const { connected, error } = Route.useSearch()
   const navigate = useNavigate()
+  const { hidden } = useHideEmails()
   React.useEffect(() => {
     if (!connected && !error) return
     if (error) toast.error(error)
-    else toast.success(`${connected} connected; its mail is syncing`)
+    else
+      toast.success(`${hidden ? maskEmails(connected!) : connected} connected; its mail is syncing`)
     navigate({ to: '/account', search: {} })
-  }, [connected, error, navigate])
+  }, [connected, error, hidden, navigate])
   return null
 }
 
