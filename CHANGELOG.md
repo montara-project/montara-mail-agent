@@ -3,6 +3,21 @@
 All notable changes to this project are documented in this file. Versions follow the git tags (`v*`); Docker images are published to ghcr.io with the same version.
 
 
+## [0.3.0](https://github.com/montara-project/montara-mail-agent/compare/v0.2.0...v0.3.0) (2026-10-27)
+
+### Features
+
+* **main-web:** per-page canonical, sitemap, robots, JSON-LD and OG image ([25c6390](https://github.com/montara-project/montara-mail-agent/commit/25c639076d75b49b453178e8d39f9a0dbdf81306))
+* **server:** send noindex for app shell routes except sign-in ([91e7bc7](https://github.com/montara-project/montara-mail-agent/commit/91e7bc72def2743d91ed04123ca352ff8a03ce4c))
+* **web-ui:** hide email addresses setting ([52bc470](https://github.com/montara-project/montara-mail-agent/commit/52bc470941643b3485d1e6f923773f4074bc71cb))
+
+### Bug Fixes
+
+* update brand logo & favicon ([6472af0](https://github.com/montara-project/montara-mail-agent/commit/6472af07fbcfc5f97bdd9265794ec1386287c688))
+* **web-ui:** account page masks emails in toasts and retries failed loads ([c781488](https://github.com/montara-project/montara-mail-agent/commit/c78148886957f98b9db4eb03eb04eee7fd490559))
+* **web-ui:** keep mail body skeleton above reply and forward buttons ([98bb589](https://github.com/montara-project/montara-mail-agent/commit/98bb58965a2b8bab2eb9a37ec9bdf1f0080978ee))
+* **web-ui:** visible submit button and clearer switch states ([79bfc5c](https://github.com/montara-project/montara-mail-agent/commit/79bfc5c280f6a9dda50ad39968d32dd5f2f54a91))
+
 ## [0.2.0](https://github.com/montara-project/montara-mail-agent/compare/v0.1.0...v0.2.0) (2026-10-27)
 
 ### Features
