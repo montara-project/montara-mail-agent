@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/google/uuid"
 
 	"montara-mail-agent/server/internal/app"
 	"montara-mail-agent/server/internal/dtos"
@@ -261,7 +260,7 @@ func (h *mailHandler) Summary(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	summary, err := mailai.Summarize(c.Context(), client, m)
+	summary, err := mailai.Summarize(c.Context(), client, m, nil)
 	if err != nil {
 		return h.aiError("summary", err)
 	}
@@ -293,7 +292,7 @@ func (h *mailHandler) ReplySuggestions(c fiber.Ctx) error {
 			return err
 		}
 	}
-	bot, err := h.orgBot(c, account.OrganizationID, body.AgentBotID)
+	bot, err := orgBot(c, h.app, account.OrganizationID, body.AgentBotID)
 	if err != nil {
 		return err
 	}
@@ -324,7 +323,7 @@ func (h *mailHandler) DraftReply(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	bot, err := h.orgBot(c, account.OrganizationID, body.AgentBotID)
+	bot, err := orgBot(c, h.app, account.OrganizationID, body.AgentBotID)
 	if err != nil {
 		return err
 	}
@@ -335,22 +334,76 @@ func (h *mailHandler) DraftReply(c fiber.Ctx) error {
 	return dtos.OK(c, fiber.Map{"text": text})
 }
 
-// orgBot loads the agent bot a request names, or nil for the built-in
-// persona when it names none. A bot from another organization is a 404.
-func (h *mailHandler) orgBot(c fiber.Ctx, organizationID uuid.UUID, rawID string) (*models.AgentBot, error) {
-	if rawID == "" {
-		return nil, nil
-	}
-	id, err := uuid.Parse(rawID)
+// RunSkill runs one skill on the mail and answers what it made: a summary, an
+// importance label (saved on the mail), a reply draft for the editor, or a
+// custom skill's Markdown. Nothing is sent. The persona is the skill's agent
+// bot, else the one the user picked.
+func (h *mailHandler) RunSkill(c fiber.Ctx) error {
+	m, err := h.mail(c)
 	if err != nil {
-		return nil, apperr.New(apperr.KindBadRequest, "invalid agent bot id")
+		return err
 	}
-	bot, err := h.app.Repositories.AgentBot.Get(c.Context(), id)
+	var body dtos.RunSkillBody
+	if err := lib.ValidateRequestBody(c, &body); err != nil {
+		return err
+	}
+	account, err := h.account(c, m)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	if bot.OrganizationID != organizationID {
-		return nil, apperr.New(apperr.KindNotFound, "agent bot not found")
+	skill, err := orgSkill(c, h.app, account.OrganizationID, c.Params("key"))
+	if err != nil {
+		return err
 	}
-	return &bot, nil
+	if !skill.IsEnabled {
+		return apperr.New(apperr.KindConflict, "the skill %s is turned off", skill.Name)
+	}
+	skill.OrganizationID = account.OrganizationID
+	bot, err := skillBot(c, h.app, skill, body.AgentBotID)
+	if err != nil {
+		return err
+	}
+	client, err := h.llmFor(c, m)
+	if err != nil {
+		return err
+	}
+
+	switch skill.Key() {
+	case models.SkillSummarize:
+		text, err := mailai.Summarize(c.Context(), client, m, bot)
+		if err != nil {
+			return h.aiError("summary", err)
+		}
+		// Only the built-in persona's summary is the mail's kept one.
+		if bot == nil {
+			if err := h.repo().SetSummary(c.Context(), m.ID, text); err != nil {
+				return err
+			}
+		}
+		return dtos.OK(c, fiber.Map{"kind": "summary", "text": text})
+	case models.SkillOrganize:
+		labels, err := mailai.Classify(c.Context(), client, []models.Mail{m})
+		if err != nil {
+			return h.aiError("organize", err)
+		}
+		label, ok := labels[0]
+		if !ok {
+			return apperr.New(apperr.KindBadGateway, "the AI gave no label for this email; try again")
+		}
+		if err := h.repo().ReplaceAIImportance(c.Context(), m.ID, label); err != nil {
+			return err
+		}
+		return dtos.OK(c, fiber.Map{"kind": "organize", "importance": label})
+	case models.SkillDraftReply:
+		text, err := mailai.DraftReply(c.Context(), client, m, bot, body.Instruction)
+		if err != nil {
+			return h.aiError("reply draft", err)
+		}
+		return dtos.OK(c, fiber.Map{"kind": "reply", "text": text})
+	}
+	text, err := mailai.RunSkill(c.Context(), client, m, bot, skill)
+	if err != nil {
+		return h.aiError(skill.Name, err)
+	}
+	return dtos.OK(c, fiber.Map{"kind": "text", "text": text})
 }

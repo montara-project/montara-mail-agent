@@ -93,3 +93,21 @@ func TestPersona(t *testing.T) {
 		})
 	}
 }
+
+// Every built-in skill is found by its key and keyed by it, and an unknown
+// key finds nothing; a custom skill is keyed by its id.
+func TestBuiltinSkills(t *testing.T) {
+	for _, key := range []string{SkillSummarize, SkillOrganize, SkillDraftReply} {
+		s, ok := BuiltinSkill(key)
+		if !ok || s.Key() != key || s.Instruction == "" || !s.IsEnabled {
+			t.Fatalf("BuiltinSkill(%q) = %+v, %v", key, s, ok)
+		}
+	}
+	if _, ok := BuiltinSkill("nope"); ok {
+		t.Fatal("BuiltinSkill found an unknown key")
+	}
+	custom := AgentSkill{Name: "Mine"}
+	if custom.Key() != custom.ID.String() {
+		t.Fatalf("custom skill key = %q", custom.Key())
+	}
+}

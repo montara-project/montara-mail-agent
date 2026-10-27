@@ -51,3 +51,20 @@ func TestSystemPromptBotIdentity(t *testing.T) {
 		t.Fatalf("system prompt keeps the built-in identity with a bot set:\n%s", prompt)
 	}
 }
+
+// An invoked skill joins the prompt after the rules, so it steers the task
+// but cannot lift them.
+func TestSystemPromptSkill(t *testing.T) {
+	s := baseSession()
+	s.Skill = &models.AgentSkill{Name: "Organize", Instruction: "Label each email with set_importance."}
+
+	prompt := systemPrompt(s)
+	rules := strings.Index(prompt, "You must never send mail on your own")
+	skill := strings.Index(prompt, "<skill>\nLabel each email with set_importance.\n</skill>")
+	if rules < 0 || skill < 0 || skill < rules {
+		t.Fatalf("skill missing or before the rules:\n%s", prompt)
+	}
+	if !strings.Contains(prompt, `the skill "Organize"`) {
+		t.Fatalf("prompt does not name the skill:\n%s", prompt)
+	}
+}

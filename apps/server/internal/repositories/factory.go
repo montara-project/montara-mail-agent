@@ -11,6 +11,7 @@ type Repositories struct {
 	ActivityLog  ActivityLogRepository
 	Agent        AgentRepository
 	AgentBot     AgentBotRepository
+	AgentSkill   AgentSkillRepository
 }
 
 // New builds every repository over db.
@@ -26,5 +27,6 @@ func New(db *sql.DB) Repositories {
 		ActivityLog:  ActivityLogRepository{base},
 		Agent:        AgentRepository{base},
 		AgentBot:     AgentBotRepository{base},
+		AgentSkill:   AgentSkillRepository{base},
 	}
 }

@@ -226,25 +226,29 @@ func (h *agentHandler) Chat(c fiber.Ctx) error {
 		return err
 	}
 
-	// The persona the turn speaks as: a bot the caller picked, or none for
-	// the built-in assistant. A bot from another organization is a 404.
+	// The skill the user invoked with a /command, if any, and the persona the
+	// turn speaks as: the skill's bot, else the one the caller picked, else
+	// the built-in assistant. Either from another organization is a 404.
+	var skill *models.AgentSkill
 	var bot *models.AgentBot
-	if body.AgentBotID != "" {
-		botID, err := uuid.Parse(body.AgentBotID)
-		if err != nil {
-			return apperr.New(apperr.KindBadRequest, "invalid agent bot id")
-		}
-		b, err := h.app.Repositories.AgentBot.Get(c.Context(), botID)
+	if body.Skill != "" {
+		s, err := orgSkill(c, h.app, conv.OrganizationID, body.Skill)
 		if err != nil {
 			return err
 		}
-		if b.OrganizationID != conv.OrganizationID {
-			return apperr.New(apperr.KindNotFound, "agent bot not found")
+		if !s.IsEnabled {
+			return apperr.New(apperr.KindConflict, "the skill %s is turned off", s.Name)
 		}
-		bot = &b
+		s.OrganizationID = conv.OrganizationID
+		skill = &s
+		if bot, err = skillBot(c, h.app, s, body.AgentBotID); err != nil {
+			return err
+		}
+	} else if bot, err = orgBot(c, h.app, conv.OrganizationID, body.AgentBotID); err != nil {
+		return err
 	}
 
-	session := mailagent.Session{Conversation: conv, Account: account, MailID: body.MailID, Bot: bot}
+	session := mailagent.Session{Conversation: conv, Account: account, MailID: body.MailID, Bot: bot, Skill: skill}
 
 	// Server-sent events: fiber buffers its answer, so the run writes through
 	// a stream writer and flushes event by event.

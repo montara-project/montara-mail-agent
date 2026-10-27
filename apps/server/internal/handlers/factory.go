@@ -15,6 +15,7 @@ type Handlers struct {
 	ActivityLog  *activityLogHandler
 	Agent        *agentHandler
 	AgentBot     *agentBotHandler
+	AgentSkill   *agentSkillHandler
 }
 
 func New(app *app.Application) *Handlers {
@@ -29,5 +30,6 @@ func New(app *app.Application) *Handlers {
 		ActivityLog:  &activityLogHandler{app: app},
 		Agent:        &agentHandler{app: app, sync: sync},
 		AgentBot:     &agentBotHandler{app: app},
+		AgentSkill:   &agentSkillHandler{app: app},
 	}
 }

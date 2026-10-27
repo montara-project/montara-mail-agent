@@ -19,7 +19,9 @@ type AgentChatBody struct {
 	EmailAccountID string `json:"email_account_id"`
 	MailID         string `json:"mail_id"`
 	AgentBotID     string `json:"agent_bot_id"`
-	Message        string `json:"message"`
+	// Skill is the key of a skill the user invoked with a /command.
+	Skill   string `json:"skill"`
+	Message string `json:"message"`
 }
 
 func (dto AgentChatBody) Validate(v *validator.MapValidator) {
@@ -27,6 +29,7 @@ func (dto AgentChatBody) Validate(v *validator.MapValidator) {
 	v.Field("email_account_id").Regex(optionalUUID)
 	v.Field("mail_id").Regex(optionalUUID)
 	v.Field("agent_bot_id").Regex(optionalUUID)
+	v.Field("skill").String().MaxLen(64)
 	v.Field("message").Required().String().MaxLen(10000)
 }
 

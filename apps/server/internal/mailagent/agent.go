@@ -37,6 +37,8 @@ type Session struct {
 	MailID string
 	// Bot is the persona the turn speaks as; nil means the built-in one.
 	Bot *models.AgentBot
+	// Skill is the skill the user invoked for this turn with a /command.
+	Skill *models.AgentSkill
 }
 
 // Event kinds streamed to the client during a run.

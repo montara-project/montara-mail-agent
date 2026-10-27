@@ -20,4 +20,7 @@ const (
 	ActivityAgentBotCreated         = "agent_bot.created"
 	ActivityAgentBotUpdated         = "agent_bot.updated"
 	ActivityAgentBotDeleted         = "agent_bot.deleted"
+	ActivitySkillCreated            = "skill.created"
+	ActivitySkillUpdated            = "skill.updated"
+	ActivitySkillDeleted            = "skill.deleted"
 )

@@ -12,7 +12,7 @@ type MailListQuery struct {
 func (dto MailListQuery) Validate(v *validator.MapValidator) {
 	dto.base(v)
 	v.Field("folder").Regex(`^(inbox|archive|sent|drafts|spam|trash)$`)
-	v.Field("importance").Regex(`^(important|low_priority)$`)
+	v.Field("importance").Regex(`^(important|low_priority|broadcast)$`)
 }
 
 // MailPatchBody changes a mail; absent fields stay as they are.
@@ -23,7 +23,7 @@ type MailPatchBody struct {
 }
 
 func (dto MailPatchBody) Validate(v *validator.MapValidator) {
-	v.Field("importance").Regex(`^(important|low_priority)$`)
+	v.Field("importance").Regex(`^(important|low_priority|broadcast)$`)
 }
 
 // MailMoveBody names the folder a mail moves to.

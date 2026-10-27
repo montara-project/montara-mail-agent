@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -24,6 +25,7 @@ const (
 	toolStats          = "mailbox_stats"
 	toolMove           = "move_mail"
 	toolFlags          = "set_flags"
+	toolImportance     = "set_importance"
 	toolProposeReply   = "propose_reply"
 	toolProposeForward = "propose_forward"
 	toolProposeEmail   = "propose_email"
@@ -103,6 +105,18 @@ func (t *toolset) defs() []llm.ToolDef {
 			}`),
 		},
 		{
+			Name:        toolImportance,
+			Description: "Label one email important, low_priority or broadcast (newsletters, announcements, mass mailings). A label the user set themselves is kept.",
+			Parameters: json.RawMessage(`{
+				"type": "object",
+				"properties": {
+					"mail_id": {"type": "string"},
+					"importance": {"type": "string", "enum": ["important", "low_priority", "broadcast"]}
+				},
+				"required": ["mail_id", "importance"]
+			}`),
+		},
+		{
 			Name:        toolProposeReply,
 			Description: "Propose a reply to one email for the user to approve. Nothing is sent until the user approves the proposal. Write the body ready to send, in the email's language.",
 			Parameters: json.RawMessage(`{
@@ -158,6 +172,7 @@ func (t *toolset) execute(ctx context.Context, call llm.ToolCall) (string, json.
 		MailID     string   `json:"mail_id"`
 		IsRead     *bool    `json:"is_read"`
 		IsStarred  *bool    `json:"is_starred"`
+		Importance string   `json:"importance"`
 		To         []string `json:"to"`
 		Cc         []string `json:"cc"`
 		Subject    string   `json:"subject"`
@@ -179,6 +194,8 @@ func (t *toolset) execute(ctx context.Context, call llm.ToolCall) (string, json.
 		return t.move(ctx, args.MailID, args.Folder)
 	case toolFlags:
 		return t.flags(ctx, args.MailID, args.IsRead, args.IsStarred)
+	case toolImportance:
+		return t.setImportance(ctx, args.MailID, args.Importance)
 	case toolProposeReply:
 		return t.proposeReply(ctx, args.MailID, args.To, args.Cc, args.Subject, args.Text)
 	case toolProposeForward:
@@ -296,6 +313,25 @@ func (t *toolset) flags(ctx context.Context, mailID string, isRead, isStarred *b
 		}
 	}()
 	return fmt.Sprintf("updated %q", m.Subject), nil
+}
+
+// setImportance labels one email the way the classifier does: as the AI's
+// label, so a label the user set themselves is kept.
+func (t *toolset) setImportance(ctx context.Context, mailID, importance string) (string, json.RawMessage) {
+	if !slices.Contains(constant.Importances, importance) {
+		return fmt.Sprintf("no such importance %q: use important, low_priority or broadcast", importance), nil
+	}
+	m, ok := t.mailOf(ctx, mailID)
+	if !ok {
+		return "no such email in this mailbox", nil
+	}
+	if m.ImportanceBy != nil && *m.ImportanceBy == constant.ImportanceByUser {
+		return fmt.Sprintf("kept %q: the user labelled it themselves", m.Subject), nil
+	}
+	if err := t.app.Repositories.Mail.SetAIImportance(ctx, m.ID, importance); err != nil {
+		return "the importance could not be saved: " + err.Error(), nil
+	}
+	return fmt.Sprintf("labelled %q as %s", m.Subject, importance), nil
 }
 
 // proposeReply stores a reply proposal, defaulting the recipients and subject

@@ -86,6 +86,9 @@ func routes(r *fiber.App, app *app.Application) {
 	organizations.Post("/:id/llm-provider/models", slow, h.LLMProvider.Models)
 	organizations.Get("/:id/agent-bots", h.AgentBot.List)
 	organizations.Post("/:id/agent-bots", idempotent, h.AgentBot.Create)
+	organizations.Get("/:id/skills", h.AgentSkill.List)
+	organizations.Post("/:id/skills", idempotent, h.AgentSkill.Create)
+	organizations.Put("/:id/skills/builtin/:key", idempotent, h.AgentSkill.SetBuiltin)
 
 	// The OAuth consent flow's return address: a browser navigation from the
 	// provider, so no signed-in caller and no API envelope — the handler
@@ -111,6 +114,7 @@ func routes(r *fiber.App, app *app.Application) {
 	mails.Post("/:id/summary", slow, h.Mail.Summary)
 	mails.Post("/:id/reply-suggestions", slow, h.Mail.ReplySuggestions)
 	mails.Post("/:id/draft-reply", slow, h.Mail.DraftReply)
+	mails.Post("/:id/skills/:key", slow, h.Mail.RunSkill)
 
 	// Agent bots are organization settings, so the flat group lets the web app
 	// edit one by its own id without repeating the organization.
@@ -118,6 +122,11 @@ func routes(r *fiber.App, app *app.Application) {
 	agentBots.Get("/:id", h.AgentBot.Get)
 	agentBots.Put("/:id", idempotent, h.AgentBot.Update)
 	agentBots.Delete("/:id", idempotent, h.AgentBot.Delete)
+
+	// Custom skills, by their own id like the agent bots.
+	skills := v1.Group("/skills", m.Authorization)
+	skills.Put("/:id", idempotent, h.AgentSkill.Update)
+	skills.Delete("/:id", idempotent, h.AgentSkill.Delete)
 
 	// The mail agent: a copilot over one mailbox, its conversation history,
 	// and the approvals its proposals wait for. The chat streams its answer

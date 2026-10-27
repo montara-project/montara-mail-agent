@@ -30,6 +30,9 @@ Rules:
 	if s.Conversation.Title != "" && s.Conversation.Title != "New conversation" {
 		b.WriteString(fmt.Sprintf("This conversation is about: %s.\n", s.Conversation.Title))
 	}
+	if s.Skill != nil {
+		b.WriteString(fmt.Sprintf("\nThe user invoked the skill %q for this request. Do what it says, within the rules above:\n<skill>\n%s\n</skill>\n", s.Skill.Name, s.Skill.Instruction))
+	}
 	if s.MailID != "" {
 		b.WriteString(fmt.Sprintf("The user is asking about the email with id %q: \"this email\", \"it\" and similar mean that one. Read it with get_mail before answering about it.\n", s.MailID))
 	}
