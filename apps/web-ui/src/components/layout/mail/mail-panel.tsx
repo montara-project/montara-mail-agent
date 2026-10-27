@@ -42,6 +42,7 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
 import { useActiveOrganization } from '@/hooks/use-active-organization'
+import { useHideEmails } from '@/hooks/use-hide-emails'
 import { queries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
 
@@ -111,6 +112,7 @@ export function useMailAccount() {
 function AccountSwitcher() {
   const { data: accounts, isPending } = useMailAccounts()
   const account = useMailAccount()
+  const { mask } = useHideEmails()
 
   if (!account) {
     return (
@@ -137,8 +139,8 @@ function AccountSwitcher() {
         >
           <ProviderIcon provider={account.provider} className="size-8 rounded-md" />
           <span className="grid min-w-0 flex-1 leading-tight">
-            <span className="truncate font-medium">{account.label}</span>
-            <span className="text-muted-foreground truncate text-xs">{account.email}</span>
+            <span className="truncate font-medium">{mask(account.label)}</span>
+            <span className="text-muted-foreground truncate text-xs">{mask(account.email)}</span>
           </span>
           <ChevronsUpDown className="text-muted-foreground size-4" />
         </button>
@@ -151,8 +153,8 @@ function AccountSwitcher() {
           <DropdownMenuItem key={item.id} asChild>
             <Link to="/mail" search={{ account: item.id }}>
               <span className="grid min-w-0 flex-1 leading-tight">
-                <span className="truncate">{item.label}</span>
-                <span className="text-muted-foreground truncate text-xs">{item.email}</span>
+                <span className="truncate">{mask(item.label)}</span>
+                <span className="text-muted-foreground truncate text-xs">{mask(item.email)}</span>
               </span>
               {item.id === account.id && <Check />}
             </Link>

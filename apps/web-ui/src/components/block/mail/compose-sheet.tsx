@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useHideEmails } from '@/hooks/use-hide-emails'
 import { toastProgress } from '@/lib/api/axios-error'
 import { allEmails, MAX_RECIPIENTS, parseRecipients } from '@/lib/api/dtos/mail/recipients'
 import { queries } from '@/lib/api/queries'
@@ -59,6 +60,7 @@ export default function ComposeSheet({
   const [problem, setProblem] = React.useState<string | null>(null)
   const [attachments, setAttachments] = React.useState<File[]>([])
   const send = useMutation(queries.emailAccounts.send())
+  const { mask } = useHideEmails()
 
   const fromId = from ?? defaultAccountId
   // Stable while open: the editor reloads its content whenever this changes.
@@ -144,9 +146,11 @@ export default function ComposeSheet({
                 <SelectContent position="popper">
                   {accounts.map((account) => (
                     <SelectItem key={account.id} value={account.id}>
-                      {account.label === account.email
-                        ? account.email
-                        : `${account.label} <${account.email}>`}
+                      {mask(
+                        account.label === account.email
+                          ? account.email
+                          : `${account.label} <${account.email}>`
+                      )}
                     </SelectItem>
                   ))}
                 </SelectContent>

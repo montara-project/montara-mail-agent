@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useActiveOrganization } from '@/hooks/use-active-organization'
+import { useHideEmails } from '@/hooks/use-hide-emails'
 import { axiosErrorMessage, toastAxiosError } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
 
@@ -40,6 +41,7 @@ function SyncStatus({ account }: { account: Models.EmailAccount }) {
 /** Connected mail accounts of the active organization; each card opens that account's mailbox. */
 export default function MailAccountList() {
   const { organization } = useActiveOrganization()
+  const { mask } = useHideEmails()
   const {
     data: accounts,
     isPending,
@@ -80,8 +82,12 @@ export default function MailAccountList() {
               >
                 <ProviderIcon provider={account.provider} />
                 <div className="grid min-w-0 flex-1">
-                  <span className="truncate font-semibold hover:underline">{account.label}</span>
-                  <span className="text-muted-foreground truncate text-xs">{account.email}</span>
+                  <span className="truncate font-semibold hover:underline">
+                    {mask(account.label)}
+                  </span>
+                  <span className="text-muted-foreground truncate text-xs">
+                    {mask(account.email)}
+                  </span>
                 </div>
                 {account.unread > 0 && <Badge>{account.unread} unread</Badge>}
               </Link>
@@ -124,7 +130,7 @@ export default function MailAccountList() {
       <SimpleAlertDialog
         open={!!disconnecting}
         onOpenChange={(open) => !open && setDisconnecting(null)}
-        title={`Disconnect ${disconnecting?.email}?`}
+        title={`Disconnect ${mask(disconnecting?.email ?? '')}?`}
         description="Its synced mail is removed from Montara. The mailbox itself is not touched."
         confirmText="Disconnect"
         onConfirm={() =>

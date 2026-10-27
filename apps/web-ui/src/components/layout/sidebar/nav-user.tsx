@@ -22,6 +22,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useHideEmails } from '@/hooks/use-hide-emails'
 import { signOut } from '@/lib/auth/email-auth'
 
 type NavUserProps = {
@@ -49,6 +50,7 @@ export default function NavUser({ user, userError, onRetryUser }: NavUserProps) 
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { isMobile } = useSidebar()
+  const { mask } = useHideEmails()
 
   const handleSignOut = async () => {
     await signOut()
@@ -58,7 +60,7 @@ export default function NavUser({ user, userError, onRetryUser }: NavUserProps) 
   }
 
   const name = user?.name ?? ''
-  const email = user?.email ?? ''
+  const email = mask(user?.email ?? '')
   const initials = getInitials(name)
 
   if (userError) {

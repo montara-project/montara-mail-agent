@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Pagination, PaginationContent, PaginationItem } from '@/components/ui/pagination'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDebounce } from '@/hooks/use-debounce'
+import { useHideEmails } from '@/hooks/use-hide-emails'
 import { axiosErrorMessage } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
@@ -45,6 +46,7 @@ export function useMailPage() {
 function EmptyList() {
   const { isPending } = useMailAccounts()
   const account = useMailAccount()
+  const { mask } = useHideEmails()
 
   if (isPending) return null
   if (!account) {
@@ -64,7 +66,7 @@ function EmptyList() {
     return (
       <p className="text-muted-foreground flex items-center justify-center gap-2 p-6 text-sm">
         <RefreshCw className="size-4 animate-spin motion-reduce:animate-none" />
-        Syncing {account.email}...
+        Syncing {mask(account.email)}...
       </p>
     )
   }
