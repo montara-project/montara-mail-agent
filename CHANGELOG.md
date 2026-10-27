@@ -3,6 +3,52 @@
 All notable changes to this project are documented in this file. Versions follow the git tags (`v*`); Docker images are published to ghcr.io with the same version.
 
 
+## [0.2.0](https://github.com/montara-project/montara-mail-agent/compare/v0.1.0...v0.2.0) (2026-10-27)
+
+### Features
+
+* add license ([1c6e847](https://github.com/montara-project/montara-mail-agent/commit/1c6e8472320a0bbadbbf67edcd9a9c0196a1786f))
+* add readme ([137bdc7](https://github.com/montara-project/montara-mail-agent/commit/137bdc70d7cbaece0b15b7c75489edd97a39f871))
+* agent bots with SOUL, MEMORY, STYLE and INSTRUCTION personas ([ff3f278](https://github.com/montara-project/montara-mail-agent/commit/ff3f2789d0357eb1ce9029905365cb6ae7cd210e))
+* draft replies for important mail into the agent's review queue ([35afee6](https://github.com/montara-project/montara-mail-agent/commit/35afee69d8d581bacfaf135062450a703cd51a8f))
+* **server:** agent skills and a broadcast importance ([b744611](https://github.com/montara-project/montara-mail-agent/commit/b7446110b9e3dec3fc2e25a9f5d5711a3dc7a3cc))
+* **server:** built-in skills adapted from humanizer and marketingskills ([6e90518](https://github.com/montara-project/montara-mail-agent/commit/6e90518d531a1ef2b35d4a4dd04ad5cba12e91d1))
+* **server:** draft a whole reply to a mail from an instruction ([38b3ad7](https://github.com/montara-project/montara-mail-agent/commit/38b3ad7052a49cc4d42f9da3ca6e59fba244fe79))
+* **server:** record and serve an activity log ([1e24214](https://github.com/montara-project/montara-mail-agent/commit/1e24214eabf66cefa650ed3896d7cc325bc1f40f))
+* **server:** run a mail agent over one mailbox ([5bf52ce](https://github.com/montara-project/montara-mail-agent/commit/5bf52ced5f8485912c9a998aa34d176a24f0447f))
+* **server:** wire mailbox OAuth for google, microsoft, yahoo and zoho ([d5f188f](https://github.com/montara-project/montara-mail-agent/commit/d5f188f365f30fa075dddec49d90ae46a9288d45))
+* **web-ui:** add oauth connect option for branded mail providers ([83192e1](https://github.com/montara-project/montara-mail-agent/commit/83192e11cfded8ba83d8ab367c333e609865de89))
+* **web-ui:** agent bots page and persona picker in mail ([b74dde2](https://github.com/montara-project/montara-mail-agent/commit/b74dde2b86a3e888ca414eeb78f2778e8c4e6726))
+* **web-ui:** chat with the mail agent from a third mail pane ([d3444f1](https://github.com/montara-project/montara-mail-agent/commit/d3444f16951cf6baa4a1a36fed1a665e14715335))
+* **web-ui:** offer google sign-in beside the email form ([89af6ec](https://github.com/montara-project/montara-mail-agent/commit/89af6ec20de8e088b2f3fe7e98a548fa699f55b3))
+* **web-ui:** one Write with AI panel for the reply ([de3528e](https://github.com/montara-project/montara-mail-agent/commit/de3528ef0e20e56f78f50e5c27c8fe14fdb71161))
+* **web-ui:** polish the reply draft with Humanize and Copy edit ([642a3e9](https://github.com/montara-project/montara-mail-agent/commit/642a3e9930ee354b118743bc7da74c26e21dc9a4))
+* **web-ui:** prompt bar, thinking trace and streamed answers in the AI surfaces ([c957e7d](https://github.com/montara-project/montara-mail-agent/commit/c957e7dc4d2015d4edd4ea45789e1c3b49908393))
+* **web-ui:** skills page, reader Skills menu and skill /commands ([503615e](https://github.com/montara-project/montara-mail-agent/commit/503615e758bed4524d78d280c8dc6c98be8fccc4))
+* **web-ui:** switch for the skills' on/off ([d7a82a0](https://github.com/montara-project/montara-mail-agent/commit/d7a82a0420662421976f85e789948f04da933a8c))
+* **web-ui:** toast the oauth callback outcome on the account page ([78e4d9d](https://github.com/montara-project/montara-mail-agent/commit/78e4d9db307fce952b11398e4bf6d5913b526f5b))
+* **web-ui:** wire the activity log into settings ([1723d38](https://github.com/montara-project/montara-mail-agent/commit/1723d383e53688b1e80caaf210a5b77c88cfdf30))
+
+### Bug Fixes
+
+* **main-web:** self-host fonts, add mobile nav, gate motion, harden meta ([c896824](https://github.com/montara-project/montara-mail-agent/commit/c896824e666834742c8b7ba1fbaac64100d758ff))
+* **server:** bump go 1.27.3 and amqp091-go v1.14.0 for govulncheck ([1627965](https://github.com/montara-project/montara-mail-agent/commit/16279652c95e9fe9e25589f1150dfda5d6df677c))
+* **server:** encode the oauth scope's spaces as %20 in consent urls ([9a8e7bf](https://github.com/montara-project/montara-mail-agent/commit/9a8e7bfa124a8db4a3c6d4fc8688df5a2767cc3d))
+* **server:** enforce a csp and hsts on api responses ([09abeb3](https://github.com/montara-project/montara-mail-agent/commit/09abeb371d472c79d36b9cbce4ddcfc839ada1b4))
+* **server:** persist the drafting bot, fold agent_bots into migration 0010 ([6f8394e](https://github.com/montara-project/montara-mail-agent/commit/6f8394e8be4e19862b15a412c8c39fb29852a267))
+* update action version ([bd7d627](https://github.com/montara-project/montara-mail-agent/commit/bd7d627c8d20d8c0495411ed3188d8cb75dc3859))
+* update actions version ([873063b](https://github.com/montara-project/montara-mail-agent/commit/873063b608d133cbeca21b08be39624956bc0758))
+* update license ([6cdc236](https://github.com/montara-project/montara-mail-agent/commit/6cdc23670fb25c610f51b0e5c66c211b6655ad26))
+* **web-ui:** drop the dead cid term from the email frame csp ([72174cc](https://github.com/montara-project/montara-mail-agent/commit/72174cc6fdd348aa31d299bcb1cf79276302f6f7))
+* **web-ui:** keep the refresh token cookie within the server's ttl ([7f96b7a](https://github.com/montara-project/montara-mail-agent/commit/7f96b7a8212d6ed038755c256c80d6c7db61cea4))
+* **web-ui:** mail page audit fixes for phones, screen readers and color ([68ce46d](https://github.com/montara-project/montara-mail-agent/commit/68ce46d4c6388fe69efb73f558b47d0dece1b5e1))
+* **web-ui:** offer the oauth sign-in only where the provider supports it ([95dd740](https://github.com/montara-project/montara-mail-agent/commit/95dd7408a771b605132529b389f8a1f3463a9bb7))
+* **web-ui:** scroll the reply card down to Send when it opens ([ff0dfdf](https://github.com/montara-project/montara-mail-agent/commit/ff0dfdf8afc4287f74bf32975661a6c414a7b608))
+
+### Performance Improvements
+
+* **web-ui:** lazy-load images in the email reader ([f19323b](https://github.com/montara-project/montara-mail-agent/commit/f19323b0ffe4ebac40e802af8a0448d5b843f571))
+
 ## 0.1.0 (2026-10-23)
 
 ### Features
