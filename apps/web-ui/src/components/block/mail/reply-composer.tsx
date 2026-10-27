@@ -1,174 +1,31 @@
-import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { $getRoot } from 'lexical'
-import { ChevronDown, Forward, Reply as ReplyIcon, RotateCcw, Sparkles, Wand2 } from 'lucide-react'
+import { Forward, Reply as ReplyIcon, Sparkles } from 'lucide-react'
 import React from 'react'
-import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
 
-import AgentBotRadioGroup from '@/components/block/agent-bot/agent-bot-radio-group'
-import { SkillResult, useEnabledSkills } from '@/components/block/mail/skill-menu'
-import { SKILL_ICONS } from '@/components/block/skill/skill-list'
 import { mailInitials } from '@/components/layout/mail/mail-data'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
-import StreamingText from '@/components/ui/streaming-text'
-import ThinkingState from '@/components/ui/thinking-state'
-import { useActiveAgentBot } from '@/hooks/use-active-agent-bot'
-import { axiosErrorMessage, toastAxiosError, toastProgress } from '@/lib/api/axios-error'
+import { toastProgress } from '@/lib/api/axios-error'
 import { allEmails, MAX_RECIPIENTS } from '@/lib/api/dtos/mail/recipients'
 import { queries } from '@/lib/api/queries'
+import { cn } from '@/lib/utils'
 
 import type { Reply } from './mail-editor'
 
 import RecipientInput from './recipient-input'
-import ReplyWriter from './reply-writer'
+import ReplyAiPanel from './reply-writer'
 
 const MailEditor = React.lazy(() => import('./mail-editor'))
 
 /**
- * "Use AI": up to three suggested replies, asked for when the menu opens since
- * each is a model call. With agent bots set up, a Persona section picks who
- * writes them; a new pick asks again. Polish runs a draft skill (humanize,
- * copy edit) on what is in the editor; it renders inside the editor, so it
- * reads the text straight from it.
- */
-function AiMenu({
-  mailId,
-  onPick,
-  onPolish,
-}: {
-  mailId: string
-  onPick: (text: string) => void
-  onPolish: (skill: Models.AgentSkill, draft: string) => void
-}) {
-  const [open, setOpen] = React.useState(false)
-  const { bots, activeBot, activeBotId } = useActiveAgentBot()
-  const [editor] = useLexicalComposerContext()
-  const polishSkills = useEnabledSkills('draft')
-  const polish = (skill: Models.AgentSkill) => {
-    const draft = editor
-      .getEditorState()
-      .read(() => $getRoot().getTextContent())
-      .trim()
-    if (!draft) {
-      toast.error(`Write your reply first, then ${skill.name.toLowerCase()} it`)
-      return
-    }
-    onPolish(skill, draft)
-  }
-  const { data, dataUpdatedAt, isFetching, isError, error, refetch } = useQuery({
-    ...queries.mails.replySuggestions(mailId, activeBotId),
-    enabled: open,
-  })
-  // New suggestions reveal once; reopening the menu shows them settled.
-  const [revealedAt, setRevealedAt] = React.useState(0)
-  const reveal = dataUpdatedAt > revealedAt
-
-  return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          className="border-violet-500/40 text-violet-700 hover:text-violet-700 dark:text-violet-300 dark:hover:text-violet-300"
-        >
-          <Sparkles />
-          Use AI
-          <ChevronDown />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" side="top" className="w-80">
-        {polishSkills.length > 0 && (
-          <>
-            <DropdownMenuLabel className="text-muted-foreground text-xs">
-              Polish your draft
-            </DropdownMenuLabel>
-            {polishSkills.map((skill) => {
-              const Icon = SKILL_ICONS[skill.key] ?? Wand2
-              return (
-                <DropdownMenuItem
-                  key={skill.key}
-                  className="items-start whitespace-normal"
-                  onSelect={() => polish(skill)}
-                >
-                  <Icon className="mt-0.5" />
-                  <span className="grid gap-0.5">
-                    <span className="font-medium">{skill.name}</span>
-                    <span className="text-muted-foreground text-xs">{skill.description}</span>
-                  </span>
-                </DropdownMenuItem>
-              )
-            })}
-            <DropdownMenuSeparator />
-          </>
-        )}
-        {bots.length > 0 && (
-          <>
-            <DropdownMenuLabel className="text-muted-foreground text-xs">Persona</DropdownMenuLabel>
-            <AgentBotRadioGroup keepOpen />
-            <DropdownMenuSeparator />
-          </>
-        )}
-        <DropdownMenuLabel className="text-muted-foreground text-xs">
-          Suggested replies
-        </DropdownMenuLabel>
-        {isFetching ? (
-          <div className="px-2 py-1" aria-busy="true">
-            <ThinkingState
-              working
-              rows={[]}
-              active={activeBot ? `${activeBot.name} is thinking` : 'Thinking of replies'}
-            />
-          </div>
-        ) : isError ? (
-          <>
-            <p className="text-destructive px-2 py-1.5 text-sm">{axiosErrorMessage(error)}</p>
-            <DropdownMenuItem
-              onSelect={(e) => {
-                e.preventDefault()
-                refetch()
-              }}
-            >
-              <RotateCcw />
-              Try again
-            </DropdownMenuItem>
-          </>
-        ) : (
-          data?.map((text, i) => (
-            <DropdownMenuItem
-              key={text}
-              className="whitespace-normal"
-              onSelect={() => onPick(text)}
-            >
-              <StreamingText
-                text={text}
-                animate={reveal}
-                copy={false}
-                onDone={i === data.length - 1 ? () => setRevealedAt(dataUpdatedAt) : undefined}
-              />
-            </DropdownMenuItem>
-          ))
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
-
-/**
  * Reply to a mail: Reply and Forward buttons, then for a reply a card with
  * the recipients as chips (the sender to start with), the rich-text editor,
- * the AI menu and Send. Cancel drops the reply.
+ * and a bottom bar whose "Use AI" opens the Write with AI panel just above it.
+ * The panel is the reply's only AI surface, so it never reads as a second
+ * message field and its "Write" never competes with Send. Cancel drops the reply.
  */
 export default function ReplyComposer({
   mail,
@@ -193,24 +50,19 @@ export default function ReplyComposer({
   const reply = useMutation(queries.mails.reply(mail.id))
   const { data: me } = useQuery(queries.auth.profile())
   const cardRef = React.useRef<HTMLDivElement>(null)
-  // A draft skill's rewrite of the editor's text, shown for review before it replaces it.
-  const polishRun = useMutation(queries.mails.runSkill(mail.id))
-  const { activeBotId } = useActiveAgentBot()
-  const [polished, setPolished] = React.useState<{ name: string; text?: string } | null>(null)
-  const polish = (skill: Models.AgentSkill, text: string) => {
-    setPolished({ name: skill.name })
-    polishRun.mutate(
-      { key: skill.key, draft: text, agent_bot_id: activeBotId || undefined },
-      {
-        onSuccess: (result) =>
-          setPolished('text' in result ? { name: skill.name, text: result.text } : null),
-        onError: (error) => {
-          setPolished(null)
-          toastAxiosError(error)
-        },
-      }
+  // Write with AI: closed until asked for, so the reply opens as a plain email.
+  const [aiOpen, setAiOpen] = React.useState(false)
+  // The panel opens above the bottom bar and grows with its results, which
+  // pushes the bar and the prompt below the fold; bring the card's bottom back
+  // into view once the new layout has painted.
+  const showCardBottom = React.useCallback(() => {
+    requestAnimationFrame(() =>
+      cardRef.current?.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        block: 'end',
+      })
     )
-  }
+  }, [])
 
   const [seenDraft, setSeenDraft] = React.useState(draft)
   if (draft !== seenDraft) {
@@ -231,7 +83,7 @@ export default function ReplyComposer({
     setInitial({})
     setProblem(null)
     setAttachments([])
-    setPolished(null)
+    setAiOpen(false)
   }
 
   const send = (body: Reply) => {
@@ -303,7 +155,33 @@ export default function ReplyComposer({
           attachments={attachments}
           onAttachmentsChange={setAttachments}
           leading={
-            <AiMenu mailId={mail.id} onPick={(text) => setInitial({ text })} onPolish={polish} />
+            <Button
+              type="button"
+              variant="outline"
+              aria-expanded={aiOpen}
+              aria-controls="reply-ai-panel"
+              // The panel scrolls itself into view as it mounts (onGrow).
+              onClick={() => setAiOpen(!aiOpen)}
+              className={cn(
+                'border-violet-500/40 text-violet-700 hover:text-violet-700 dark:text-violet-300 dark:hover:text-violet-300',
+                aiOpen && 'bg-violet-500/10 hover:bg-violet-500/15'
+              )}
+            >
+              <Sparkles />
+              Use AI
+            </Button>
+          }
+          aside={
+            aiOpen && (
+              <div id="reply-ai-panel">
+                <ReplyAiPanel
+                  mailId={mail.id}
+                  onInsert={(text) => setInitial({ text })}
+                  onClose={() => setAiOpen(false)}
+                  onGrow={showCardBottom}
+                />
+              </div>
+            )
           }
           header={
             <div className="grid gap-2">
@@ -340,22 +218,6 @@ export default function ReplyComposer({
                   {problem}
                 </p>
               )}
-              {polished && (
-                <SkillResult
-                  name={polished.name}
-                  pending={polishRun.isPending}
-                  text={polished.text}
-                  useLabel="Use this version"
-                  onUseAsReply={(text) => {
-                    setInitial({ text })
-                    setPolished(null)
-                  }}
-                  onClose={() => setPolished(null)}
-                />
-              )}
-              <div className="border-t pt-3">
-                <ReplyWriter mailId={mail.id} onInsert={(text) => setInitial({ text })} />
-              </div>
             </div>
           }
         />

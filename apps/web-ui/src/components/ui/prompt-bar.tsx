@@ -119,6 +119,7 @@ export default function PromptBar({
   tall = false,
   inputRef: externalInputRef,
   label = 'Prompt',
+  sendLabel,
 }: {
   value: string
   onChange: (value: string) => void
@@ -141,6 +142,8 @@ export default function PromptBar({
   inputRef?: Ref<HTMLTextAreaElement>
   /** the input's accessible name */
   label?: string
+  /** a worded, accent-colored send (e.g. "Write") where an arrow could pass for another send */
+  sendLabel?: string
 }) {
   const pill = variant === 'Pill'
   const draft = value
@@ -299,8 +302,9 @@ export default function PromptBar({
     const measure = measureRef.current
     if (!input || !controls || !measure) return
 
-    // send, plus + and the mic when shown
-    const buttons = 28 * (1 + (commands.length > 0 ? 1 : 0) + (Speech ? 1 : 0))
+    // send (wider with a label), plus + and the mic when shown
+    const buttons =
+      28 * (1 + (commands.length > 0 ? 1 : 0) + (Speech ? 1 : 0)) + (sendLabel ? 48 : 0)
     const fixedControlsWidth = buttons + (modelRef.current?.offsetWidth ?? 0)
     const inlineInputWidth = controls.clientWidth - fixedControlsWidth - 4 * 4
     const needsFullWidth = draft.includes('\n') || measure.offsetWidth + 8 > inlineInputWidth
@@ -312,7 +316,7 @@ export default function PromptBar({
     const contentHeight = input.scrollHeight
     input.style.height = `${Math.min(Math.max(contentHeight, minHeight), maxHeight)}px`
     input.style.overflowY = contentHeight > maxHeight ? 'auto' : 'hidden'
-  }, [draft, expanded, tall, commands.length, Speech])
+  }, [draft, expanded, tall, commands.length, Speech, sendLabel])
 
   /* clicking anywhere outside the composer closes the open menus */
   useEffect(() => {
@@ -354,7 +358,7 @@ export default function PromptBar({
     showModels && 'auto',
     wide && 'minmax(0,1fr)',
     Speech && '28px',
-    '28px',
+    sendLabel ? 'auto' : '28px',
   ].filter((column): column is string => !!column)
   const roundness = pill ? 'rounded-full' : 'rounded-[8px]'
 
@@ -633,21 +637,34 @@ export default function PromptBar({
             ) : (
               <button
                 type="button"
-                aria-label="Send"
+                aria-label={sendLabel ?? 'Send'}
                 disabled={!canSend}
                 onClick={send}
-                className={`flex size-7 shrink-0 items-center justify-center transition-[background-color,color,transform] duration-200 enabled:active:scale-[0.94] ${roundness} ${
-                  wide ? 'row-start-2' : 'row-start-1'
-                }`}
+                className={`flex h-7 shrink-0 items-center justify-center gap-1.5 transition-[background-color,color,transform] duration-200 enabled:active:scale-[0.96] ${
+                  sendLabel ? 'px-2.5 text-[12.5px] font-medium' : 'w-7'
+                } ${roundness} ${wide ? 'row-start-2' : 'row-start-1'}`}
                 style={{
                   gridColumnStart: columns.length,
-                  background: canSend ? 'var(--ink)' : 'var(--line-strong)',
-                  color: canSend ? 'var(--surface)' : 'var(--ink-2)',
+                  background: canSend
+                    ? sendLabel
+                      ? 'var(--accent-ink)'
+                      : 'var(--ink)'
+                    : 'var(--line-strong)',
+                  color: canSend ? (sendLabel ? 'white' : 'var(--surface)') : 'var(--ink-2)',
                 }}
               >
-                <Icon size={16} strokeWidth={2.4}>
-                  <path d="M12 19V5M5 12l7-7 7 7" />
-                </Icon>
+                {sendLabel ? (
+                  <>
+                    <Icon size={13} strokeWidth={2.2}>
+                      <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z" />
+                    </Icon>
+                    {sendLabel}
+                  </>
+                ) : (
+                  <Icon size={16} strokeWidth={2.4}>
+                    <path d="M12 19V5M5 12l7-7 7 7" />
+                  </Icon>
+                )}
               </button>
             )}
           </div>

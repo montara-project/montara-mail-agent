@@ -11,6 +11,15 @@
         ],
         "createdAt": "2026-10-27T08:48:00.507Z",
         "reason": "Claude: SkillResult mirrors the reader's existing AI Summary card (mail-reader.tsx, border-l-4 border-l-violet-500) so skill results and the summary read as one family"
+      },
+      {
+        "rule": "bounce-easing",
+        "value": "*",
+        "files": [
+          "src/components/ui/prompt-bar.tsx"
+        ],
+        "createdAt": "2026-10-27T09:06:56.319Z",
+        "reason": "Claude: eq-bounce is the dictation level meter (ease-in-out scaleY loop), named for the equalizer, not bounce easing"
       }
     ]
   }
