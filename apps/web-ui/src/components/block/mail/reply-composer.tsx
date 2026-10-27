@@ -20,6 +20,12 @@ import ReplyAiPanel from './reply-writer'
 
 const MailEditor = React.lazy(() => import('./mail-editor'))
 
+/** Runs once it mounts; inside the editor's Suspense, that is when the lazy editor has appeared. */
+function OnMount({ run }: { run: () => void }) {
+  React.useEffect(run, [run])
+  return null
+}
+
 /**
  * Reply to a mail: Reply and Forward buttons, then for a reply a card with
  * the recipients as chips (the sender to start with), the rich-text editor,
@@ -52,9 +58,9 @@ export default function ReplyComposer({
   const cardRef = React.useRef<HTMLDivElement>(null)
   // Write with AI: closed until asked for, so the reply opens as a plain email.
   const [aiOpen, setAiOpen] = React.useState(false)
-  // The panel opens above the bottom bar and grows with its results, which
-  // pushes the bar and the prompt below the fold; bring the card's bottom back
-  // into view once the new layout has painted.
+  // Opening the reply, and the AI panel opening above the bottom bar and growing
+  // with its results, push the bar (Send, the prompt) below the fold; bring the
+  // card's bottom back into view once the new layout has painted.
   const showCardBottom = React.useCallback(() => {
     requestAnimationFrame(() =>
       cardRef.current?.scrollIntoView({
@@ -112,10 +118,12 @@ export default function ReplyComposer({
     )
   }
 
-  // The card opens below the mail; bring it into view.
+  // The card opens below the mail: show it down to its bottom bar. The editor
+  // loads lazily and is taller than its skeleton, so OnMount repeats this once
+  // it has appeared.
   React.useEffect(() => {
-    if (open) cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-  }, [open])
+    if (open) showCardBottom()
+  }, [open, showCardBottom])
 
   if (!open) {
     return (
@@ -146,6 +154,7 @@ export default function ReplyComposer({
           </div>
         }
       >
+        <OnMount run={showCardBottom} />
         <MailEditor
           initial={initial}
           placeholder="Write your reply..."
