@@ -4,15 +4,6 @@
     "ignoreFiles": [],
     "ignoreValues": [
       {
-        "rule": "side-tab",
-        "value": "*",
-        "files": [
-          "src/components/block/mail/skill-menu.tsx"
-        ],
-        "createdAt": "2026-10-27T08:48:00.507Z",
-        "reason": "Claude: SkillResult mirrors the reader's existing AI Summary card (mail-reader.tsx, border-l-4 border-l-violet-500) so skill results and the summary read as one family"
-      },
-      {
         "rule": "bounce-easing",
         "value": "*",
         "files": [

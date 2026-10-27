@@ -127,10 +127,10 @@ export default function ReplyAiPanel({
   return (
     <section
       aria-label="Write with AI"
-      className="animate-in fade-in slide-in-from-bottom-1 rounded-xl border border-violet-500/25 bg-violet-500/[0.04] p-3 duration-200 ease-out motion-reduce:animate-none dark:bg-violet-400/[0.06]"
+      className="animate-in fade-in slide-in-from-bottom-1 rounded-xl border border-accent-ink/25 bg-accent-ink/[0.05] p-3 duration-200 ease-out motion-reduce:animate-none "
     >
       <div className="mb-2.5 flex items-center gap-2">
-        <Sparkles className="size-4 shrink-0 text-violet-600 dark:text-violet-400" aria-hidden />
+        <Sparkles className="size-4 shrink-0 text-accent-ink" aria-hidden />
         <h3 className="text-sm font-medium">Write with AI</h3>
         <p className="text-muted-foreground hidden min-w-0 flex-1 truncate text-xs sm:block">
           Your reply only changes when you choose Use.

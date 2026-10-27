@@ -109,9 +109,9 @@ export function SkillResult({
     <section
       aria-label={`${name} result`}
       aria-busy={pending}
-      className="mb-6 max-w-3xl rounded-xl border border-l-4 border-violet-500/30 border-l-violet-500 bg-violet-500/5 p-4"
+      className="mb-6 max-w-3xl rounded-xl border border-accent-ink/25 bg-accent-ink/[0.06] p-4"
     >
-      <div className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-violet-700 dark:text-violet-300">
+      <div className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-accent-ink">
         <Wand2 className="size-4" aria-hidden />
         <span className="flex-1">{name}</span>
         {!pending && (

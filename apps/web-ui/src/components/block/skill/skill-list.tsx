@@ -73,7 +73,7 @@ function BuiltinSkillRow({
 
   return (
     <li className="flex flex-wrap items-center gap-3 py-3" aria-busy={save.isPending}>
-      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400">
+      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent-ink/10 text-accent-ink">
         <Icon className="size-4" aria-hidden />
       </div>
       <div className="min-w-48 flex-1">
@@ -144,7 +144,7 @@ function CustomSkillRow({
 
   return (
     <li className="flex items-center gap-3 py-3">
-      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400">
+      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent-ink/10 text-accent-ink">
         <Wand2 className="size-4" aria-hidden />
       </div>
       <div className="min-w-0 flex-1">

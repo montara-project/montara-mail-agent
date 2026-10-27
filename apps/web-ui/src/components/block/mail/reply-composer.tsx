@@ -172,8 +172,8 @@ export default function ReplyComposer({
               // The panel scrolls itself into view as it mounts (onGrow).
               onClick={() => setAiOpen(!aiOpen)}
               className={cn(
-                'border-violet-500/40 text-violet-700 hover:text-violet-700 dark:text-violet-300 dark:hover:text-violet-300',
-                aiOpen && 'bg-violet-500/10 hover:bg-violet-500/15'
+                'border-accent-ink/40 text-accent-ink hover:text-accent-ink',
+                aiOpen && 'bg-accent-ink/10 hover:bg-accent-ink/15'
               )}
             >
               <Sparkles />

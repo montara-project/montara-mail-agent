@@ -289,7 +289,7 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
     <div className={cn('flex min-w-0 flex-col', className)} data-agent-panel>
       {/* Header: the same 3.5rem as the list and reader toolbars, so the borders line up. */}
       <div className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
-        <Sparkles className="size-4 text-violet-600 dark:text-violet-400" aria-hidden />
+        <Sparkles className="size-4 text-accent-ink" aria-hidden />
         <h2 className="flex-1 text-sm font-semibold">AI Assistant</h2>
         <Hint label="New chat">
           <Button
@@ -333,7 +333,7 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
             >
               {label}
               {id === 'drafts' && !!pendingDrafts && (
-                <span className="rounded-full bg-violet-500/15 px-1.5 text-[11px] text-violet-700 tabular-nums dark:text-violet-300">
+                <span className="rounded-full bg-accent-ink/15 px-1.5 text-[11px] text-accent-ink tabular-nums">
                   {pendingDrafts}
                 </span>
               )}
@@ -368,7 +368,7 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
           >
             {empty ? (
               <div className="flex h-full flex-col items-center justify-center gap-4 px-2 text-center">
-                <div className="flex size-10 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400">
+                <div className="flex size-10 items-center justify-center rounded-lg bg-accent-ink/10 text-accent-ink">
                   <Sparkles className="size-5" aria-hidden />
                 </div>
                 <p className="text-muted-foreground max-w-64 text-sm text-balance">
@@ -451,11 +451,8 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
           {/* Composer */}
           <div className="shrink-0 border-t p-3">
             {about && (
-              <div className="mb-2 flex items-center gap-2 rounded-md border bg-violet-500/5 py-1 pr-1 pl-2 text-xs">
-                <Mail
-                  className="size-3.5 shrink-0 text-violet-600 dark:text-violet-400"
-                  aria-hidden
-                />
+              <div className="mb-2 flex items-center gap-2 rounded-md border bg-accent-ink/[0.06] py-1 pr-1 pl-2 text-xs">
+                <Mail className="size-3.5 shrink-0 text-accent-ink" aria-hidden />
                 <span className="text-muted-foreground shrink-0">About</span>
                 <span className="min-w-0 flex-1 truncate font-medium" title={aboutMail?.subject}>
                   {aboutMail ? aboutMail.subject || '(no subject)' : 'this email'}
@@ -618,7 +615,7 @@ function AgentMessageRow({
     )
   }
   return (
-    <div className="max-w-[92%] rounded-2xl rounded-bl-sm bg-violet-500/5 px-3.5 py-2.5 text-sm dark:bg-violet-400/10">
+    <div className="max-w-[92%] rounded-2xl rounded-bl-sm bg-accent-ink/[0.06] px-3.5 py-2.5 text-sm">
       <StreamingText
         text={message.content}
         animate={reveal}
@@ -647,7 +644,7 @@ function AgentActionCard({ action }: { action: Models.AgentAction }) {
   const deciding = approve.isPending || deny.isPending
 
   return (
-    <div className="rounded-xl border border-violet-500/30 bg-violet-500/5 p-3 dark:bg-violet-400/10">
+    <div className="rounded-xl border border-accent-ink/30 bg-accent-ink/[0.06] p-3">
       <div className="flex items-center gap-2">
         <Badge variant="secondary" appearance="light">
           {ACTION_LABELS[action.kind]}

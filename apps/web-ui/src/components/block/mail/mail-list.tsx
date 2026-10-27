@@ -4,7 +4,12 @@ import { ChevronLeft, ChevronRight, Plus, RefreshCw, Search, Star } from 'lucide
 import React from 'react'
 
 import { formatMailListDate, senderName } from '@/components/layout/mail/mail-data'
-import { useMailAccount, useMailAccounts, useMailFolder } from '@/components/layout/mail/mail-panel'
+import {
+  MobileMailBar,
+  useMailAccount,
+  useMailAccounts,
+  useMailFolder,
+} from '@/components/layout/mail/mail-panel'
 import { Button } from '@/components/ui/button'
 import { Pagination, PaginationContent, PaginationItem } from '@/components/ui/pagination'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -14,6 +19,10 @@ import { queries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
 
 const PAGE_SIZE = 10
+
+// The search shortcut as this platform writes it; Ctrl K works everywhere but a Mac.
+const SEARCH_KEYS =
+  typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K'
 
 /** The page of mail the URL points at: account, folder, label, search and page. */
 export function useMailPage() {
@@ -66,7 +75,7 @@ function EmptyList() {
 export default function MailList({ className }: { className?: string }) {
   const navigate = useNavigate()
   const { mail: selectedId, q } = useSearch({ strict: false })
-  const { data, isPending, isError, error, page, account, folder } = useMailPage()
+  const { data, isPending, isError, error, refetch, page, account, folder } = useMailPage()
   const [search, setSearch] = React.useState(q ?? '')
   // A term cleared or changed elsewhere (a folder link, the back button) shows in the box.
   const [shownQ, setShownQ] = React.useState(q)
@@ -118,7 +127,7 @@ export default function MailList({ className }: { className?: string }) {
         <h2 className="flex items-baseline gap-2">
           <span className="text-lg font-semibold">{folder.title}</span>
           {unreadCount > 0 && (
-            <span className="text-muted-foreground text-xs">{unreadCount} Unread</span>
+            <span className="text-muted-foreground text-xs">{unreadCount} unread</span>
           )}
         </h2>
         <label className="bg-muted/60 focus-within:ring-ring/50 ml-auto flex h-9 w-44 items-center gap-2 rounded-lg px-2.5 focus-within:ring-[3px]">
@@ -131,9 +140,10 @@ export default function MailList({ className }: { className?: string }) {
             onChange={(event) => setSearch(event.target.value)}
             className="placeholder:text-muted-foreground min-w-0 flex-1 bg-transparent text-sm outline-none"
           />
-          <kbd className="text-muted-foreground text-xs">⌘K</kbd>
+          <kbd className="text-muted-foreground text-xs pointer-coarse:hidden">{SEARCH_KEYS}</kbd>
         </label>
       </div>
+      <MobileMailBar />
       {account?.sync_error && (
         <p role="alert" className="text-destructive border-b px-4 py-2 text-xs">
           Last sync failed: {account.sync_error}
@@ -153,7 +163,13 @@ export default function MailList({ className }: { className?: string }) {
             </div>
           ))
         ) : isError ? (
-          <p className="text-destructive p-4 text-center text-sm">{axiosErrorMessage(error)}</p>
+          <div role="alert" className="grid justify-items-center gap-3 p-6 text-center text-sm">
+            <p className="text-destructive">{axiosErrorMessage(error)}</p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              <RefreshCw />
+              Try again
+            </Button>
+          </div>
         ) : mails.length === 0 ? (
           <EmptyList />
         ) : (
@@ -162,17 +178,25 @@ export default function MailList({ className }: { className?: string }) {
               key={mail.id}
               to="/mail"
               search={(prev) => ({ ...prev, mail: mail.id })}
+              aria-current={selectedId === mail.id ? 'page' : undefined}
               className={cn(
                 'hover:bg-accent/50 grid grid-cols-[1rem_1fr] gap-x-2 border-b px-4 py-4 text-sm',
                 selectedId === mail.id && 'bg-accent hover:bg-accent'
               )}
             >
               <span className="flex h-5 items-center justify-center">
+                {/* Screen readers hear the state as text; the dot and star are only its picture. */}
                 {!mail.is_read ? (
-                  <span className="bg-primary size-2 rounded-full" aria-label="Unread" />
+                  <>
+                    <span className="bg-primary size-2 rounded-full" aria-hidden />
+                    <span className="sr-only">Unread,</span>
+                  </>
                 ) : (
                   mail.is_starred && (
-                    <Star className="size-3.5 fill-amber-400 text-amber-400" aria-label="Starred" />
+                    <>
+                      <Star className="size-3.5 fill-amber-400 text-amber-400" aria-hidden />
+                      <span className="sr-only">Starred,</span>
+                    </>
                   )
                 )}
               </span>

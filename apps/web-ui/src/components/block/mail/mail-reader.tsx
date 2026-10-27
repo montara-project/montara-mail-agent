@@ -57,7 +57,13 @@ import { cn } from '@/lib/utils'
 function IconButton({ label, ...props }: React.ComponentProps<typeof Button> & { label: string }) {
   return (
     <Hint label={label}>
-      <Button variant="ghost" size="icon" className="size-8" aria-label={label} {...props} />
+      <Button
+        variant="ghost"
+        size="icon"
+        className="size-8 pointer-coarse:size-10"
+        aria-label={label}
+        {...props}
+      />
     </Hint>
   )
 }
@@ -78,7 +84,7 @@ const folderTitle = (id: Models.MailFolder) => MAIL_FOLDERS.find((f) => f.id ===
 /** Reading pane for one mail: toolbar, header, AI importance and summary, body and reply box. */
 export default function MailReader({ mailId }: { mailId: string }) {
   const navigate = useNavigate()
-  const { data: mail, isPending, isError, error } = useQuery(queries.mails.get(mailId))
+  const { data: mail, isPending, isError, error, refetch } = useQuery(queries.mails.get(mailId))
   const patch = useMutation(queries.mails.patch(mailId))
   const move = useMutation(queries.mails.move(mailId))
   const remove = useMutation(queries.mails.delete(mailId))
@@ -186,7 +192,17 @@ export default function MailReader({ mailId }: { mailId: string }) {
     return (
       <div className="flex min-w-0 flex-1 flex-col gap-3 p-6" aria-busy={isPending}>
         {isError ? (
-          <p className="text-destructive text-sm">{axiosErrorMessage(error)}</p>
+          <div role="alert" className="flex flex-wrap items-center gap-3 text-sm">
+            <p className="text-destructive">{axiosErrorMessage(error)}</p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              <RotateCcw />
+              Try again
+            </Button>
+            <Button variant="ghost" size="sm" onClick={backToList}>
+              <ArrowLeft />
+              Back to list
+            </Button>
+          </div>
         ) : (
           <>
             <Skeleton className="h-10 w-1/2" />
@@ -201,7 +217,11 @@ export default function MailReader({ mailId }: { mailId: string }) {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <div className="flex h-14 shrink-0 items-center justify-between border-b px-3">
-        <div className="flex items-center gap-0.5" aria-busy={busy}>
+        {/* On a phone the actions may not all fit: the row scrolls instead of squeezing them. */}
+        <div
+          className="no-scrollbar flex min-w-0 items-center gap-0.5 overflow-x-auto"
+          aria-busy={busy}
+        >
           <IconButton label="Back to list" onClick={backToList}>
             <ArrowLeft />
           </IconButton>
@@ -355,8 +375,15 @@ export default function MailReader({ mailId }: { mailId: string }) {
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="flex h-9 items-center gap-2 rounded-md border border-blue-500/30 bg-blue-500/10 px-3 text-sm text-blue-600 dark:text-blue-400">
-              <Sparkles className="size-4" />
+            {/* The label's own hue, with the AI's sparkle for who decided it; wraps on narrow screens. */}
+            <span
+              className={cn(
+                'flex min-h-9 items-center gap-2 rounded-md border px-3 py-1.5 text-sm',
+                MAIL_LABELS.find((label) => label.id === mail.importance)?.tone ??
+                  'bg-muted text-muted-foreground'
+              )}
+            >
+              <Sparkles className="text-accent-ink size-4 shrink-0" aria-hidden />
               {mail.importance
                 ? `This email is considered as ${IMPORTANCE_LABELS[mail.importance].toLowerCase()}`
                 : 'This email has not been classified yet'}
@@ -427,9 +454,9 @@ export default function MailReader({ mailId }: { mailId: string }) {
           <section
             aria-label="AI email summary"
             aria-busy={!summaryText && summary.isPending}
-            className="mb-6 max-w-3xl rounded-xl border border-l-4 border-violet-500/30 border-l-violet-500 bg-violet-500/5 p-4"
+            className="mb-6 max-w-3xl rounded-xl border border-accent-ink/25 bg-accent-ink/[0.06] p-4"
           >
-            <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-violet-700 dark:text-violet-300">
+            <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-accent-ink">
               <Sparkles className="size-4" />
               AI Summary
             </p>
