@@ -216,6 +216,31 @@ func TestIntegration(t *testing.T) {
 		return resp.StatusCode, out
 	}
 
+	// callStream sends one request and returns the raw body: the agent's
+	// server-sent events wear no JSON envelope.
+	callStream := func(method, path, token string, body any) (int, string) {
+		t.Helper()
+		var payload io.Reader
+		if raw, ok := body.([]byte); ok {
+			payload = bytes.NewReader(raw)
+		} else if body != nil {
+			raw, _ := json.Marshal(body)
+			payload = bytes.NewReader(raw)
+		}
+		req := httptest.NewRequest(method, path, payload)
+		req.Header.Set("Content-Type", "application/json")
+		if token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+		resp, err := server.Test(req, fiber.TestConfig{Timeout: 30 * time.Second})
+		if err != nil {
+			t.Fatalf("%s %s: %v", method, path, err)
+		}
+		defer resp.Body.Close()
+		raw, _ := io.ReadAll(resp.Body)
+		return resp.StatusCode, string(raw)
+	}
+
 	signIn := func(email, password string) map[string]any {
 		t.Helper()
 		status, out := call(http.MethodPost, "/api/v1/auth/email-password/sign-in", "", map[string]string{"email": email, "password": password})
@@ -356,6 +381,8 @@ func TestIntegration(t *testing.T) {
 
 	testMailFlow(t, call, application, userToken, userOrg, superOrg)
 	testIMAPSync(t, application, userOrg)
+	testAgentFlow(t, call, callStream, application, userToken, userOrg)
+	testAgentDrafts(t, call, application, userToken, userOrg)
 	testActivityLogs(t, call, userToken, superToken, userOrg, superOrg, userEmail)
 	testAccountSettings(t, call, func() string { return cookies }, db, userEmail, userPass)
 

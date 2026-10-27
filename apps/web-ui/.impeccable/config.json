@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "bounce-easing",
+        "value": "*",
+        "files": [
+          "src/components/ui/prompt-bar.tsx"
+        ],
+        "createdAt": "2026-10-27T09:06:56.319Z",
+        "reason": "Claude: eq-bounce is the dictation level meter (ease-in-out scaleY loop), named for the equalizer, not bounce easing"
+      }
+    ]
+  }
+}

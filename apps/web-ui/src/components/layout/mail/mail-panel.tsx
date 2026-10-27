@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link, useSearch } from '@tanstack/react-router'
+import { Link, useSearch, useNavigate } from '@tanstack/react-router'
 import {
   Archive,
   Check,
@@ -11,6 +11,7 @@ import {
   Send,
   SquarePen,
   Trash2,
+  Sparkles,
 } from 'lucide-react'
 import React from 'react'
 
@@ -42,6 +43,7 @@ import {
 } from '@/components/ui/sidebar'
 import { useActiveOrganization } from '@/hooks/use-active-organization'
 import { queries } from '@/lib/api/queries'
+import { cn } from '@/lib/utils'
 
 import { IMPORTANCE_LABELS } from './mail-data'
 
@@ -55,10 +57,35 @@ export const MAIL_FOLDERS: { id: Models.MailFolder; title: string; icon: typeof 
   { id: 'trash', title: 'Trash', icon: Trash2 },
 ]
 
-/** Labels filter the list by the importance the AI or the user gave a mail. */
-export const MAIL_LABELS: { id: Models.MailImportance; title: string; color: string }[] = [
-  { id: 'important', title: IMPORTANCE_LABELS.important, color: 'bg-violet-500' },
-  { id: 'low_priority', title: IMPORTANCE_LABELS.low_priority, color: 'bg-emerald-500' },
+/**
+ * Labels filter the list by the importance the AI or the user gave a mail.
+ * Each has its own hue (tokens in styles.css), so violet stays the AI's color:
+ * `color` is the dot, `tone` a tinted chip in the label's hue.
+ */
+export const MAIL_LABELS: {
+  id: Models.MailImportance
+  title: string
+  color: string
+  tone: string
+}[] = [
+  {
+    id: 'important',
+    title: IMPORTANCE_LABELS.important,
+    color: 'bg-label-important',
+    tone: 'border-label-important/30 bg-label-important/10 text-label-important',
+  },
+  {
+    id: 'low_priority',
+    title: IMPORTANCE_LABELS.low_priority,
+    color: 'bg-label-low-priority',
+    tone: 'border-label-low-priority/30 bg-label-low-priority/10 text-label-low-priority',
+  },
+  {
+    id: 'broadcast',
+    title: IMPORTANCE_LABELS.broadcast,
+    color: 'bg-label-broadcast',
+    tone: 'border-label-broadcast/30 bg-label-broadcast/10 text-label-broadcast',
+  },
 ]
 
 /** The folder named by ?folder=, falling back to the inbox. */
@@ -144,12 +171,72 @@ function AccountSwitcher() {
 }
 
 /** Second panel of the sidebar-09 shell on /mail: compose, folders and labels. */
+/**
+ * Phones only: the folder panel is hidden there (the rail lists the folders),
+ * so the list gets what else lives in it: the account switcher, the labels as
+ * a scrolling row of chips, and Compose as a floating button.
+ */
+export function MobileMailBar() {
+  const { data: accounts } = useMailAccounts()
+  const account = useMailAccount()
+  const { label } = useSearch({ strict: false })
+  const [composing, setComposing] = React.useState(false)
+
+  return (
+    <div className="grid gap-2 border-b p-3 md:hidden">
+      <AccountSwitcher />
+      <nav aria-label="Labels" className="no-scrollbar -mx-3 flex gap-1.5 overflow-x-auto px-3">
+        {MAIL_LABELS.map((item) => {
+          const active = label === item.id
+          return (
+            <Link
+              key={item.id}
+              to="/mail"
+              search={(prev) => ({
+                ...prev,
+                label: active ? undefined : item.id,
+                mail: undefined,
+                page: undefined,
+              })}
+              aria-current={active ? 'page' : undefined}
+              className={cn(
+                'flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 text-sm',
+                active ? item.tone : 'text-muted-foreground'
+              )}
+            >
+              <span className={`${item.color} size-2.5 shrink-0 rounded-sm`} />
+              {item.title}
+            </Link>
+          )
+        })}
+      </nav>
+      {account && (
+        <Button
+          className="fixed right-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 size-14 rounded-full shadow-lg"
+          aria-label="Compose"
+          onClick={() => setComposing(true)}
+        >
+          <SquarePen className="size-5" />
+        </Button>
+      )}
+      <ComposeSheet
+        open={composing}
+        onOpenChange={setComposing}
+        accounts={accounts}
+        defaultAccountId={account?.id}
+      />
+    </div>
+  )
+}
+
 export default function MailPanel() {
   const folder = useMailFolder()
   const account = useMailAccount()
   const { label } = useSearch({ strict: false })
   const { data: accounts } = useMailAccounts()
   const [composing, setComposing] = React.useState(false)
+  const navigate = useNavigate()
+  const { agent } = useSearch({ strict: false })
   const badges: Partial<Record<Models.MailFolder, number>> = {
     inbox: account?.unread,
     spam: account?.spam,
@@ -160,10 +247,25 @@ export default function MailPanel() {
       <SidebarHeader className="gap-3.5 p-4 pb-2">
         <OrganizationSwitcher />
         <AccountSwitcher />
-        <Button className="w-full" onClick={() => setComposing(true)} disabled={!account}>
-          <SquarePen />
-          Compose
-        </Button>
+        <div className="flex w-full gap-2">
+          <Button className="flex-1" onClick={() => setComposing(true)} disabled={!account}>
+            <SquarePen />
+            Compose
+          </Button>
+          <Button
+            variant={agent ? 'secondary' : 'outline'}
+            aria-label="Toggle AI assistant"
+            title="AI assistant"
+            onClick={() =>
+              navigate({
+                to: '/mail',
+                search: (prev: Record<string, unknown>) => ({ ...prev, agent: !agent }),
+              })
+            }
+          >
+            <Sparkles />
+          </Button>
+        </div>
         <ComposeSheet
           open={composing}
           onOpenChange={setComposing}

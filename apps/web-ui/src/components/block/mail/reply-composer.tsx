@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { ChevronDown, Forward, Reply as ReplyIcon, RotateCcw, Sparkles } from 'lucide-react'
+import { Forward, Reply as ReplyIcon, Sparkles } from 'lucide-react'
 import React from 'react'
 
 import type { Models } from '@/lib/api/models'
@@ -7,94 +7,40 @@ import type { Models } from '@/lib/api/models'
 import { mailInitials } from '@/components/layout/mail/mail-data'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
-import { axiosErrorMessage, toastProgress } from '@/lib/api/axios-error'
+import { toastProgress } from '@/lib/api/axios-error'
 import { allEmails, MAX_RECIPIENTS } from '@/lib/api/dtos/mail/recipients'
 import { queries } from '@/lib/api/queries'
+import { cn } from '@/lib/utils'
 
 import type { Reply } from './mail-editor'
 
 import RecipientInput from './recipient-input'
+import ReplyAiPanel from './reply-writer'
 
 const MailEditor = React.lazy(() => import('./mail-editor'))
 
-/** "Use AI": up to three suggested replies, asked for when the menu opens since each is a model call. */
-function AiMenu({ mailId, onPick }: { mailId: string; onPick: (text: string) => void }) {
-  const [open, setOpen] = React.useState(false)
-  const { data, isFetching, isError, error, refetch } = useQuery({
-    ...queries.mails.replySuggestions(mailId),
-    enabled: open,
-  })
-
-  return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          className="border-violet-500/40 text-violet-700 hover:text-violet-700 dark:text-violet-300 dark:hover:text-violet-300"
-        >
-          <Sparkles />
-          Use AI
-          <ChevronDown />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" side="top" className="w-80">
-        <DropdownMenuLabel className="text-muted-foreground text-xs">
-          Suggested replies
-        </DropdownMenuLabel>
-        {isFetching ? (
-          <div className="grid gap-2 p-2" aria-busy="true">
-            <Skeleton className="h-4 w-11/12" />
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-4 w-5/6" />
-          </div>
-        ) : isError ? (
-          <>
-            <p className="text-destructive px-2 py-1.5 text-sm">{axiosErrorMessage(error)}</p>
-            <DropdownMenuItem
-              onSelect={(e) => {
-                e.preventDefault()
-                refetch()
-              }}
-            >
-              <RotateCcw />
-              Try again
-            </DropdownMenuItem>
-          </>
-        ) : (
-          data?.map((text) => (
-            <DropdownMenuItem
-              key={text}
-              className="whitespace-normal"
-              onSelect={() => onPick(text)}
-            >
-              {text}
-            </DropdownMenuItem>
-          ))
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
+/** Runs once it mounts; inside the editor's Suspense, that is when the lazy editor has appeared. */
+function OnMount({ run }: { run: () => void }) {
+  React.useEffect(run, [run])
+  return null
 }
 
 /**
  * Reply to a mail: Reply and Forward buttons, then for a reply a card with
  * the recipients as chips (the sender to start with), the rich-text editor,
- * the AI menu and Send. Cancel drops the reply.
+ * and a bottom bar whose "Use AI" opens the Write with AI panel just above it.
+ * The panel is the reply's only AI surface, so it never reads as a second
+ * message field and its "Write" never competes with Send. Cancel drops the reply.
  */
 export default function ReplyComposer({
   mail,
+  draft,
   onForward,
 }: {
   mail: Models.Mail
+  /** A reply a skill wrote: a new one opens the reply with it in the editor. */
+  draft?: { text: string; at: number }
   /** Opens the forward dialog, offered beside Reply. */
   onForward: () => void
 }) {
@@ -110,6 +56,28 @@ export default function ReplyComposer({
   const reply = useMutation(queries.mails.reply(mail.id))
   const { data: me } = useQuery(queries.auth.profile())
   const cardRef = React.useRef<HTMLDivElement>(null)
+  // Write with AI: closed until asked for, so the reply opens as a plain email.
+  const [aiOpen, setAiOpen] = React.useState(false)
+  // Opening the reply, and the AI panel opening above the bottom bar and growing
+  // with its results, push the bar (Send, the prompt) below the fold; bring the
+  // card's bottom back into view once the new layout has painted.
+  const showCardBottom = React.useCallback(() => {
+    requestAnimationFrame(() =>
+      cardRef.current?.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        block: 'end',
+      })
+    )
+  }, [])
+
+  const [seenDraft, setSeenDraft] = React.useState(draft)
+  if (draft !== seenDraft) {
+    setSeenDraft(draft)
+    if (draft) {
+      setOpen(true)
+      setInitial({ text: draft.text })
+    }
+  }
 
   const names = mail.from_name ? { [mail.from_email]: mail.from_name } : undefined
 
@@ -121,6 +89,7 @@ export default function ReplyComposer({
     setInitial({})
     setProblem(null)
     setAttachments([])
+    setAiOpen(false)
   }
 
   const send = (body: Reply) => {
@@ -149,10 +118,12 @@ export default function ReplyComposer({
     )
   }
 
-  // The card opens below the mail; bring it into view.
+  // The card opens below the mail: show it down to its bottom bar. The editor
+  // loads lazily and is taller than its skeleton, so OnMount repeats this once
+  // it has appeared.
   React.useEffect(() => {
-    if (open) cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-  }, [open])
+    if (open) showCardBottom()
+  }, [open, showCardBottom])
 
   if (!open) {
     return (
@@ -183,6 +154,7 @@ export default function ReplyComposer({
           </div>
         }
       >
+        <OnMount run={showCardBottom} />
         <MailEditor
           initial={initial}
           placeholder="Write your reply..."
@@ -191,7 +163,35 @@ export default function ReplyComposer({
           sending={reply.isPending}
           attachments={attachments}
           onAttachmentsChange={setAttachments}
-          leading={<AiMenu mailId={mail.id} onPick={(text) => setInitial({ text })} />}
+          leading={
+            <Button
+              type="button"
+              variant="outline"
+              aria-expanded={aiOpen}
+              aria-controls="reply-ai-panel"
+              // The panel scrolls itself into view as it mounts (onGrow).
+              onClick={() => setAiOpen(!aiOpen)}
+              className={cn(
+                'border-accent-ink/40 text-accent-ink hover:text-accent-ink',
+                aiOpen && 'bg-accent-ink/10 hover:bg-accent-ink/15'
+              )}
+            >
+              <Sparkles />
+              Use AI
+            </Button>
+          }
+          aside={
+            aiOpen && (
+              <div id="reply-ai-panel">
+                <ReplyAiPanel
+                  mailId={mail.id}
+                  onInsert={(text) => setInitial({ text })}
+                  onClose={() => setAiOpen(false)}
+                  onGrow={showCardBottom}
+                />
+              </div>
+            )
+          }
           header={
             <div className="grid gap-2">
               <div className="flex items-start gap-3">

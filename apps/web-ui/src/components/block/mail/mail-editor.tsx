@@ -26,6 +26,7 @@ import {
 import React from 'react'
 import { toast } from 'sonner'
 
+import Hint from '@/components/block/common/hint'
 import { Button } from '@/components/ui/button'
 import { attachmentProblem, formatBytes } from '@/lib/api/dtos/mail/attachments'
 import { cn } from '@/lib/utils'
@@ -74,8 +75,10 @@ type MailEditorProps = {
   cancelLabel?: string
   /** Above the text, e.g. the recipients. */
   header?: React.ReactNode
-  /** First in the bottom bar, before the formatting buttons, e.g. the AI menu. */
+  /** First in the bottom bar, before the formatting buttons, e.g. the AI toggle. */
   leading?: React.ReactNode
+  /** Between the text and the bottom bar, e.g. the AI panel; inside the editor, so it can read the text. */
+  aside?: React.ReactNode
   /** Fill the parent's height, the text growing to meet the bottom bar (compose). */
   fill?: boolean
   /** Files to send along; with onAttachmentsChange, the bar gets an attach button. */
@@ -97,14 +100,16 @@ function AttachmentList({ files, onChange }: { files: File[]; onChange: (files: 
             <span className="truncate font-medium">{file.name}</span>
             <span className="text-muted-foreground text-xs">{formatBytes(file.size)}</span>
           </span>
-          <button
-            type="button"
-            aria-label={`Remove ${file.name}`}
-            className="text-muted-foreground hover:text-foreground ml-1 rounded p-1"
-            onClick={() => onChange(files.filter((_, j) => j !== i))}
-          >
-            <X className="size-3.5" />
-          </button>
+          <Hint label="Remove">
+            <button
+              type="button"
+              aria-label={`Remove ${file.name}`}
+              className="text-muted-foreground hover:text-foreground ml-1 rounded p-1"
+              onClick={() => onChange(files.filter((_, j) => j !== i))}
+            >
+              <X className="size-3.5" />
+            </button>
+          </Hint>
         </li>
       ))}
     </ul>
@@ -120,6 +125,7 @@ function EditorBody({
   cancelLabel = 'Cancel',
   header,
   leading,
+  aside,
   fill,
   attachments = [],
   onAttachmentsChange,
@@ -227,21 +233,23 @@ function EditorBody({
       {attachments.length > 0 && onAttachmentsChange && (
         <AttachmentList files={attachments} onChange={onAttachmentsChange} />
       )}
+      {aside}
       <div className="flex flex-wrap items-center gap-1">
         {leading && <div className="mr-2">{leading}</div>}
         {onAttachmentsChange && (
           <>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="text-muted-foreground size-8"
-              aria-label="Attach files"
-              title="Attach files"
-              onClick={() => fileInput.current?.click()}
-            >
-              <Paperclip />
-            </Button>
+            <Hint label="Attach files">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground size-8"
+                aria-label="Attach files"
+                onClick={() => fileInput.current?.click()}
+              >
+                <Paperclip />
+              </Button>
+            </Hint>
             <input
               ref={fileInput}
               type="file"
@@ -256,22 +264,22 @@ function EditorBody({
           </>
         )}
         {format.map((item) => (
-          <Button
-            key={item.label}
-            type="button"
-            variant="ghost"
-            size="icon"
-            className={cn(
-              'text-muted-foreground size-8',
-              item.active && 'bg-accent text-foreground'
-            )}
-            aria-label={item.label}
-            aria-pressed={item.active}
-            title={item.label}
-            onClick={() => item.run()}
-          >
-            <item.icon />
-          </Button>
+          <Hint key={item.label} label={item.label}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={cn(
+                'text-muted-foreground size-8',
+                item.active && 'bg-accent text-foreground'
+              )}
+              aria-label={item.label}
+              aria-pressed={item.active}
+              onClick={() => item.run()}
+            >
+              <item.icon />
+            </Button>
+          </Hint>
         ))}
         <div className="ml-auto flex items-center gap-2">
           <Button type="button" variant="outline" onClick={cancel} title="Esc">

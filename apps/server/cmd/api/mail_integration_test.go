@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"mime/multipart"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	"montara-mail-agent/server/internal/app"
 	"montara-mail-agent/server/internal/dtos"
 	"montara-mail-agent/server/internal/lib/constant"
+	"montara-mail-agent/server/internal/lib/llm"
 	"montara-mail-agent/server/internal/models"
 	"montara-mail-agent/server/internal/repositories"
 )
@@ -30,6 +32,11 @@ func (f *fakeLLM) Complete(_ context.Context, system, _ string, _ int64) (string
 		return "Sure, sounds good.\nCan we talk on Monday?\nNo, thanks.", nil
 	}
 	return "**TL;DR** a fake summary", nil
+}
+
+// Chat is never called by the flows this file exercises.
+func (f *fakeLLM) Chat(context.Context, llm.ChatRequest) (llm.ChatResult, error) {
+	return llm.ChatResult{}, errors.New("chat not supported by this fake")
 }
 
 // seedAccount stores an account and its mail the way a sync leaves them; the

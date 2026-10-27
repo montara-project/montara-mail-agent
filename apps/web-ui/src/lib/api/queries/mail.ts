@@ -4,7 +4,13 @@ import { getQueryClient } from '@/lib/providers/react-query'
 
 import type { Models } from '../models'
 import type { MailListParams } from '../services/types/email-account'
-import type { MailForwardBody, MailPatchBody, MailReplyBody } from '../services/types/mail'
+import type {
+  MailDraftReplyBody,
+  MailForwardBody,
+  MailRunSkillBody,
+  MailPatchBody,
+  MailReplyBody,
+} from '../services/types/mail'
 
 import { services } from '../services'
 import { ORGANIZATION_QUERY_KEY } from './organization'
@@ -67,11 +73,11 @@ const summary = (id: string) =>
   })
 
 /** Up to three AI reply suggestions. Each call costs a model request, so they are kept for the session. */
-const replySuggestions = (id: string) =>
+const replySuggestions = (id: string, agentBotId = '') =>
   queryOptions({
-    queryKey: [MAIL_QUERY_KEY, 'reply-suggestions', id],
+    queryKey: [MAIL_QUERY_KEY, 'reply-suggestions', id, agentBotId],
     queryFn: async () => {
-      const res = await services.mails.replySuggestions(id)
+      const res = await services.mails.replySuggestions(id, agentBotId || undefined)
       return res.data.data.suggestions
     },
     staleTime: Infinity,
@@ -124,12 +130,40 @@ const reply = (id: string) =>
     },
   })
 
+/** A whole AI-written reply for the editor; a model call per request, so it is never cached. */
+const draftReply = (id: string) =>
+  mutationOptions({
+    mutationFn: async (body: MailDraftReplyBody) => {
+      const res = await services.mails.draftReply(id, body)
+      return res.data.data.text
+    },
+  })
+
+/**
+ * Runs a skill on a mail. An organize run relabels it and a summary run may
+ * keep its summary, so the mail and the lists refetch afterwards.
+ */
+const runSkill = (id: string) =>
+  mutationOptions({
+    mutationFn: async ({ key, ...body }: MailRunSkillBody & { key: string }) => {
+      const res = await services.mails.runSkill(id, key, body)
+      return res.data.data
+    },
+    onSuccess: (result) => {
+      if (result.kind === 'organize' || result.kind === 'summary') {
+        void getQueryClient().invalidateQueries({ queryKey: [MAIL_QUERY_KEY] })
+      }
+    },
+  })
+
 export const mailQueries = {
   list,
   get,
   patch,
   summary,
   replySuggestions,
+  draftReply,
+  runSkill,
   move,
   delete: remove,
   forward,

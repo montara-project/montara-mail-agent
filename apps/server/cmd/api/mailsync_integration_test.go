@@ -8,6 +8,7 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"math/big"
 	"net"
 	"slices"
@@ -25,6 +26,7 @@ import (
 	"montara-mail-agent/server/internal/app"
 	"montara-mail-agent/server/internal/lib/apperr"
 	"montara-mail-agent/server/internal/lib/constant"
+	"montara-mail-agent/server/internal/lib/llm"
 	"montara-mail-agent/server/internal/mailsync"
 	"montara-mail-agent/server/internal/models"
 	"montara-mail-agent/server/internal/repositories"
@@ -89,6 +91,11 @@ func tlsIMAPServer(t *testing.T, user *imapmemserver.User) (int, *x509.CertPool)
 
 // classifier labels the first mail of every batch important, the rest low priority.
 type classifier struct{}
+
+// Chat is never called by the sync flows this file exercises.
+func (classifier) Chat(context.Context, llm.ChatRequest) (llm.ChatResult, error) {
+	return llm.ChatResult{}, errors.New("chat not supported by this fake")
+}
 
 func (classifier) Complete(_ context.Context, _, prompt string, _ int64) (string, error) {
 	var lines []string

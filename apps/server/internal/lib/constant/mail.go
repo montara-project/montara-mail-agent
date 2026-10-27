@@ -20,7 +20,13 @@ var MoveTargets = []string{FolderInbox, FolderArchive, FolderSpam, FolderTrash}
 const (
 	ImportanceImportant   = "important"
 	ImportanceLowPriority = "low_priority"
+	// ImportanceBroadcast is one-to-many mail: newsletters, announcements and
+	// mass mailings, apart from the low-priority rest.
+	ImportanceBroadcast = "broadcast"
 )
+
+// Importances lists every importance label.
+var Importances = []string{ImportanceImportant, ImportanceLowPriority, ImportanceBroadcast}
 
 // Who set a mail's importance; a user's choice is never overwritten.
 const (

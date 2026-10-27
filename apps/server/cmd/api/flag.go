@@ -95,6 +95,10 @@ func parseFlag(cfg *config.Config) {
 	// Activity log
 	flag.DurationVar(&cfg.App.ActivityLogRetention, "activity-log-retention", envDuration("ACTIVITY_LOG_RETENTION", 365*24*time.Hour), "How long activity log entries are kept before the daily sweep deletes them (0 keeps them forever)")
 
+	// Agent
+	flag.DurationVar(&cfg.App.AgentAutoDraftInterval, "agent-autodraft-interval", envDuration("AGENT_AUTO_DRAFT_INTERVAL", time.Hour), "How often the agent drafts replies for important mail (0 disables the automation)")
+	flag.IntVar(&cfg.App.AgentAutoDraftDailyCap, "agent-autodraft-daily-cap", envInt("AGENT_AUTO_DRAFT_DAILY_CAP", 10), "How many drafts the agent may queue per organization per day")
+
 	// Database
 	flag.StringVar(&cfg.DB.DSN, "db-dsn", envString("DB_DSN", ""), "Database DSN")
 	flag.IntVar(&cfg.DB.MaxOpenConns, "db-max-open-conns", envInt("DB_MAX_OPEN_CONNS", 25), "Database max open connections")

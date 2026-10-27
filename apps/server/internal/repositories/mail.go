@@ -143,11 +143,13 @@ func (r *MailRepository) MarkNoHTML(ctx context.Context, accountID uuid.UUID, fo
 	return err
 }
 
-// MailListParams are the list controls plus the folder and importance filters.
+// MailListParams are the list controls plus the folder, importance and
+// unread filters.
 type MailListParams struct {
 	ListParams
 	Folder     string
 	Importance string
+	Unread     bool
 }
 
 func mailFilters(accountID uuid.UUID, p MailListParams) *whereBuilder {
@@ -156,6 +158,9 @@ func mailFilters(accountID uuid.UUID, p MailListParams) *whereBuilder {
 	w.add(`folder = $%d`, p.Folder)
 	if p.Importance != "" {
 		w.add(`importance = $%d`, p.Importance)
+	}
+	if p.Unread {
+		w.add(`is_read = $%d`, false)
 	}
 	w.search(p.Search, "from_name", "from_email", "subject")
 	return w
@@ -297,6 +302,16 @@ func (r *MailRepository) Unclassified(ctx context.Context, accountID uuid.UUID, 
 		return nil, err
 	}
 	return collectRows(rows, scanMail)
+}
+
+// ReplaceAIImportance labels a mail as the AI's even over a label the user
+// set: the user asked for it by running the organize skill on that mail.
+func (r *MailRepository) ReplaceAIImportance(ctx context.Context, id uuid.UUID, importance string) error {
+	_, err := r.execContext(ctx, `
+		UPDATE mails SET importance = $2, importance_by = $3, updated_at = now() WHERE id = $1`,
+		id, importance, constant.ImportanceByAI,
+	)
+	return err
 }
 
 // SetAIImportance stores the AI's classification unless the user already

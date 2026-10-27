@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/getsentry/sentry-go"
 	sentryfiber "github.com/gofiber/contrib/v3/sentry"
+	"github.com/valyala/fasthttp"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/compress"
@@ -22,6 +24,8 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/static"
 
 	"montara-mail-agent/server/internal/app"
+	"montara-mail-agent/server/internal/handlers"
+	"montara-mail-agent/server/internal/mailagent"
 	"montara-mail-agent/server/internal/mailsync"
 	"montara-mail-agent/server/internal/middlewares"
 )
@@ -42,10 +46,27 @@ func serve(app *app.Application) error {
 	if every := app.Config.App.MailSyncInterval; every > 0 {
 		go mailsync.New(app).Run(ctx, every)
 	}
+	if every := app.Config.App.AgentAutoDraftInterval; every > 0 {
+		go mailagent.AutoDraftLoop(ctx, app, every, app.Config.App.AgentAutoDraftDailyCap)
+	}
 	go sweepActivityLogs(ctx, app)
 
 	app.Logger.Info("starting server", "port", app.Config.App.Port, "env", app.Config.App.Env, "auth", authBasePath)
-	return server.Listen(fmt.Sprintf(":%d", app.Config.App.Port), fiber.ListenConfig{GracefulContext: ctx})
+	return server.Listen(fmt.Sprintf(":%d", app.Config.App.Port), fiber.ListenConfig{
+		GracefulContext: ctx,
+		BeforeServeFunc: func(server *fiber.App) error {
+			// The agent's SSE answer streams for as long as its tools run,
+			// which outlives the fixed write timeout, so that one path's
+			// write deadline follows the stream's own limit instead.
+			server.Server().HeaderReceived = func(header *fasthttp.RequestHeader) fasthttp.RequestConfig {
+				if bytes.HasPrefix(header.RequestURI(), []byte(handlers.AgentChatPath)) {
+					return fasthttp.RequestConfig{WriteTimeout: handlers.AgentChatStreamLimit + 30*time.Second}
+				}
+				return fasthttp.RequestConfig{}
+			}
+			return nil
+		},
+	})
 }
 
 // sweepActivityLogs deletes activity log entries older than the configured
@@ -133,7 +154,11 @@ func newServer(app *app.Application) (*fiber.App, error) {
 			"object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'",
 	}))
 	server.Use(requestid.New())
-	server.Use(compress.New())
+	// The agent's SSE route must not pass through the compressor: it buffers
+	// the body, which would hold every event back until the stream ends.
+	server.Use(compress.New(compress.Config{
+		Next: func(c fiber.Ctx) bool { return strings.HasPrefix(c.Path(), handlers.AgentChatPath) },
+	}))
 
 	// Sentry reports panics, and only when a DSN is configured.
 	if dsn := app.Config.Sentry.Dsn; dsn != "" {

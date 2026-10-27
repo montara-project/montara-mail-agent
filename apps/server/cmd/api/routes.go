@@ -84,6 +84,11 @@ func routes(r *fiber.App, app *app.Application) {
 	organizations.Put("/:id/llm-provider", idempotent, h.LLMProvider.Put)
 	organizations.Delete("/:id/llm-provider", idempotent, h.LLMProvider.Delete)
 	organizations.Post("/:id/llm-provider/models", slow, h.LLMProvider.Models)
+	organizations.Get("/:id/agent-bots", h.AgentBot.List)
+	organizations.Post("/:id/agent-bots", idempotent, h.AgentBot.Create)
+	organizations.Get("/:id/skills", h.AgentSkill.List)
+	organizations.Post("/:id/skills", idempotent, h.AgentSkill.Create)
+	organizations.Put("/:id/skills/builtin/:key", idempotent, h.AgentSkill.SetBuiltin)
 
 	// The OAuth consent flow's return address: a browser navigation from the
 	// provider, so no signed-in caller and no API envelope — the handler
@@ -108,4 +113,34 @@ func routes(r *fiber.App, app *app.Application) {
 	mails.Post("/:id/reply", slow, idempotent, h.Mail.Reply)
 	mails.Post("/:id/summary", slow, h.Mail.Summary)
 	mails.Post("/:id/reply-suggestions", slow, h.Mail.ReplySuggestions)
+	mails.Post("/:id/draft-reply", slow, h.Mail.DraftReply)
+	mails.Post("/:id/skills/:key", slow, h.Mail.RunSkill)
+
+	// Agent bots are organization settings, so the flat group lets the web app
+	// edit one by its own id without repeating the organization.
+	agentBots := v1.Group("/agent-bots", m.Authorization)
+	agentBots.Get("/:id", h.AgentBot.Get)
+	agentBots.Put("/:id", idempotent, h.AgentBot.Update)
+	agentBots.Delete("/:id", idempotent, h.AgentBot.Delete)
+
+	// Custom skills, by their own id like the agent bots.
+	skills := v1.Group("/skills", m.Authorization)
+	skills.Put("/:id", idempotent, h.AgentSkill.Update)
+	skills.Delete("/:id", idempotent, h.AgentSkill.Delete)
+
+	// The mail agent: a copilot over one mailbox, its conversation history,
+	// and the approvals its proposals wait for. The chat streams its answer
+	// over SSE, and one turn can run several model calls, so it shares the
+	// AI budget rather than the general one.
+	agent := v1.Group("/agent", m.Authorization, middlewares.RateLimit(aiRateLimit, exemptLoopback, exemptIPs))
+	agent.Get("/conversations", h.Agent.Conversations)
+	agent.Post("/conversations", h.Agent.CreateConversation)
+	agent.Get("/conversations/:id", h.Agent.Conversation)
+	agent.Delete("/conversations/:id", h.Agent.DeleteConversation)
+	agent.Post("/chat", h.Agent.Chat)
+	agent.Post("/actions/:id/approve", h.Agent.ApproveAction)
+	agent.Post("/actions/:id/deny", h.Agent.DenyAction)
+	agent.Get("/drafts", h.Agent.Drafts)
+	agent.Post("/drafts/:id/approve", h.Agent.ApproveDraft)
+	agent.Post("/drafts/:id/discard", h.Agent.DiscardDraft)
 }

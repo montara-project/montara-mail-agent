@@ -17,4 +17,10 @@ const (
 	ActivityMailReplied             = "mail.replied"
 	ActivityMailForwarded           = "mail.forwarded"
 	ActivityMailDeleted             = "mail.deleted"
+	ActivityAgentBotCreated         = "agent_bot.created"
+	ActivityAgentBotUpdated         = "agent_bot.updated"
+	ActivityAgentBotDeleted         = "agent_bot.deleted"
+	ActivitySkillCreated            = "skill.created"
+	ActivitySkillUpdated            = "skill.updated"
+	ActivitySkillDeleted            = "skill.deleted"
 )

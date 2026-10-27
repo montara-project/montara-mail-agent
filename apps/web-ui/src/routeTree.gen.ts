@@ -14,6 +14,7 @@ import { Route as appRouteRouteImport } from './routes/(app)/route'
 import { Route as appSettingsRouteRouteImport } from './routes/(app)/settings/route'
 import { Route as SignInIndexRouteImport } from './routes/sign-in/index'
 import { Route as appAccountIndexRouteImport } from './routes/(app)/account/index'
+import { Route as appAgentBotsIndexRouteImport } from './routes/(app)/agent-bots/index'
 import { Route as appDashboardIndexRouteImport } from './routes/(app)/dashboard/index'
 import { Route as appMailIndexRouteImport } from './routes/(app)/mail/index'
 import { Route as appSettingsIndexRouteImport } from './routes/(app)/settings/index'
@@ -22,6 +23,7 @@ import { Route as appSettingsDeleteAccountRouteImport } from './routes/(app)/set
 import { Route as appSettingsOrganizationRouteImport } from './routes/(app)/settings/organization'
 import { Route as appSettingsProfileRouteImport } from './routes/(app)/settings/profile'
 import { Route as appSettingsSecurityRouteImport } from './routes/(app)/settings/security'
+import { Route as appSkillsIndexRouteImport } from './routes/(app)/skills/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -45,6 +47,11 @@ const SignInIndexRoute = SignInIndexRouteImport.update({
 const appAccountIndexRoute = appAccountIndexRouteImport.update({
   id: '/account/',
   path: '/account/',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appAgentBotsIndexRoute = appAgentBotsIndexRouteImport.update({
+  id: '/agent-bots/',
+  path: '/agent-bots/',
   getParentRoute: () => appRouteRoute,
 } as any)
 const appDashboardIndexRoute = appDashboardIndexRouteImport.update({
@@ -88,6 +95,11 @@ const appSettingsSecurityRoute = appSettingsSecurityRouteImport.update({
   path: '/security',
   getParentRoute: () => appSettingsRouteRoute,
 } as any)
+const appSkillsIndexRoute = appSkillsIndexRouteImport.update({
+  id: '/skills/',
+  path: '/skills/',
+  getParentRoute: () => appRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -99,9 +111,11 @@ export interface FileRoutesByFullPath {
   '/settings/profile': typeof appSettingsProfileRoute
   '/settings/security': typeof appSettingsSecurityRoute
   '/account/': typeof appAccountIndexRoute
+  '/agent-bots/': typeof appAgentBotsIndexRoute
   '/dashboard/': typeof appDashboardIndexRoute
   '/mail/': typeof appMailIndexRoute
   '/settings/': typeof appSettingsIndexRoute
+  '/skills/': typeof appSkillsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -112,9 +126,11 @@ export interface FileRoutesByTo {
   '/settings/profile': typeof appSettingsProfileRoute
   '/settings/security': typeof appSettingsSecurityRoute
   '/account': typeof appAccountIndexRoute
+  '/agent-bots': typeof appAgentBotsIndexRoute
   '/dashboard': typeof appDashboardIndexRoute
   '/mail': typeof appMailIndexRoute
   '/settings': typeof appSettingsIndexRoute
+  '/skills': typeof appSkillsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -128,9 +144,11 @@ export interface FileRoutesById {
   '/(app)/settings/profile': typeof appSettingsProfileRoute
   '/(app)/settings/security': typeof appSettingsSecurityRoute
   '/(app)/account/': typeof appAccountIndexRoute
+  '/(app)/agent-bots/': typeof appAgentBotsIndexRoute
   '/(app)/dashboard/': typeof appDashboardIndexRoute
   '/(app)/mail/': typeof appMailIndexRoute
   '/(app)/settings/': typeof appSettingsIndexRoute
+  '/(app)/skills/': typeof appSkillsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -144,9 +162,11 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/security'
     | '/account/'
+    | '/agent-bots/'
     | '/dashboard/'
     | '/mail/'
     | '/settings/'
+    | '/skills/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -157,9 +177,11 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/security'
     | '/account'
+    | '/agent-bots'
     | '/dashboard'
     | '/mail'
     | '/settings'
+    | '/skills'
   id:
     | '__root__'
     | '/'
@@ -172,9 +194,11 @@ export interface FileRouteTypes {
     | '/(app)/settings/profile'
     | '/(app)/settings/security'
     | '/(app)/account/'
+    | '/(app)/agent-bots/'
     | '/(app)/dashboard/'
     | '/(app)/mail/'
     | '/(app)/settings/'
+    | '/(app)/skills/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -218,6 +242,13 @@ declare module '@tanstack/react-router' {
       path: '/account'
       fullPath: '/account/'
       preLoaderRoute: typeof appAccountIndexRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/agent-bots/': {
+      id: '/(app)/agent-bots/'
+      path: '/agent-bots'
+      fullPath: '/agent-bots/'
+      preLoaderRoute: typeof appAgentBotsIndexRouteImport
       parentRoute: typeof appRouteRoute
     }
     '/(app)/dashboard/': {
@@ -276,6 +307,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof appSettingsSecurityRouteImport
       parentRoute: typeof appSettingsRouteRoute
     }
+    '/(app)/skills/': {
+      id: '/(app)/skills/'
+      path: '/skills'
+      fullPath: '/skills/'
+      preLoaderRoute: typeof appSkillsIndexRouteImport
+      parentRoute: typeof appRouteRoute
+    }
   }
 }
 
@@ -303,15 +341,19 @@ const appSettingsRouteRouteWithChildren =
 interface appRouteRouteChildren {
   appSettingsRouteRoute: typeof appSettingsRouteRouteWithChildren
   appAccountIndexRoute: typeof appAccountIndexRoute
+  appAgentBotsIndexRoute: typeof appAgentBotsIndexRoute
   appDashboardIndexRoute: typeof appDashboardIndexRoute
   appMailIndexRoute: typeof appMailIndexRoute
+  appSkillsIndexRoute: typeof appSkillsIndexRoute
 }
 
 const appRouteRouteChildren: appRouteRouteChildren = {
   appSettingsRouteRoute: appSettingsRouteRouteWithChildren,
   appAccountIndexRoute: appAccountIndexRoute,
+  appAgentBotsIndexRoute: appAgentBotsIndexRoute,
   appDashboardIndexRoute: appDashboardIndexRoute,
   appMailIndexRoute: appMailIndexRoute,
+  appSkillsIndexRoute: appSkillsIndexRoute,
 }
 
 const appRouteRouteWithChildren = appRouteRoute._addFileChildren(

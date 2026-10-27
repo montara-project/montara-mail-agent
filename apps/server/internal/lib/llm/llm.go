@@ -50,8 +50,9 @@ type Config struct {
 	HTTPClient *http.Client
 }
 
-// New builds the client for cfg.Kind.
-func New(cfg Config) (Client, error) {
+// New builds the client for cfg.Kind. It carries both the one-shot Complete
+// and the tool-calling Chat.
+func New(cfg Config) (ChatClient, error) {
 	switch cfg.Kind {
 	case KindAnthropic:
 		opts := []option.RequestOption{option.WithAPIKey(cfg.APIKey), option.WithHTTPClient(cfg.HTTPClient)}
