@@ -19,6 +19,9 @@ export type MailDraftReplyBody = {
   agent_bot_id?: string
 }
 
+/** A skill run: the persona, a reply skill's instruction, and the draft a draft skill rewrites. */
+export type MailRunSkillBody = MailDraftReplyBody & { draft?: string }
+
 /** A reply as typed (Markdown) and as the HTML the editor made of it. */
 export type MailReplyBody = {
   /** The mail's sender when left out. */
@@ -45,7 +48,7 @@ export type MailResources = {
   runSkill: (
     id: string,
     key: string,
-    body: MailDraftReplyBody
+    body: MailRunSkillBody
   ) => Promise<AxiosItemResponse<Models.SkillRunResult>>
   /** Moves the mail on the mail server too. */
   move: (id: string, folder: Models.MailMoveTarget) => Promise<AxiosDeleteResponse>

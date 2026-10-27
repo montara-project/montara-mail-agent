@@ -14,11 +14,11 @@ export interface AgentSkill {
   /** The bot that runs it; null means the one the user picked. */
   agent_bot_id: string | null
   is_enabled: boolean
+  /** What it works on: the email, or the reply draft being written (it rewrites that). */
+  target: 'email' | 'draft'
 }
-
-export type BuiltinSkillKey = 'summarize' | 'organize' | 'draft_reply'
 
 /** What running a skill on a mail made. */
 export type SkillRunResult =
-  | { kind: 'summary' | 'reply' | 'text'; text: string }
+  | { kind: 'summary' | 'reply' | 'rewrite' | 'text'; text: string }
   | { kind: 'organize'; importance: import('./mail').MailImportance }

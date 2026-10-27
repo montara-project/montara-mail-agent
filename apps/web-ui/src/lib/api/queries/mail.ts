@@ -7,6 +7,7 @@ import type { MailListParams } from '../services/types/email-account'
 import type {
   MailDraftReplyBody,
   MailForwardBody,
+  MailRunSkillBody,
   MailPatchBody,
   MailReplyBody,
 } from '../services/types/mail'
@@ -144,7 +145,7 @@ const draftReply = (id: string) =>
  */
 const runSkill = (id: string) =>
   mutationOptions({
-    mutationFn: async ({ key, ...body }: MailDraftReplyBody & { key: string }) => {
+    mutationFn: async ({ key, ...body }: MailRunSkillBody & { key: string }) => {
       const res = await services.mails.runSkill(id, key, body)
       return res.data.data
     },

@@ -1,10 +1,15 @@
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { ChevronDown, Forward, Reply as ReplyIcon, RotateCcw, Sparkles } from 'lucide-react'
+import { $getRoot } from 'lexical'
+import { ChevronDown, Forward, Reply as ReplyIcon, RotateCcw, Sparkles, Wand2 } from 'lucide-react'
 import React from 'react'
+import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
 
 import AgentBotRadioGroup from '@/components/block/agent-bot/agent-bot-radio-group'
+import { SkillResult, useEnabledSkills } from '@/components/block/mail/skill-menu'
+import { SKILL_ICONS } from '@/components/block/skill/skill-list'
 import { mailInitials } from '@/components/layout/mail/mail-data'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -20,7 +25,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import StreamingText from '@/components/ui/streaming-text'
 import ThinkingState from '@/components/ui/thinking-state'
 import { useActiveAgentBot } from '@/hooks/use-active-agent-bot'
-import { axiosErrorMessage, toastProgress } from '@/lib/api/axios-error'
+import { axiosErrorMessage, toastAxiosError, toastProgress } from '@/lib/api/axios-error'
 import { allEmails, MAX_RECIPIENTS } from '@/lib/api/dtos/mail/recipients'
 import { queries } from '@/lib/api/queries'
 
@@ -34,11 +39,34 @@ const MailEditor = React.lazy(() => import('./mail-editor'))
 /**
  * "Use AI": up to three suggested replies, asked for when the menu opens since
  * each is a model call. With agent bots set up, a Persona section picks who
- * writes them; a new pick asks again.
+ * writes them; a new pick asks again. Polish runs a draft skill (humanize,
+ * copy edit) on what is in the editor; it renders inside the editor, so it
+ * reads the text straight from it.
  */
-function AiMenu({ mailId, onPick }: { mailId: string; onPick: (text: string) => void }) {
+function AiMenu({
+  mailId,
+  onPick,
+  onPolish,
+}: {
+  mailId: string
+  onPick: (text: string) => void
+  onPolish: (skill: Models.AgentSkill, draft: string) => void
+}) {
   const [open, setOpen] = React.useState(false)
   const { bots, activeBot, activeBotId } = useActiveAgentBot()
+  const [editor] = useLexicalComposerContext()
+  const polishSkills = useEnabledSkills('draft')
+  const polish = (skill: Models.AgentSkill) => {
+    const draft = editor
+      .getEditorState()
+      .read(() => $getRoot().getTextContent())
+      .trim()
+    if (!draft) {
+      toast.error(`Write your reply first, then ${skill.name.toLowerCase()} it`)
+      return
+    }
+    onPolish(skill, draft)
+  }
   const { data, dataUpdatedAt, isFetching, isError, error, refetch } = useQuery({
     ...queries.mails.replySuggestions(mailId, activeBotId),
     enabled: open,
@@ -61,6 +89,30 @@ function AiMenu({ mailId, onPick }: { mailId: string; onPick: (text: string) => 
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" side="top" className="w-80">
+        {polishSkills.length > 0 && (
+          <>
+            <DropdownMenuLabel className="text-muted-foreground text-xs">
+              Polish your draft
+            </DropdownMenuLabel>
+            {polishSkills.map((skill) => {
+              const Icon = SKILL_ICONS[skill.key] ?? Wand2
+              return (
+                <DropdownMenuItem
+                  key={skill.key}
+                  className="items-start whitespace-normal"
+                  onSelect={() => polish(skill)}
+                >
+                  <Icon className="mt-0.5" />
+                  <span className="grid gap-0.5">
+                    <span className="font-medium">{skill.name}</span>
+                    <span className="text-muted-foreground text-xs">{skill.description}</span>
+                  </span>
+                </DropdownMenuItem>
+              )
+            })}
+            <DropdownMenuSeparator />
+          </>
+        )}
         {bots.length > 0 && (
           <>
             <DropdownMenuLabel className="text-muted-foreground text-xs">Persona</DropdownMenuLabel>
@@ -141,6 +193,24 @@ export default function ReplyComposer({
   const reply = useMutation(queries.mails.reply(mail.id))
   const { data: me } = useQuery(queries.auth.profile())
   const cardRef = React.useRef<HTMLDivElement>(null)
+  // A draft skill's rewrite of the editor's text, shown for review before it replaces it.
+  const polishRun = useMutation(queries.mails.runSkill(mail.id))
+  const { activeBotId } = useActiveAgentBot()
+  const [polished, setPolished] = React.useState<{ name: string; text?: string } | null>(null)
+  const polish = (skill: Models.AgentSkill, text: string) => {
+    setPolished({ name: skill.name })
+    polishRun.mutate(
+      { key: skill.key, draft: text, agent_bot_id: activeBotId || undefined },
+      {
+        onSuccess: (result) =>
+          setPolished('text' in result ? { name: skill.name, text: result.text } : null),
+        onError: (error) => {
+          setPolished(null)
+          toastAxiosError(error)
+        },
+      }
+    )
+  }
 
   const [seenDraft, setSeenDraft] = React.useState(draft)
   if (draft !== seenDraft) {
@@ -161,6 +231,7 @@ export default function ReplyComposer({
     setInitial({})
     setProblem(null)
     setAttachments([])
+    setPolished(null)
   }
 
   const send = (body: Reply) => {
@@ -231,7 +302,9 @@ export default function ReplyComposer({
           sending={reply.isPending}
           attachments={attachments}
           onAttachmentsChange={setAttachments}
-          leading={<AiMenu mailId={mail.id} onPick={(text) => setInitial({ text })} />}
+          leading={
+            <AiMenu mailId={mail.id} onPick={(text) => setInitial({ text })} onPolish={polish} />
+          }
           header={
             <div className="grid gap-2">
               <div className="flex items-start gap-3">
@@ -266,6 +339,19 @@ export default function ReplyComposer({
                 <p role="alert" className="text-destructive text-sm">
                   {problem}
                 </p>
+              )}
+              {polished && (
+                <SkillResult
+                  name={polished.name}
+                  pending={polishRun.isPending}
+                  text={polished.text}
+                  useLabel="Use this version"
+                  onUseAsReply={(text) => {
+                    setInitial({ text })
+                    setPolished(null)
+                  }}
+                  onClose={() => setPolished(null)}
+                />
               )}
               <div className="border-t pt-3">
                 <ReplyWriter mailId={mail.id} onInsert={(text) => setInitial({ text })} />

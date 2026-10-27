@@ -20,11 +20,16 @@ import ThinkingState from '@/components/ui/thinking-state'
 import { useActiveOrganization } from '@/hooks/use-active-organization'
 import { queries } from '@/lib/api/queries'
 
-/** The active organization's skills that are switched on, built-in first. */
-export function useEnabledSkills() {
+/**
+ * The active organization's skills that are switched on, built-in first;
+ * with a target, only those that work on the email or on the reply draft.
+ */
+export function useEnabledSkills(target?: Models.AgentSkill['target']) {
   const { organization } = useActiveOrganization()
   const { data } = useQuery(queries.agentSkills.list(organization?.id ?? ''))
-  return (data?.data ?? []).filter((skill) => skill.is_enabled)
+  return (data?.data ?? []).filter(
+    (skill) => skill.is_enabled && (!target || skill.target === target)
+  )
 }
 
 /** The reader's Skills menu: run one of the organization's skills on this email. */
@@ -35,7 +40,8 @@ export default function SkillMenu({
   disabled?: boolean
   onRun: (skill: Models.AgentSkill) => void
 }) {
-  const skills = useEnabledSkills()
+  // Draft skills rewrite the reply being written, so they live in its AI menu.
+  const skills = useEnabledSkills('email')
 
   return (
     <DropdownMenu>
@@ -89,12 +95,14 @@ export function SkillResult({
   pending,
   text,
   onUseAsReply,
+  useLabel = 'Use as reply',
   onClose,
 }: {
   name: string
   pending: boolean
   text?: string
   onUseAsReply: (text: string) => void
+  useLabel?: string
   onClose: () => void
 }) {
   return (
@@ -133,7 +141,7 @@ export function SkillResult({
                 onClick={() => onUseAsReply(text)}
               >
                 <Reply />
-                Use as reply
+                {useLabel}
               </Button>
             }
           />

@@ -1,6 +1,16 @@
 import { IconPlus } from '@tabler/icons-react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { FileText, Reply, Tags, Wand2 } from 'lucide-react'
+import {
+  FileText,
+  Handshake,
+  Newspaper,
+  PenLine,
+  Reply,
+  Send,
+  SpellCheck,
+  Tags,
+  Wand2,
+} from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
@@ -32,6 +42,11 @@ export const SKILL_ICONS: Record<string, typeof Wand2> = {
   summarize: FileText,
   organize: Tags,
   draft_reply: Reply,
+  humanize: PenLine,
+  copy_edit: SpellCheck,
+  prospect_reply: Send,
+  objection_reply: Handshake,
+  press_reply: Newspaper,
 }
 
 /** A built-in skill: switch it on or off and pick the bot that runs it. */
@@ -62,7 +77,14 @@ function BuiltinSkillRow({
         <Icon className="size-4" aria-hidden />
       </div>
       <div className="min-w-48 flex-1">
-        <p className="text-sm font-medium">{skill.name}</p>
+        <p className="flex items-center gap-2 text-sm font-medium">
+          {skill.name}
+          {skill.target === 'draft' && (
+            <Badge variant="secondary" appearance="light">
+              Your draft
+            </Badge>
+          )}
+        </p>
         <p className="text-muted-foreground text-xs">{skill.description}</p>
       </div>
       <Select
@@ -184,7 +206,7 @@ export default function SkillList({ organizationId }: { organizationId: string }
     <div className="grid gap-8">
       <SectionCard
         title="Skills"
-        description="What the AI can do with an email, from the Skills menu in the reader or as a / command in the assistant. A skill with no bot of its own runs as the bot the user picked. Only the organization's owner can change them."
+        description="What the AI can do with an email, from the Skills menu in the reader or as a / command in the assistant. Skills marked Your draft rewrite the reply you are writing, from its Use AI menu. A skill with no bot of its own runs as the bot the user picked. Only the organization's owner can change them."
       >
         {isPending ? (
           loading
@@ -200,6 +222,28 @@ export default function SkillList({ organizationId }: { organizationId: string }
             ))}
           </ul>
         )}
+        <p className="text-muted-foreground mt-3 text-xs">
+          Humanize is adapted from{' '}
+          <a
+            className="underline underline-offset-2"
+            href="https://github.com/blader/humanizer"
+            target="_blank"
+            rel="noreferrer"
+          >
+            humanizer
+          </a>{' '}
+          by Siqi Chen. Copy edit, Reply to a prospect, Handle an objection and Reply to press are
+          adapted from{' '}
+          <a
+            className="underline underline-offset-2"
+            href="https://github.com/coreyhaines31/marketingskills"
+            target="_blank"
+            rel="noreferrer"
+          >
+            marketingskills
+          </a>{' '}
+          by Corey Haines. Both are MIT licensed.
+        </p>
       </SectionCard>
 
       <SectionCard
