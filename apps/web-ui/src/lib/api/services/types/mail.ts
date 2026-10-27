@@ -13,6 +13,12 @@ export type MailForwardBody = {
   note?: string
 }
 
+/** What a drafted reply should say or how it should sound, and who writes it. */
+export type MailDraftReplyBody = {
+  instruction?: string
+  agent_bot_id?: string
+}
+
 /** A reply as typed (Markdown) and as the HTML the editor made of it. */
 export type MailReplyBody = {
   /** The mail's sender when left out. */
@@ -33,6 +39,8 @@ export type MailResources = {
     id: string,
     agentBotId?: string
   ) => Promise<AxiosItemResponse<{ suggestions: string[] }>>
+  /** A whole reply written by the AI; nothing is sent. */
+  draftReply: (id: string, body: MailDraftReplyBody) => Promise<AxiosItemResponse<{ text: string }>>
   /** Moves the mail on the mail server too. */
   move: (id: string, folder: Models.MailMoveTarget) => Promise<AxiosDeleteResponse>
   /** Moves the mail to the trash, or deletes it for good when it is there. */

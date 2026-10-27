@@ -57,6 +57,15 @@ export function useActiveAgentBot() {
 
   return {
     bots,
+    /** The choices for a PromptBar picker: the built-in assistant ('') first. */
+    personas: [
+      { key: '', name: 'Built-in' },
+      ...bots.map((bot) => ({
+        key: bot.id,
+        name: bot.name,
+        tag: bot.is_default ? 'Default' : undefined,
+      })),
+    ],
     activeBot,
     activeBotId: activeBot?.id ?? '',
     setActiveBotId: (id: string) => orgId && setActiveAgentBotId(orgId, id),

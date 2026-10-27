@@ -1,37 +1,22 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import {
-  ArrowUp,
-  Bot,
-  ChevronDown,
-  Inbox,
-  Loader2,
-  Mail,
-  Plus,
-  Sparkles,
-  Square,
-  Wrench,
-  X,
-} from 'lucide-react'
+import { Inbox, Mail, Plus, Sparkles, X } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
+import type { PromptCommand } from '@/components/ui/prompt-bar'
+import type { ThinkingRow } from '@/components/ui/thinking-state'
 import type { AgentStreamEvent } from '@/lib/api/agent/stream'
 import type { Models } from '@/lib/api/models'
 
-import AgentBotRadioGroup from '@/components/block/agent-bot/agent-bot-radio-group'
 import Hint from '@/components/block/common/hint'
 import Markdown from '@/components/block/common/markdown'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import PromptBar from '@/components/ui/prompt-bar'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Textarea } from '@/components/ui/textarea'
+import StreamingText from '@/components/ui/streaming-text'
+import ThinkingState from '@/components/ui/thinking-state'
 import { useActiveAgentBot } from '@/hooks/use-active-agent-bot'
 import { streamAgentChat } from '@/lib/api/agent/stream'
 import { axiosErrorMessage } from '@/lib/api/axios-error'
@@ -65,6 +50,56 @@ const STARTERS = ['Find an email', 'Summarize a thread', 'Draft a reply']
 /** The same, once an email is attached. */
 const EMAIL_STARTERS = ['Summarize this email', 'Draft a reply to it', 'List what it asks of me']
 
+/** The composer's / menu: each fills in a prompt to finish and send. */
+const QUICK_PROMPTS: PromptCommand[] = [
+  { key: 'find', name: '/find', desc: 'Find an email', prompt: 'Find the emails about ' },
+  {
+    key: 'unread',
+    name: '/unread',
+    desc: 'What needs me today',
+    prompt: 'What unread mail needs my attention today?',
+  },
+  {
+    key: 'summarize',
+    name: '/summarize',
+    desc: 'Summarize a thread',
+    prompt: 'Summarize the thread about ',
+  },
+  {
+    key: 'draft',
+    name: '/draft',
+    desc: 'Draft a reply',
+    prompt: 'Draft a reply to the latest email from ',
+  },
+]
+/** The same, once an email is attached. */
+const EMAIL_QUICK_PROMPTS: PromptCommand[] = [
+  {
+    key: 'summarize',
+    name: '/summarize',
+    desc: 'Summarize this email',
+    prompt: 'Summarize this email',
+  },
+  {
+    key: 'reply',
+    name: '/reply',
+    desc: 'Draft a reply to it',
+    prompt: 'Draft a reply to this email',
+  },
+  {
+    key: 'asks',
+    name: '/asks',
+    desc: 'What it asks of me',
+    prompt: 'List what this email asks of me',
+  },
+  {
+    key: 'sender',
+    name: '/sender',
+    desc: 'Earlier mail from the sender',
+    prompt: 'Find my earlier emails with this sender',
+  },
+]
+
 /** "search_mails" → "Search mails": tool names as the chat shows them. */
 const toolLabel = (name?: string) =>
   name ? name.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase()) : 'Tool'
@@ -77,8 +112,32 @@ interface AgentPanelProps {
   className?: string
 }
 
-/** One streamed or persisted step the chat shows between prompt and answer. */
-type LiveRow = { kind: 'tool' | 'action' | 'message'; text?: string; payload?: unknown }
+/** One streamed step the chat shows between prompt and answer. */
+type LiveRow = { kind: 'tool' | 'action'; name?: string; text?: string; payload?: unknown }
+
+/** The history as the chat shows it: messages, and each run of tool calls as one trace. */
+type Block =
+  | { kind: 'message'; message: Models.AgentMessage }
+  | { kind: 'tools'; id: string; rows: ThinkingRow[] }
+
+function toBlocks(messages: Models.AgentMessage[]): Block[] {
+  const blocks: Block[] = []
+  for (const message of messages) {
+    if (message.role === 'tool') {
+      const row = { primary: toolLabel(message.tool_name) }
+      const last = blocks.at(-1)
+      if (last?.kind === 'tools') last.rows.push(row)
+      else blocks.push({ kind: 'tools', id: message.id, rows: [row] })
+      continue
+    }
+    // An empty assistant turn only called tools; the trace stands for it.
+    if (message.role === 'assistant' && !message.content) continue
+    blocks.push({ kind: 'message', message })
+  }
+  return blocks
+}
+
+const toolsDone = (n: number) => `Used ${n} ${n === 1 ? 'tool' : 'tools'}`
 
 /**
  * The mail copilot: a chat bound to the active mailbox, with the agent's tool
@@ -91,6 +150,10 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
   const [input, setInput] = React.useState('')
   const [streaming, setStreaming] = React.useState(false)
   const [live, setLive] = React.useState<LiveRow[]>([])
+  // What the agent says it is doing, shown on the thinking trace.
+  const [status, setStatus] = React.useState<string>()
+  // This turn's answer: the history row that holds it reveals once.
+  const [freshText, setFreshText] = React.useState<string>()
   // The current turn's failure, kept until the next send (failed turns
   // persist nothing server-side to show).
   const [turnError, setTurnError] = React.useState<string>()
@@ -108,7 +171,7 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
   const conversationIdRef = React.useRef<string | undefined>(undefined)
   // The persona each turn speaks as; picked in the header, shared with the
   // reply composer's suggestions.
-  const { bots, activeBot } = useActiveAgentBot()
+  const { personas, activeBot, activeBotId, setActiveBotId } = useActiveAgentBot()
 
   const detail = useQuery(queries.agent.conversation(conversationId))
   const messages = detail.data?.data.messages ?? []
@@ -137,6 +200,8 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
     conversationIdRef.current = undefined
     setConversationId(undefined)
     setLive([])
+    setStatus(undefined)
+    setFreshText(undefined)
     setTurnError(undefined)
     setInput('')
   }
@@ -147,6 +212,8 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
 
     setInput('')
     setLive([])
+    setStatus(undefined)
+    setFreshText(undefined)
     setTurnError(undefined)
     setStreaming(true)
     abort.current = new AbortController()
@@ -158,12 +225,15 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
           conversationIdRef.current = payload.id
           setConversationId(payload.id)
         }
+      } else if (event.type === 'status') {
+        setStatus(event.text)
       } else if (event.type === 'tool') {
-        setLive((prev) => [...prev, { kind: 'tool', text: event.text ?? toolLabel(event.name) }])
+        setLive((prev) => [...prev, { kind: 'tool', name: event.name, text: event.text }])
       } else if (event.type === 'action') {
         setLive((prev) => [...prev, { kind: 'action', payload: event.payload }])
       } else if (event.type === 'message') {
-        setLive((prev) => [...prev, { kind: 'message', text: event.text }])
+        // The answer is shown from the refetched history, revealed there.
+        setFreshText(event.text)
       } else if (event.type === 'error') {
         // A failed turn persists nothing server-side, so the error lives
         // here until the next send — not in the transient stream rows.
@@ -190,14 +260,16 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
         toast.error(axiosErrorMessage(error))
       }
     } finally {
-      setStreaming(false)
       abort.current = null
       // The turn's rows are in the database; refetch the conversation the
-      // stream wrote into, then drop the transient copies.
+      // stream wrote into, then drop the transient copies. The trace keeps
+      // working until then, so the answer lands without a gap.
       if (conversationIdRef.current) {
         await getQueryClient().invalidateQueries({ queryKey: ['agent'] })
       }
       setLive([])
+      setStatus(undefined)
+      setStreaming(false)
     }
   }
 
@@ -208,7 +280,10 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
     inputRef.current?.focus()
   }
 
-  const empty = !conversationId && live.length === 0
+  const empty = !conversationId && live.length === 0 && !streaming
+  const blocks = toBlocks(messages)
+  const lastMessage = blocks.filter((block) => block.kind === 'message').at(-1)
+  const liveTools = live.filter((row) => row.kind === 'tool')
 
   return (
     <div className={cn('flex min-w-0 flex-col', className)} data-agent-panel>
@@ -216,29 +291,6 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
       <div className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
         <Sparkles className="size-4 text-violet-600 dark:text-violet-400" aria-hidden />
         <h2 className="flex-1 text-sm font-semibold">AI Assistant</h2>
-        {bots.length > 0 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 max-w-40 gap-1 px-2 text-xs font-normal"
-                aria-label="Choose the persona"
-                disabled={streaming}
-              >
-                <Bot aria-hidden />
-                <span className="truncate">{activeBot?.name ?? 'Built-in'}</span>
-                <ChevronDown aria-hidden />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel className="text-muted-foreground text-xs">
-                Speak as
-              </DropdownMenuLabel>
-              <AgentBotRadioGroup />
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
         <Hint label="New chat">
           <Button
             variant="ghost"
@@ -341,15 +393,49 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
               </div>
             ) : (
               <>
-                {messages.map((message) => (
-                  <AgentMessageRow key={message.id} message={message} />
-                ))}
+                {blocks.map((block) =>
+                  block.kind === 'tools' ? (
+                    <ThinkingState
+                      key={block.id}
+                      working={false}
+                      rows={block.rows}
+                      done={toolsDone(block.rows.length)}
+                    />
+                  ) : (
+                    <AgentMessageRow
+                      key={block.message.id}
+                      message={block.message}
+                      reveal={
+                        block === lastMessage &&
+                        block.message.role === 'assistant' &&
+                        block.message.content === freshText
+                      }
+                      onRevealed={() => setFreshText(undefined)}
+                    />
+                  )
+                )}
                 {actions.map((action) => (
                   <AgentActionCard key={action.id} action={action} />
                 ))}
-                {live.map((row, index) => (
-                  <LiveRowView key={`live-${index}`} row={row} />
-                ))}
+                {(streaming || liveTools.length > 0) && (
+                  <ThinkingState
+                    working={streaming}
+                    active={status || (liveTools.length > 0 ? 'Working' : 'Thinking')}
+                    done={toolsDone(liveTools.length)}
+                    rows={liveTools.map((row) => ({
+                      primary: toolLabel(row.name),
+                      secondary: row.text,
+                    }))}
+                  />
+                )}
+                {live
+                  .filter((row) => row.kind === 'action')
+                  .map((row, index) => (
+                    <AgentActionCard
+                      key={`live-action-${index}`}
+                      action={row.payload as Models.AgentAction}
+                    />
+                  ))}
                 {turnError && (
                   <p
                     role="alert"
@@ -357,12 +443,6 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
                   >
                     {turnError}
                   </p>
-                )}
-                {streaming && (
-                  <div className="text-muted-foreground flex items-center gap-2 text-xs">
-                    <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" />
-                    Working…
-                  </div>
                 )}
               </>
             )}
@@ -393,57 +473,31 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
                 </Hint>
               </div>
             )}
-            <div className="relative">
-              <Textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-                    e.preventDefault()
-                    void send()
-                  }
-                }}
-                aria-label="Message the assistant"
-                placeholder={
-                  !emailAccountId
-                    ? 'Select a mailbox first'
-                    : about
-                      ? 'Ask about this email…'
-                      : 'Ask the assistant…'
-                }
-                disabled={!emailAccountId || streaming}
-                className="field-sizing-content max-h-40 min-h-16 resize-none pr-12"
-                rows={2}
-              />
-              {streaming ? (
-                <Hint label="Stop">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="absolute right-2 bottom-2 size-7"
-                    aria-label="Stop"
-                    onClick={stop}
-                  >
-                    <Square className="size-3 fill-current" />
-                  </Button>
-                </Hint>
-              ) : (
-                <Hint label="Send">
-                  <Button
-                    size="icon"
-                    className="absolute right-2 bottom-2 size-7"
-                    aria-label="Send"
-                    disabled={!input.trim() || !emailAccountId}
-                    onClick={() => void send()}
-                  >
-                    <ArrowUp className="size-4" />
-                  </Button>
-                </Hint>
-              )}
-            </div>
+            <PromptBar
+              value={input}
+              onChange={setInput}
+              onSend={() => void send()}
+              busy={streaming}
+              onStop={stop}
+              disabled={!emailAccountId}
+              inputRef={inputRef}
+              label="Message the assistant"
+              placeholder={
+                !emailAccountId
+                  ? 'Select a mailbox first'
+                  : about
+                    ? 'Ask about this email…'
+                    : 'Ask the assistant…'
+              }
+              commands={about ? EMAIL_QUICK_PROMPTS : QUICK_PROMPTS}
+              models={personas}
+              model={activeBotId}
+              onModelChange={setActiveBotId}
+              modelLabel="Speak as"
+            />
             <p className="text-muted-foreground mt-1.5 px-0.5 text-[11px]">
-              Enter to send, Shift+Enter for a new line. Nothing goes out until you approve it.
+              Enter to send, Shift+Enter for a new line, / for quick prompts. Nothing goes out until
+              you approve it.
             </p>
           </div>
         </div>
@@ -544,7 +598,16 @@ function DraftsQueue({ organizationId }: { organizationId?: string }) {
   )
 }
 
-function AgentMessageRow({ message }: { message: Models.AgentMessage }) {
+function AgentMessageRow({
+  message,
+  reveal = false,
+  onRevealed,
+}: {
+  message: Models.AgentMessage
+  /** this turn's answer: reveal it word by word once */
+  reveal?: boolean
+  onRevealed?: () => void
+}) {
   if (message.role === 'user') {
     return (
       <div className="flex justify-end">
@@ -554,40 +617,14 @@ function AgentMessageRow({ message }: { message: Models.AgentMessage }) {
       </div>
     )
   }
-  if (message.role === 'tool') {
-    return (
-      <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
-        <Wrench className="size-3 opacity-60" aria-hidden />
-        <span>{toolLabel(message.tool_name)}</span>
-      </div>
-    )
-  }
   return (
     <div className="max-w-[92%] rounded-2xl rounded-bl-sm bg-violet-500/5 px-3.5 py-2.5 text-sm dark:bg-violet-400/10">
-      {message.content ? (
-        <Markdown>{message.content}</Markdown>
-      ) : (
-        <span className="text-muted-foreground text-xs">(worked with tools)</span>
-      )}
-    </div>
-  )
-}
-
-function LiveRowView({ row }: { row: LiveRow }) {
-  if (row.kind === 'tool') {
-    return (
-      <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
-        <Loader2 className="size-3 animate-spin opacity-60 motion-reduce:animate-none" />
-        <span>{row.text}</span>
-      </div>
-    )
-  }
-  if (row.kind === 'action') {
-    return <AgentActionCard action={row.payload as Models.AgentAction} />
-  }
-  return (
-    <div className="max-w-[92%] rounded-2xl rounded-bl-sm bg-violet-500/5 px-3.5 py-2.5 text-sm dark:bg-violet-400/10">
-      <Markdown>{row.text ?? ''}</Markdown>
+      <StreamingText
+        text={message.content}
+        animate={reveal}
+        onDone={reveal ? onRevealed : undefined}
+        render={(text) => <Markdown>{text}</Markdown>}
+      />
     </div>
   )
 }

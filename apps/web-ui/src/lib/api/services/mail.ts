@@ -14,6 +14,7 @@ const resources = (): MailResources => ({
       `${path}/${id}/reply-suggestions`,
       agentBotId ? { agent_bot_id: agentBotId } : undefined
     ),
+  draftReply: (id, body) => api.post(`${path}/${id}/draft-reply`, body),
   move: (id, folder) => api.post(`${path}/${id}/move`, { folder }),
   delete: (id) => api.delete(`${path}/${id}`),
   forward: (id, body) => api.post(`${path}/${id}/forward`, body),

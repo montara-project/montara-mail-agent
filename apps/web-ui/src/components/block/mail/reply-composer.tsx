@@ -17,6 +17,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
+import StreamingText from '@/components/ui/streaming-text'
+import ThinkingState from '@/components/ui/thinking-state'
 import { useActiveAgentBot } from '@/hooks/use-active-agent-bot'
 import { axiosErrorMessage, toastProgress } from '@/lib/api/axios-error'
 import { allEmails, MAX_RECIPIENTS } from '@/lib/api/dtos/mail/recipients'
@@ -25,6 +27,7 @@ import { queries } from '@/lib/api/queries'
 import type { Reply } from './mail-editor'
 
 import RecipientInput from './recipient-input'
+import ReplyWriter from './reply-writer'
 
 const MailEditor = React.lazy(() => import('./mail-editor'))
 
@@ -35,11 +38,14 @@ const MailEditor = React.lazy(() => import('./mail-editor'))
  */
 function AiMenu({ mailId, onPick }: { mailId: string; onPick: (text: string) => void }) {
   const [open, setOpen] = React.useState(false)
-  const { bots, activeBotId } = useActiveAgentBot()
-  const { data, isFetching, isError, error, refetch } = useQuery({
+  const { bots, activeBot, activeBotId } = useActiveAgentBot()
+  const { data, dataUpdatedAt, isFetching, isError, error, refetch } = useQuery({
     ...queries.mails.replySuggestions(mailId, activeBotId),
     enabled: open,
   })
+  // New suggestions reveal once; reopening the menu shows them settled.
+  const [revealedAt, setRevealedAt] = React.useState(0)
+  const reveal = dataUpdatedAt > revealedAt
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -66,10 +72,12 @@ function AiMenu({ mailId, onPick }: { mailId: string; onPick: (text: string) => 
           Suggested replies
         </DropdownMenuLabel>
         {isFetching ? (
-          <div className="grid gap-2 p-2" aria-busy="true">
-            <Skeleton className="h-4 w-11/12" />
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-4 w-5/6" />
+          <div className="px-2 py-1" aria-busy="true">
+            <ThinkingState
+              working
+              rows={[]}
+              active={activeBot ? `${activeBot.name} is thinking` : 'Thinking of replies'}
+            />
           </div>
         ) : isError ? (
           <>
@@ -85,13 +93,18 @@ function AiMenu({ mailId, onPick }: { mailId: string; onPick: (text: string) => 
             </DropdownMenuItem>
           </>
         ) : (
-          data?.map((text) => (
+          data?.map((text, i) => (
             <DropdownMenuItem
               key={text}
               className="whitespace-normal"
               onSelect={() => onPick(text)}
             >
-              {text}
+              <StreamingText
+                text={text}
+                animate={reveal}
+                copy={false}
+                onDone={i === data.length - 1 ? () => setRevealedAt(dataUpdatedAt) : undefined}
+              />
             </DropdownMenuItem>
           ))
         )}
@@ -242,6 +255,9 @@ export default function ReplyComposer({
                   {problem}
                 </p>
               )}
+              <div className="border-t pt-3">
+                <ReplyWriter mailId={mail.id} onInsert={(text) => setInitial({ text })} />
+              </div>
             </div>
           }
         />

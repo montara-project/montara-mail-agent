@@ -4,7 +4,12 @@ import { getQueryClient } from '@/lib/providers/react-query'
 
 import type { Models } from '../models'
 import type { MailListParams } from '../services/types/email-account'
-import type { MailForwardBody, MailPatchBody, MailReplyBody } from '../services/types/mail'
+import type {
+  MailDraftReplyBody,
+  MailForwardBody,
+  MailPatchBody,
+  MailReplyBody,
+} from '../services/types/mail'
 
 import { services } from '../services'
 import { ORGANIZATION_QUERY_KEY } from './organization'
@@ -124,12 +129,22 @@ const reply = (id: string) =>
     },
   })
 
+/** A whole AI-written reply for the editor; a model call per request, so it is never cached. */
+const draftReply = (id: string) =>
+  mutationOptions({
+    mutationFn: async (body: MailDraftReplyBody) => {
+      const res = await services.mails.draftReply(id, body)
+      return res.data.data.text
+    },
+  })
+
 export const mailQueries = {
   list,
   get,
   patch,
   summary,
   replySuggestions,
+  draftReply,
   move,
   delete: remove,
   forward,
