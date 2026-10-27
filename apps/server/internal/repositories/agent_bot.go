@@ -10,7 +10,7 @@ import (
 )
 
 // AgentBotRepository manages the organizations' AI agent personas
-// (see migration 0011).
+// (see migration 0010).
 type AgentBotRepository struct {
 	BaseRepository
 }
@@ -60,6 +60,10 @@ func (r *AgentBotRepository) Default(ctx context.Context, orgID uuid.UUID) (mode
 	return scanAgentBot(r.queryRowContext(ctx, query, orgID))
 }
 
+// errDefaultTaken is the 409 a concurrent default change gets: the partial
+// unique index lets only one of two racing writes keep the flag.
+const errDefaultTaken = "another agent bot became the default at the same time; try again"
+
 // clearOtherDefaults drops the default flag from an organization's other live
 // bots, so at most one carries it (the partial unique index guards the rest).
 func clearOtherDefaults(ctx context.Context, tx *sql.Tx, orgID, exceptID uuid.UUID) error {
@@ -94,7 +98,7 @@ func (r *AgentBotRepository) Create(ctx context.Context, b *models.AgentBot) err
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
 		b.ID, b.OrganizationID, b.Name, b.Description, b.Soul, b.Memory, b.Style, b.Instruction, b.IsDefault,
 	); err != nil {
-		return err
+		return translateUnique(err, errDefaultTaken)
 	}
 	return tx.Commit()
 }
@@ -119,7 +123,7 @@ func (r *AgentBotRepository) Update(ctx context.Context, b models.AgentBot) erro
 		b.ID, b.Name, b.Description, b.Soul, b.Memory, b.Style, b.Instruction, b.IsDefault,
 	)
 	if err != nil {
-		return err
+		return translateUnique(err, errDefaultTaken)
 	}
 	n, err := res.RowsAffected()
 	if err != nil {

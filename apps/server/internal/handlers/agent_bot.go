@@ -11,14 +11,14 @@ import (
 	"montara-mail-agent/server/internal/models"
 )
 
-// agentBotHandlermanages the organizations'AI agent personas.
+// agentBotHandler manages the organizations' AI agent personas.
 type agentBotHandler struct {
 	app *app.Application
 }
 
-// agentBotView is a bot as theAPI shows it: its fields plus the system
-// prompt theycompose, so the form can preview what the model receives.
-// (The runtime prompt adds the date and the mailboxon top of this.)
+// agentBotView is a bot as the API shows it: its fields plus the system
+// prompt they compose, so the form can preview what the model receives.
+// (The runtime prompt adds the date and the mailbox on top of this.)
 type agentBotView struct {
 	models.AgentBot
 	SystemPrompt string `json:"system_prompt"`
@@ -61,7 +61,7 @@ func (h *agentBotHandler) Get(c fiber.Ctx) error {
 	return dtos.Get(c, newAgentBotView(bot))
 }
 
-// Create adds a bot to an organization; owner only, like theother
+// Create adds a bot to an organization; owner only, like the other
 // organization settings.
 func (h *agentBotHandler) Create(c fiber.Ctx) error {
 	orgID, err := pathID(c, "organization")
@@ -128,7 +128,7 @@ func (h *agentBotHandler) Update(c fiber.Ctx) error {
 	return dtos.OK(c, newAgentBotView(updated))
 }
 
-// Delete removesa bot; drafts it drafted keep their text.
+// Delete removes a bot; drafts it drafted keep their text.
 func (h *agentBotHandler) Delete(c fiber.Ctx) error {
 	bot, err := h.bot(c)
 	if err != nil {
@@ -144,7 +144,7 @@ func (h *agentBotHandler) Delete(c fiber.Ctx) error {
 	return dtos.Message(c, fiber.StatusOK, "agent bot deleted")
 }
 
-// bot loads the:id path parameter's bot; amissing or deleted one is a404.
+// bot loads the :id path parameter's bot; a missing or deleted one is a 404.
 func (h *agentBotHandler) bot(c fiber.Ctx) (models.AgentBot, error) {
 	id, err := pathID(c, "agent bot")
 	if err != nil {

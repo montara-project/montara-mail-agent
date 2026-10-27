@@ -11,7 +11,7 @@ import (
 // it should remember (MEMORY), how it writes (STYLE) and what it must or must
 // not do (INSTRUCTION). The system prompt is composed from these at runtime;
 // at most one live bot per organization is the default the auto-drafter uses
-// (see migration 0011).
+// (see migration 0010).
 type AgentBot struct {
 	Base
 	SoftDelete

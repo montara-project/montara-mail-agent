@@ -35,7 +35,7 @@ type Session struct {
 	// MailID is only a pointer: the model reads the email through get_mail,
 	// which keeps it to the bound mailbox.
 	MailID string
-	// Bot is the persona the turn speaks as; nil means thebuilt-in one.
+	// Bot is the persona the turn speaks as; nil means the built-in one.
 	Bot *models.AgentBot
 }
 

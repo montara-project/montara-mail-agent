@@ -217,14 +217,14 @@ func (r *AgentRepository) ActionsOf(ctx context.Context, conversationID uuid.UUI
 	return collectRows(rows, scanAgentAction)
 }
 
-const agentDraftColumns = `id, created_at, updated_at, organization_id, email_account_id, mail_id, "to", cc, subject, text, html, status, decided_by`
+const agentDraftColumns = `id, created_at, updated_at, organization_id, email_account_id, mail_id, agent_bot_id, "to", cc, subject, text, html, status, decided_by`
 
 func scanAgentDraft(row rowScanner) (models.AgentDraft, error) {
 	var d models.AgentDraft
 	var to, cc []byte
 	var html sql.NullString
 	err := row.Scan(&d.ID, &d.CreatedAt, &d.UpdatedAt, &d.OrganizationID, &d.EmailAccountID,
-		&d.MailID, &to, &cc, &d.Subject, &d.Text, &html, &d.Status, &d.DecidedBy)
+		&d.MailID, &d.AgentBotID, &to, &cc, &d.Subject, &d.Text, &html, &d.Status, &d.DecidedBy)
 	if err != nil {
 		return d, translateNotFound("agent_drafts", err)
 	}
@@ -256,9 +256,9 @@ func (r *AgentRepository) InsertDraft(ctx context.Context, d *models.AgentDraft)
 		return err
 	}
 	_, err = r.execContext(ctx, `
-		INSERT INTO agent_drafts (id, organization_id, email_account_id, mail_id, "to", cc, subject, text, html, status)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-		d.ID, d.OrganizationID, d.EmailAccountID, d.MailID, to, cc, d.Subject, d.Text, nullString(d.HTML), models.AgentDraftPending,
+		INSERT INTO agent_drafts (id, organization_id, email_account_id, mail_id, agent_bot_id, "to", cc, subject, text, html, status)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+		d.ID, d.OrganizationID, d.EmailAccountID, d.MailID, d.AgentBotID, to, cc, d.Subject, d.Text, nullString(d.HTML), models.AgentDraftPending,
 	)
 	return err
 }

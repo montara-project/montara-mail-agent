@@ -1,6 +1,7 @@
 -- The AI agent's own data: conversations with the copilot, the messages that
 -- make them up, the outbound actions it proposed (sent only after an explicit
--- approval), and the drafts the background automation queues for review.
+-- approval), the personas it can speak as, and the drafts the background
+-- automation queues for review.
 CREATE TABLE IF NOT EXISTS "agent_conversations" (
   "id" UUID PRIMARY KEY NOT NULL DEFAULT uuidv7(),
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -54,6 +55,32 @@ CREATE TABLE IF NOT EXISTS "agent_actions" (
 CREATE INDEX IF NOT EXISTS idx_agent_actions_conversation
   ON "agent_actions" ("conversation_id", "status");
 
+-- User-defined AI agent personas: who the agent is (soul), what it should
+-- remember (memory), how it writes (style) and what it must or must not do
+-- (instruction). The system prompt is composed from these at runtime, never
+-- stored; at most one live bot per organization may be the default, which the
+-- background auto-drafter uses.
+CREATE TABLE IF NOT EXISTS "agent_bots" (
+  "id" UUID PRIMARY KEY NOT NULL DEFAULT uuidv7(),
+  "created_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
+  "updated_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
+  "organization_id" UUID NOT NULL REFERENCES "organizations" ("id") ON DELETE CASCADE,
+  "name" VARCHAR(100) NOT NULL,
+  "description" VARCHAR(300) NOT NULL DEFAULT '',
+  "soul" TEXT NOT NULL DEFAULT '',
+  "memory" TEXT NOT NULL DEFAULT '',
+  "style" TEXT NOT NULL DEFAULT '',
+  "instruction" TEXT NOT NULL DEFAULT '',
+  "is_default" BOOLEAN NOT NULL DEFAULT false,
+  "deleted_at" TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_bots_org
+  ON "agent_bots" ("organization_id", "created_at" DESC) WHERE "deleted_at" IS NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_agent_bots_org_default
+  ON "agent_bots" ("organization_id") WHERE "is_default" AND "deleted_at" IS NULL;
+
 -- The background automation's proposals for the same review: a drafted reply
 -- waiting for a decision before anything is sent.
 CREATE TABLE IF NOT EXISTS "agent_drafts" (
@@ -63,6 +90,9 @@ CREATE TABLE IF NOT EXISTS "agent_drafts" (
   "organization_id" UUID NOT NULL REFERENCES "organizations" ("id") ON DELETE CASCADE,
   "email_account_id" UUID NOT NULL REFERENCES "email_accounts" ("id") ON DELETE CASCADE,
   "mail_id" UUID REFERENCES "mails" ("id") ON DELETE SET NULL,
+  -- Which persona drafted the reply, so the review queue can name it; a
+  -- deleted bot leaves the draft (and its text) standing.
+  "agent_bot_id" UUID REFERENCES "agent_bots" ("id") ON DELETE SET NULL,
   "to" JSONB NOT NULL,
   "cc" JSONB,
   "subject" VARCHAR NOT NULL,

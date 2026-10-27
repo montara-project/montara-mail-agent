@@ -1,6 +1,6 @@
 package constant
 
-// Actions recorded inactivity_logs (see migration000009). The verb before
+// Actions recorded in activity_logs (see migration 000009). The verb before
 // the dot is the area, the noun after it the event.
 const (
 	ActivityAuthSignIn              = "auth.sign_in"
