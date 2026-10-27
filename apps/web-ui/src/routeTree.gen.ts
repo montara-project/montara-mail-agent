@@ -23,6 +23,7 @@ import { Route as appSettingsDeleteAccountRouteImport } from './routes/(app)/set
 import { Route as appSettingsOrganizationRouteImport } from './routes/(app)/settings/organization'
 import { Route as appSettingsProfileRouteImport } from './routes/(app)/settings/profile'
 import { Route as appSettingsSecurityRouteImport } from './routes/(app)/settings/security'
+import { Route as appSkillsIndexRouteImport } from './routes/(app)/skills/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -94,6 +95,11 @@ const appSettingsSecurityRoute = appSettingsSecurityRouteImport.update({
   path: '/security',
   getParentRoute: () => appSettingsRouteRoute,
 } as any)
+const appSkillsIndexRoute = appSkillsIndexRouteImport.update({
+  id: '/skills/',
+  path: '/skills/',
+  getParentRoute: () => appRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -109,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/': typeof appDashboardIndexRoute
   '/mail/': typeof appMailIndexRoute
   '/settings/': typeof appSettingsIndexRoute
+  '/skills/': typeof appSkillsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -123,6 +130,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof appDashboardIndexRoute
   '/mail': typeof appMailIndexRoute
   '/settings': typeof appSettingsIndexRoute
+  '/skills': typeof appSkillsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -140,6 +148,7 @@ export interface FileRoutesById {
   '/(app)/dashboard/': typeof appDashboardIndexRoute
   '/(app)/mail/': typeof appMailIndexRoute
   '/(app)/settings/': typeof appSettingsIndexRoute
+  '/(app)/skills/': typeof appSkillsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -157,6 +166,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/mail/'
     | '/settings/'
+    | '/skills/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -171,6 +181,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/mail'
     | '/settings'
+    | '/skills'
   id:
     | '__root__'
     | '/'
@@ -187,6 +198,7 @@ export interface FileRouteTypes {
     | '/(app)/dashboard/'
     | '/(app)/mail/'
     | '/(app)/settings/'
+    | '/(app)/skills/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -295,6 +307,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof appSettingsSecurityRouteImport
       parentRoute: typeof appSettingsRouteRoute
     }
+    '/(app)/skills/': {
+      id: '/(app)/skills/'
+      path: '/skills'
+      fullPath: '/skills/'
+      preLoaderRoute: typeof appSkillsIndexRouteImport
+      parentRoute: typeof appRouteRoute
+    }
   }
 }
 
@@ -325,6 +344,7 @@ interface appRouteRouteChildren {
   appAgentBotsIndexRoute: typeof appAgentBotsIndexRoute
   appDashboardIndexRoute: typeof appDashboardIndexRoute
   appMailIndexRoute: typeof appMailIndexRoute
+  appSkillsIndexRoute: typeof appSkillsIndexRoute
 }
 
 const appRouteRouteChildren: appRouteRouteChildren = {
@@ -333,6 +353,7 @@ const appRouteRouteChildren: appRouteRouteChildren = {
   appAgentBotsIndexRoute: appAgentBotsIndexRoute,
   appDashboardIndexRoute: appDashboardIndexRoute,
   appMailIndexRoute: appMailIndexRoute,
+  appSkillsIndexRoute: appSkillsIndexRoute,
 }
 
 const appRouteRouteWithChildren = appRouteRoute._addFileChildren(

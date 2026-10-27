@@ -22,9 +22,11 @@ import {
   Trash2,
 } from 'lucide-react'
 import React from 'react'
+import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
 
+import Hint from '@/components/block/common/hint'
 import Markdown from '@/components/block/common/markdown'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import ForwardDialog from '@/components/block/mail/forward-dialog'
@@ -32,6 +34,7 @@ import MailBody from '@/components/block/mail/mail-body'
 import { useMailPage } from '@/components/block/mail/mail-list'
 import { printMail } from '@/components/block/mail/print-mail'
 import ReplyComposer from '@/components/block/mail/reply-composer'
+import SkillMenu, { SkillResult } from '@/components/block/mail/skill-menu'
 import { IMPORTANCE_LABELS, mailInitials, senderName } from '@/components/layout/mail/mail-data'
 import { MAIL_FOLDERS, MAIL_LABELS } from '@/components/layout/mail/mail-panel'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -46,20 +49,16 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useActiveAgentBot } from '@/hooks/use-active-agent-bot'
 import { axiosErrorMessage, toastAxiosError, toastProgress } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
 
 function IconButton({ label, ...props }: React.ComponentProps<typeof Button> & { label: string }) {
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="size-8"
-      aria-label={label}
-      title={label}
-      {...props}
-    />
+    <Hint label={label}>
+      <Button variant="ghost" size="icon" className="size-8" aria-label={label} {...props} />
+    </Hint>
   )
 }
 
@@ -75,11 +74,6 @@ function Contacts({ contacts }: { contacts: Models.MailContact[] }) {
 
 const MOVE_TARGETS: Models.MailMoveTarget[] = ['inbox', 'archive', 'spam', 'trash']
 const folderTitle = (id: Models.MailFolder) => MAIL_FOLDERS.find((f) => f.id === id)?.title ?? id
-
-const OTHER_IMPORTANCE: Record<Models.MailImportance, Models.MailImportance> = {
-  important: 'low_priority',
-  low_priority: 'important',
-}
 
 /** Reading pane for one mail: toolbar, header, AI importance and summary, body and reply box. */
 export default function MailReader({ mailId }: { mailId: string }) {
@@ -98,7 +92,49 @@ export default function MailReader({ mailId }: { mailId: string }) {
     ...queries.mails.summary(mailId),
     enabled: summaryOpen && !!mail && !mail.summary,
   })
-  const summaryText = mail?.summary ?? summary.data
+  // A skill run with a bot answers its own summary, which the mail does not keep.
+  const [skillSummary, setSkillSummary] = React.useState<string>()
+  const summaryText = skillSummary ?? mail?.summary ?? summary.data
+
+  // Skills: the run in flight, a custom skill's answer, and a reply draft for the composer.
+  const runSkill = useMutation(queries.mails.runSkill(mailId))
+  const { activeBotId } = useActiveAgentBot()
+  const [skillRun, setSkillRun] = React.useState<{ name: string; text?: string } | null>(null)
+  const [replyDraft, setReplyDraft] = React.useState<{ text: string; at: number }>()
+  const [seenMailId, setSeenMailId] = React.useState(mailId)
+  if (mailId !== seenMailId) {
+    setSeenMailId(mailId)
+    setSkillSummary(undefined)
+    setSkillRun(null)
+    setReplyDraft(undefined)
+  }
+  const run = (skill: Models.AgentSkill) => {
+    setSkillRun({ name: skill.name })
+    runSkill.mutate(
+      { key: skill.key, agent_bot_id: activeBotId || undefined },
+      {
+        onSuccess: (result) => {
+          if (result.kind === 'text') {
+            setSkillRun({ name: skill.name, text: result.text })
+            return
+          }
+          setSkillRun(null)
+          if (result.kind === 'summary') {
+            setSkillSummary(result.text)
+            setSummaryOpen(true)
+          } else if (result.kind === 'organize') {
+            toast.success(`Labelled as ${IMPORTANCE_LABELS[result.importance].toLowerCase()}`)
+          } else {
+            setReplyDraft({ text: result.text, at: Date.now() })
+          }
+        },
+        onError: (error) => {
+          setSkillRun(null)
+          toastAxiosError(error)
+        },
+      }
+    )
+  }
 
   // Opening a mail reads it.
   const markRead = React.useEffectEvent(() => {
@@ -295,6 +331,16 @@ export default function MailReader({ mailId }: { mailId: string }) {
             <IconButton label="Forward" onClick={() => setForwarding(true)}>
               <Forward />
             </IconButton>
+            {/* The assistant pane is desktop only, like the button that opens it. */}
+            <IconButton
+              label="Ask AI about this email"
+              className="hidden size-8 lg:inline-flex"
+              onClick={() =>
+                navigate({ to: '/mail', search: (s) => ({ ...s, agent: true, about: mail.id }) })
+              }
+            >
+              <Sparkles />
+            </IconButton>
             <IconButton
               label={mail.is_starred ? 'Unstar' : 'Star'}
               aria-pressed={mail.is_starred}
@@ -317,38 +363,62 @@ export default function MailReader({ mailId }: { mailId: string }) {
             </span>
             {mail.importance && (
               <>
-                {/* Agreeing pins the AI's label as the user's; disagreeing flips it. */}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  aria-label="Agree with importance"
-                  aria-pressed={mail.importance_by === 'user'}
-                  className={cn(mail.importance_by === 'user' && 'bg-accent')}
-                  disabled={patch.isPending}
-                  onClick={() => update({ importance: mail.importance! })}
-                >
-                  <ThumbsUp />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  aria-label={`Disagree: mark as ${IMPORTANCE_LABELS[OTHER_IMPORTANCE[mail.importance]].toLowerCase()}`}
-                  disabled={patch.isPending}
-                  onClick={() => update({ importance: OTHER_IMPORTANCE[mail.importance!] })}
-                >
-                  <ThumbsDown />
-                </Button>
+                {/* Agreeing pins the AI's label as the user's; disagreeing picks another. */}
+                <Hint label="Agree with importance">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    aria-label="Agree with importance"
+                    aria-pressed={mail.importance_by === 'user'}
+                    className={cn(mail.importance_by === 'user' && 'bg-accent')}
+                    disabled={patch.isPending}
+                    onClick={() => update({ importance: mail.importance! })}
+                  >
+                    <ThumbsUp />
+                  </Button>
+                </Hint>
+                <DropdownMenu>
+                  <Hint label="Disagree: label it differently">
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        aria-label="Disagree: label it differently"
+                        disabled={patch.isPending}
+                      >
+                        <ThumbsDown />
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </Hint>
+                  <DropdownMenuContent align="start" className="w-44">
+                    <DropdownMenuLabel className="text-muted-foreground text-xs">
+                      Label as
+                    </DropdownMenuLabel>
+                    {MAIL_LABELS.filter((label) => label.id !== mail.importance).map((label) => (
+                      <DropdownMenuItem
+                        key={label.id}
+                        onSelect={() => update({ importance: label.id })}
+                      >
+                        <span className={`${label.color} size-2.5 shrink-0 rounded-sm`} />
+                        {label.title}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             )}
           </div>
-          <Button
-            variant="outline"
-            aria-expanded={summaryOpen}
-            onClick={() => setSummaryOpen(!summaryOpen)}
-          >
-            <Sparkles />
-            AI Email Summary
-          </Button>
+          <div className="flex items-center gap-2">
+            <SkillMenu disabled={runSkill.isPending} onRun={run} />
+            <Button
+              variant="outline"
+              aria-expanded={summaryOpen}
+              onClick={() => setSummaryOpen(!summaryOpen)}
+            >
+              <Sparkles />
+              AI Email Summary
+            </Button>
+          </div>
         </div>
 
         <Separator className="my-5" />
@@ -383,9 +453,24 @@ export default function MailReader({ mailId }: { mailId: string }) {
           </section>
         )}
 
+        {skillRun && (
+          <SkillResult
+            name={skillRun.name}
+            pending={runSkill.isPending}
+            text={skillRun.text}
+            onUseAsReply={(text) => setReplyDraft({ text, at: Date.now() })}
+            onClose={() => setSkillRun(null)}
+          />
+        )}
+
         <MailBody html={mail.body_html} text={mail.body} />
 
-        <ReplyComposer key={mail.id} mail={mail} onForward={() => setForwarding(true)} />
+        <ReplyComposer
+          key={mail.id}
+          mail={mail}
+          draft={replyDraft}
+          onForward={() => setForwarding(true)}
+        />
       </div>
 
       {forwarding && <ForwardDialog mail={mail} onClose={() => setForwarding(false)} />}

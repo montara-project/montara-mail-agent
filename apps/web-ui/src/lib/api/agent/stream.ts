@@ -54,6 +54,8 @@ export async function streamAgentChat(
     mail_id?: string
     /** The persona the turn speaks as; absent means the built-in one. */
     agent_bot_id?: string
+    /** The key of a skill invoked with a /command. */
+    skill?: string
     message: string
   },
   onEvent: (event: AgentStreamEvent) => void,

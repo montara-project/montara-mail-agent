@@ -120,9 +120,12 @@ function AiMenu({ mailId, onPick }: { mailId: string; onPick: (text: string) => 
  */
 export default function ReplyComposer({
   mail,
+  draft,
   onForward,
 }: {
   mail: Models.Mail
+  /** A reply a skill wrote: a new one opens the reply with it in the editor. */
+  draft?: { text: string; at: number }
   /** Opens the forward dialog, offered beside Reply. */
   onForward: () => void
 }) {
@@ -138,6 +141,15 @@ export default function ReplyComposer({
   const reply = useMutation(queries.mails.reply(mail.id))
   const { data: me } = useQuery(queries.auth.profile())
   const cardRef = React.useRef<HTMLDivElement>(null)
+
+  const [seenDraft, setSeenDraft] = React.useState(draft)
+  if (draft !== seenDraft) {
+    setSeenDraft(draft)
+    if (draft) {
+      setOpen(true)
+      setInitial({ text: draft.text })
+    }
+  }
 
   const names = mail.from_name ? { [mail.from_email]: mail.from_name } : undefined
 

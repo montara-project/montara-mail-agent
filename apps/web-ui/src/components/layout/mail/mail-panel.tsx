@@ -60,6 +60,7 @@ export const MAIL_FOLDERS: { id: Models.MailFolder; title: string; icon: typeof 
 export const MAIL_LABELS: { id: Models.MailImportance; title: string; color: string }[] = [
   { id: 'important', title: IMPORTANCE_LABELS.important, color: 'bg-violet-500' },
   { id: 'low_priority', title: IMPORTANCE_LABELS.low_priority, color: 'bg-emerald-500' },
+  { id: 'broadcast', title: IMPORTANCE_LABELS.broadcast, color: 'bg-sky-500' },
 ]
 
 /** The folder named by ?folder=, falling back to the inbox. */

@@ -11,6 +11,7 @@ import type { Models } from '@/lib/api/models'
 
 import Hint from '@/components/block/common/hint'
 import Markdown from '@/components/block/common/markdown'
+import { useEnabledSkills } from '@/components/block/mail/skill-menu'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import PromptBar from '@/components/ui/prompt-bar'
@@ -50,7 +51,7 @@ const STARTERS = ['Find an email', 'Summarize a thread', 'Draft a reply']
 /** The same, once an email is attached. */
 const EMAIL_STARTERS = ['Summarize this email', 'Draft a reply to it', 'List what it asks of me']
 
-/** The composer's / menu: each fills in a prompt to finish and send. */
+/** The composer's / menu: each fills in a prompt to finish and send. The skills join it. */
 const QUICK_PROMPTS: PromptCommand[] = [
   { key: 'find', name: '/find', desc: 'Find an email', prompt: 'Find the emails about ' },
   {
@@ -59,33 +60,9 @@ const QUICK_PROMPTS: PromptCommand[] = [
     desc: 'What needs me today',
     prompt: 'What unread mail needs my attention today?',
   },
-  {
-    key: 'summarize',
-    name: '/summarize',
-    desc: 'Summarize a thread',
-    prompt: 'Summarize the thread about ',
-  },
-  {
-    key: 'draft',
-    name: '/draft',
-    desc: 'Draft a reply',
-    prompt: 'Draft a reply to the latest email from ',
-  },
 ]
 /** The same, once an email is attached. */
 const EMAIL_QUICK_PROMPTS: PromptCommand[] = [
-  {
-    key: 'summarize',
-    name: '/summarize',
-    desc: 'Summarize this email',
-    prompt: 'Summarize this email',
-  },
-  {
-    key: 'reply',
-    name: '/reply',
-    desc: 'Draft a reply to it',
-    prompt: 'Draft a reply to this email',
-  },
   {
     key: 'asks',
     name: '/asks',
@@ -99,6 +76,13 @@ const EMAIL_QUICK_PROMPTS: PromptCommand[] = [
     prompt: 'Find my earlier emails with this sender',
   },
 ]
+
+/** A skill's /command: its built-in key, or its name in lower-case-with-dashes. */
+const skillCommand = (skill: Models.AgentSkill) =>
+  '/' +
+  (skill.builtin ? skill.key : skill.name.toLowerCase())
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
 
 /** "search_mails" → "Search mails": tool names as the chat shows them. */
 const toolLabel = (name?: string) =>
@@ -172,6 +156,15 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
   // The persona each turn speaks as; picked in the header, shared with the
   // reply composer's suggestions.
   const { personas, activeBot, activeBotId, setActiveBotId } = useActiveAgentBot()
+  // Enabled skills are / commands too: picking one fills in its command, and
+  // a message that starts with it runs as that skill.
+  const skills = useEnabledSkills()
+  const skillCommands: PromptCommand[] = skills.map((skill) => ({
+    key: `skill:${skill.key}`,
+    name: skillCommand(skill),
+    desc: skill.description || skill.name,
+    prompt: `${skillCommand(skill)} `,
+  }))
 
   const detail = useQuery(queries.agent.conversation(conversationId))
   const messages = detail.data?.data.messages ?? []
@@ -207,8 +200,14 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
   }
 
   const send = async () => {
-    const message = input.trim()
-    if (!message || streaming || !emailAccountId) return
+    const typed = input.trim()
+    if (!typed || streaming || !emailAccountId) return
+    const [command] = typed.split(/\s+/)
+    const skill = skills.find((s) => skillCommand(s) === command.toLowerCase())
+    // The server needs words to keep as the user's message; a bare command names the skill.
+    const message = skill
+      ? typed.slice(command.length).trim() || `Run the ${skill.name} skill`
+      : typed
 
     setInput('')
     setLive([])
@@ -249,6 +248,7 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
           email_account_id: emailAccountId,
           mail_id: about,
           agent_bot_id: activeBot?.id,
+          skill: skill?.key,
           message,
         },
         onEvent,
@@ -489,7 +489,7 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
                     ? 'Ask about this email…'
                     : 'Ask the assistant…'
               }
-              commands={about ? EMAIL_QUICK_PROMPTS : QUICK_PROMPTS}
+              commands={[...skillCommands, ...(about ? EMAIL_QUICK_PROMPTS : QUICK_PROMPTS)]}
               models={personas}
               model={activeBotId}
               onModelChange={setActiveBotId}

@@ -27,4 +27,6 @@ export namespace Models {
   export type AgentActionPayload = import('./agent').AgentActionPayload
   export type AgentDraft = import('./agent').AgentDraft
   export type AgentBot = import('./agent-bot').AgentBot
+  export type AgentSkill = import('./agent-skill').AgentSkill
+  export type SkillRunResult = import('./agent-skill').SkillRunResult
 }

@@ -138,6 +138,23 @@ const draftReply = (id: string) =>
     },
   })
 
+/**
+ * Runs a skill on a mail. An organize run relabels it and a summary run may
+ * keep its summary, so the mail and the lists refetch afterwards.
+ */
+const runSkill = (id: string) =>
+  mutationOptions({
+    mutationFn: async ({ key, ...body }: MailDraftReplyBody & { key: string }) => {
+      const res = await services.mails.runSkill(id, key, body)
+      return res.data.data
+    },
+    onSuccess: (result) => {
+      if (result.kind === 'organize' || result.kind === 'summary') {
+        void getQueryClient().invalidateQueries({ queryKey: [MAIL_QUERY_KEY] })
+      }
+    },
+  })
+
 export const mailQueries = {
   list,
   get,
@@ -145,6 +162,7 @@ export const mailQueries = {
   summary,
   replySuggestions,
   draftReply,
+  runSkill,
   move,
   delete: remove,
   forward,

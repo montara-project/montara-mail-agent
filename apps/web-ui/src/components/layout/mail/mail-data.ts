@@ -24,4 +24,5 @@ export function senderName(mail: Pick<Models.Mail, 'from_name' | 'from_email'>) 
 export const IMPORTANCE_LABELS: Record<Models.MailImportance, string> = {
   important: 'Important',
   low_priority: 'Low priority',
+  broadcast: 'Broadcast',
 }

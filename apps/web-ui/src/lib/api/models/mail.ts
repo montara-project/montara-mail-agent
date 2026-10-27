@@ -3,7 +3,7 @@ import type { ISO8601DateString } from '@/types/time'
 export type MailFolder = 'inbox' | 'archive' | 'sent' | 'drafts' | 'spam' | 'trash'
 /** The folders a user may move a mail to. */
 export type MailMoveTarget = 'inbox' | 'archive' | 'spam' | 'trash'
-export type MailImportance = 'important' | 'low_priority'
+export type MailImportance = 'important' | 'low_priority' | 'broadcast'
 
 export interface MailContact {
   name: string

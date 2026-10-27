@@ -41,6 +41,12 @@ export type MailResources = {
   ) => Promise<AxiosItemResponse<{ suggestions: string[] }>>
   /** A whole reply written by the AI; nothing is sent. */
   draftReply: (id: string, body: MailDraftReplyBody) => Promise<AxiosItemResponse<{ text: string }>>
+  /** Runs a skill on the mail; nothing is sent. */
+  runSkill: (
+    id: string,
+    key: string,
+    body: MailDraftReplyBody
+  ) => Promise<AxiosItemResponse<Models.SkillRunResult>>
   /** Moves the mail on the mail server too. */
   move: (id: string, folder: Models.MailMoveTarget) => Promise<AxiosDeleteResponse>
   /** Moves the mail to the trash, or deletes it for good when it is there. */
