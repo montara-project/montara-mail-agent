@@ -22,7 +22,6 @@ import SectionCard from '@/components/block/common/section-card'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -31,6 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
 import { toastAxiosError } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
 
@@ -107,15 +107,13 @@ function BuiltinSkillRow({
           ))}
         </SelectContent>
       </Select>
-      <div className="flex items-center gap-2 text-sm">
-        <Checkbox
-          id={`skill-on-${skill.key}`}
-          checked={skill.is_enabled}
-          disabled={save.isPending}
-          onCheckedChange={(v) => change({ is_enabled: v === true })}
-        />
-        <label htmlFor={`skill-on-${skill.key}`}>On</label>
-      </div>
+      <Switch
+        size="sm"
+        aria-label={`${skill.name} ${skill.is_enabled ? 'on' : 'off'}`}
+        checked={skill.is_enabled}
+        disabled={save.isPending}
+        onCheckedChange={(on) => change({ is_enabled: on })}
+      />
     </li>
   )
 }

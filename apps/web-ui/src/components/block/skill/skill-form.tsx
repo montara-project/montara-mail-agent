@@ -5,8 +5,8 @@ import type { Models } from '@/lib/api/models'
 import type { BaseAbstractForm } from '@/types/form'
 
 import SimpleAlertScrollableDialogForm from '@/components/block/common/simple-alert-scrollable-dialog-form'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldLabel } from '@/components/ui/field'
+import { Switch } from '@/components/ui/switch'
 import { useAppForm } from '@/hooks/form'
 import { toastAxiosError } from '@/lib/api/axios-error'
 import { AgentSkillFormSchema, type AgentSkillFormDto } from '@/lib/api/dtos/agent-skill/schema'
@@ -107,10 +107,11 @@ function AbstractForm({
         name="is_enabled"
         children={(field) => (
           <Field orientation="horizontal">
-            <Checkbox
+            <Switch
               id={field.name}
+              size="sm"
               checked={field.state.value}
-              onCheckedChange={(v) => field.handleChange(v === true)}
+              onCheckedChange={field.handleChange}
             />
             <FieldLabel htmlFor={field.name} className="font-normal">
               Show it in the Skills menu and the assistant's / commands
