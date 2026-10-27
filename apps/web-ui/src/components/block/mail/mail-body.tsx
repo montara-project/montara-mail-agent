@@ -86,8 +86,10 @@ function HtmlBody({ html }: { html: string }) {
 
   return (
     <div className="relative" aria-busy={!loaded}>
+      {/* In flow while loading, so the page below sits under the skeleton, not
+          under the frame's guessed height; the hidden frame is laid over it. */}
       {!loaded && (
-        <div className="absolute inset-x-0 top-0 grid max-w-3xl gap-3" aria-hidden>
+        <div className="grid max-w-3xl gap-3" aria-hidden>
           <Skeleton className="h-5 w-2/3" />
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-11/12" />
@@ -104,7 +106,7 @@ function HtmlBody({ html }: { html: string }) {
         // Matching the frame's color scheme to its page keeps the browser from
         // painting an opaque backdrop behind the transparent page.
         style={{ height, colorScheme: ownDarkMode && dark ? 'dark' : 'light' }}
-        className={`block w-full transition-opacity duration-200 motion-reduce:transition-none ${loaded ? '' : 'opacity-0'}`}
+        className={`block w-full transition-opacity duration-200 motion-reduce:transition-none ${loaded ? '' : 'pointer-events-none absolute inset-x-0 top-0 opacity-0'}`}
       />
     </div>
   )
