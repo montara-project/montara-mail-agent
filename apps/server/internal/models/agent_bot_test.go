@@ -97,17 +97,33 @@ func TestPersona(t *testing.T) {
 // Every built-in skill is found by its key and keyed by it, and an unknown
 // key finds nothing; a custom skill is keyed by its id.
 func TestBuiltinSkills(t *testing.T) {
-	for _, key := range []string{SkillSummarize, SkillOrganize, SkillDraftReply} {
+	keys := []string{SkillSummarize, SkillOrganize, SkillDraftReply, SkillHumanize, SkillCopyEdit,
+		SkillProspectReply, SkillObjectionReply, SkillPressReply}
+	if len(BuiltinSkills) != len(keys) {
+		t.Fatalf("%d built-in skills, want %d", len(BuiltinSkills), len(keys))
+	}
+	for _, key := range keys {
 		s, ok := BuiltinSkill(key)
 		if !ok || s.Key() != key || s.Instruction == "" || !s.IsEnabled {
 			t.Fatalf("BuiltinSkill(%q) = %+v, %v", key, s, ok)
+		}
+		// The skills table keeps built-in keys in a VARCHAR(32).
+		if len(key) > 32 {
+			t.Fatalf("built-in key %q is too long", key)
+		}
+	}
+	// The draft skills rewrite the reply being written; the rest work on the email.
+	for key, target := range map[string]string{SkillHumanize: SkillTargetDraft, SkillCopyEdit: SkillTargetDraft,
+		SkillPressReply: SkillTargetEmail, SkillSummarize: SkillTargetEmail} {
+		if s, _ := BuiltinSkill(key); s.WorksOn() != target {
+			t.Fatalf("%s works on %q, want %q", key, s.WorksOn(), target)
 		}
 	}
 	if _, ok := BuiltinSkill("nope"); ok {
 		t.Fatal("BuiltinSkill found an unknown key")
 	}
 	custom := AgentSkill{Name: "Mine"}
-	if custom.Key() != custom.ID.String() {
-		t.Fatalf("custom skill key = %q", custom.Key())
+	if custom.Key() != custom.ID.String() || custom.WorksOn() != SkillTargetEmail || custom.Answers() != SkillOutputText {
+		t.Fatalf("custom skill = key %q, works on %q, answers %q", custom.Key(), custom.WorksOn(), custom.Answers())
 	}
 }

@@ -4,9 +4,28 @@ import "github.com/google/uuid"
 
 // The built-in skills, by key.
 const (
-	SkillSummarize  = "summarize"
-	SkillOrganize   = "organize"
-	SkillDraftReply = "draft_reply"
+	SkillSummarize      = "summarize"
+	SkillOrganize       = "organize"
+	SkillDraftReply     = "draft_reply"
+	SkillHumanize       = "humanize"
+	SkillCopyEdit       = "copy_edit"
+	SkillProspectReply  = "prospect_reply"
+	SkillObjectionReply = "objection_reply"
+	SkillPressReply     = "press_reply"
+)
+
+// What a skill works on: the email received, or the reply draft the user is
+// writing (which it rewrites).
+const (
+	SkillTargetEmail = "email"
+	SkillTargetDraft = "draft"
+)
+
+// What a skill run on an email answers: Markdown to read, or a reply for the
+// editor. The first three built-ins have their own runs.
+const (
+	SkillOutputText  = "text"
+	SkillOutputReply = "reply"
 )
 
 // AgentSkill is a task the AI agent runs on mail, from the reader's Skills
@@ -24,6 +43,26 @@ type AgentSkill struct {
 	Instruction    string     `db:"instruction" json:"instruction"`
 	AgentBotID     *uuid.UUID `db:"agent_bot_id" json:"agent_bot_id"`
 	IsEnabled      bool       `db:"is_enabled" json:"is_enabled"`
+	// Target and Output are fixed per built-in skill; a custom one works on
+	// the email and answers text (the zero values).
+	Target string `db:"-" json:"target"`
+	Output string `db:"-" json:"output"`
+}
+
+// WorksOn is the skill's target, the email when it names none.
+func (s AgentSkill) WorksOn() string {
+	if s.Target == "" {
+		return SkillTargetEmail
+	}
+	return s.Target
+}
+
+// Answers is the skill's output, text when it names none.
+func (s AgentSkill) Answers() string {
+	if s.Output == "" {
+		return SkillOutputText
+	}
+	return s.Output
 }
 
 // Key names the skill in URLs and chat turns: the built-in key, or the
@@ -37,6 +76,12 @@ func (s AgentSkill) Key() string {
 
 func builtin(key, name, description, instruction string) AgentSkill {
 	return AgentSkill{Builtin: &key, Name: name, Description: description, Instruction: instruction, IsEnabled: true}
+}
+
+// on sets what a built-in skill works on and answers.
+func (s AgentSkill) on(target, output string) AgentSkill {
+	s.Target, s.Output = target, output
+	return s
 }
 
 // BuiltinSkills are the skills every organization has, in the order the app
@@ -59,6 +104,21 @@ var BuiltinSkills = []AgentSkill{
 		"Draft a reply to the email the user means (by default the attached email; read it with get_mail first), "+
 			"written in your persona's voice and style, then propose it with propose_reply so the user can approve it. "+
 			"Follow what the user says the reply should say; ask only when the email leaves the answer truly open."),
+	builtin(SkillHumanize, "Humanize",
+		"Rewrites your reply draft so it sounds like you, not a chatbot: no AI tells, nothing made up.",
+		humanizeInstruction).on(SkillTargetDraft, SkillOutputReply),
+	builtin(SkillCopyEdit, "Copy edit",
+		"Polishes your reply draft in seven sweeps: clearer, tighter, more specific, with an easy next step.",
+		copyEditInstruction).on(SkillTargetDraft, SkillOutputReply),
+	builtin(SkillProspectReply, "Reply to a prospect",
+		"Answers a sales reply the right way: interest, a question, an objection, not now, or a referral.",
+		prospectReplyInstruction).on(SkillTargetEmail, SkillOutputReply),
+	builtin(SkillObjectionReply, "Handle an objection",
+		"Replies to a price, timing, competitor or security objection with one honest answer and a next step.",
+		objectionReplyInstruction).on(SkillTargetEmail, SkillOutputReply),
+	builtin(SkillPressReply, "Reply to press",
+		"Answers a journalist or press request with a quotable, on-the-record reply, never a pitch.",
+		pressReplyInstruction).on(SkillTargetEmail, SkillOutputReply),
 }
 
 // BuiltinSkill returns the built-in skill with key, if there is one.

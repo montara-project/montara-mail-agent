@@ -335,8 +335,8 @@ func (h *mailHandler) DraftReply(c fiber.Ctx) error {
 }
 
 // RunSkill runs one skill on the mail and answers what it made: a summary, an
-// importance label (saved on the mail), a reply draft for the editor, or a
-// custom skill's Markdown. Nothing is sent. The persona is the skill's agent
+// importance label (saved on the mail), a reply for the editor, the user's
+// draft rewritten, or a custom skill's Markdown. Nothing is sent. The persona is the skill's agent
 // bot, else the one the user picked.
 func (h *mailHandler) RunSkill(c fiber.Ctx) error {
 	m, err := h.mail(c)
@@ -398,6 +398,23 @@ func (h *mailHandler) RunSkill(c fiber.Ctx) error {
 		text, err := mailai.DraftReply(c.Context(), client, m, bot, body.Instruction)
 		if err != nil {
 			return h.aiError("reply draft", err)
+		}
+		return dtos.OK(c, fiber.Map{"kind": "reply", "text": text})
+	}
+	if skill.WorksOn() == models.SkillTargetDraft {
+		if strings.TrimSpace(body.Draft) == "" {
+			return apperr.New(apperr.KindBadRequest, "write a reply first: %s rewrites your draft", skill.Name)
+		}
+		text, err := mailai.RewriteDraft(c.Context(), client, m, bot, skill, body.Draft)
+		if err != nil {
+			return h.aiError(skill.Name, err)
+		}
+		return dtos.OK(c, fiber.Map{"kind": "rewrite", "text": text})
+	}
+	if skill.Answers() == models.SkillOutputReply {
+		text, err := mailai.ReplyWithSkill(c.Context(), client, m, bot, skill, body.Instruction)
+		if err != nil {
+			return h.aiError(skill.Name, err)
 		}
 		return dtos.OK(c, fiber.Map{"kind": "reply", "text": text})
 	}

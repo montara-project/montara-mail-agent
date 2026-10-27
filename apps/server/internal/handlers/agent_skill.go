@@ -30,6 +30,9 @@ type skillView struct {
 	Instruction string     `json:"instruction"`
 	AgentBotID  *uuid.UUID `json:"agent_bot_id"`
 	IsEnabled   bool       `json:"is_enabled"`
+	// Target is what the skill works on: "email", or "draft" for one that
+	// rewrites the reply being written.
+	Target string `json:"target"`
 }
 
 func newSkillView(s models.AgentSkill) skillView {
@@ -41,6 +44,7 @@ func newSkillView(s models.AgentSkill) skillView {
 		Instruction: s.Instruction,
 		AgentBotID:  s.AgentBotID,
 		IsEnabled:   s.IsEnabled,
+		Target:      s.WorksOn(),
 	}
 	// A built-in skill's instruction is the server's, not a setting.
 	if v.Builtin {

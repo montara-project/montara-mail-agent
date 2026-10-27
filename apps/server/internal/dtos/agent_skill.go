@@ -31,13 +31,16 @@ func (dto BuiltinSkillBody) Validate(v *validator.MapValidator) {
 }
 
 // RunSkillBody runs a skill on one mail: the bot the user has picked, used
-// when the skill names none, and for draft_reply what the reply should say.
+// when the skill names none, what a reply skill's reply should say, and the
+// reply draft a draft skill rewrites.
 type RunSkillBody struct {
 	AgentBotID  string `json:"agent_bot_id"`
 	Instruction string `json:"instruction"`
+	Draft       string `json:"draft"`
 }
 
 func (dto RunSkillBody) Validate(v *validator.MapValidator) {
 	v.Field("agent_bot_id").Regex(optionalUUID)
 	v.Field("instruction").String().MaxLen(2000)
+	v.Field("draft").String().MaxLen(20000)
 }
