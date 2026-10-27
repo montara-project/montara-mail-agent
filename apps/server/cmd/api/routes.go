@@ -84,6 +84,8 @@ func routes(r *fiber.App, app *app.Application) {
 	organizations.Put("/:id/llm-provider", idempotent, h.LLMProvider.Put)
 	organizations.Delete("/:id/llm-provider", idempotent, h.LLMProvider.Delete)
 	organizations.Post("/:id/llm-provider/models", slow, h.LLMProvider.Models)
+	organizations.Get("/:id/agent-bots", h.AgentBot.List)
+	organizations.Post("/:id/agent-bots", idempotent, h.AgentBot.Create)
 
 	// The OAuth consent flow's return address: a browser navigation from the
 	// provider, so no signed-in caller and no API envelope — the handler
@@ -108,6 +110,13 @@ func routes(r *fiber.App, app *app.Application) {
 	mails.Post("/:id/reply", slow, idempotent, h.Mail.Reply)
 	mails.Post("/:id/summary", slow, h.Mail.Summary)
 	mails.Post("/:id/reply-suggestions", slow, h.Mail.ReplySuggestions)
+
+	// Agent bots areorganization settings, so the flat group lets the web app
+	// edit one by its ownid without repeating the organization.
+	agentBots := v1.Group("/agent-bots", m.Authorization)
+	agentBots.Get("/:id", h.AgentBot.Get)
+	agentBots.Put("/:id", idempotent, h.AgentBot.Update)
+	agentBots.Delete("/:id", idempotent, h.AgentBot.Delete)
 
 	// The mail agent: a copilot over one mailbox, its conversation history,
 	// and the approvals its proposals wait for. The chat streams its answer

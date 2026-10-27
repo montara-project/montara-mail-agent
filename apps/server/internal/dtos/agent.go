@@ -12,17 +12,21 @@ func (dto AgentConversationBody) Validate(v *validator.MapValidator) {
 }
 
 // AgentChatBody is one copilot turn: the prompt, the conversation it belongs
-// to (a new one is opened when absent), and the mailbox to bind a new
-// conversation to.
+// to (a new one is opened when absent), the mailbox to bind a new
+// conversation to, and the email the user is asking about, if any.
 type AgentChatBody struct {
 	ConversationID string `json:"conversation_id"`
 	EmailAccountID string `json:"email_account_id"`
+	MailID         string `json:"mail_id"`
+	AgentBotID     string `json:"agent_bot_id"`
 	Message        string `json:"message"`
 }
 
 func (dto AgentChatBody) Validate(v *validator.MapValidator) {
 	v.Field("conversation_id").Regex(optionalUUID)
 	v.Field("email_account_id").Regex(optionalUUID)
+	v.Field("mail_id").Regex(optionalUUID)
+	v.Field("agent_bot_id").Regex(optionalUUID)
 	v.Field("message").Required().String().MaxLen(10000)
 }
 

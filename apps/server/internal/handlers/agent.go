@@ -226,7 +226,25 @@ func (h *agentHandler) Chat(c fiber.Ctx) error {
 		return err
 	}
 
-	session := mailagent.Session{Conversation: conv, Account: account}
+	// The persona the turn speaks as: a bot the caller picked, or none for
+	// the built-in assistant. A bot from another organization is a 404.
+	var bot *models.AgentBot
+	if body.AgentBotID != "" {
+		botID, err := uuid.Parse(body.AgentBotID)
+		if err != nil {
+			return apperr.New(apperr.KindBadRequest, "invalid agent bot id")
+		}
+		b, err := h.app.Repositories.AgentBot.Get(c.Context(), botID)
+		if err != nil {
+			return err
+		}
+		if b.OrganizationID != conv.OrganizationID {
+			return apperr.New(apperr.KindNotFound, "agent bot not found")
+		}
+		bot = &b
+	}
+
+	session := mailagent.Session{Conversation: conv, Account: account, MailID: body.MailID, Bot: bot}
 
 	// Server-sent events: fiber buffers its answer, so the run writes through
 	// a stream writer and flushes event by event.

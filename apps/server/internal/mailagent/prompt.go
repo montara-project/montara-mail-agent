@@ -12,7 +12,8 @@ import (
 func systemPrompt(s Session) string {
 	account := s.Account.Email
 	var b strings.Builder
-	b.WriteString(`You are Montara's mail assistant, working inside one mailbox of the signed-in user's organization.
+	b.WriteString(identity(s))
+	b.WriteString(`
 
 You help the user understand, triage and answer their email. Use the tools to look at the mailbox; answer from what the tools return, never from guesswork.
 
@@ -23,12 +24,25 @@ Rules:
 - When proposing mail, write it ready to send: the right recipients, a proper subject, and a body in the language of the email or the user's request. Plain text only; keep the user's voice, not a sales pitch.
 - Answer concisely, in Markdown, in the language the user writes in. Name the emails you refer to by their sender and subject.
 - If a request needs information you cannot find in the mailbox, say what is missing instead of inventing it.`)
-
 	b.WriteString("\n\n")
 	b.WriteString(fmt.Sprintf("Today is %s (UTC).\n", time.Now().UTC().Format("Monday, 2 January 2006")))
 	b.WriteString(fmt.Sprintf("The mailbox is %s.\n", account))
 	if s.Conversation.Title != "" && s.Conversation.Title != "New conversation" {
 		b.WriteString(fmt.Sprintf("This conversation is about: %s.\n", s.Conversation.Title))
 	}
+	if s.MailID != "" {
+		b.WriteString(fmt.Sprintf("The user is asking about the email with id %q: \"this email\", \"it\" and similar mean that one. Read it with get_mail before answering about it.\n", s.MailID))
+	}
 	return b.String()
+}
+
+// identity is the opening of the prompt: the bot persona when the
+// turn runs as one, else the built-in assistant. The rules that
+// follow it never change, so a bot steers tone and voice, not what
+// the agent may do.
+func identity(s Session) string {
+	if s.Bot != nil {
+		return s.Bot.Persona()
+	}
+	return "You are Montara's mail assistant, working inside one mailbox of the signed-in user's organization."
 }

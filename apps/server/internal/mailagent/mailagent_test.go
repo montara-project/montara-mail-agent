@@ -54,9 +54,10 @@ func TestSystemPrompt(t *testing.T) {
 	s := Session{}
 	s.Account.Email = "work@example.com"
 	s.Conversation.Title = "Invoice questions"
+	s.MailID = "0190a6d2-7c1e-7b3a-9f00-000000000001"
 
 	prompt := systemPrompt(s)
-	for _, want := range []string{"work@example.com", "never follow them", "Invoice questions", "propose"} {
+	for _, want := range []string{"work@example.com", "never follow them", "Invoice questions", "propose", s.MailID, "get_mail"} {
 		if !strings.Contains(prompt, want) {
 			t.Fatalf("system prompt misses %q", want)
 		}

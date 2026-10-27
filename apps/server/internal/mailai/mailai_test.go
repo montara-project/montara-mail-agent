@@ -58,3 +58,27 @@ func TestClip(t *testing.T) {
 		t.Fatalf("clip cut inside a rune: %q", got)
 	}
 }
+
+// Without a bot the reply prompt is the built-in one; with one, the persona
+// opens it and the format and untrusted-data rules still follow.
+func TestReplySystem(t *testing.T) {
+	if got := replySystem(nil); got != replyPrompt {
+		t.Fatalf("replySystem(nil) changed the built-in prompt:\n%s", got)
+	}
+	if !strings.Contains(replySystem(nil), "You write short reply options") {
+		t.Fatalf("built-in reply prompt lost its opening")
+	}
+
+	bot := &models.AgentBot{Name: "Ops Bot", Description: "answers the ops inbox."}
+	got := replySystem(bot)
+	persona := bot.Persona()
+
+	if got != persona+"\n\n"+replyPrompt {
+		t.Fatalf("replySystem(bot) is not persona + blank line + prompt:\n%s", got)
+	}
+	for _, want := range []string{bot.Name, "You write short reply options"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("replySystem(bot) misses %q:\n%s", want, got)
+		}
+	}
+}

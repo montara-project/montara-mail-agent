@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 
 	"montara-mail-agent/server/internal/app"
+	"montara-mail-agent/server/internal/lib/apperr"
 	"montara-mail-agent/server/internal/lib/constant"
 	"montara-mail-agent/server/internal/models"
 	"montara-mail-agent/server/internal/repositories"
@@ -69,6 +70,9 @@ func AutoDraftOnce(ctx context.Context, app *app.Application, dailyCap int) {
 		if _, err := app.LLMFor(ctx, orgID); err != nil {
 			continue
 		}
+		// The persona the drafts speak as: the
+		// organization default bot, or the built-in one when it has none.
+		persona := defaultBot(ctx, app, orgID)
 		queued, err := app.Repositories.Agent.CountDraftsCreatedSince(ctx, orgID, dayStart)
 		if err != nil {
 			app.Logger.Warn("agent auto-draft could not count drafts", "org", orgID, "error", err)
@@ -88,7 +92,7 @@ func AutoDraftOnce(ctx context.Context, app *app.Application, dailyCap int) {
 				if queued >= int64(dailyCap) {
 					return
 				}
-				text, err := draftReply(ctx, app, orgID, mail)
+				text, err := draftReply(ctx, app, orgID, mail, persona)
 				if err != nil {
 					app.Logger.Warn("agent auto-draft failed for one mail", "mail", mail.ID, "error", err)
 					continue
@@ -97,6 +101,7 @@ func AutoDraftOnce(ctx context.Context, app *app.Application, dailyCap int) {
 					OrganizationID: orgID,
 					EmailAccountID: account.ID,
 					MailID:         &mail.ID,
+					AgentBotID:     botID(persona),
 					To:             []string{mail.FromEmail},
 					Subject:        "Re: " + mail.Subject,
 					Text:           text,
@@ -134,7 +139,7 @@ func importantMail(ctx context.Context, app *app.Application, account models.Ema
 }
 
 // draftReply asks the model for one reply body.
-func draftReply(ctx context.Context, app *app.Application, orgID uuid.UUID, mail models.Mail) (string, error) {
+func draftReply(ctx context.Context, app *app.Application, orgID uuid.UUID, mail models.Mail, persona *models.AgentBot) (string, error) {
 	client, err := app.LLMFor(ctx, orgID)
 	if err != nil {
 		return "", err
@@ -144,5 +149,37 @@ func draftReply(ctx context.Context, app *app.Application, orgID uuid.UUID, mail
 		mail.ID, mailAddress(mail.FromName, mail.FromEmail), mail.Subject,
 		clip(mail.Body, mailBodyLimit),
 	)
-	return client.Complete(ctx, draftSystem, prompt, draftPromptTokens)
+	return client.Complete(ctx, draftSystemFor(persona), prompt, draftPromptTokens)
+}
+
+// defaultBot returns the organization default agent bot, or nil for the
+// built-in persona when it has set none. A lookup failure is logged and
+// treated as none: the automation still drafts with the built-in persona.
+func defaultBot(ctx context.Context, app *app.Application, orgID uuid.UUID) *models.AgentBot {
+	bot, err := app.Repositories.AgentBot.Default(ctx, orgID)
+	if err != nil {
+		if !apperr.IsNotFound(err) {
+			app.Logger.Warn("agent auto-draft could not load the default bot", "org", orgID, "error", err)
+		}
+		return nil
+	}
+	return &bot
+}
+
+// botID names the bot that drafted a reply, for the review queue; nil for the
+// built-in persona.
+func botID(persona *models.AgentBot) *uuid.UUID {
+	if persona == nil {
+		return nil
+	}
+	return &persona.ID
+}
+
+// draftSystemFor is the drafting instruction: the bot's persona followed by
+// the same format rules when one is given, else the built-in prompt.
+func draftSystemFor(persona *models.AgentBot) string {
+	if persona != nil {
+		return persona.Persona() + "\n\n" + draftSystem
+	}
+	return draftSystem
 }

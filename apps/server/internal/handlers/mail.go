@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/google/uuid"
 
 	"montara-mail-agent/server/internal/app"
 	"montara-mail-agent/server/internal/dtos"
@@ -270,7 +271,8 @@ func (h *mailHandler) Summary(c fiber.Ctx) error {
 	return dtos.OK(c, fiber.Map{"summary": summary})
 }
 
-// ReplySuggestions returns up to three short replies to the mail.
+// ReplySuggestions returns up to three short replies to the mail. An optional
+// body names the agent bot whose persona should write them.
 func (h *mailHandler) ReplySuggestions(c fiber.Ctx) error {
 	m, err := h.mail(c)
 	if err != nil {
@@ -280,9 +282,46 @@ func (h *mailHandler) ReplySuggestions(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	suggestions, err := mailai.SuggestReplies(c.Context(), client, m)
+	account, err := h.account(c, m)
+	if err != nil {
+		return err
+	}
+	bot, err := h.replyBot(c, account.OrganizationID)
+	if err != nil {
+		return err
+	}
+	suggestions, err := mailai.SuggestReplies(c.Context(), client, m, bot)
 	if err != nil {
 		return h.aiError("reply suggestions", err)
 	}
 	return dtos.OK(c, fiber.Map{"suggestions": suggestions})
+}
+
+// replyBot loads the agent bot an optional JSON body names, or nil for the
+// built-in persona. The body is optional: a client that sends none keeps the
+// old behaviour. A bot from another organization is a 404.
+func (h *mailHandler) replyBot(c fiber.Ctx, organizationID uuid.UUID) (*models.AgentBot, error) {
+	raw := c.Body()
+	if len(raw) == 0 {
+		return nil, nil
+	}
+	var body dtos.ReplySuggestionsBody
+	if err := lib.ValidateJSON(raw, &body); err != nil {
+		return nil, err
+	}
+	if body.AgentBotID == "" {
+		return nil, nil
+	}
+	id, err := uuid.Parse(body.AgentBotID)
+	if err != nil {
+		return nil, apperr.New(apperr.KindBadRequest, "invalid agent bot id")
+	}
+	bot, err := h.app.Repositories.AgentBot.Get(c.Context(), id)
+	if err != nil {
+		return nil, err
+	}
+	if bot.OrganizationID != organizationID {
+		return nil, apperr.New(apperr.KindNotFound, "agent bot not found")
+	}
+	return &bot, nil
 }

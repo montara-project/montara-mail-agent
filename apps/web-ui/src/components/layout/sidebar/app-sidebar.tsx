@@ -44,7 +44,9 @@ function ThemeToggle() {
 /** The second panel shown next to the rail for a path, if any. */
 function sidebarPanel(pathname: string) {
   if (pathname.startsWith('/mail')) return <MailPanel />
-  if (['/dashboard', '/account', '/settings'].some((path) => pathname.startsWith(path)))
+  if (
+    ['/dashboard', '/account', '/agent-bots', '/settings'].some((path) => pathname.startsWith(path))
+  )
     return <PlatformPanel />
   return null
 }

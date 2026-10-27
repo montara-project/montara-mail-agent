@@ -81,12 +81,14 @@ const (
 )
 
 // AgentDraft is a reply the background automation drafted for a mail, waiting
-// for review in the drafts queue.
+// for review in the drafts queue. AgentBotID names the persona that drafted
+// it, when the organization had a default bot; null means the built-in one.
 type AgentDraft struct {
 	Base
 	OrganizationID uuid.UUID  `db:"organization_id" json:"organization_id"`
 	EmailAccountID uuid.UUID  `db:"email_account_id" json:"email_account_id"`
 	MailID         *uuid.UUID `db:"mail_id" json:"mail_id,omitempty"`
+	AgentBotID     *uuid.UUID `db:"agent_bot_id" json:"agent_bot_id,omitempty"`
 	To             []string   `db:"-" json:"to"`
 	Cc             []string   `db:"-" json:"cc,omitempty"`
 	Subject        string     `db:"subject" json:"subject"`
