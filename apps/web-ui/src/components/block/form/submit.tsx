@@ -25,10 +25,8 @@ export default function SubmitButton({
   return (
     <Button
       type="submit"
-      className={cn(
-        'text-off-white bg-obsidian-black hover:bg-obsidian-black/80 h-10 rounded-lg px-6 transition-colors',
-        className
-      )}
+      className={cn('h-10 px-6', className)}
+      aria-busy={isSubmitting}
       disabled={isSubmitting}
       {...props}
     >
