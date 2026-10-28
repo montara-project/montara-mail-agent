@@ -7,11 +7,15 @@ import "montara-mail-agent/server/internal/lib/validator"
 type ProfileBody struct {
 	Name  string `json:"name"`
 	Image string `json:"image"`
+	// Timezone is an IANA name (e.g. Asia/Jakarta) the app shows times in;
+	// empty keeps the saved one, which is UTC until set.
+	Timezone string `json:"timezone"`
 }
 
 func (dto ProfileBody) Validate(v *validator.MapValidator) {
 	v.Field("name").Required().String().MaxLen(maxNameLen)
 	v.Field("image").String().MaxLen(2000).Regex(`^(https://\S+)?$`)
+	v.Field("timezone").String().MaxLen(64).Regex(`^[A-Za-z][A-Za-z0-9_+/-]*$`)
 }
 
 // Password bounds, the same as Authula's sign-up (see newAuth).

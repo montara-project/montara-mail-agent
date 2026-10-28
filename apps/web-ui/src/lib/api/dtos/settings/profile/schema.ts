@@ -16,6 +16,8 @@ export const UpdateProfileSchema = z.object({
       (value) => value === '' || /^https:\/\/\S+$/.test(value),
       'The avatar must be an https:// URL.'
     ),
+  // An IANA zone from the picker; the server checks it too.
+  timezone: requiredString('timezone'),
 })
 
 export type UpdateProfileDto = z.infer<typeof UpdateProfileSchema>

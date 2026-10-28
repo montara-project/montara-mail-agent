@@ -19,13 +19,21 @@ import { OrganizationFormSchema } from '@/lib/api/dtos/organization/schema'
 import { parseDto } from '@/lib/api/dtos/parse'
 import { UpdateProfileSchema } from '@/lib/api/dtos/settings/profile/schema'
 import { queries } from '@/lib/api/queries'
+import { DEFAULT_TIMEZONE, TIMEZONES, timezoneLabel } from '@/lib/constants/timezones'
+
+// Built once: the labels carry each zone's offset as of page load.
+const TIMEZONE_OPTIONS = TIMEZONES.map((zone) => ({ value: zone, label: timezoneLabel(zone) }))
 
 function ProfileForm({ user }: { user: Models.User }) {
   const update = useMutation(queries.profile.update())
   const { mask } = useHideEmails()
 
   const form = useAppForm({
-    defaultValues: { name: user.name, image: user.image ?? '' },
+    defaultValues: {
+      name: user.name,
+      image: user.image ?? '',
+      timezone: user.metadata?.timezone ?? DEFAULT_TIMEZONE,
+    },
     validators: { onSubmit: UpdateProfileSchema, onChange: UpdateProfileSchema },
     onSubmit: async ({ value }) => {
       try {
@@ -77,6 +85,21 @@ function ProfileForm({ user }: { user: Models.User }) {
             <FieldDescription id="avatar-url-hint">
               Leave empty to show your initials.
             </FieldDescription>
+          </div>
+          <div className="grid gap-2">
+            <form.AppField
+              name="timezone"
+              children={(field) => (
+                <field.ComboboxField
+                  label="Timezone"
+                  placeholder="Pick a timezone"
+                  searchPlaceholder="Search timezones..."
+                  emptyText="No timezone matches."
+                  options={TIMEZONE_OPTIONS}
+                />
+              )}
+            />
+            <FieldDescription>The clock in the header shows the time here.</FieldDescription>
           </div>
         </div>
       </div>

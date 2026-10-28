@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"time"
+
 	authulamodels "github.com/Authula/authula/models"
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
@@ -69,6 +71,16 @@ func (h *profileHandler) Update(c fiber.Ctx) error {
 	user.Image = nil
 	if body.Image != "" {
 		user.Image = &body.Image
+	}
+	// The timezone rides in Authula's user metadata, so /auth/me carries it.
+	if body.Timezone != "" {
+		if _, err := time.LoadLocation(body.Timezone); err != nil {
+			return apperr.New(apperr.KindBadRequest, "%s isn't a known timezone", body.Timezone)
+		}
+		if user.Metadata == nil {
+			user.Metadata = map[string]any{}
+		}
+		user.Metadata["timezone"] = body.Timezone
 	}
 	if user, err = users.Update(c.Context(), user); err != nil {
 		return err

@@ -17,11 +17,13 @@ import { capitalizeFirstLetter } from '@/lib/string'
 import { cn } from '@/lib/utils'
 
 import AppSidebar, { hasSidebarPanel } from './app-sidebar'
+import HeaderClock from './header-clock'
 
 /** Path segments whose breadcrumb label isn't the segment itself. */
 const SEGMENT_LABELS: Record<string, string> = {
   settings: 'Control Center',
   'ai-providers': 'AI Providers',
+  mcp: 'MCP',
 }
 
 const segmentLabel = (segment: string) => SEGMENT_LABELS[segment] ?? capitalizeFirstLetter(segment)
@@ -120,6 +122,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
               />
               {renderBreadcrumb()}
             </div>
+            <HeaderClock />
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4">{children}</div>

@@ -40,6 +40,17 @@ func testAccountSettings(t *testing.T, call callFunc, cookies func() string, db 
 	if err := db.QueryRow(`SELECT name, image FROM public.users WHERE email = $1`, email).Scan(&name, &image); err != nil || name != "Renamed" || image != "https://example.com/a.png" {
 		t.Fatalf("mirror after update: %q %q %v", name, image, err)
 	}
+	// The timezone is checked against the zone database and kept in the
+	// user's metadata; leaving it out keeps it.
+	if status, _ := call(http.MethodPatch, "/api/v1/me", token, map[string]string{"name": "Renamed", "timezone": "Mars/Olympus"}); status != http.StatusBadRequest {
+		t.Fatalf("unknown timezone: %d, want 400", status)
+	}
+	if status, out := call(http.MethodPatch, "/api/v1/me", token, map[string]string{"name": "Renamed", "timezone": "Asia/Jakarta"}); status != http.StatusOK || data(out)["metadata"].(map[string]any)["timezone"] != "Asia/Jakarta" {
+		t.Fatalf("set timezone: %d %v", status, out)
+	}
+	if _, out := call(http.MethodPatch, "/api/v1/me", token, map[string]string{"name": "Renamed again"}); data(out)["metadata"].(map[string]any)["timezone"] != "Asia/Jakarta" {
+		t.Fatalf("a profile save without a timezone dropped it: %v", data(out))
+	}
 
 	// Two-factor: enabling waits for a first code, so a botched scan locks no one out.
 	status, out = call(http.MethodPost, "/api/v1/auth/totp/enable", token, map[string]any{})
