@@ -44,7 +44,7 @@ const SETTINGS_GROUPS: { title: string; items: SettingsItem[] }[] = [
       { title: 'Agent Bots', icon: Bot, url: '/settings/agent-bots' },
       { title: 'Tools', icon: Wrench },
       { title: 'Skills', icon: Wand2, url: '/settings/skills' },
-      { title: 'MCP', icon: Plug },
+      { title: 'MCP', icon: Plug, url: '/settings/mcp' },
       { title: 'Plugins', icon: Package },
     ],
   },

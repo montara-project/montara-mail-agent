@@ -44,6 +44,7 @@ type toolset struct {
 	app  *app.Application
 	sync *mailsync.Syncer
 	s    Session
+	mcp  mcpTools
 }
 
 func newToolset(app *app.Application, sync *mailsync.Syncer, s Session) toolset {
@@ -51,7 +52,7 @@ func newToolset(app *app.Application, sync *mailsync.Syncer, s Session) toolset 
 }
 
 func (t *toolset) defs() []llm.ToolDef {
-	return []llm.ToolDef{
+	defs := []llm.ToolDef{
 		{
 			Name:        toolSearch,
 			Description: "Search the mailbox. Returns a page of emails matching the query, newest first, with id, sender, subject, date and a teaser.",
@@ -159,6 +160,7 @@ func (t *toolset) defs() []llm.ToolDef {
 			}`),
 		},
 	}
+	return append(defs, t.mcp.defs...)
 }
 
 // execute runs one tool call, answering (content, payload): content goes back
@@ -182,6 +184,10 @@ func (t *toolset) execute(ctx context.Context, call llm.ToolCall) (string, json.
 	// An unparsable argument list is the model's mistake to recover from; the
 	// empty args then fail the required-field checks below.
 	_ = json.Unmarshal(call.Args, &args)
+
+	if tool, ok := t.mcp.tools[call.Name]; ok {
+		return t.callMCP(ctx, tool, call.Args)
+	}
 
 	switch call.Name {
 	case toolSearch:

@@ -6,6 +6,7 @@ import { authServices } from './auth'
 import { emailAccountServices } from './email-account'
 import { llmProviderServices } from './llm-provider'
 import { mailServices } from './mail'
+import { mcpServerServices } from './mcp-server'
 import { organizationServices } from './organization'
 import { profileServices } from './profile'
 
@@ -20,4 +21,5 @@ export const services = {
   agent: agentServices,
   agentBots: agentBotServices,
   agentSkills: agentSkillServices,
+  mcpServers: mcpServerServices,
 } as const

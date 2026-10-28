@@ -16,6 +16,7 @@ type Handlers struct {
 	Agent        *agentHandler
 	AgentBot     *agentBotHandler
 	AgentSkill   *agentSkillHandler
+	MCPServer    *mcpServerHandler
 }
 
 func New(app *app.Application) *Handlers {
@@ -31,5 +32,6 @@ func New(app *app.Application) *Handlers {
 		Agent:        &agentHandler{app: app, sync: sync},
 		AgentBot:     &agentBotHandler{app: app},
 		AgentSkill:   &agentSkillHandler{app: app},
+		MCPServer:    &mcpServerHandler{app: app},
 	}
 }

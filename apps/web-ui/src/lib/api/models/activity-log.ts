@@ -19,6 +19,9 @@ export type ActivityAction =
   | 'mail.replied'
   | 'mail.forwarded'
   | 'mail.deleted'
+  | 'mcp_server.added'
+  | 'mcp_server.updated'
+  | 'mcp_server.removed'
 
 /** One recorded action a user took; rows are immutable. */
 export interface ActivityLog {

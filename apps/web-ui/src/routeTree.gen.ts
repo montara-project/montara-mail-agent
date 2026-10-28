@@ -21,6 +21,7 @@ import { Route as appSettingsAgentBotsRouteImport } from './routes/(app)/setting
 import { Route as appSettingsAiProvidersRouteImport } from './routes/(app)/settings/ai-providers'
 import { Route as appSettingsBillingRouteImport } from './routes/(app)/settings/billing'
 import { Route as appSettingsDeleteAccountRouteImport } from './routes/(app)/settings/delete-account'
+import { Route as appSettingsMcpRouteImport } from './routes/(app)/settings/mcp'
 import { Route as appSettingsOrganizationRouteImport } from './routes/(app)/settings/organization'
 import { Route as appSettingsProfileRouteImport } from './routes/(app)/settings/profile'
 import { Route as appSettingsSecurityRouteImport } from './routes/(app)/settings/security'
@@ -86,6 +87,11 @@ const appSettingsDeleteAccountRoute =
     path: '/delete-account',
     getParentRoute: () => appSettingsRouteRoute,
   } as any)
+const appSettingsMcpRoute = appSettingsMcpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
+  getParentRoute: () => appSettingsRouteRoute,
+} as any)
 const appSettingsOrganizationRoute = appSettingsOrganizationRouteImport.update({
   id: '/organization',
   path: '/organization',
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/settings/ai-providers': typeof appSettingsAiProvidersRoute
   '/settings/billing': typeof appSettingsBillingRoute
   '/settings/delete-account': typeof appSettingsDeleteAccountRoute
+  '/settings/mcp': typeof appSettingsMcpRoute
   '/settings/organization': typeof appSettingsOrganizationRoute
   '/settings/profile': typeof appSettingsProfileRoute
   '/settings/security': typeof appSettingsSecurityRoute
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   '/settings/ai-providers': typeof appSettingsAiProvidersRoute
   '/settings/billing': typeof appSettingsBillingRoute
   '/settings/delete-account': typeof appSettingsDeleteAccountRoute
+  '/settings/mcp': typeof appSettingsMcpRoute
   '/settings/organization': typeof appSettingsOrganizationRoute
   '/settings/profile': typeof appSettingsProfileRoute
   '/settings/security': typeof appSettingsSecurityRoute
@@ -150,6 +158,7 @@ export interface FileRoutesById {
   '/(app)/settings/ai-providers': typeof appSettingsAiProvidersRoute
   '/(app)/settings/billing': typeof appSettingsBillingRoute
   '/(app)/settings/delete-account': typeof appSettingsDeleteAccountRoute
+  '/(app)/settings/mcp': typeof appSettingsMcpRoute
   '/(app)/settings/organization': typeof appSettingsOrganizationRoute
   '/(app)/settings/profile': typeof appSettingsProfileRoute
   '/(app)/settings/security': typeof appSettingsSecurityRoute
@@ -169,6 +178,7 @@ export interface FileRouteTypes {
     | '/settings/ai-providers'
     | '/settings/billing'
     | '/settings/delete-account'
+    | '/settings/mcp'
     | '/settings/organization'
     | '/settings/profile'
     | '/settings/security'
@@ -185,6 +195,7 @@ export interface FileRouteTypes {
     | '/settings/ai-providers'
     | '/settings/billing'
     | '/settings/delete-account'
+    | '/settings/mcp'
     | '/settings/organization'
     | '/settings/profile'
     | '/settings/security'
@@ -203,6 +214,7 @@ export interface FileRouteTypes {
     | '/(app)/settings/ai-providers'
     | '/(app)/settings/billing'
     | '/(app)/settings/delete-account'
+    | '/(app)/settings/mcp'
     | '/(app)/settings/organization'
     | '/(app)/settings/profile'
     | '/(app)/settings/security'
@@ -305,6 +317,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof appSettingsDeleteAccountRouteImport
       parentRoute: typeof appSettingsRouteRoute
     }
+    '/(app)/settings/mcp': {
+      id: '/(app)/settings/mcp'
+      path: '/mcp'
+      fullPath: '/settings/mcp'
+      preLoaderRoute: typeof appSettingsMcpRouteImport
+      parentRoute: typeof appSettingsRouteRoute
+    }
     '/(app)/settings/organization': {
       id: '/(app)/settings/organization'
       path: '/organization'
@@ -341,6 +360,7 @@ interface appSettingsRouteRouteChildren {
   appSettingsAiProvidersRoute: typeof appSettingsAiProvidersRoute
   appSettingsBillingRoute: typeof appSettingsBillingRoute
   appSettingsDeleteAccountRoute: typeof appSettingsDeleteAccountRoute
+  appSettingsMcpRoute: typeof appSettingsMcpRoute
   appSettingsOrganizationRoute: typeof appSettingsOrganizationRoute
   appSettingsProfileRoute: typeof appSettingsProfileRoute
   appSettingsSecurityRoute: typeof appSettingsSecurityRoute
@@ -353,6 +373,7 @@ const appSettingsRouteRouteChildren: appSettingsRouteRouteChildren = {
   appSettingsAiProvidersRoute: appSettingsAiProvidersRoute,
   appSettingsBillingRoute: appSettingsBillingRoute,
   appSettingsDeleteAccountRoute: appSettingsDeleteAccountRoute,
+  appSettingsMcpRoute: appSettingsMcpRoute,
   appSettingsOrganizationRoute: appSettingsOrganizationRoute,
   appSettingsProfileRoute: appSettingsProfileRoute,
   appSettingsSecurityRoute: appSettingsSecurityRoute,

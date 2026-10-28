@@ -21,6 +21,7 @@ import type { Models } from '@/lib/api/models'
 import EmptyState from '@/components/block/common/empty-state'
 import RowColumnAction from '@/components/block/common/row-column-action'
 import SectionCard from '@/components/block/common/section-card'
+import SectionHeading from '@/components/block/common/section-heading'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -194,27 +195,6 @@ function CustomSkillRow({
   )
 }
 
-/** A section's title and description, above its card, with an optional action. */
-function SectionHeading({
-  title,
-  description,
-  action,
-}: {
-  title: string
-  description: string
-  action?: React.ReactNode
-}) {
-  return (
-    <div className="flex items-end gap-4">
-      <div className="grid min-w-0 flex-1 gap-1">
-        <h2 className="text-xl font-semibold">{title}</h2>
-        <p className="text-muted-foreground max-w-prose text-sm text-pretty">{description}</p>
-      </div>
-      {action && <div className="shrink-0">{action}</div>}
-    </div>
-  )
-}
-
 /** An organization's skills: the built-in ones to switch and staff, and its custom ones. */
 export default function SkillList({ organizationId }: { organizationId: string }) {
   const [openAdd, setOpenAdd] = React.useState(false)
@@ -241,6 +221,57 @@ export default function SkillList({ organizationId }: { organizationId: string }
     </div>
   )
 
+  const builtinContent = () => {
+    if (isPending) return loading(5)
+    if (isError) {
+      return (
+        <div role="alert" className="grid justify-items-center gap-3 p-6 text-center text-sm">
+          <p className="text-destructive">{axiosErrorMessage(error)}</p>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <RefreshCw />
+            Try again
+          </Button>
+        </div>
+      )
+    }
+    return (
+      <ul className="divide-y">
+        {builtin.map((skill) => (
+          <BuiltinSkillRow
+            key={skill.key}
+            organizationId={organizationId}
+            skill={skill}
+            bots={bots}
+          />
+        ))}
+      </ul>
+    )
+  }
+
+  const customContent = () => {
+    if (isPending) return loading(2)
+    if (custom.length === 0) {
+      return (
+        <EmptyState
+          title="No custom skills yet"
+          description="Add one to have the AI extract dates, translate, list tasks, or anything else you do often."
+        />
+      )
+    }
+    return (
+      <ul className="divide-y">
+        {custom.map((skill) => (
+          <CustomSkillRow
+            key={skill.key}
+            organizationId={organizationId}
+            skill={skill}
+            bots={bots}
+          />
+        ))}
+      </ul>
+    )
+  }
+
   return (
     <div className="grid gap-8">
       <section className="grid gap-3">
@@ -249,28 +280,7 @@ export default function SkillList({ organizationId }: { organizationId: string }
           description="What the AI can do with an email, from the Skills menu in the reader or as a / command in the assistant. Skills marked Your draft rewrite the reply you are writing, from its Use AI menu. A skill with no bot of its own runs as the bot the user picked. Only the organization's owner can change them."
         />
         <SectionCard>
-          {isPending ? (
-            loading(5)
-          ) : isError ? (
-            <div role="alert" className="grid justify-items-center gap-3 p-6 text-center text-sm">
-              <p className="text-destructive">{axiosErrorMessage(error)}</p>
-              <Button variant="outline" size="sm" onClick={() => refetch()}>
-                <RefreshCw />
-                Try again
-              </Button>
-            </div>
-          ) : (
-            <ul className="divide-y">
-              {builtin.map((skill) => (
-                <BuiltinSkillRow
-                  key={skill.key}
-                  organizationId={organizationId}
-                  skill={skill}
-                  bots={bots}
-                />
-              ))}
-            </ul>
-          )}
+          {builtinContent()}
           {!isError && (
             <p className="text-muted-foreground mt-3 text-xs">
               Humanize is adapted from{' '}
@@ -311,27 +321,7 @@ export default function SkillList({ organizationId }: { organizationId: string }
               </Button>
             }
           />
-          <SectionCard>
-            {isPending ? (
-              loading(2)
-            ) : custom.length === 0 ? (
-              <EmptyState
-                title="No custom skills yet"
-                description="Add one to have the AI extract dates, translate, list tasks, or anything else you do often."
-              />
-            ) : (
-              <ul className="divide-y">
-                {custom.map((skill) => (
-                  <CustomSkillRow
-                    key={skill.key}
-                    organizationId={organizationId}
-                    skill={skill}
-                    bots={bots}
-                  />
-                ))}
-              </ul>
-            )}
-          </SectionCard>
+          <SectionCard>{customContent()}</SectionCard>
         </section>
       )}
 

@@ -23,4 +23,7 @@ const (
 	ActivitySkillCreated            = "skill.created"
 	ActivitySkillUpdated            = "skill.updated"
 	ActivitySkillDeleted            = "skill.deleted"
+	ActivityMCPServerAdded          = "mcp_server.added"
+	ActivityMCPServerUpdated        = "mcp_server.updated"
+	ActivityMCPServerRemoved        = "mcp_server.removed"
 )
