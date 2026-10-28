@@ -3,6 +3,24 @@
 All notable changes to this project are documented in this file. Versions follow the git tags (`v*`); Docker images are published to ghcr.io with the same version.
 
 
+## [0.4.0](https://github.com/montara-project/montara-mail-agent/compare/v0.3.0...v0.4.0) (2026-10-28)
+
+### Features
+
+* add MCP servers whose tools the assistant chat can call ([f879e68](https://github.com/montara-project/montara-mail-agent/commit/f879e6889796c38b8d93fb747f39cde1298e7db4))
+* pick a timezone in My Profile and show the time in the header ([e5190db](https://github.com/montara-project/montara-mail-agent/commit/e5190db3d33916c92f3bf010620164cd9bf955b7))
+* run an LLM provider in one organization or globally ([08cc438](https://github.com/montara-project/montara-mail-agent/commit/08cc438ca8d65ed78a4653d70ed500cd802fdc7a))
+* select mail in the list for bulk actions, pick the page size ([a744f5b](https://github.com/montara-project/montara-mail-agent/commit/a744f5bd3f82acd1e2dac9c107d224fed1848650))
+* translate email and translate reply skills ([6b26056](https://github.com/montara-project/montara-mail-agent/commit/6b26056af265a475120ac462afdcab4c6e9b2ea3))
+* **web-ui:** move agent bots, skills and AI providers into Control Center ([3d2ab0a](https://github.com/montara-project/montara-mail-agent/commit/3d2ab0a8ecb04788ad4b383253996a7a9f0f95a3))
+* **web-ui:** pick an AI provider's model from a searchable combobox ([112087e](https://github.com/montara-project/montara-mail-agent/commit/112087e0351fe903dd4e82f170ff7597102bed42))
+* **web-ui:** show today's date beside the header clock ([c9d6498](https://github.com/montara-project/montara-mail-agent/commit/c9d649841b5851873b7f36fa1366af337ce0eebb))
+
+### Bug Fixes
+
+* **server:** draft replies only for important mail that is still unread ([8d8820e](https://github.com/montara-project/montara-mail-agent/commit/8d8820ead5027011e0f7f5f8a9d9ab5bbaeba047))
+* **web-ui:** mail frame grows with emails that set body height 100% ([2082cdd](https://github.com/montara-project/montara-mail-agent/commit/2082cdd4d7157d3388cae5778c7c3202ef75dc99))
+
 ## [0.3.0](https://github.com/montara-project/montara-mail-agent/compare/v0.2.0...v0.3.0) (2026-10-27)
 
 ### Features
