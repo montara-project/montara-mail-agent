@@ -19,6 +19,7 @@ const resources = (): MailResources => ({
   move: (id, folder) => api.post(`${path}/${id}/move`, { folder }),
   delete: (id) => api.delete(`${path}/${id}`),
   forward: (id, body) => api.post(`${path}/${id}/forward`, body),
+  bulk: (body) => api.post(`${path}/bulk`, body),
   reply: (id, { attachments, ...body }) =>
     api.post(`${path}/${id}/reply`, withAttachments(body, attachments)),
 })

@@ -40,6 +40,8 @@ function frameStyle(dark: boolean, ownDarkMode: boolean) {
     html { overflow: hidden; ${invert ? INVERT : ''} }
     html, body { margin: 0; background: transparent; }
     body { padding: 1px 0; color: CanvasText; font: 14px/1.5 system-ui, sans-serif; overflow-wrap: anywhere; overflow-x: auto; }
+    /* The frame is sized from the body, so an email's body { height: 100% } would pin it to the frame. */
+    :root > body { height: auto !important; min-height: 0 !important; }
     img { max-width: 100%; height: auto; }
     ${invert ? `img, picture, video, [background], [style*="background-image"] { ${INVERT} }` : ''}
   `

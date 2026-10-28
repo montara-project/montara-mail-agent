@@ -37,7 +37,7 @@ function PasswordForm() {
 
   return (
     <form
-      className="grid max-w-xl gap-4"
+      className="grid gap-4"
       onSubmit={(e) => {
         e.preventDefault()
         form.handleSubmit()
@@ -71,23 +71,30 @@ function PasswordForm() {
 export default function PasswordSettings() {
   const { data, isPending, isError, error } = useQuery(queries.profile.security())
 
-  return (
-    <SectionCard title="Change password" description="Use a password you don't use anywhere else.">
-      {isPending ? (
+  const content = () => {
+    if (isPending) {
+      return (
         <div className="grid max-w-xl gap-4">
           <Skeleton className="h-10" />
           <Skeleton className="h-10" />
           <Skeleton className="h-10" />
         </div>
-      ) : isError ? (
-        <p className="text-destructive text-sm">{axiosErrorMessage(error)}</p>
-      ) : data.has_password ? (
-        <PasswordForm />
-      ) : (
+      )
+    }
+    if (isError) return <p className="text-destructive text-sm">{axiosErrorMessage(error)}</p>
+    if (!data.has_password) {
+      return (
         <p className="text-muted-foreground text-sm">
           This account signs in with Google or an email link, so it has no password to change.
         </p>
-      )}
+      )
+    }
+    return <PasswordForm />
+  }
+
+  return (
+    <SectionCard title="Change password" description="Use a password you don't use anywhere else.">
+      {content()}
     </SectionCard>
   )
 }

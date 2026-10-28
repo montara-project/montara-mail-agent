@@ -6,6 +6,7 @@ import { authQueries } from './auth'
 import { emailAccountQueries } from './email-account'
 import { llmProviderQueries } from './llm-provider'
 import { mailQueries } from './mail'
+import { mcpServerQueries } from './mcp-server'
 import { organizationQueries } from './organization'
 import { profileQueries } from './profile'
 
@@ -20,4 +21,5 @@ export const queries = {
   agent: agentQueries,
   agentBots: agentBotQueries,
   agentSkills: agentSkillQueries,
+  mcpServers: mcpServerQueries,
 } as const

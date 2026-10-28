@@ -1,22 +1,36 @@
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { $getRoot } from 'lexical'
-import { RotateCcw, Sparkles, Wand2, X } from 'lucide-react'
+import { ChevronDown, RotateCcw, Sparkles, Wand2, X } from 'lucide-react'
 import React from 'react'
 
 import type { PromptCommand } from '@/components/ui/prompt-bar'
 import type { Models } from '@/lib/api/models'
+import type { ReplyTone } from '@/lib/api/services/types/mail'
 
 import Hint from '@/components/block/common/hint'
 import { useEnabledSkills } from '@/components/block/mail/skill-menu'
 import { SKILL_ICONS } from '@/components/block/skill/skill-list'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import PromptBar from '@/components/ui/prompt-bar'
 import StreamingText from '@/components/ui/streaming-text'
 import ThinkingState from '@/components/ui/thinking-state'
 import { useActiveAgentBot } from '@/hooks/use-active-agent-bot'
 import { axiosErrorMessage } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
+
+/** The tones Translate reply offers, in its menu's order. */
+const REPLY_TONES: { tone: ReplyTone; label: string }[] = [
+  { tone: 'casual', label: 'Casual' },
+  { tone: 'professional', label: 'Professional' },
+  { tone: 'business', label: 'Business' },
+]
 
 /** The writer's / menu: common ways to answer, ready to send or extend. */
 const REPLY_PROMPTS: PromptCommand[] = [
@@ -98,10 +112,11 @@ export default function ReplyAiPanel({
     })
     run()
   }
-  const startPolish = (skill: Models.AgentSkill) => {
+  const startPolish = (skill: Models.AgentSkill, tone?: ReplyTone) => {
     const draft = editorText.read()
-    const run = () => polish.mutate({ key: skill.key, draft, agent_bot_id: persona })
-    setJob({ kind: 'polish', title: skill.name, run })
+    const run = () => polish.mutate({ key: skill.key, draft, tone, agent_bot_id: persona })
+    const title = tone ? `${skill.name} (${tone})` : skill.name
+    setJob({ kind: 'polish', title, run })
     run()
   }
   const dismiss = () => {
@@ -124,10 +139,98 @@ export default function ReplyAiPanel({
     onGrow?.()
   }, [layoutKey, onGrow])
 
+  const jobContent = (current: Job) => {
+    if (mutation.isPending) {
+      return (
+        <ThinkingState
+          working
+          rows={[]}
+          active={
+            current.kind === 'polish'
+              ? `${current.title}: rewriting your draft`
+              : 'Writing the reply'
+          }
+        />
+      )
+    }
+    if (mutation.isError) {
+      return (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-destructive">{axiosErrorMessage(mutation.error)}</span>
+          <Button type="button" variant="outline" size="sm" onClick={current.run}>
+            <RotateCcw />
+            Try again
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={dismiss}>
+            Dismiss
+          </Button>
+        </div>
+      )
+    }
+    if (!result) return null
+    return (
+      <StreamingText
+        key={mutation.submittedAt}
+        text={result}
+        onDone={onGrow}
+        actions={
+          <div className="ml-auto flex gap-1.5">
+            <Button type="button" variant="ghost" size="sm" onClick={dismiss}>
+              Discard
+            </Button>
+            <Button type="button" size="sm" onClick={() => use(result)}>
+              {current.kind === 'polish' ? 'Use this version' : 'Use this reply'}
+            </Button>
+          </div>
+        }
+      />
+    )
+  }
+
+  const quickReplies = () => {
+    if (quick.isPending) {
+      return (
+        <ThinkingState
+          working
+          rows={[]}
+          active={activeBot ? `${activeBot.name} is thinking` : 'Thinking of replies'}
+        />
+      )
+    }
+    if (quick.isError) {
+      return (
+        <button
+          type="button"
+          className="text-destructive text-xs underline underline-offset-2"
+          onClick={() => quick.refetch()}
+        >
+          {axiosErrorMessage(quick.error)} Try again
+        </button>
+      )
+    }
+    return (
+      <div className="flex flex-wrap gap-1.5">
+        {quick.data.map((text) => (
+          <Button
+            key={text}
+            type="button"
+            variant="outline"
+            size="sm"
+            className="bg-background h-auto max-w-full rounded-full py-1 text-left text-xs font-normal whitespace-normal"
+            disabled={busy}
+            onClick={() => use(text)}
+          >
+            {text}
+          </Button>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <section
       aria-label="Write with AI"
-      className="animate-in fade-in slide-in-from-bottom-1 rounded-xl border border-accent-ink/25 bg-accent-ink/[0.05] p-3 duration-200 ease-out motion-reduce:animate-none "
+      className="animate-in fade-in slide-in-from-bottom-1 rounded-xl border border-accent-ink/25 bg-accent-ink/5 p-3 duration-200 ease-out motion-reduce:animate-none "
     >
       <div className="mb-2.5 flex items-center gap-2">
         <Sparkles className="size-4 shrink-0 text-accent-ink" aria-hidden />
@@ -156,81 +259,14 @@ export default function ReplyAiPanel({
           aria-busy={mutation.isPending}
         >
           <p className="text-muted-foreground mb-1.5 text-xs font-medium">{job.title}</p>
-          {mutation.isPending ? (
-            <ThinkingState
-              working
-              rows={[]}
-              active={
-                job.kind === 'polish' ? `${job.title}: rewriting your draft` : 'Writing the reply'
-              }
-            />
-          ) : mutation.isError ? (
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <span className="text-destructive">{axiosErrorMessage(mutation.error)}</span>
-              <Button type="button" variant="outline" size="sm" onClick={job.run}>
-                <RotateCcw />
-                Try again
-              </Button>
-              <Button type="button" variant="ghost" size="sm" onClick={dismiss}>
-                Dismiss
-              </Button>
-            </div>
-          ) : (
-            result && (
-              <StreamingText
-                key={mutation.submittedAt}
-                text={result}
-                onDone={onGrow}
-                actions={
-                  <div className="ml-auto flex gap-1.5">
-                    <Button type="button" variant="ghost" size="sm" onClick={dismiss}>
-                      Discard
-                    </Button>
-                    <Button type="button" size="sm" onClick={() => use(result)}>
-                      {job.kind === 'polish' ? 'Use this version' : 'Use this reply'}
-                    </Button>
-                  </div>
-                }
-              />
-            )
-          )}
+          {jobContent(job)}
         </div>
       )}
 
       <div className="mb-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
         <div className="min-w-0">
           <p className="text-muted-foreground mb-1.5 text-xs font-medium">Quick replies</p>
-          {quick.isPending ? (
-            <ThinkingState
-              working
-              rows={[]}
-              active={activeBot ? `${activeBot.name} is thinking` : 'Thinking of replies'}
-            />
-          ) : quick.isError ? (
-            <button
-              type="button"
-              className="text-destructive text-xs underline underline-offset-2"
-              onClick={() => quick.refetch()}
-            >
-              {axiosErrorMessage(quick.error)} Try again
-            </button>
-          ) : (
-            <div className="flex flex-wrap gap-1.5">
-              {quick.data.map((text) => (
-                <Button
-                  key={text}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="bg-background h-auto max-w-full rounded-full py-1 text-left text-xs font-normal whitespace-normal"
-                  disabled={busy}
-                  onClick={() => use(text)}
-                >
-                  {text}
-                </Button>
-              ))}
-            </div>
-          )}
+          {quickReplies()}
         </div>
 
         {polishSkills.length > 0 && (
@@ -241,7 +277,7 @@ export default function ReplyAiPanel({
             <div className="flex flex-wrap gap-1.5">
               {polishSkills.map((skill) => {
                 const Icon = SKILL_ICONS[skill.key] ?? Wand2
-                return (
+                const pill = (
                   <Button
                     key={skill.key}
                     type="button"
@@ -250,11 +286,26 @@ export default function ReplyAiPanel({
                     className="bg-background h-7 rounded-full text-xs"
                     title={skill.description}
                     disabled={busy || !editorText.hasText}
-                    onClick={() => startPolish(skill)}
+                    onClick={skill.key === 'translate_reply' ? undefined : () => startPolish(skill)}
                   >
                     <Icon />
                     {skill.name}
+                    {skill.key === 'translate_reply' && <ChevronDown />}
                   </Button>
+                )
+                if (skill.key !== 'translate_reply') return pill
+                // Translating a reply asks for its tone first.
+                return (
+                  <DropdownMenu key={skill.key}>
+                    <DropdownMenuTrigger asChild>{pill}</DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      {REPLY_TONES.map(({ tone, label }) => (
+                        <DropdownMenuItem key={tone} onSelect={() => startPolish(skill, tone)}>
+                          {label}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )
               })}
             </div>

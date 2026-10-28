@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/google/uuid"
 
 	"montara-mail-agent/server/internal/app"
 	"montara-mail-agent/server/internal/dtos"
@@ -400,6 +401,21 @@ func (h *mailHandler) RunSkill(c fiber.Ctx) error {
 			return h.aiError("reply draft", err)
 		}
 		return dtos.OK(c, fiber.Map{"kind": "reply", "text": text})
+	case models.SkillTranslate:
+		text, err := mailai.Translate(c.Context(), client, m, bot, body.Language)
+		if err != nil {
+			return h.aiError("translation", err)
+		}
+		return dtos.OK(c, fiber.Map{"kind": "text", "text": text})
+	case models.SkillTranslateReply:
+		if strings.TrimSpace(body.Draft) == "" {
+			return apperr.New(apperr.KindBadRequest, "write a reply first: %s translates your draft", skill.Name)
+		}
+		text, err := mailai.TranslateDraft(c.Context(), client, m, bot, body.Draft, body.Tone)
+		if err != nil {
+			return h.aiError(skill.Name, err)
+		}
+		return dtos.OK(c, fiber.Map{"kind": "rewrite", "text": text})
 	}
 	if skill.WorksOn() == models.SkillTargetDraft {
 		if strings.TrimSpace(body.Draft) == "" {
@@ -423,4 +439,85 @@ func (h *mailHandler) RunSkill(c fiber.Ctx) error {
 		return h.aiError(skill.Name, err)
 	}
 	return dtos.OK(c, fiber.Map{"kind": "text", "text": text})
+}
+
+// Bulk applies one action to the mails the list has selected: they must
+// share an account and a folder, so the mail server sees one session and one
+// set of UIDs.
+func (h *mailHandler) Bulk(c fiber.Ctx) error {
+	var body dtos.MailBulkBody
+	if err := lib.ValidateRequestBody(c, &body); err != nil {
+		return err
+	}
+	if body.Action == "move" && body.Folder == "" {
+		return apperr.New(apperr.KindBadRequest, "folder is required to move mail")
+	}
+
+	mails := make([]models.Mail, 0, len(body.IDs))
+	seen := map[uuid.UUID]bool{}
+	for _, raw := range body.IDs {
+		id := uuid.MustParse(raw)
+		if seen[id] {
+			continue
+		}
+		seen[id] = true
+		m, err := h.repo().Get(c.Context(), id)
+		if err != nil {
+			return err
+		}
+		if len(mails) > 0 && (m.EmailAccountID != mails[0].EmailAccountID || m.Folder != mails[0].Folder) {
+			return apperr.New(apperr.KindBadRequest, "the mails must come from one account and one folder")
+		}
+		mails = append(mails, m)
+	}
+	account, err := h.account(c, mails[0])
+	if err != nil {
+		return err
+	}
+	if _, err := member(c, h.app, account.OrganizationID); err != nil {
+		if err == errOrganizationNotFound {
+			err = apperr.New(apperr.KindNotFound, "record not found in mails")
+		}
+		return err
+	}
+
+	folder := mails[0].Folder
+	switch body.Action {
+	case "read", "unread":
+		read := body.Action == "read"
+		for _, m := range mails {
+			if err := h.repo().Patch(c.Context(), m.ID, repositories.MailPatch{IsRead: &read}); err != nil {
+				return err
+			}
+		}
+		// As for one mail: the app answers at once, the server follows.
+		go func() {
+			if err := h.sync.SetReadMany(context.Background(), account, mails, read); err != nil {
+				h.app.Logger.Warn("mail flags not written to the server", "account", account.ID, "error", err)
+			}
+		}()
+		return dtos.Message(c, fiber.StatusOK, fmt.Sprintf("%d mails marked %s", len(mails), body.Action))
+	case "move":
+		if body.Folder == folder {
+			return apperr.New(apperr.KindBadRequest, "the mail is already in %s", folder)
+		}
+		if err := h.sync.MoveMany(c.Context(), account, mails, body.Folder); err != nil {
+			return serverError(err)
+		}
+		return dtos.Message(c, fiber.StatusOK, fmt.Sprintf("%d mails moved to %s", len(mails), body.Folder))
+	}
+
+	// trash: into the trash, or out of it for good.
+	if folder != constant.FolderTrash {
+		if err := h.sync.MoveMany(c.Context(), account, mails, constant.FolderTrash); err != nil {
+			return serverError(err)
+		}
+		return dtos.Message(c, fiber.StatusOK, fmt.Sprintf("%d mails moved to trash", len(mails)))
+	}
+	if err := h.sync.DeleteMany(c.Context(), account, mails); err != nil {
+		return serverError(err)
+	}
+	recordActivity(c, h.app, account.OrganizationID, constant.ActivityMailDeleted,
+		fmt.Sprintf("Deleted %d mails", len(mails)), map[string]any{"count": len(mails)})
+	return dtos.Message(c, fiber.StatusOK, fmt.Sprintf("%d mails deleted", len(mails)))
 }

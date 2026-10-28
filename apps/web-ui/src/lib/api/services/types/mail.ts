@@ -19,8 +19,19 @@ export type MailDraftReplyBody = {
   agent_bot_id?: string
 }
 
-/** A skill run: the persona, a reply skill's instruction, and the draft a draft skill rewrites. */
-export type MailRunSkillBody = MailDraftReplyBody & { draft?: string }
+/** The tones a translated reply can take. */
+export type ReplyTone = 'casual' | 'professional' | 'business'
+
+/**
+ * A skill run: the persona, a reply skill's instruction, the draft a draft
+ * skill rewrites, the language a translation goes into (a BCP 47 tag) and the
+ * tone of a translated reply.
+ */
+export type MailRunSkillBody = MailDraftReplyBody & {
+  draft?: string
+  language?: string
+  tone?: ReplyTone
+}
 
 /** A reply as typed (Markdown) and as the HTML the editor made of it. */
 export type MailReplyBody = {
@@ -32,6 +43,16 @@ export type MailReplyBody = {
   /** Sent as a multipart form when present. */
   attachments?: File[]
 }
+
+/**
+ * The list's bulk action: read or unread, a move to folder, or trash (deleted
+ * for good when the mails are already there).
+ */
+export type MailBulkAction =
+  | { action: 'read' | 'unread' | 'trash' }
+  | { action: 'move'; folder: Models.MailMoveTarget }
+
+export type MailBulkBody = MailBulkAction & { ids: string[] }
 
 export type MailResources = {
   get: (id: string) => Promise<AxiosItemResponse<Models.Mail>>
@@ -55,6 +76,8 @@ export type MailResources = {
   /** Moves the mail to the trash, or deletes it for good when it is there. */
   delete: (id: string) => Promise<AxiosDeleteResponse>
   forward: (id: string, body: MailForwardBody) => Promise<AxiosDeleteResponse>
+  /** One action on mails of one account and folder, in one mail server session. */
+  bulk: (body: MailBulkBody) => Promise<AxiosDeleteResponse>
   /** Replies to the mail's sender from its account. */
   reply: (id: string, body: MailReplyBody) => Promise<AxiosDeleteResponse>
 }

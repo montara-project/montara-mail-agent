@@ -9,6 +9,8 @@ export interface User {
   image: string | null
   created_at: ISO8601DateString
   updated_at: ISO8601DateString
+  /** Authula's free-form metadata; the app keeps the user's timezone here. */
+  metadata?: { timezone?: string } | null
 }
 
 /** GET /api/v1/auth/me. Authula answers unwrapped, without the {data} envelope. */

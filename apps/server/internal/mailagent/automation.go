@@ -118,13 +118,14 @@ func AutoDraftOnce(ctx context.Context, app *app.Application, dailyCap int) {
 	}
 }
 
-// importantMail lists the account's important inbox mail that has no draft
-// queued yet.
+// importantMail lists the account's important, unread inbox mail that has no
+// draft queued yet: mail the user has read is mail they are already handling.
 func importantMail(ctx context.Context, app *app.Application, account models.EmailAccount) []models.Mail {
 	mails, err := app.Repositories.Mail.List(ctx, account.ID, repositories.MailListParams{
 		ListParams: repositories.ListParams{Offset: 0, Limit: autoDraftBatch},
 		Folder:     constant.FolderInbox,
 		Importance: constant.ImportanceImportant,
+		Unread:     true,
 	})
 	if err != nil {
 		return nil

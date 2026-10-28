@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import AgentPanel from '@/components/block/mail/agent-panel'
-import MailList from '@/components/block/mail/mail-list'
+import MailList, { DEFAULT_PAGE_SIZE, pageSize } from '@/components/block/mail/mail-list'
 import MailReader from '@/components/block/mail/mail-reader'
 import { MAIL_LABELS, useMailAccount } from '@/components/layout/mail/mail-panel'
 import { useActiveOrganization } from '@/hooks/use-active-organization'
@@ -14,6 +14,8 @@ type MailSearch = {
   mail?: string
   /** 1-based page of the list. */
   page?: number
+  /** Mails per page; absent means the default (DEFAULT_PAGE_SIZE). */
+  limit?: number
   /** Search term over sender and subject. */
   q?: string
   /** The AI assistant pane is open. */
@@ -33,6 +35,8 @@ export const Route = createFileRoute('/(app)/mail/')({
     mail: str(search.mail),
     page:
       Number.isInteger(search.page) && Number(search.page) > 1 ? Number(search.page) : undefined,
+    // The default page size stays out of the URL.
+    limit: pageSize(search.limit) === DEFAULT_PAGE_SIZE ? undefined : pageSize(search.limit),
     q: str(search.q),
     // The router parses search values as JSON, so the pane's flag arrives as
     // a boolean, a number or a string depending on who built the link. False

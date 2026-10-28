@@ -3,8 +3,10 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import {
   FileText,
   Handshake,
+  Languages,
   Newspaper,
   PenLine,
+  RefreshCw,
   Reply,
   Send,
   SpellCheck,
@@ -19,6 +21,7 @@ import type { Models } from '@/lib/api/models'
 import EmptyState from '@/components/block/common/empty-state'
 import RowColumnAction from '@/components/block/common/row-column-action'
 import SectionCard from '@/components/block/common/section-card'
+import SectionHeading from '@/components/block/common/section-heading'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -31,7 +34,7 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
-import { toastAxiosError } from '@/lib/api/axios-error'
+import { axiosErrorMessage, toastAxiosError } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
 
 import { botOptions, fromBotSelect, toBotSelect } from './skill-bot'
@@ -47,6 +50,8 @@ export const SKILL_ICONS: Record<string, typeof Wand2> = {
   prospect_reply: Send,
   objection_reply: Handshake,
   press_reply: Newspaper,
+  translate: Languages,
+  translate_reply: Languages,
 }
 
 /** A built-in skill: switch it on or off and pick the bot that runs it. */
@@ -87,33 +92,39 @@ function BuiltinSkillRow({
         </p>
         <p className="text-muted-foreground text-xs">{skill.description}</p>
       </div>
-      <Select
-        value={toBotSelect(skill.agent_bot_id)}
-        onValueChange={(value) => change({ agent_bot_id: fromBotSelect(value) })}
-        indicatorPosition="right"
-      >
-        <SelectTrigger
-          className="h-8 w-52"
-          aria-label={`Agent bot for ${skill.name}`}
-          disabled={save.isPending}
+      {/* On a phone the controls wrap under the text, not the icon. */}
+      <div className="ms-11 flex basis-full items-center gap-3 sm:ms-0 sm:basis-auto">
+        <Select
+          value={toBotSelect(skill.agent_bot_id)}
+          onValueChange={(value) => change({ agent_bot_id: fromBotSelect(value) })}
+          indicatorPosition="right"
         >
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent position="popper">
-          {botOptions(bots).map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Switch
-        size="sm"
-        aria-label={`${skill.name} ${skill.is_enabled ? 'on' : 'off'}`}
-        checked={skill.is_enabled}
-        disabled={save.isPending}
-        onCheckedChange={(on) => change({ is_enabled: on })}
-      />
+          <SelectTrigger
+            className="h-8 flex-1 sm:w-52 sm:flex-none"
+            aria-label={`Agent bot for ${skill.name}`}
+            disabled={save.isPending}
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent position="popper">
+            {botOptions(bots).map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Switch
+          size="sm"
+          // The switch role already says on or off; the name stays the skill's.
+          aria-label={skill.name}
+          // A 44px hit area around the small switch, for touch.
+          className="after:absolute after:-inset-3 after:content-['']"
+          checked={skill.is_enabled}
+          disabled={save.isPending}
+          onCheckedChange={(on) => change({ is_enabled: on })}
+        />
+      </div>
     </li>
   )
 }
@@ -187,93 +198,132 @@ function CustomSkillRow({
 /** An organization's skills: the built-in ones to switch and staff, and its custom ones. */
 export default function SkillList({ organizationId }: { organizationId: string }) {
   const [openAdd, setOpenAdd] = React.useState(false)
-  const { data, isPending } = useQuery(queries.agentSkills.list(organizationId))
+  const { data, isPending, isError, error, refetch } = useQuery(
+    queries.agentSkills.list(organizationId)
+  )
   const bots = useQuery(queries.agentBots.list(organizationId)).data?.data ?? []
   const skills = data?.data ?? []
   const builtin = skills.filter((skill) => skill.builtin)
   const custom = skills.filter((skill) => !skill.builtin)
 
-  const loading = (
-    <div className="grid gap-3">
-      <Skeleton className="h-10" />
-      <Skeleton className="h-10" />
+  // Shaped like the rows it stands in for, so the list doesn't jump when it lands.
+  const loading = (rows: number) => (
+    <div className="grid gap-5 py-3">
+      {Array.from({ length: rows }, (_, index) => (
+        <div key={index} className="flex items-center gap-3">
+          <Skeleton className="size-8 rounded-lg" />
+          <div className="grid flex-1 gap-1.5">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-3 w-3/5" />
+          </div>
+        </div>
+      ))}
     </div>
   )
 
+  const builtinContent = () => {
+    if (isPending) return loading(5)
+    if (isError) {
+      return (
+        <div role="alert" className="grid justify-items-center gap-3 p-6 text-center text-sm">
+          <p className="text-destructive">{axiosErrorMessage(error)}</p>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <RefreshCw />
+            Try again
+          </Button>
+        </div>
+      )
+    }
+    return (
+      <ul className="divide-y">
+        {builtin.map((skill) => (
+          <BuiltinSkillRow
+            key={skill.key}
+            organizationId={organizationId}
+            skill={skill}
+            bots={bots}
+          />
+        ))}
+      </ul>
+    )
+  }
+
+  const customContent = () => {
+    if (isPending) return loading(2)
+    if (custom.length === 0) {
+      return (
+        <EmptyState
+          title="No custom skills yet"
+          description="Add one to have the AI extract dates, translate, list tasks, or anything else you do often."
+        />
+      )
+    }
+    return (
+      <ul className="divide-y">
+        {custom.map((skill) => (
+          <CustomSkillRow
+            key={skill.key}
+            organizationId={organizationId}
+            skill={skill}
+            bots={bots}
+          />
+        ))}
+      </ul>
+    )
+  }
+
   return (
     <div className="grid gap-8">
-      <SectionCard
-        title="Skills"
-        description="What the AI can do with an email, from the Skills menu in the reader or as a / command in the assistant. Skills marked Your draft rewrite the reply you are writing, from its Use AI menu. A skill with no bot of its own runs as the bot the user picked. Only the organization's owner can change them."
-      >
-        {isPending ? (
-          loading
-        ) : (
-          <ul className="divide-y">
-            {builtin.map((skill) => (
-              <BuiltinSkillRow
-                key={skill.key}
-                organizationId={organizationId}
-                skill={skill}
-                bots={bots}
-              />
-            ))}
-          </ul>
-        )}
-        <p className="text-muted-foreground mt-3 text-xs">
-          Humanize is adapted from{' '}
-          <a
-            className="underline underline-offset-2"
-            href="https://github.com/blader/humanizer"
-            target="_blank"
-            rel="noreferrer"
-          >
-            humanizer
-          </a>{' '}
-          by Siqi Chen. Copy edit, Reply to a prospect, Handle an objection and Reply to press are
-          adapted from{' '}
-          <a
-            className="underline underline-offset-2"
-            href="https://github.com/coreyhaines31/marketingskills"
-            target="_blank"
-            rel="noreferrer"
-          >
-            marketingskills
-          </a>{' '}
-          by Corey Haines. Both are MIT licensed.
-        </p>
-      </SectionCard>
+      <section className="grid gap-3">
+        <SectionHeading
+          title="Skills"
+          description="What the AI can do with an email, from the Skills menu in the reader or as a / command in the assistant. Skills marked Your draft rewrite the reply you are writing, from its Use AI menu. A skill with no bot of its own runs as the bot the user picked. Only the organization's owner can change them."
+        />
+        <SectionCard>
+          {builtinContent()}
+          {!isError && (
+            <p className="text-muted-foreground mt-3 text-xs">
+              Humanize is adapted from{' '}
+              <a
+                className="underline underline-offset-2"
+                href="https://github.com/blader/humanizer"
+                target="_blank"
+                rel="noreferrer"
+              >
+                humanizer
+              </a>{' '}
+              by Siqi Chen. Copy edit, Reply to a prospect, Handle an objection and Reply to press
+              are adapted from{' '}
+              <a
+                className="underline underline-offset-2"
+                href="https://github.com/coreyhaines31/marketingskills"
+                target="_blank"
+                rel="noreferrer"
+              >
+                marketingskills
+              </a>{' '}
+              by Corey Haines. Both are MIT licensed.
+            </p>
+          )}
+        </SectionCard>
+      </section>
 
-      <SectionCard
-        title="Custom Skills"
-        description="Your own instructions, run on one email at a time."
-        toolbar={
-          <Button className="h-8.5 rounded-lg" onClick={() => setOpenAdd(true)}>
-            <IconPlus />
-            <span>Add</span>
-          </Button>
-        }
-      >
-        {isPending ? (
-          loading
-        ) : custom.length === 0 ? (
-          <EmptyState
-            title="No custom skills yet"
-            description="Add one to have the AI extract dates, translate, list tasks, or anything else you do often."
+      {/* With the list failed, the error above stands for both sections. */}
+      {!isError && (
+        <section className="grid gap-3">
+          <SectionHeading
+            title="Custom Skills"
+            description="Your own instructions, run on one email at a time."
+            action={
+              <Button className="h-8.5 rounded-lg" onClick={() => setOpenAdd(true)}>
+                <IconPlus />
+                <span>Add</span>
+              </Button>
+            }
           />
-        ) : (
-          <ul className="divide-y">
-            {custom.map((skill) => (
-              <CustomSkillRow
-                key={skill.key}
-                organizationId={organizationId}
-                skill={skill}
-                bots={bots}
-              />
-            ))}
-          </ul>
-        )}
-      </SectionCard>
+          <SectionCard>{customContent()}</SectionCard>
+        </section>
+      )}
 
       <AddSkillForm organizationId={organizationId} open={openAdd} onOpenChange={setOpenAdd} />
     </div>

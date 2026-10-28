@@ -205,6 +205,21 @@ func testMailFlow(t *testing.T, call callFunc, application *app.Application, tok
 	if status, out := call(http.MethodPost, mailPath+"/move", token, map[string]any{"folder": "spam"}); status != http.StatusBadGateway {
 		t.Fatalf("move with the server unreachable: %d %v, want 502", status, out)
 	}
+	// The list's bulk actions: read happens at once, a move needs a folder
+	// and answers for the mail server.
+	mailID := strings.TrimPrefix(mailPath, "/api/v1/mails/")
+	if status, _ := call(http.MethodPost, "/api/v1/mails/bulk", token, map[string]any{"ids": []string{mailID}, "action": "move"}); status != http.StatusBadRequest {
+		t.Fatalf("bulk move without a folder: %d, want 400", status)
+	}
+	if status, _ := call(http.MethodPost, "/api/v1/mails/bulk", token, map[string]any{"ids": []string{mailID}, "action": "unread"}); status != http.StatusOK {
+		t.Fatalf("bulk unread: %d", status)
+	}
+	if _, out := call(http.MethodGet, mailPath, token, nil); data(out)["is_read"] != false {
+		t.Fatalf("bulk unread left the mail read: %v", data(out)["is_read"])
+	}
+	if status, _ := call(http.MethodPost, "/api/v1/mails/bulk", token, map[string]any{"ids": []string{mailID}, "action": "move", "folder": "spam"}); status != http.StatusBadGateway {
+		t.Fatalf("bulk move with the server unreachable: %d, want 502", status)
+	}
 	if status, _ := call(http.MethodPost, mailPath+"/forward", token, map[string]any{"to": []string{"not an address"}}); status != http.StatusUnprocessableEntity {
 		t.Fatalf("forward to a bad address: %d, want 422", status)
 	}
@@ -298,6 +313,9 @@ func testMailFlow(t *testing.T, call callFunc, application *app.Application, tok
 		if status, _ := call(req.method, req.path, token, nil); status != http.StatusNotFound {
 			t.Fatalf("%s %s by a non-member: %d, want 404", req.method, req.path, status)
 		}
+	}
+	if status, _ := call(http.MethodPost, "/api/v1/mails/bulk", token, map[string]any{"ids": []string{otherMails[0].ID.String()}, "action": "read"}); status != http.StatusNotFound {
+		t.Fatalf("bulk on another organization's mail: %d, want 404", status)
 	}
 
 	// LLM provider: absent, then set, kept without resending the key, removed.

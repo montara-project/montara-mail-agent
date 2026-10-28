@@ -89,7 +89,12 @@ func Run(ctx context.Context, app *app.Application, sync *mailsync.Syncer, s Ses
 	messages := chatHistory(rows)
 
 	tools := newToolset(app, sync, s)
+	tools.loadMCP(ctx)
+	defer tools.closeMCP()
 	system := systemPrompt(s)
+	if len(tools.mcp.defs) > 0 {
+		system += mcpRule
+	}
 
 	for step := 0; ; step++ {
 		client, err := app.LLMFor(ctx, s.Conversation.OrganizationID)
@@ -244,6 +249,9 @@ func chatHistory(rows []models.AgentMessage) []llm.ChatMessage {
 // toolSummary shrinks a tool result into the one line the client shows while
 // the turn continues.
 func toolSummary(name, content string) string {
+	if summary, ok := mcpSummary(name); ok {
+		return summary
+	}
 	switch name {
 	case toolSearch:
 		return "searched the mailbox"

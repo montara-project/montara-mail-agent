@@ -17,6 +17,7 @@ export namespace Models {
   export type MailImportance = import('./mail').MailImportance
   export type LLMProvider = import('./llm-provider').LLMProvider
   export type LLMProviderKind = import('./llm-provider').LLMProviderKind
+  export type LLMProviderListed = import('./llm-provider').LLMProviderListed
   export type ActivityLog = import('./activity-log').ActivityLog
   export type ActivityAction = import('./activity-log').ActivityAction
   export type AgentConversation = import('./agent').AgentConversation
@@ -27,6 +28,10 @@ export namespace Models {
   export type AgentActionPayload = import('./agent').AgentActionPayload
   export type AgentDraft = import('./agent').AgentDraft
   export type AgentBot = import('./agent-bot').AgentBot
+  export type MCPServer = import('./mcp-server').MCPServer
+  export type MCPServerKind = import('./mcp-server').MCPServerKind
+  export type MCPServerStatus = import('./mcp-server').MCPServerStatus
+  export type MCPTool = import('./mcp-server').MCPTool
   export type AgentSkill = import('./agent-skill').AgentSkill
   export type SkillRunResult = import('./agent-skill').SkillRunResult
 }

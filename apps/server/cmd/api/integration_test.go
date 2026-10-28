@@ -383,6 +383,8 @@ func TestIntegration(t *testing.T) {
 	testIMAPSync(t, application, userOrg)
 	testAgentFlow(t, call, callStream, application, userToken, userOrg)
 	testAgentDrafts(t, call, application, userToken, userOrg)
+	testLLMProviderScope(t, call, application, userToken, superToken, userOrg)
+	testMCPServers(t, call, callStream, application, userToken, superToken, userOrg)
 	testActivityLogs(t, call, userToken, superToken, userOrg, superOrg, userEmail)
 	testAccountSettings(t, call, func() string { return cookies }, db, userEmail, userPass)
 

@@ -12,6 +12,8 @@ const (
 	SkillProspectReply  = "prospect_reply"
 	SkillObjectionReply = "objection_reply"
 	SkillPressReply     = "press_reply"
+	SkillTranslate      = "translate"
+	SkillTranslateReply = "translate_reply"
 )
 
 // What a skill works on: the email received, or the reply draft the user is
@@ -119,6 +121,16 @@ var BuiltinSkills = []AgentSkill{
 	builtin(SkillPressReply, "Reply to press",
 		"Answers a journalist or press request with a quotable, on-the-record reply, never a pitch.",
 		pressReplyInstruction).on(SkillTargetEmail, SkillOutputReply),
+	builtin(SkillTranslate, "Translate email",
+		"Translates the email into your language, faithfully: names, numbers and links kept.",
+		"Translate the email the user means (by default the attached email; read it with get_mail first) "+
+			"into the language the user writes to you in. Translate the subject and the whole body faithfully, "+
+			"keeping names, numbers, dates and links as they are; do not summarize or comment."),
+	builtin(SkillTranslateReply, "Translate reply",
+		"Translates your reply draft into the sender's language, in a casual, professional or business tone.",
+		"Translate the user's reply draft into the language of the email it answers, "+
+			"in the tone the user asks for (professional by default), then propose it with propose_reply. "+
+			"Keep its meaning, facts and names; adapt the greeting and sign-off to that language.").on(SkillTargetDraft, SkillOutputReply),
 }
 
 // BuiltinSkill returns the built-in skill with key, if there is one.

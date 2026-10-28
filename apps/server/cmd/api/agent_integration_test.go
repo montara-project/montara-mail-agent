@@ -332,6 +332,49 @@ func testAgentDrafts(t *testing.T, call callFunc, application *app.Application, 
 		t.Fatalf("pending drafts for the second mail: %d %v", status, out)
 	}
 	pending := list(out)[0].(map[string]any)["id"].(string)
+
+	// Read mail is mail the user is handling: an important mail already read
+	// gets no draft, and a pending draft leaves the queue while its mail is
+	// read, coming back if the mail is marked unread.
+	read := []models.Mail{{
+		FromEmail: "partner@example.com",
+		Subject:   "Contract signed",
+		Body:      "The contract is signed.",
+		Folder:    "inbox",
+	}}
+	seedAccount(t, application, orgID, read...)
+	isRead, isUnread := true, false
+	if err := application.Repositories.Mail.Patch(context.Background(), read[0].ID, repositories.MailPatch{Importance: &important, IsRead: &isRead}); err != nil {
+		t.Fatal(err)
+	}
+	application.AI = draftFake{}
+	mailagent.AutoDraftOnce(context.Background(), application, 10)
+	application.AI = nil
+	if has, err := application.Repositories.Agent.HasDraftForMail(context.Background(), read[0].ID); err != nil || has {
+		t.Fatalf("drafted a reply to read mail: %v %v", has, err)
+	}
+	pendingCount := func() int {
+		t.Helper()
+		_, out := call(http.MethodGet, "/api/v1/agent/drafts?organization_id="+orgID+"&status=pending", userToken, nil)
+		return len(list(out))
+	}
+	if err := application.Repositories.Mail.Patch(context.Background(), discardables[0].ID, repositories.MailPatch{IsRead: &isRead}); err != nil {
+		t.Fatal(err)
+	}
+	if n := pendingCount(); n != 0 {
+		t.Fatalf("pending drafts with their mail read: %d, want 0", n)
+	}
+	// The unfiltered list hides it too, and keeps the sent one as history.
+	if status, out = call(http.MethodGet, "/api/v1/agent/drafts?organization_id="+orgID, userToken, nil); len(list(out)) != 1 || list(out)[0].(map[string]any)["status"] != "sent" {
+		t.Fatalf("history with the pending draft's mail read: %d %v", status, out)
+	}
+	if err := application.Repositories.Mail.Patch(context.Background(), discardables[0].ID, repositories.MailPatch{IsRead: &isUnread}); err != nil {
+		t.Fatal(err)
+	}
+	if n := pendingCount(); n != 1 {
+		t.Fatalf("pending drafts with their mail unread again: %d, want 1", n)
+	}
+
 	if status, out = call(http.MethodPost, "/api/v1/agent/drafts/"+pending+"/discard", userToken, nil); status != http.StatusOK || data(out)["status"] != "discarded" {
 		t.Fatalf("discard: %d %v", status, out)
 	}

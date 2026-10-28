@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"montara-mail-agent/server/internal/lib/constant"
 	"montara-mail-agent/server/internal/models"
 )
 
@@ -270,12 +271,17 @@ func (r *AgentRepository) Draft(ctx context.Context, id uuid.UUID) (models.Agent
 }
 
 // Drafts lists an organization's queue, most recent first, optionally filtered
-// to one status (empty means every status).
+// to one status (empty means every status). A pending draft shows only while
+// its mail is still important and unread: once the user reads the mail, or it
+// is no longer important, they are handling it themselves. Sent and discarded
+// drafts stay as history, and a draft whose mail is gone stays too.
 func (r *AgentRepository) Drafts(ctx context.Context, orgID uuid.UUID, status string, limit int) ([]models.AgentDraft, error) {
-	query := `SELECT ` + agentDraftColumns + ` FROM agent_drafts
-		WHERE organization_id = $1 AND ($2 = '' OR status = $2)
-		ORDER BY created_at DESC LIMIT $3`
-	rows, err := r.queryContext(ctx, query, orgID, status, limit)
+	query := `SELECT ` + agentDraftColumns + ` FROM agent_drafts d
+		WHERE d.organization_id = $1 AND ($2 = '' OR d.status = $2)
+			AND (d.status <> $4 OR d.mail_id IS NULL OR EXISTS (
+				SELECT 1 FROM mails m WHERE m.id = d.mail_id AND m.importance = $5 AND NOT m.is_read))
+		ORDER BY d.created_at DESC LIMIT $3`
+	rows, err := r.queryContext(ctx, query, orgID, status, limit, models.AgentDraftPending, constant.ImportanceImportant)
 	if err != nil {
 		return nil, err
 	}

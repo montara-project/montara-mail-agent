@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 
 import ConnectorList from '@/components/block/account/connector-list'
 import MailAccountList from '@/components/block/account/mail-account-list'
+import PageContainer from '@/components/block/common/page-container'
 import { maskEmails, useHideEmails } from '@/hooks/use-hide-emails'
 
 // The OAuth callback returns the browser here with the flow's outcome in the
@@ -34,10 +35,10 @@ function OAuthOutcome() {
 
 function RouteComponent() {
   return (
-    <div className="grid gap-8">
+    <PageContainer className="gap-8">
       <OAuthOutcome />
       <MailAccountList />
       <ConnectorList />
-    </div>
+    </PageContainer>
   )
 }

@@ -35,6 +35,24 @@ func (dto MailMoveBody) Validate(v *validator.MapValidator) {
 	v.Field("folder").Required().Regex(`^(inbox|archive|spam|trash)$`)
 }
 
+// MailBulkBody applies one action to mails of one account and folder, as the
+// list's selection does: read, unread, move (to folder) or trash (deleted for
+// good when they are already there).
+type MailBulkBody struct {
+	IDs    []string `json:"ids"`
+	Action string   `json:"action"`
+	Folder string   `json:"folder"`
+}
+
+func (dto MailBulkBody) Validate(v *validator.MapValidator) {
+	v.Field("ids").Required().ArrayOf(MaxBulkMails, uuidPattern)
+	v.Field("action").Required().Regex(`^(read|unread|move|trash)$`)
+	v.Field("folder").Regex(`^(inbox|archive|spam|trash)$`)
+}
+
+// MaxBulkMails bounds one bulk action: a list page or a few.
+const MaxBulkMails = 100
+
 // MaxRecipients bounds one outgoing mail (all of To and Cc together), so an
 // account can't become a mass mailer.
 const MaxRecipients = 20

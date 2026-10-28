@@ -17,7 +17,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Skeleton } from '@/components/ui/skeleton'
 import { useHideEmails } from '@/hooks/use-hide-emails'
 import { toastProgress } from '@/lib/api/axios-error'
-import { allEmails, MAX_RECIPIENTS, parseRecipients } from '@/lib/api/dtos/mail/recipients'
+import { parseRecipients, recipientProblem } from '@/lib/api/dtos/mail/recipients'
 import { queries } from '@/lib/api/queries'
 
 import type { Draft, Reply } from './mail-editor'
@@ -84,15 +84,7 @@ export default function ComposeSheet({
   const submit = (body: Reply) => {
     const to = parseRecipients(fields.to)
     const cc = parseRecipients(fields.cc)
-    const found = !fromId
-      ? 'Connect an email account to send from.'
-      : to.length === 0
-        ? 'Add at least one recipient.'
-        : !allEmails([...to, ...cc])
-          ? 'One of the addresses is not a valid email.'
-          : to.length + cc.length > MAX_RECIPIENTS
-            ? `A mail goes to at most ${MAX_RECIPIENTS} addresses.`
-            : null
+    const found = fromId ? recipientProblem(to, cc) : 'Connect an email account to send from.'
     setProblem(found)
     if (found) return
 

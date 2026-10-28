@@ -1,18 +1,28 @@
-import { createFileRoute, Outlet } from '@tanstack/react-router'
+import { createFileRoute, Link, Outlet, useLocation } from '@tanstack/react-router'
+import { ChevronLeft } from 'lucide-react'
 
-import SettingsNav from '@/components/block/settings/settings-nav'
+import PageContainer from '@/components/block/common/page-container'
 
 export const Route = createFileRoute('/(app)/settings')({
   component: RouteComponent,
 })
 
 function RouteComponent() {
+  const isIndex = useLocation().pathname.replace(/\/$/, '') === '/settings'
+
   return (
-    <div className="grid gap-4 md:grid-cols-[13rem_minmax(0,1fr)] md:items-start">
-      <SettingsNav />
-      <div className="min-w-0">
-        <Outlet />
-      </div>
-    </div>
+    <PageContainer>
+      {/* The header's breadcrumb leads back on wider screens; phones hide it. */}
+      {!isIndex && (
+        <Link
+          to="/settings"
+          className="text-muted-foreground hover:text-foreground flex w-fit items-center gap-1 text-sm md:hidden"
+        >
+          <ChevronLeft className="size-4" />
+          Control Center
+        </Link>
+      )}
+      <Outlet />
+    </PageContainer>
   )
 }

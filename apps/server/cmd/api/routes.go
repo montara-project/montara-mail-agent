@@ -84,6 +84,18 @@ func routes(r *fiber.App, app *app.Application) {
 	organizations.Put("/:id/llm-provider", idempotent, h.LLMProvider.Put)
 	organizations.Delete("/:id/llm-provider", idempotent, h.LLMProvider.Delete)
 	organizations.Post("/:id/llm-provider/models", slow, h.LLMProvider.Models)
+
+	// Every provider the user can see, the global one (super user only to
+	// change) and moving a provider between organizations and global.
+	llmProviders := v1.Group("/llm-providers", m.Authorization)
+	llmProviders.Get("/", h.LLMProvider.List)
+	llmProviders.Put("/global", idempotent, h.LLMProvider.Put)
+	llmProviders.Delete("/global", idempotent, h.LLMProvider.Delete)
+	llmProviders.Post("/global/models", slow, h.LLMProvider.Models)
+	llmProviders.Put("/:id/scope", idempotent, h.LLMProvider.SetScope)
+	organizations.Get("/:id/mcp-servers", h.MCPServer.List)
+	organizations.Post("/:id/mcp-servers", slow, idempotent, h.MCPServer.Create)
+	organizations.Post("/:id/mcp-servers/test", slow, h.MCPServer.TestDraft)
 	organizations.Get("/:id/agent-bots", h.AgentBot.List)
 	organizations.Post("/:id/agent-bots", idempotent, h.AgentBot.Create)
 	organizations.Get("/:id/skills", h.AgentSkill.List)
@@ -104,6 +116,7 @@ func routes(r *fiber.App, app *app.Application) {
 	emailAccounts.Post("/:id/send", slow, idempotent, h.EmailAccount.Send)
 
 	mails := v1.Group("/mails", m.Authorization)
+	mails.Post("/bulk", slow, idempotent, h.Mail.Bulk)
 	mails.Get("/:id", h.Mail.Get)
 	mails.Patch("/:id", idempotent, h.Mail.Patch)
 	// Each of these talks to the mail server, so they share the slow budget.
@@ -115,6 +128,19 @@ func routes(r *fiber.App, app *app.Application) {
 	mails.Post("/:id/reply-suggestions", slow, h.Mail.ReplySuggestions)
 	mails.Post("/:id/draft-reply", slow, h.Mail.DraftReply)
 	mails.Post("/:id/skills/:key", slow, h.Mail.RunSkill)
+
+	// A hosted MCP server's sign-in returns here: a browser navigation, so
+	// registered before the authorized group below, like the mail callback.
+	v1.Get("/mcp-servers/oauth/callback", h.MCPServer.OAuthCallback)
+
+	// Contacting a server (sync, test, sign-in) shares the slow budget: each
+	// one reaches out to a host the user typed.
+	mcpServers := v1.Group("/mcp-servers", m.Authorization)
+	mcpServers.Put("/:id", slow, idempotent, h.MCPServer.Update)
+	mcpServers.Delete("/:id", idempotent, h.MCPServer.Delete)
+	mcpServers.Post("/:id/sync", slow, h.MCPServer.Sync)
+	mcpServers.Post("/:id/test", slow, h.MCPServer.Test)
+	mcpServers.Post("/:id/oauth/start", slow, h.MCPServer.OAuthStart)
 
 	// Agent bots are organization settings, so the flat group lets the web app
 	// edit one by its own id without repeating the organization.

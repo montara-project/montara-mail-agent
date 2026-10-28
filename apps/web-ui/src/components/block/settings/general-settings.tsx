@@ -19,13 +19,21 @@ import { OrganizationFormSchema } from '@/lib/api/dtos/organization/schema'
 import { parseDto } from '@/lib/api/dtos/parse'
 import { UpdateProfileSchema } from '@/lib/api/dtos/settings/profile/schema'
 import { queries } from '@/lib/api/queries'
+import { DEFAULT_TIMEZONE, TIMEZONES, timezoneLabel } from '@/lib/constants/timezones'
+
+// Built once: the labels carry each zone's offset as of page load.
+const TIMEZONE_OPTIONS = TIMEZONES.map((zone) => ({ value: zone, label: timezoneLabel(zone) }))
 
 function ProfileForm({ user }: { user: Models.User }) {
   const update = useMutation(queries.profile.update())
   const { mask } = useHideEmails()
 
   const form = useAppForm({
-    defaultValues: { name: user.name, image: user.image ?? '' },
+    defaultValues: {
+      name: user.name,
+      image: user.image ?? '',
+      timezone: user.metadata?.timezone ?? DEFAULT_TIMEZONE,
+    },
     validators: { onSubmit: UpdateProfileSchema, onChange: UpdateProfileSchema },
     onSubmit: async ({ value }) => {
       try {
@@ -40,41 +48,62 @@ function ProfileForm({ user }: { user: Models.User }) {
 
   return (
     <form
-      className="grid max-w-xl gap-4"
+      className="grid gap-4"
       onSubmit={(e) => {
         e.preventDefault()
         form.handleSubmit()
       }}
     >
-      <div className="mb-2 flex items-center gap-3">
-        <Avatar className="size-14">
-          {/^https:\/\/\S+$/.test(image) && <AvatarImage src={image} alt="" />}
-          <AvatarFallback>{mailInitials(name || user.email)}</AvatarFallback>
-        </Avatar>
-        <div className="grid min-w-0 text-sm">
-          <span className="truncate font-medium">{name || mask(user.email)}</span>
-          <span className="text-muted-foreground truncate">{mask(user.email)}</span>
+      <div className="grid gap-6 sm:grid-cols-[15rem_minmax(0,1fr)]">
+        <div className="flex items-center justify-center gap-3 sm:flex-col sm:text-center">
+          <Avatar className="size-14 sm:size-20">
+            {/^https:\/\/\S+$/.test(image) && <AvatarImage src={image} alt="" />}
+            <AvatarFallback>{mailInitials(name || user.email)}</AvatarFallback>
+          </Avatar>
+          <div className="grid w-full min-w-0 text-sm">
+            <span className="truncate font-medium">{name || mask(user.email)}</span>
+            <span className="text-muted-foreground truncate">{mask(user.email)}</span>
+          </div>
+        </div>
+        <div className="grid gap-4">
+          <form.AppField
+            name="name"
+            children={(field) => <field.TextField asterisk label="Name" autoComplete="name" />}
+          />
+          <div className="grid gap-2">
+            <form.AppField
+              name="image"
+              children={(field) => (
+                <field.TextField
+                  label="Avatar URL"
+                  placeholder="https://example.com/me.png"
+                  inputMode="url"
+                  aria-describedby="avatar-url-hint"
+                />
+              )}
+            />
+            <FieldDescription id="avatar-url-hint">
+              Leave empty to show your initials.
+            </FieldDescription>
+          </div>
+          <div className="grid gap-2">
+            <form.AppField
+              name="timezone"
+              children={(field) => (
+                <field.ComboboxField
+                  label="Timezone"
+                  placeholder="Pick a timezone"
+                  searchPlaceholder="Search timezones..."
+                  emptyText="No timezone matches."
+                  options={TIMEZONE_OPTIONS}
+                />
+              )}
+            />
+            <FieldDescription>The clock in the header shows the time here.</FieldDescription>
+          </div>
         </div>
       </div>
-      <form.AppField
-        name="name"
-        children={(field) => <field.TextField asterisk label="Name" autoComplete="name" />}
-      />
-      <div className="grid gap-2">
-        <form.AppField
-          name="image"
-          children={(field) => (
-            <field.TextField
-              label="Avatar URL"
-              placeholder="https://example.com/me.png"
-              inputMode="url"
-              aria-describedby="avatar-url-hint"
-            />
-          )}
-        />
-        <FieldDescription id="avatar-url-hint">Leave empty to show your initials.</FieldDescription>
-      </div>
-      <div className="mt-2">
+      <div className="mt-2 text-right">
         <form.AppForm>
           <form.SubmitButton label="Save" />
         </form.AppForm>
@@ -150,7 +179,7 @@ function PrivacySettings() {
 
   return (
     <SectionCard title="Privacy" description="What this browser shows on screen.">
-      <div className="flex max-w-xl items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-4">
         <div className="grid gap-1 text-sm">
           <Label htmlFor="hide-emails">Hide email addresses</Label>
           <FieldDescription>

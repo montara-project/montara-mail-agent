@@ -76,6 +76,32 @@ export default function OrganizationList() {
     ? organizations.filter((org) => org.name.toLowerCase().includes(term))
     : organizations
 
+  const content = () => {
+    if (isPending) {
+      return (
+        <div className="grid gap-3">
+          <Skeleton className="h-10" />
+          <Skeleton className="h-10" />
+        </div>
+      )
+    }
+    if (shown.length === 0) {
+      return (
+        <EmptyState
+          title="No organizations found"
+          description={term ? 'Try another search.' : 'Add your first organization.'}
+        />
+      )
+    }
+    return (
+      <ul className="divide-y">
+        {shown.map((org) => (
+          <OrganizationRow key={org.id} record={org} active={org.id === organization?.id} />
+        ))}
+      </ul>
+    )
+  }
+
   return (
     <SectionCard
       title="Organizations"
@@ -98,23 +124,7 @@ export default function OrganizationList() {
         </div>
       }
     >
-      {isPending ? (
-        <div className="grid gap-3">
-          <Skeleton className="h-10" />
-          <Skeleton className="h-10" />
-        </div>
-      ) : shown.length === 0 ? (
-        <EmptyState
-          title="No organizations found"
-          description={term ? 'Try another search.' : 'Add your first organization.'}
-        />
-      ) : (
-        <ul className="divide-y">
-          {shown.map((org) => (
-            <OrganizationRow key={org.id} record={org} active={org.id === organization?.id} />
-          ))}
-        </ul>
-      )}
+      {content()}
 
       <AddOrganizationForm open={openAdd} onOpenChange={setOpenAdd} />
     </SectionCard>

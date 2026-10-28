@@ -41,6 +41,18 @@ const STATUS_LABELS: Record<Models.AgentActionStatus, string> = {
   failed: 'Failed',
 }
 
+/** The badge color of each status: green once sent, red when it failed. */
+const STATUS_VARIANTS: Record<
+  Models.AgentActionStatus,
+  React.ComponentProps<typeof Badge>['variant']
+> = {
+  pending: 'secondary',
+  approved: 'secondary',
+  denied: 'secondary',
+  done: 'success',
+  failed: 'destructive',
+}
+
 const TABS = [
   ['chat', 'Chat'],
   ['drafts', 'AI Drafts'],
@@ -84,9 +96,16 @@ const skillCommand = (skill: Models.AgentSkill) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
 
-/** "search_mails" → "Search mails": tool names as the chat shows them. */
-const toolLabel = (name?: string) =>
-  name ? name.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase()) : 'Tool'
+/**
+ * "search_mails" → "Search mails", and an MCP server's "mcp__exa__web_search"
+ * → "exa · web_search": tool names as the chat shows them.
+ */
+const toolLabel = (name?: string) => {
+  if (!name) return 'Tool'
+  const [, server, tool] = name.match(/^mcp__(.+?)__(.+)$/) ?? []
+  if (server && tool) return `${server} · ${tool}`
+  return name.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase())
+}
 
 interface AgentPanelProps {
   /** The mailbox the conversation is bound to. */
@@ -122,6 +141,13 @@ function toBlocks(messages: Models.AgentMessage[]): Block[] {
 }
 
 const toolsDone = (n: number) => `Used ${n} ${n === 1 ? 'tool' : 'tools'}`
+
+/** The composer's hint: why it is locked, or what to ask. */
+function promptPlaceholder(emailAccountId?: string, about?: string) {
+  if (!emailAccountId) return 'Select a mailbox first'
+  if (about) return 'Ask about this email…'
+  return 'Ask the assistant…'
+}
 
 /**
  * The mail copilot: a chat bound to the active mailbox, with the agent's tool
@@ -451,7 +477,7 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
           {/* Composer */}
           <div className="shrink-0 border-t p-3">
             {about && (
-              <div className="mb-2 flex items-center gap-2 rounded-md border bg-accent-ink/[0.06] py-1 pr-1 pl-2 text-xs">
+              <div className="mb-2 flex items-center gap-2 rounded-md border bg-accent-ink/6 py-1 pr-1 pl-2 text-xs">
                 <Mail className="size-3.5 shrink-0 text-accent-ink" aria-hidden />
                 <span className="text-muted-foreground shrink-0">About</span>
                 <span className="min-w-0 flex-1 truncate font-medium" title={aboutMail?.subject}>
@@ -479,13 +505,7 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
               disabled={!emailAccountId}
               inputRef={inputRef}
               label="Message the assistant"
-              placeholder={
-                !emailAccountId
-                  ? 'Select a mailbox first'
-                  : about
-                    ? 'Ask about this email…'
-                    : 'Ask the assistant…'
-              }
+              placeholder={promptPlaceholder(emailAccountId, about)}
               commands={[...skillCommands, ...(about ? EMAIL_QUICK_PROMPTS : QUICK_PROMPTS)]}
               models={personas}
               model={activeBotId}
@@ -512,11 +532,7 @@ function DraftsQueue({ organizationId }: { organizationId?: string }) {
   const discard = useMutation(queries.agent.discardDraft())
 
   // Only the draft being decided waits; the rest of the queue stays usable.
-  const deciding = approve.isPending
-    ? approve.variables
-    : discard.isPending
-      ? discard.variables
-      : undefined
+  const deciding = [approve, discard].find((mutation) => mutation.isPending)?.variables
 
   const decide = async (decision: 'approve' | 'discard', id: string) => {
     const mutation = decision === 'approve' ? approve : discard
@@ -615,7 +631,7 @@ function AgentMessageRow({
     )
   }
   return (
-    <div className="max-w-[92%] rounded-2xl rounded-bl-sm bg-accent-ink/[0.06] px-3.5 py-2.5 text-sm">
+    <div className="max-w-[92%] rounded-2xl rounded-bl-sm bg-accent-ink/6 px-3.5 py-2.5 text-sm">
       <StreamingText
         text={message.content}
         animate={reveal}
@@ -644,7 +660,7 @@ function AgentActionCard({ action }: { action: Models.AgentAction }) {
   const deciding = approve.isPending || deny.isPending
 
   return (
-    <div className="rounded-xl border border-accent-ink/30 bg-accent-ink/[0.06] p-3">
+    <div className="rounded-xl border border-accent-ink/30 bg-accent-ink/6 p-3">
       <div className="flex items-center gap-2">
         <Badge variant="secondary" appearance="light">
           {ACTION_LABELS[action.kind]}
@@ -656,16 +672,7 @@ function AgentActionCard({ action }: { action: Models.AgentAction }) {
           {action.payload.subject}
         </span>
         {action.status !== 'pending' && (
-          <Badge
-            variant={
-              action.status === 'done'
-                ? 'success'
-                : action.status === 'failed'
-                  ? 'destructive'
-                  : 'secondary'
-            }
-            appearance="light"
-          >
+          <Badge variant={STATUS_VARIANTS[action.status]} appearance="light">
             {STATUS_LABELS[action.status]}
           </Badge>
         )}

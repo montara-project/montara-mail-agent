@@ -163,3 +163,126 @@ func (s *Syncer) SetFlags(ctx context.Context, account models.EmailAccount, m mo
 	}
 	return nil
 }
+
+// uidSet is the UIDs of mails from one folder, as one IMAP set.
+func uidSet(mails []models.Mail) imap.UIDSet {
+	uids := make([]imap.UID, len(mails))
+	for i, m := range mails {
+		uids[i] = imap.UID(m.UID)
+	}
+	return imap.UIDSetNum(uids...)
+}
+
+// MoveMany moves mails of one folder to another in one session: one MOVE of
+// the whole set, then the destination is synced and each mail's importance
+// and summary pass to its copy, as Move does for one.
+func (s *Syncer) MoveMany(ctx context.Context, account models.EmailAccount, mails []models.Mail, to string) error {
+	ctx, cancel := context.WithTimeout(ctx, actionTimeout)
+	defer cancel()
+
+	c, boxes, err := s.openMail(ctx, account, mails[0])
+	if err != nil {
+		return err
+	}
+	defer c.Close()
+	defer c.Logout()
+
+	dest, synced := boxes[to]
+	if to == constant.FolderArchive && dest == "" {
+		dest = boxes[allMail]
+	}
+	if dest == "" {
+		return errNoFolder(to)
+	}
+
+	moved, err := c.Move(uidSet(mails), dest).Wait()
+	if err != nil {
+		return fmt.Errorf("move: %w", err)
+	}
+
+	// COPYUID pairs the source and destination sets in order (RFC 4315).
+	newUIDs := map[uint32]uint32{}
+	if synced {
+		src, srcOK := moved.SourceUIDs.(imap.UIDSet)
+		dst, dstOK := moved.DestUIDs.(imap.UIDSet)
+		if srcOK && dstOK {
+			from, ok1 := src.Nums()
+			into, ok2 := dst.Nums()
+			if ok1 && ok2 && len(from) == len(into) {
+				for i := range from {
+					newUIDs[uint32(from[i])] = uint32(into[i])
+				}
+			}
+		}
+		sel, err := c.Select(dest, &imap.SelectOptions{ReadOnly: true}).Wait()
+		if err != nil {
+			return fmt.Errorf("open %s: %w", to, err)
+		}
+		if err := s.app.Repositories.Mail.DropStale(ctx, account.ID, to, sel.UIDValidity); err != nil {
+			return err
+		}
+		if err := s.pullNew(ctx, c, account, to, sel); err != nil {
+			return err
+		}
+	}
+	for _, m := range mails {
+		if err := s.app.Repositories.Mail.Replace(ctx, m, to, newUIDs[m.UID]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// DeleteMany removes mails of one folder (the trash) for good in one session.
+func (s *Syncer) DeleteMany(ctx context.Context, account models.EmailAccount, mails []models.Mail) error {
+	ctx, cancel := context.WithTimeout(ctx, actionTimeout)
+	defer cancel()
+
+	c, _, err := s.openMail(ctx, account, mails[0])
+	if err != nil {
+		return err
+	}
+	defer c.Close()
+	defer c.Logout()
+
+	uids := uidSet(mails)
+	deleted := &imap.StoreFlags{Op: imap.StoreFlagsAdd, Silent: true, Flags: []imap.Flag{imap.FlagDeleted}}
+	if err := c.Store(uids, deleted, nil).Close(); err != nil {
+		return fmt.Errorf("flag deleted: %w", err)
+	}
+	expunge := c.Expunge()
+	if c.Caps().Has(imap.CapUIDPlus) {
+		expunge = c.UIDExpunge(uids)
+	}
+	if err := expunge.Close(); err != nil {
+		return fmt.Errorf("expunge: %w", err)
+	}
+	for _, m := range mails {
+		if err := s.app.Repositories.Mail.Delete(ctx, m.ID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// SetReadMany writes the read state of mails of one folder in one session.
+func (s *Syncer) SetReadMany(ctx context.Context, account models.EmailAccount, mails []models.Mail, read bool) error {
+	ctx, cancel := context.WithTimeout(ctx, actionTimeout)
+	defer cancel()
+
+	c, _, err := s.openMail(ctx, account, mails[0])
+	if err != nil {
+		return err
+	}
+	defer c.Close()
+	defer c.Logout()
+
+	op := imap.StoreFlagsDel
+	if read {
+		op = imap.StoreFlagsAdd
+	}
+	if err := c.Store(uidSet(mails), &imap.StoreFlags{Op: op, Silent: true, Flags: []imap.Flag{imap.FlagSeen}}, nil).Close(); err != nil {
+		return fmt.Errorf("store seen: %w", err)
+	}
+	return nil
+}

@@ -41,10 +41,10 @@ type Application struct {
 var ErrAINotConfigured = apperr.New(apperr.KindUnavailable, "AI is not configured: set an LLM provider for this organization")
 
 // LLMFor returns the model an organization's AI features call: its own
-// provider, else the fallback. It carries the one-shot Complete the stateless
+// provider, else the global one, else the fallback. It carries the one-shot Complete the stateless
 // tasks use and the Chat with tool calling the agent loop needs.
 func (a *Application) LLMFor(ctx context.Context, organizationID uuid.UUID) (llm.ChatClient, error) {
-	p, err := a.Repositories.LLMProvider.Get(ctx, organizationID)
+	p, err := a.Repositories.LLMProvider.ForOrganization(ctx, organizationID)
 	if apperr.IsNotFound(err) {
 		if a.AI == nil {
 			return nil, ErrAINotConfigured

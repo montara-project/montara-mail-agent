@@ -79,7 +79,7 @@ export default function SkillMenu({
         })}
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link to="/skills">
+          <Link to="/settings/skills">
             <Settings2 />
             Manage skills
           </Link>
@@ -109,7 +109,7 @@ export function SkillResult({
     <section
       aria-label={`${name} result`}
       aria-busy={pending}
-      className="mb-6 max-w-3xl rounded-xl border border-accent-ink/25 bg-accent-ink/[0.06] p-4"
+      className="mb-6 max-w-3xl rounded-xl border border-accent-ink/25 bg-accent-ink/6 p-4"
     >
       <div className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-accent-ink">
         <Wand2 className="size-4" aria-hidden />

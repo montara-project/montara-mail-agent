@@ -1,6 +1,5 @@
 import SectionCard from '@/components/block/common/section-card'
 import ActivityLogList from '@/components/block/settings/activity-log'
-import LLMProviderSettings from '@/components/block/settings/llm-provider-form'
 import OrganizationList from '@/components/block/settings/organization-list'
 import PasswordSettings from '@/components/block/settings/password-form'
 import ServerSettings from '@/components/block/settings/server-url-form'
@@ -60,7 +59,6 @@ export function OrganizationPageSettings() {
           <ServerSettings />
         </>
       )}
-      <LLMProviderSettings />
       {organization && (
         <ActivityLogList
           title="Audit log"

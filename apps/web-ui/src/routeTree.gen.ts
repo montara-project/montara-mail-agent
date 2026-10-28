@@ -14,16 +14,18 @@ import { Route as appRouteRouteImport } from './routes/(app)/route'
 import { Route as appSettingsRouteRouteImport } from './routes/(app)/settings/route'
 import { Route as SignInIndexRouteImport } from './routes/sign-in/index'
 import { Route as appAccountIndexRouteImport } from './routes/(app)/account/index'
-import { Route as appAgentBotsIndexRouteImport } from './routes/(app)/agent-bots/index'
 import { Route as appDashboardIndexRouteImport } from './routes/(app)/dashboard/index'
 import { Route as appMailIndexRouteImport } from './routes/(app)/mail/index'
 import { Route as appSettingsIndexRouteImport } from './routes/(app)/settings/index'
+import { Route as appSettingsAgentBotsRouteImport } from './routes/(app)/settings/agent-bots'
+import { Route as appSettingsAiProvidersRouteImport } from './routes/(app)/settings/ai-providers'
 import { Route as appSettingsBillingRouteImport } from './routes/(app)/settings/billing'
 import { Route as appSettingsDeleteAccountRouteImport } from './routes/(app)/settings/delete-account'
+import { Route as appSettingsMcpRouteImport } from './routes/(app)/settings/mcp'
 import { Route as appSettingsOrganizationRouteImport } from './routes/(app)/settings/organization'
 import { Route as appSettingsProfileRouteImport } from './routes/(app)/settings/profile'
 import { Route as appSettingsSecurityRouteImport } from './routes/(app)/settings/security'
-import { Route as appSkillsIndexRouteImport } from './routes/(app)/skills/index'
+import { Route as appSettingsSkillsRouteImport } from './routes/(app)/settings/skills'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -49,11 +51,6 @@ const appAccountIndexRoute = appAccountIndexRouteImport.update({
   path: '/account/',
   getParentRoute: () => appRouteRoute,
 } as any)
-const appAgentBotsIndexRoute = appAgentBotsIndexRouteImport.update({
-  id: '/agent-bots/',
-  path: '/agent-bots/',
-  getParentRoute: () => appRouteRoute,
-} as any)
 const appDashboardIndexRoute = appDashboardIndexRouteImport.update({
   id: '/dashboard/',
   path: '/dashboard/',
@@ -69,6 +66,16 @@ const appSettingsIndexRoute = appSettingsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => appSettingsRouteRoute,
 } as any)
+const appSettingsAgentBotsRoute = appSettingsAgentBotsRouteImport.update({
+  id: '/agent-bots',
+  path: '/agent-bots',
+  getParentRoute: () => appSettingsRouteRoute,
+} as any)
+const appSettingsAiProvidersRoute = appSettingsAiProvidersRouteImport.update({
+  id: '/ai-providers',
+  path: '/ai-providers',
+  getParentRoute: () => appSettingsRouteRoute,
+} as any)
 const appSettingsBillingRoute = appSettingsBillingRouteImport.update({
   id: '/billing',
   path: '/billing',
@@ -80,6 +87,11 @@ const appSettingsDeleteAccountRoute =
     path: '/delete-account',
     getParentRoute: () => appSettingsRouteRoute,
   } as any)
+const appSettingsMcpRoute = appSettingsMcpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
+  getParentRoute: () => appSettingsRouteRoute,
+} as any)
 const appSettingsOrganizationRoute = appSettingsOrganizationRouteImport.update({
   id: '/organization',
   path: '/organization',
@@ -95,42 +107,46 @@ const appSettingsSecurityRoute = appSettingsSecurityRouteImport.update({
   path: '/security',
   getParentRoute: () => appSettingsRouteRoute,
 } as any)
-const appSkillsIndexRoute = appSkillsIndexRouteImport.update({
-  id: '/skills/',
-  path: '/skills/',
-  getParentRoute: () => appRouteRoute,
+const appSettingsSkillsRoute = appSettingsSkillsRouteImport.update({
+  id: '/skills',
+  path: '/skills',
+  getParentRoute: () => appSettingsRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/settings': typeof appSettingsRouteRouteWithChildren
   '/sign-in/': typeof SignInIndexRoute
+  '/settings/agent-bots': typeof appSettingsAgentBotsRoute
+  '/settings/ai-providers': typeof appSettingsAiProvidersRoute
   '/settings/billing': typeof appSettingsBillingRoute
   '/settings/delete-account': typeof appSettingsDeleteAccountRoute
+  '/settings/mcp': typeof appSettingsMcpRoute
   '/settings/organization': typeof appSettingsOrganizationRoute
   '/settings/profile': typeof appSettingsProfileRoute
   '/settings/security': typeof appSettingsSecurityRoute
+  '/settings/skills': typeof appSettingsSkillsRoute
   '/account/': typeof appAccountIndexRoute
-  '/agent-bots/': typeof appAgentBotsIndexRoute
   '/dashboard/': typeof appDashboardIndexRoute
   '/mail/': typeof appMailIndexRoute
   '/settings/': typeof appSettingsIndexRoute
-  '/skills/': typeof appSkillsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/sign-in': typeof SignInIndexRoute
+  '/settings/agent-bots': typeof appSettingsAgentBotsRoute
+  '/settings/ai-providers': typeof appSettingsAiProvidersRoute
   '/settings/billing': typeof appSettingsBillingRoute
   '/settings/delete-account': typeof appSettingsDeleteAccountRoute
+  '/settings/mcp': typeof appSettingsMcpRoute
   '/settings/organization': typeof appSettingsOrganizationRoute
   '/settings/profile': typeof appSettingsProfileRoute
   '/settings/security': typeof appSettingsSecurityRoute
+  '/settings/skills': typeof appSettingsSkillsRoute
   '/account': typeof appAccountIndexRoute
-  '/agent-bots': typeof appAgentBotsIndexRoute
   '/dashboard': typeof appDashboardIndexRoute
   '/mail': typeof appMailIndexRoute
   '/settings': typeof appSettingsIndexRoute
-  '/skills': typeof appSkillsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -138,17 +154,19 @@ export interface FileRoutesById {
   '/(app)': typeof appRouteRouteWithChildren
   '/(app)/settings': typeof appSettingsRouteRouteWithChildren
   '/sign-in/': typeof SignInIndexRoute
+  '/(app)/settings/agent-bots': typeof appSettingsAgentBotsRoute
+  '/(app)/settings/ai-providers': typeof appSettingsAiProvidersRoute
   '/(app)/settings/billing': typeof appSettingsBillingRoute
   '/(app)/settings/delete-account': typeof appSettingsDeleteAccountRoute
+  '/(app)/settings/mcp': typeof appSettingsMcpRoute
   '/(app)/settings/organization': typeof appSettingsOrganizationRoute
   '/(app)/settings/profile': typeof appSettingsProfileRoute
   '/(app)/settings/security': typeof appSettingsSecurityRoute
+  '/(app)/settings/skills': typeof appSettingsSkillsRoute
   '/(app)/account/': typeof appAccountIndexRoute
-  '/(app)/agent-bots/': typeof appAgentBotsIndexRoute
   '/(app)/dashboard/': typeof appDashboardIndexRoute
   '/(app)/mail/': typeof appMailIndexRoute
   '/(app)/settings/': typeof appSettingsIndexRoute
-  '/(app)/skills/': typeof appSkillsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -156,49 +174,55 @@ export interface FileRouteTypes {
     | '/'
     | '/settings'
     | '/sign-in/'
+    | '/settings/agent-bots'
+    | '/settings/ai-providers'
     | '/settings/billing'
     | '/settings/delete-account'
+    | '/settings/mcp'
     | '/settings/organization'
     | '/settings/profile'
     | '/settings/security'
+    | '/settings/skills'
     | '/account/'
-    | '/agent-bots/'
     | '/dashboard/'
     | '/mail/'
     | '/settings/'
-    | '/skills/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/sign-in'
+    | '/settings/agent-bots'
+    | '/settings/ai-providers'
     | '/settings/billing'
     | '/settings/delete-account'
+    | '/settings/mcp'
     | '/settings/organization'
     | '/settings/profile'
     | '/settings/security'
+    | '/settings/skills'
     | '/account'
-    | '/agent-bots'
     | '/dashboard'
     | '/mail'
     | '/settings'
-    | '/skills'
   id:
     | '__root__'
     | '/'
     | '/(app)'
     | '/(app)/settings'
     | '/sign-in/'
+    | '/(app)/settings/agent-bots'
+    | '/(app)/settings/ai-providers'
     | '/(app)/settings/billing'
     | '/(app)/settings/delete-account'
+    | '/(app)/settings/mcp'
     | '/(app)/settings/organization'
     | '/(app)/settings/profile'
     | '/(app)/settings/security'
+    | '/(app)/settings/skills'
     | '/(app)/account/'
-    | '/(app)/agent-bots/'
     | '/(app)/dashboard/'
     | '/(app)/mail/'
     | '/(app)/settings/'
-    | '/(app)/skills/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -244,13 +268,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof appAccountIndexRouteImport
       parentRoute: typeof appRouteRoute
     }
-    '/(app)/agent-bots/': {
-      id: '/(app)/agent-bots/'
-      path: '/agent-bots'
-      fullPath: '/agent-bots/'
-      preLoaderRoute: typeof appAgentBotsIndexRouteImport
-      parentRoute: typeof appRouteRoute
-    }
     '/(app)/dashboard/': {
       id: '/(app)/dashboard/'
       path: '/dashboard'
@@ -272,6 +289,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof appSettingsIndexRouteImport
       parentRoute: typeof appSettingsRouteRoute
     }
+    '/(app)/settings/agent-bots': {
+      id: '/(app)/settings/agent-bots'
+      path: '/agent-bots'
+      fullPath: '/settings/agent-bots'
+      preLoaderRoute: typeof appSettingsAgentBotsRouteImport
+      parentRoute: typeof appSettingsRouteRoute
+    }
+    '/(app)/settings/ai-providers': {
+      id: '/(app)/settings/ai-providers'
+      path: '/ai-providers'
+      fullPath: '/settings/ai-providers'
+      preLoaderRoute: typeof appSettingsAiProvidersRouteImport
+      parentRoute: typeof appSettingsRouteRoute
+    }
     '/(app)/settings/billing': {
       id: '/(app)/settings/billing'
       path: '/billing'
@@ -284,6 +315,13 @@ declare module '@tanstack/react-router' {
       path: '/delete-account'
       fullPath: '/settings/delete-account'
       preLoaderRoute: typeof appSettingsDeleteAccountRouteImport
+      parentRoute: typeof appSettingsRouteRoute
+    }
+    '/(app)/settings/mcp': {
+      id: '/(app)/settings/mcp'
+      path: '/mcp'
+      fullPath: '/settings/mcp'
+      preLoaderRoute: typeof appSettingsMcpRouteImport
       parentRoute: typeof appSettingsRouteRoute
     }
     '/(app)/settings/organization': {
@@ -307,31 +345,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof appSettingsSecurityRouteImport
       parentRoute: typeof appSettingsRouteRoute
     }
-    '/(app)/skills/': {
-      id: '/(app)/skills/'
+    '/(app)/settings/skills': {
+      id: '/(app)/settings/skills'
       path: '/skills'
-      fullPath: '/skills/'
-      preLoaderRoute: typeof appSkillsIndexRouteImport
-      parentRoute: typeof appRouteRoute
+      fullPath: '/settings/skills'
+      preLoaderRoute: typeof appSettingsSkillsRouteImport
+      parentRoute: typeof appSettingsRouteRoute
     }
   }
 }
 
 interface appSettingsRouteRouteChildren {
+  appSettingsAgentBotsRoute: typeof appSettingsAgentBotsRoute
+  appSettingsAiProvidersRoute: typeof appSettingsAiProvidersRoute
   appSettingsBillingRoute: typeof appSettingsBillingRoute
   appSettingsDeleteAccountRoute: typeof appSettingsDeleteAccountRoute
+  appSettingsMcpRoute: typeof appSettingsMcpRoute
   appSettingsOrganizationRoute: typeof appSettingsOrganizationRoute
   appSettingsProfileRoute: typeof appSettingsProfileRoute
   appSettingsSecurityRoute: typeof appSettingsSecurityRoute
+  appSettingsSkillsRoute: typeof appSettingsSkillsRoute
   appSettingsIndexRoute: typeof appSettingsIndexRoute
 }
 
 const appSettingsRouteRouteChildren: appSettingsRouteRouteChildren = {
+  appSettingsAgentBotsRoute: appSettingsAgentBotsRoute,
+  appSettingsAiProvidersRoute: appSettingsAiProvidersRoute,
   appSettingsBillingRoute: appSettingsBillingRoute,
   appSettingsDeleteAccountRoute: appSettingsDeleteAccountRoute,
+  appSettingsMcpRoute: appSettingsMcpRoute,
   appSettingsOrganizationRoute: appSettingsOrganizationRoute,
   appSettingsProfileRoute: appSettingsProfileRoute,
   appSettingsSecurityRoute: appSettingsSecurityRoute,
+  appSettingsSkillsRoute: appSettingsSkillsRoute,
   appSettingsIndexRoute: appSettingsIndexRoute,
 }
 
@@ -341,19 +387,15 @@ const appSettingsRouteRouteWithChildren =
 interface appRouteRouteChildren {
   appSettingsRouteRoute: typeof appSettingsRouteRouteWithChildren
   appAccountIndexRoute: typeof appAccountIndexRoute
-  appAgentBotsIndexRoute: typeof appAgentBotsIndexRoute
   appDashboardIndexRoute: typeof appDashboardIndexRoute
   appMailIndexRoute: typeof appMailIndexRoute
-  appSkillsIndexRoute: typeof appSkillsIndexRoute
 }
 
 const appRouteRouteChildren: appRouteRouteChildren = {
   appSettingsRouteRoute: appSettingsRouteRouteWithChildren,
   appAccountIndexRoute: appAccountIndexRoute,
-  appAgentBotsIndexRoute: appAgentBotsIndexRoute,
   appDashboardIndexRoute: appDashboardIndexRoute,
   appMailIndexRoute: appMailIndexRoute,
-  appSkillsIndexRoute: appSkillsIndexRoute,
 }
 
 const appRouteRouteWithChildren = appRouteRoute._addFileChildren(

@@ -1,5 +1,5 @@
 import { Link, useLocation } from '@tanstack/react-router'
-import { Bot, HardDrive, LayoutDashboard, Settings, UserRound, Wand2 } from 'lucide-react'
+import { HardDrive, LayoutDashboard, Settings, UserRound } from 'lucide-react'
 
 import OrganizationSwitcher from '@/components/layout/organization/organization-switcher'
 import {
@@ -17,9 +17,7 @@ import {
 const PLATFORM_ITEMS = [
   { title: 'Dashboard', icon: LayoutDashboard, url: '/dashboard' },
   { title: 'Account', icon: UserRound, url: '/account' },
-  { title: 'Agent Bots', icon: Bot, url: '/agent-bots' },
-  { title: 'Skills', icon: Wand2, url: '/skills' },
-  { title: 'Settings', icon: Settings, url: '/settings' },
+  { title: 'Control Center', icon: Settings, url: '/settings' },
 ]
 
 const STORAGE_LIMIT_GB = 5
