@@ -37,7 +37,7 @@ function PasswordForm() {
 
   return (
     <form
-      className="grid max-w-xl gap-4"
+      className="grid gap-4"
       onSubmit={(e) => {
         e.preventDefault()
         form.handleSubmit()
