@@ -225,6 +225,33 @@ export default function TOTPSettings() {
   })
   const enabled = data?.totp_enabled
 
+  const content = () => {
+    if (isPending) {
+      return (
+        <div className="grid max-w-xl gap-4">
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+      )
+    }
+    if (isError) return <p className="text-destructive text-sm">{axiosErrorMessage(error)}</p>
+    if (enabled) return <Enabled />
+    if (setup) return <Setup setup={setup} onClose={() => setSetup(null)} />
+    return (
+      <div className="grid max-w-xl gap-4">
+        <p className="text-sm">
+          With it on, someone who learns your password still can't sign in without your phone.
+        </p>
+        <div>
+          <Button onClick={() => enable.mutate()} disabled={enable.isPending}>
+            <ShieldCheck />
+            {enable.isPending ? 'Starting...' : 'Set up'}
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <SectionCard
       title="Two-factor authentication"
@@ -237,30 +264,7 @@ export default function TOTPSettings() {
         )
       }
     >
-      {isPending ? (
-        <div className="grid max-w-xl gap-4">
-          <Skeleton className="h-5 w-3/4" />
-          <Skeleton className="h-10 w-32" />
-        </div>
-      ) : isError ? (
-        <p className="text-destructive text-sm">{axiosErrorMessage(error)}</p>
-      ) : enabled ? (
-        <Enabled />
-      ) : setup ? (
-        <Setup setup={setup} onClose={() => setSetup(null)} />
-      ) : (
-        <div className="grid max-w-xl gap-4">
-          <p className="text-sm">
-            With it on, someone who learns your password still can't sign in without your phone.
-          </p>
-          <div>
-            <Button onClick={() => enable.mutate()} disabled={enable.isPending}>
-              <ShieldCheck />
-              {enable.isPending ? 'Starting...' : 'Set up'}
-            </Button>
-          </div>
-        </div>
-      )}
+      {content()}
     </SectionCard>
   )
 }

@@ -66,6 +66,32 @@ export default function AgentBotList({ organizationId }: { organizationId: strin
   const { data, isPending } = useQuery(queries.agentBots.list(organizationId))
   const bots = data?.data ?? []
 
+  const content = () => {
+    if (isPending) {
+      return (
+        <div className="grid gap-3">
+          <Skeleton className="h-10" />
+          <Skeleton className="h-10" />
+        </div>
+      )
+    }
+    if (bots.length === 0) {
+      return (
+        <EmptyState
+          title="No agent bots yet"
+          description="Add a bot to give the assistant its own soul, memory, style and instructions."
+        />
+      )
+    }
+    return (
+      <ul className="divide-y">
+        {bots.map((bot) => (
+          <AgentBotRow key={bot.id} record={bot} />
+        ))}
+      </ul>
+    )
+  }
+
   return (
     <SectionCard
       title="Agent Bots"
@@ -77,23 +103,7 @@ export default function AgentBotList({ organizationId }: { organizationId: strin
         </Button>
       }
     >
-      {isPending ? (
-        <div className="grid gap-3">
-          <Skeleton className="h-10" />
-          <Skeleton className="h-10" />
-        </div>
-      ) : bots.length === 0 ? (
-        <EmptyState
-          title="No agent bots yet"
-          description="Add a bot to give the assistant its own soul, memory, style and instructions."
-        />
-      ) : (
-        <ul className="divide-y">
-          {bots.map((bot) => (
-            <AgentBotRow key={bot.id} record={bot} />
-          ))}
-        </ul>
-      )}
+      {content()}
 
       <AddAgentBotForm organizationId={organizationId} open={openAdd} onOpenChange={setOpenAdd} />
     </SectionCard>

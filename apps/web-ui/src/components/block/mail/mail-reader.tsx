@@ -215,6 +215,31 @@ export default function MailReader({ mailId }: { mailId: string }) {
     )
   }
 
+  const summaryContent = () => {
+    if (summaryText) return <Markdown>{summaryText}</Markdown>
+    if (summary.isPending) {
+      return (
+        <div className="grid gap-2">
+          <Skeleton className="h-4 w-11/12" />
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-4 w-5/6" />
+        </div>
+      )
+    }
+    if (summary.isError) {
+      return (
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <span className="text-destructive">{axiosErrorMessage(summary.error)}</span>
+          <Button variant="outline" size="sm" onClick={() => summary.refetch()}>
+            <RotateCcw />
+            Try again
+          </Button>
+        </div>
+      )
+    }
+    return null
+  }
+
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <div className="flex h-14 shrink-0 items-center justify-between border-b px-3">
@@ -455,29 +480,13 @@ export default function MailReader({ mailId }: { mailId: string }) {
           <section
             aria-label="AI email summary"
             aria-busy={!summaryText && summary.isPending}
-            className="mb-6 max-w-3xl rounded-xl border border-accent-ink/25 bg-accent-ink/[0.06] p-4"
+            className="mb-6 max-w-3xl rounded-xl border border-accent-ink/25 bg-accent-ink/6 p-4"
           >
             <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-accent-ink">
               <Sparkles className="size-4" />
               AI Summary
             </p>
-            {summaryText ? (
-              <Markdown>{summaryText}</Markdown>
-            ) : summary.isPending ? (
-              <div className="grid gap-2">
-                <Skeleton className="h-4 w-11/12" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-5/6" />
-              </div>
-            ) : summary.isError ? (
-              <div className="flex flex-wrap items-center gap-3 text-sm">
-                <span className="text-destructive">{axiosErrorMessage(summary.error)}</span>
-                <Button variant="outline" size="sm" onClick={() => summary.refetch()}>
-                  <RotateCcw />
-                  Try again
-                </Button>
-              </div>
-            ) : null}
+            {summaryContent()}
           </section>
         )}
 

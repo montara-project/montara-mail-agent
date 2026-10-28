@@ -99,6 +99,20 @@ function TOTPStep({ onDone, onBack }: { onDone: () => Promise<void>; onBack: () 
   )
 }
 
+/** The line under the title for each screen of the login card. */
+const STEP_DESCRIPTIONS = {
+  server: 'Choose your Montara server',
+  code: 'Two-factor sign-in',
+  password: 'Sign in to continue',
+}
+
+/** Which screen the login card shows; picking a server wins over the code step. */
+function loginStep(pickServer: boolean, needsCode: boolean): keyof typeof STEP_DESCRIPTIONS {
+  if (pickServer) return 'server'
+  if (needsCode) return 'code'
+  return 'password'
+}
+
 export default function LoginForm({ className, ...props }: React.ComponentProps<'div'>) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
@@ -151,6 +165,7 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
       }
     },
   })
+  const step = loginStep(pickServer, needsCode)
 
   return (
     <div className={cn('flex flex-col gap-6', className)} {...props}>
@@ -158,20 +173,12 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
         <div className="flex flex-col items-center gap-2 text-center">
           <img src="/images/mail-agent-logo.png" alt="" className="size-12" />
           <h1 className="text-xl font-bold">Montara</h1>
-          <FieldDescription>
-            {pickServer
-              ? 'Choose your Montara server'
-              : needsCode
-                ? 'Two-factor sign-in'
-                : 'Sign in to continue'}
-          </FieldDescription>
+          <FieldDescription>{STEP_DESCRIPTIONS[step]}</FieldDescription>
         </div>
 
-        {pickServer ? (
-          <ServerURLForm onCancel={() => setPickServer(false)} />
-        ) : needsCode ? (
-          <TOTPStep onDone={enter} onBack={() => setNeedsCode(false)} />
-        ) : (
+        {step === 'server' && <ServerURLForm onCancel={() => setPickServer(false)} />}
+        {step === 'code' && <TOTPStep onDone={enter} onBack={() => setNeedsCode(false)} />}
+        {step === 'password' && (
           <form
             className="flex flex-col gap-6"
             onSubmit={(e) => {

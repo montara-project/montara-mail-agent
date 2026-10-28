@@ -12,3 +12,13 @@ export function parseRecipients(value: string) {
 export function allEmails(recipients: string[]) {
   return recipients.every((r) => EMAIL.test(r))
 }
+
+/** Why a mail can't go to these To and Cc lists, or null when it can. */
+export function recipientProblem(to: string[], cc: string[]) {
+  if (to.length === 0) return 'Add at least one recipient.'
+  if (!allEmails([...to, ...cc])) return 'One of the addresses is not a valid email.'
+  if (to.length + cc.length > MAX_RECIPIENTS) {
+    return `A mail goes to at most ${MAX_RECIPIENTS} addresses.`
+  }
+  return null
+}

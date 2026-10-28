@@ -106,18 +106,18 @@ function ModelStatus({
   const { data, isFetching, isError, error, refetch, fetchStatus, isPending } = models
   const idle = isPending && fetchStatus === 'idle'
 
+  const message = () => {
+    if (idle) return idleHint
+    if (isFetching) return 'Loading the models...'
+    if (isError) return axiosErrorMessage(error)
+    if (data?.length) return `${data.length} models found.`
+    return 'The provider listed no models; type the id.'
+  }
+
   return (
     <div className="-mt-2 flex items-center gap-2" aria-live="polite">
       <FieldDescription className={isError ? 'text-destructive' : undefined}>
-        {idle
-          ? idleHint
-          : isFetching
-            ? 'Loading the models...'
-            : isError
-              ? axiosErrorMessage(error)
-              : data?.length
-                ? `${data.length} models found.`
-                : 'The provider listed no models; type the id.'}
+        {message()}
       </FieldDescription>
       {!idle && !isFetching && (
         <Button
@@ -467,6 +467,48 @@ export default function LLMProviderSettings() {
     })),
   ]
 
+  const content = () => {
+    if (isPending) {
+      return (
+        <div className="grid gap-3">
+          <Skeleton className="h-10" />
+          <Skeleton className="h-10" />
+        </div>
+      )
+    }
+    if (isError) return <p className="text-destructive text-sm">{axiosErrorMessage(error)}</p>
+    if (providers.length === 0) {
+      return (
+        <EmptyState
+          title="No AI providers yet"
+          description="Add one for an organization, or a global one for every organization."
+        />
+      )
+    }
+    return (
+      <div className="-mx-4 overflow-x-auto px-4">
+        <table className="w-full min-w-xl text-left text-sm">
+          <thead className="text-muted-foreground text-xs">
+            <tr>
+              <th className="pb-2 pr-4 font-normal">Provider</th>
+              <th className="pb-2 pr-4 font-normal">Endpoint</th>
+              <th className="pb-2 pr-4 font-normal">Model</th>
+              <th className="pb-2 pr-4 font-normal">Runs in</th>
+              <th className="pb-2 font-normal">
+                <span className="sr-only">Actions</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {providers.map((provider) => (
+              <ProviderRow key={provider.id} provider={provider} scopeOptions={scopeOptions} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+
   return (
     <SectionCard
       title="AI Providers"
@@ -478,40 +520,7 @@ export default function LLMProviderSettings() {
         </Button>
       }
     >
-      {isPending ? (
-        <div className="grid gap-3">
-          <Skeleton className="h-10" />
-          <Skeleton className="h-10" />
-        </div>
-      ) : isError ? (
-        <p className="text-destructive text-sm">{axiosErrorMessage(error)}</p>
-      ) : providers.length === 0 ? (
-        <EmptyState
-          title="No AI providers yet"
-          description="Add one for an organization, or a global one for every organization."
-        />
-      ) : (
-        <div className="-mx-4 overflow-x-auto px-4">
-          <table className="w-full min-w-xl text-left text-sm">
-            <thead className="text-muted-foreground text-xs">
-              <tr>
-                <th className="pb-2 pr-4 font-normal">Provider</th>
-                <th className="pb-2 pr-4 font-normal">Endpoint</th>
-                <th className="pb-2 pr-4 font-normal">Model</th>
-                <th className="pb-2 pr-4 font-normal">Runs in</th>
-                <th className="pb-2 font-normal">
-                  <span className="sr-only">Actions</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {providers.map((provider) => (
-                <ProviderRow key={provider.id} provider={provider} scopeOptions={scopeOptions} />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      {content()}
 
       {openAdd && <ProviderDialog open onOpenChange={setOpenAdd} scopeOptions={scopeOptions} />}
     </SectionCard>

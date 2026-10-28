@@ -92,39 +92,49 @@ export default function ActivityLogList({
   const query = useInfiniteQuery(activityLogQueries.infinite(organizationId))
   const entries = query.data?.pages.flatMap((page) => page.data) ?? []
 
-  return (
-    <SectionCard title={title} description={description}>
-      {query.isPending ? (
+  const content = () => {
+    if (query.isPending) {
+      return (
         <div className="grid gap-3">
           <Skeleton className="h-10" />
           <Skeleton className="h-10" />
           <Skeleton className="h-10" />
         </div>
-      ) : entries.length === 0 ? (
+      )
+    }
+    if (entries.length === 0) {
+      return (
         <EmptyState
           title="No activity yet"
           description="Actions will appear here as they happen."
         />
-      ) : (
-        <>
-          <ul className="divide-y">
-            {entries.map((entry) => (
-              <ActivityRow key={entry.id} entry={entry} showActor={!!organizationId} />
-            ))}
-          </ul>
-          {query.hasNextPage && (
-            <div className="pt-3 text-center">
-              <Button
-                mode="link"
-                onClick={() => query.fetchNextPage()}
-                disabled={query.isFetchingNextPage}
-              >
-                {query.isFetchingNextPage ? 'Loading…' : 'Load more'}
-              </Button>
-            </div>
-          )}
-        </>
-      )}
+      )
+    }
+    return (
+      <>
+        <ul className="divide-y">
+          {entries.map((entry) => (
+            <ActivityRow key={entry.id} entry={entry} showActor={!!organizationId} />
+          ))}
+        </ul>
+        {query.hasNextPage && (
+          <div className="pt-3 text-center">
+            <Button
+              mode="link"
+              onClick={() => query.fetchNextPage()}
+              disabled={query.isFetchingNextPage}
+            >
+              {query.isFetchingNextPage ? 'Loading…' : 'Load more'}
+            </Button>
+          </div>
+        )}
+      </>
+    )
+  }
+
+  return (
+    <SectionCard title={title} description={description}>
+      {content()}
     </SectionCard>
   )
 }

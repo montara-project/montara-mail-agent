@@ -139,10 +139,98 @@ export default function ReplyAiPanel({
     onGrow?.()
   }, [layoutKey, onGrow])
 
+  const jobContent = (current: Job) => {
+    if (mutation.isPending) {
+      return (
+        <ThinkingState
+          working
+          rows={[]}
+          active={
+            current.kind === 'polish'
+              ? `${current.title}: rewriting your draft`
+              : 'Writing the reply'
+          }
+        />
+      )
+    }
+    if (mutation.isError) {
+      return (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-destructive">{axiosErrorMessage(mutation.error)}</span>
+          <Button type="button" variant="outline" size="sm" onClick={current.run}>
+            <RotateCcw />
+            Try again
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={dismiss}>
+            Dismiss
+          </Button>
+        </div>
+      )
+    }
+    if (!result) return null
+    return (
+      <StreamingText
+        key={mutation.submittedAt}
+        text={result}
+        onDone={onGrow}
+        actions={
+          <div className="ml-auto flex gap-1.5">
+            <Button type="button" variant="ghost" size="sm" onClick={dismiss}>
+              Discard
+            </Button>
+            <Button type="button" size="sm" onClick={() => use(result)}>
+              {current.kind === 'polish' ? 'Use this version' : 'Use this reply'}
+            </Button>
+          </div>
+        }
+      />
+    )
+  }
+
+  const quickReplies = () => {
+    if (quick.isPending) {
+      return (
+        <ThinkingState
+          working
+          rows={[]}
+          active={activeBot ? `${activeBot.name} is thinking` : 'Thinking of replies'}
+        />
+      )
+    }
+    if (quick.isError) {
+      return (
+        <button
+          type="button"
+          className="text-destructive text-xs underline underline-offset-2"
+          onClick={() => quick.refetch()}
+        >
+          {axiosErrorMessage(quick.error)} Try again
+        </button>
+      )
+    }
+    return (
+      <div className="flex flex-wrap gap-1.5">
+        {quick.data.map((text) => (
+          <Button
+            key={text}
+            type="button"
+            variant="outline"
+            size="sm"
+            className="bg-background h-auto max-w-full rounded-full py-1 text-left text-xs font-normal whitespace-normal"
+            disabled={busy}
+            onClick={() => use(text)}
+          >
+            {text}
+          </Button>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <section
       aria-label="Write with AI"
-      className="animate-in fade-in slide-in-from-bottom-1 rounded-xl border border-accent-ink/25 bg-accent-ink/[0.05] p-3 duration-200 ease-out motion-reduce:animate-none "
+      className="animate-in fade-in slide-in-from-bottom-1 rounded-xl border border-accent-ink/25 bg-accent-ink/5 p-3 duration-200 ease-out motion-reduce:animate-none "
     >
       <div className="mb-2.5 flex items-center gap-2">
         <Sparkles className="size-4 shrink-0 text-accent-ink" aria-hidden />
@@ -171,81 +259,14 @@ export default function ReplyAiPanel({
           aria-busy={mutation.isPending}
         >
           <p className="text-muted-foreground mb-1.5 text-xs font-medium">{job.title}</p>
-          {mutation.isPending ? (
-            <ThinkingState
-              working
-              rows={[]}
-              active={
-                job.kind === 'polish' ? `${job.title}: rewriting your draft` : 'Writing the reply'
-              }
-            />
-          ) : mutation.isError ? (
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <span className="text-destructive">{axiosErrorMessage(mutation.error)}</span>
-              <Button type="button" variant="outline" size="sm" onClick={job.run}>
-                <RotateCcw />
-                Try again
-              </Button>
-              <Button type="button" variant="ghost" size="sm" onClick={dismiss}>
-                Dismiss
-              </Button>
-            </div>
-          ) : (
-            result && (
-              <StreamingText
-                key={mutation.submittedAt}
-                text={result}
-                onDone={onGrow}
-                actions={
-                  <div className="ml-auto flex gap-1.5">
-                    <Button type="button" variant="ghost" size="sm" onClick={dismiss}>
-                      Discard
-                    </Button>
-                    <Button type="button" size="sm" onClick={() => use(result)}>
-                      {job.kind === 'polish' ? 'Use this version' : 'Use this reply'}
-                    </Button>
-                  </div>
-                }
-              />
-            )
-          )}
+          {jobContent(job)}
         </div>
       )}
 
       <div className="mb-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
         <div className="min-w-0">
           <p className="text-muted-foreground mb-1.5 text-xs font-medium">Quick replies</p>
-          {quick.isPending ? (
-            <ThinkingState
-              working
-              rows={[]}
-              active={activeBot ? `${activeBot.name} is thinking` : 'Thinking of replies'}
-            />
-          ) : quick.isError ? (
-            <button
-              type="button"
-              className="text-destructive text-xs underline underline-offset-2"
-              onClick={() => quick.refetch()}
-            >
-              {axiosErrorMessage(quick.error)} Try again
-            </button>
-          ) : (
-            <div className="flex flex-wrap gap-1.5">
-              {quick.data.map((text) => (
-                <Button
-                  key={text}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="bg-background h-auto max-w-full rounded-full py-1 text-left text-xs font-normal whitespace-normal"
-                  disabled={busy}
-                  onClick={() => use(text)}
-                >
-                  {text}
-                </Button>
-              ))}
-            </div>
-          )}
+          {quickReplies()}
         </div>
 
         {polishSkills.length > 0 && (

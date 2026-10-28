@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toastProgress } from '@/lib/api/axios-error'
-import { allEmails, MAX_RECIPIENTS } from '@/lib/api/dtos/mail/recipients'
+import { recipientProblem } from '@/lib/api/dtos/mail/recipients'
 import { queries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
 
@@ -93,14 +93,7 @@ export default function ReplyComposer({
   }
 
   const send = (body: Reply) => {
-    const found =
-      to.length === 0
-        ? 'Add at least one recipient.'
-        : !allEmails([...to, ...cc])
-          ? 'One of the addresses is not a valid email.'
-          : to.length + cc.length > MAX_RECIPIENTS
-            ? `A mail goes to at most ${MAX_RECIPIENTS} addresses.`
-            : null
+    const found = recipientProblem(to, cc)
     setProblem(found)
     if (found) return
 
