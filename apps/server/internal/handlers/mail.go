@@ -400,6 +400,21 @@ func (h *mailHandler) RunSkill(c fiber.Ctx) error {
 			return h.aiError("reply draft", err)
 		}
 		return dtos.OK(c, fiber.Map{"kind": "reply", "text": text})
+	case models.SkillTranslate:
+		text, err := mailai.Translate(c.Context(), client, m, bot, body.Language)
+		if err != nil {
+			return h.aiError("translation", err)
+		}
+		return dtos.OK(c, fiber.Map{"kind": "text", "text": text})
+	case models.SkillTranslateReply:
+		if strings.TrimSpace(body.Draft) == "" {
+			return apperr.New(apperr.KindBadRequest, "write a reply first: %s translates your draft", skill.Name)
+		}
+		text, err := mailai.TranslateDraft(c.Context(), client, m, bot, body.Draft, body.Tone)
+		if err != nil {
+			return h.aiError(skill.Name, err)
+		}
+		return dtos.OK(c, fiber.Map{"kind": "rewrite", "text": text})
 	}
 	if skill.WorksOn() == models.SkillTargetDraft {
 		if strings.TrimSpace(body.Draft) == "" {

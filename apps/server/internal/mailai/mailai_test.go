@@ -170,3 +170,31 @@ func TestDraftAndReplySkills(t *testing.T) {
 		t.Fatalf("withSkill lost the instruction:\n%s", want)
 	}
 }
+
+// A translation names the target language (English by default) in the system
+// prompt; a translated reply carries the draft in its tags and its tone, with
+// an unknown tone falling back to professional.
+func TestTranslate(t *testing.T) {
+	if s := translateSystem(nil, ""); !strings.Contains(s, `tag "en"`) {
+		t.Fatalf("translateSystem without a language:\n%s", s)
+	}
+	if s := translateSystem(nil, "id-ID"); !strings.Contains(s, `tag "id-ID"`) {
+		t.Fatalf("translateSystem lost the language:\n%s", s)
+	}
+
+	m := models.Mail{FromEmail: "info@shop.jp", Subject: "お問い合わせ", Body: "ありがとうございます。"}
+	client := &fakeClient{answer: " Terima kasih. "}
+	got, err := TranslateDraft(context.Background(), client, m, nil, "  Terima kasih atas balasannya.  ", "business")
+	if err != nil || got != "Terima kasih." {
+		t.Fatalf("TranslateDraft = %q, %v", got, err)
+	}
+	if !strings.HasSuffix(client.prompt, "<draft>\nTerima kasih atas balasannya.\n</draft>") || !strings.Contains(client.prompt, "<email>") {
+		t.Fatalf("TranslateDraft input:\n%s", client.prompt)
+	}
+	if s := translateDraftSystem(nil, "business"); !strings.Contains(s, replyTones["business"]) {
+		t.Fatalf("translateDraftSystem lost the tone:\n%s", s)
+	}
+	if s := translateDraftSystem(nil, "rude"); !strings.Contains(s, replyTones["professional"]) {
+		t.Fatalf("translateDraftSystem with an unknown tone:\n%s", s)
+	}
+}

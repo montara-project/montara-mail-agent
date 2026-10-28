@@ -98,7 +98,7 @@ func TestPersona(t *testing.T) {
 // key finds nothing; a custom skill is keyed by its id.
 func TestBuiltinSkills(t *testing.T) {
 	keys := []string{SkillSummarize, SkillOrganize, SkillDraftReply, SkillHumanize, SkillCopyEdit,
-		SkillProspectReply, SkillObjectionReply, SkillPressReply}
+		SkillProspectReply, SkillObjectionReply, SkillPressReply, SkillTranslate, SkillTranslateReply}
 	if len(BuiltinSkills) != len(keys) {
 		t.Fatalf("%d built-in skills, want %d", len(BuiltinSkills), len(keys))
 	}
@@ -114,7 +114,8 @@ func TestBuiltinSkills(t *testing.T) {
 	}
 	// The draft skills rewrite the reply being written; the rest work on the email.
 	for key, target := range map[string]string{SkillHumanize: SkillTargetDraft, SkillCopyEdit: SkillTargetDraft,
-		SkillPressReply: SkillTargetEmail, SkillSummarize: SkillTargetEmail} {
+		SkillPressReply: SkillTargetEmail, SkillSummarize: SkillTargetEmail,
+		SkillTranslate: SkillTargetEmail, SkillTranslateReply: SkillTargetDraft} {
 		if s, _ := BuiltinSkill(key); s.WorksOn() != target {
 			t.Fatalf("%s works on %q, want %q", key, s.WorksOn(), target)
 		}

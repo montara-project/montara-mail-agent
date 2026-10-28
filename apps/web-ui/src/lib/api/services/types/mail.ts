@@ -19,8 +19,19 @@ export type MailDraftReplyBody = {
   agent_bot_id?: string
 }
 
-/** A skill run: the persona, a reply skill's instruction, and the draft a draft skill rewrites. */
-export type MailRunSkillBody = MailDraftReplyBody & { draft?: string }
+/** The tones a translated reply can take. */
+export type ReplyTone = 'casual' | 'professional' | 'business'
+
+/**
+ * A skill run: the persona, a reply skill's instruction, the draft a draft
+ * skill rewrites, the language a translation goes into (a BCP 47 tag) and the
+ * tone of a translated reply.
+ */
+export type MailRunSkillBody = MailDraftReplyBody & {
+  draft?: string
+  language?: string
+  tone?: ReplyTone
+}
 
 /** A reply as typed (Markdown) and as the HTML the editor made of it. */
 export type MailReplyBody = {

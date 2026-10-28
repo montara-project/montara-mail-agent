@@ -117,7 +117,8 @@ export default function MailReader({ mailId }: { mailId: string }) {
   const run = (skill: Models.AgentSkill) => {
     setSkillRun({ name: skill.name })
     runSkill.mutate(
-      { key: skill.key, agent_bot_id: activeBotId || undefined },
+      // Translate answers in the reader's language; the other skills ignore it.
+      { key: skill.key, agent_bot_id: activeBotId || undefined, language: navigator.language },
       {
         onSuccess: (result) => {
           if (result.kind === 'text') {

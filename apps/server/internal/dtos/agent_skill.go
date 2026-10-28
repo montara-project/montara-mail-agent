@@ -31,16 +31,21 @@ func (dto BuiltinSkillBody) Validate(v *validator.MapValidator) {
 }
 
 // RunSkillBody runs a skill on one mail: the bot the user has picked, used
-// when the skill names none, what a reply skill's reply should say, and the
-// reply draft a draft skill rewrites.
+// when the skill names none, what a reply skill's reply should say, the
+// reply draft a draft skill rewrites, the language a translation goes into
+// (a BCP 47 tag, the browser's) and the tone of a translated reply.
 type RunSkillBody struct {
 	AgentBotID  string `json:"agent_bot_id"`
 	Instruction string `json:"instruction"`
 	Draft       string `json:"draft"`
+	Language    string `json:"language"`
+	Tone        string `json:"tone"`
 }
 
 func (dto RunSkillBody) Validate(v *validator.MapValidator) {
 	v.Field("agent_bot_id").Regex(optionalUUID)
 	v.Field("instruction").String().MaxLen(2000)
 	v.Field("draft").String().MaxLen(20000)
+	v.Field("language").Regex(`^$|^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8}){0,3}$`)
+	v.Field("tone").Regex(`^$|^(casual|professional|business)$`)
 }

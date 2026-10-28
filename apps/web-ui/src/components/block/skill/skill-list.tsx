@@ -3,6 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import {
   FileText,
   Handshake,
+  Languages,
   Newspaper,
   PenLine,
   Reply,
@@ -47,6 +48,8 @@ export const SKILL_ICONS: Record<string, typeof Wand2> = {
   prospect_reply: Send,
   objection_reply: Handshake,
   press_reply: Newspaper,
+  translate: Languages,
+  translate_reply: Languages,
 }
 
 /** A built-in skill: switch it on or off and pick the bot that runs it. */
