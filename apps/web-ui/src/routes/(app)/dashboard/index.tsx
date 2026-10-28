@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
+import PageContainer from '@/components/block/common/page-container'
 import MailStats from '@/components/block/dashboard/mail-stats'
 
 export const Route = createFileRoute('/(app)/dashboard/')({
@@ -7,5 +8,9 @@ export const Route = createFileRoute('/(app)/dashboard/')({
 })
 
 function RouteComponent() {
-  return <MailStats />
+  return (
+    <PageContainer>
+      <MailStats />
+    </PageContainer>
+  )
 }

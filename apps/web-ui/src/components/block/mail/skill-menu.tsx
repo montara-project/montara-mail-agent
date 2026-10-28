@@ -79,7 +79,7 @@ export default function SkillMenu({
         })}
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link to="/skills">
+          <Link to="/settings/skills">
             <Settings2 />
             Manage skills
           </Link>

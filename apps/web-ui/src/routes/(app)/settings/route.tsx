@@ -1,6 +1,8 @@
 import { createFileRoute, Link, Outlet, useLocation } from '@tanstack/react-router'
 import { ChevronLeft } from 'lucide-react'
 
+import PageContainer from '@/components/block/common/page-container'
+
 export const Route = createFileRoute('/(app)/settings')({
   component: RouteComponent,
 })
@@ -9,7 +11,7 @@ function RouteComponent() {
   const isIndex = useLocation().pathname.replace(/\/$/, '') === '/settings'
 
   return (
-    <div className="mx-auto grid w-full max-w-3xl grid-cols-[minmax(0,1fr)] gap-4">
+    <PageContainer>
       {/* The header's breadcrumb leads back on wider screens; phones hide it. */}
       {!isIndex && (
         <Link
@@ -17,10 +19,10 @@ function RouteComponent() {
           className="text-muted-foreground hover:text-foreground flex w-fit items-center gap-1 text-sm md:hidden"
         >
           <ChevronLeft className="size-4" />
-          Settings
+          Control Center
         </Link>
       )}
       <Outlet />
-    </div>
+    </PageContainer>
   )
 }

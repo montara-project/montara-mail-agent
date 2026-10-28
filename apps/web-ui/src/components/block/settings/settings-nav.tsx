@@ -1,9 +1,26 @@
 import { Link } from '@tanstack/react-router'
-import { Building2, ChevronRight, CreditCard, ShieldCheck, Trash2, User } from 'lucide-react'
+import {
+  Bot,
+  BrainCircuit,
+  Building2,
+  ChevronRight,
+  CreditCard,
+  Package,
+  Plug,
+  ShieldCheck,
+  Trash2,
+  User,
+  Wand2,
+  Wrench,
+} from 'lucide-react'
 
+import { Badge } from '@/components/ui/badge'
 import { COMMUNITY } from '@/lib/constants/edition'
 
-const SETTINGS_GROUPS = [
+/** A page of the Control Center; one without a url isn't built yet and shows as Soon. */
+type SettingsItem = { title: string; icon: typeof User; url?: string }
+
+const SETTINGS_GROUPS: { title: string; items: SettingsItem[] }[] = [
   {
     title: 'Account',
     items: [
@@ -20,29 +37,53 @@ const SETTINGS_GROUPS = [
     ],
   },
   {
+    title: 'Agent tools',
+    items: [
+      { title: 'AI Providers', icon: BrainCircuit, url: '/settings/ai-providers' },
+      { title: 'Agent Bots', icon: Bot, url: '/settings/agent-bots' },
+      { title: 'Tools', icon: Wrench },
+      { title: 'Skills', icon: Wand2, url: '/settings/skills' },
+      { title: 'MCP', icon: Plug },
+      { title: 'Plugins', icon: Package },
+    ],
+  },
+  {
     title: 'Danger zone',
     items: [{ title: 'Delete Account', icon: Trash2, url: '/settings/delete-account' }],
   },
-] as const
+]
 
 /** The settings index: each group a card of rows that open their page. */
 export default function SettingsNav() {
   return (
-    <nav aria-label="Settings" className="grid gap-8">
+    <nav aria-label="Control Center" className="grid gap-8">
       {SETTINGS_GROUPS.map((group) => (
         <section key={group.title} className="grid gap-2">
           <h2 className="text-muted-foreground text-sm">{group.title}</h2>
           <ul className="bg-card divide-y overflow-hidden rounded-xl border">
             {group.items.map((item) => (
-              <li key={item.url}>
-                <Link
-                  to={item.url}
-                  className="hover:bg-accent/50 focus-visible:bg-accent/50 flex items-center gap-3 px-4 py-3 text-sm outline-none"
-                >
-                  <item.icon className="text-muted-foreground size-4 shrink-0" />
-                  <span className="flex-1">{item.title}</span>
-                  <ChevronRight className="text-muted-foreground size-4 shrink-0" />
-                </Link>
+              <li key={item.title}>
+                {item.url ? (
+                  <Link
+                    to={item.url}
+                    className="hover:bg-accent/50 focus-visible:bg-accent/50 flex items-center gap-3 px-4 py-3 text-sm outline-none"
+                  >
+                    <item.icon className="text-muted-foreground size-4 shrink-0" />
+                    <span className="flex-1">{item.title}</span>
+                    <ChevronRight className="text-muted-foreground size-4 shrink-0" />
+                  </Link>
+                ) : (
+                  <div
+                    aria-disabled
+                    className="text-muted-foreground flex items-center gap-3 px-4 py-3 text-sm"
+                  >
+                    <item.icon className="size-4 shrink-0" />
+                    <span className="flex-1">{item.title}</span>
+                    <Badge variant="secondary" appearance="light" size="sm">
+                      Soon
+                    </Badge>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

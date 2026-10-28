@@ -18,6 +18,14 @@ import { cn } from '@/lib/utils'
 
 import AppSidebar, { hasSidebarPanel } from './app-sidebar'
 
+/** Path segments whose breadcrumb label isn't the segment itself. */
+const SEGMENT_LABELS: Record<string, string> = {
+  settings: 'Control Center',
+  'ai-providers': 'AI Providers',
+}
+
+const segmentLabel = (segment: string) => SEGMENT_LABELS[segment] ?? capitalizeFirstLetter(segment)
+
 interface SidebarLayoutProps {
   children: React.ReactNode
 }
@@ -42,7 +50,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbPage className="font-medium">
-                {capitalizeFirstLetter(pathSegments[0])}
+                {segmentLabel(pathSegments[0])}
               </BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
@@ -56,7 +64,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           {pathSegments.map((segment, index) => {
             const isLast = index === pathSegments.length - 1
             const href = '/' + pathSegments.slice(0, index + 1).join('/')
-            const displaySegment = capitalizeFirstLetter(segment)
+            const displaySegment = segmentLabel(segment)
 
             const matchUUID = segment.match(
               /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
