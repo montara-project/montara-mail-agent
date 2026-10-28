@@ -189,9 +189,10 @@ function ProviderDialog({
     !!scopeValue && (saved || api_key.trim() !== '')
   )
   const placeholders = PLACEHOLDERS[kind === 'anthropic' ? 'anthropic' : 'openai']
-  // Once the provider lists its models, the field is a select of them (the
-  // chosen one kept even when the list lacks it); until then, or when the
-  // list fails or is empty, the id is typed.
+  // Once the provider lists its models, the field is a searchable combobox
+  // of them (the chosen one kept even when the list lacks it, and any other
+  // id usable from the search); until then, or when the list fails or is
+  // empty, the id is typed.
   const modelOptions = models.data?.length
     ? [...new Set([...(model ? [model] : []), ...models.data])].map((id) => ({
         value: id,
@@ -273,10 +274,13 @@ function ProviderDialog({
         name="model"
         children={(field) =>
           modelOptions ? (
-            <field.SelectField
+            <field.ComboboxField
               asterisk
+              allowCustom
               label="Model"
               placeholder="Pick a model"
+              searchPlaceholder="Search models..."
+              emptyText="No model matches."
               options={modelOptions}
             />
           ) : (
