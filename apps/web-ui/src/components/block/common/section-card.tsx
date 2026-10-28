@@ -10,7 +10,8 @@ import {
 import { cn } from '@/lib/utils'
 
 interface SectionCardProps {
-  title: string
+  /** Without one the card has no header, for content labelled from outside. */
+  title?: string
   description?: string
   toolbar?: React.ReactNode
   children: React.ReactNode
@@ -20,18 +21,20 @@ export default function SectionCard({ title, description, toolbar, children }: S
   return (
     <div className="bg-sidebar border border-sidebar-accent p-2 rounded-2xl">
       <Card className="w-full rounded-lg bg-background">
-        <CardHeader className={cn('flex items-center', description ? 'min-h-22' : 'min-h-15')}>
-          <CardHeading className="min-w-0 flex-1">
-            <CardTitle className="text-xl leading-relaxed tracking-normal">{title}</CardTitle>
-            <CardDescription
-              className={cn('text-sm text-muted-foreground', !description && 'sr-only')}
-            >
-              {description}
-            </CardDescription>
-          </CardHeading>
+        {title && (
+          <CardHeader className={cn('flex items-center', description ? 'min-h-22' : 'min-h-15')}>
+            <CardHeading className="min-w-0 flex-1">
+              <CardTitle className="text-xl leading-relaxed tracking-normal">{title}</CardTitle>
+              <CardDescription
+                className={cn('text-sm text-muted-foreground', !description && 'sr-only')}
+              >
+                {description}
+              </CardDescription>
+            </CardHeading>
 
-          {toolbar && <CardToolbar className="shrink-0">{toolbar}</CardToolbar>}
-        </CardHeader>
+            {toolbar && <CardToolbar className="shrink-0">{toolbar}</CardToolbar>}
+          </CardHeader>
+        )}
         <CardContent className="p-4">{children}</CardContent>
       </Card>
     </div>

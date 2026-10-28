@@ -14,6 +14,7 @@ import {
   Wrench,
 } from 'lucide-react'
 
+import SectionCard from '@/components/block/common/section-card'
 import { Badge } from '@/components/ui/badge'
 import { COMMUNITY } from '@/lib/constants/edition'
 
@@ -53,40 +54,43 @@ const SETTINGS_GROUPS: { title: string; items: SettingsItem[] }[] = [
   },
 ]
 
-/** The settings index: each group a card of rows that open their page. */
+/** The settings index: each group a SectionCard of rows that open their page. */
 export default function SettingsNav() {
   return (
     <nav aria-label="Control Center" className="grid gap-8">
       {SETTINGS_GROUPS.map((group) => (
         <section key={group.title} className="grid gap-2">
           <h2 className="text-muted-foreground text-sm">{group.title}</h2>
-          <ul className="bg-card divide-y overflow-hidden rounded-xl border">
-            {group.items.map((item) => (
-              <li key={item.title}>
-                {item.url ? (
-                  <Link
-                    to={item.url}
-                    className="hover:bg-accent/50 focus-visible:bg-accent/50 flex items-center gap-3 px-4 py-3 text-sm outline-none"
-                  >
-                    <item.icon className="text-muted-foreground size-4 shrink-0" />
-                    <span className="flex-1">{item.title}</span>
-                    <ChevronRight className="text-muted-foreground size-4 shrink-0" />
-                  </Link>
-                ) : (
-                  <div
-                    aria-disabled
-                    className="text-muted-foreground flex items-center gap-3 px-4 py-3 text-sm"
-                  >
-                    <item.icon className="size-4 shrink-0" />
-                    <span className="flex-1">{item.title}</span>
-                    <Badge variant="secondary" appearance="light" size="sm">
-                      Soon
-                    </Badge>
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
+          <SectionCard>
+            {/* Rows run to the card's edges, so the hover fills the whole row. */}
+            <ul className="-m-4 divide-y overflow-hidden rounded-lg">
+              {group.items.map((item) => (
+                <li key={item.title}>
+                  {item.url ? (
+                    <Link
+                      to={item.url}
+                      className="hover:bg-accent/50 focus-visible:bg-accent/50 flex items-center gap-3 px-4 py-3 text-sm outline-none"
+                    >
+                      <item.icon className="text-muted-foreground size-4 shrink-0" />
+                      <span className="flex-1">{item.title}</span>
+                      <ChevronRight className="text-muted-foreground size-4 shrink-0" />
+                    </Link>
+                  ) : (
+                    <div
+                      aria-disabled
+                      className="text-muted-foreground flex items-center gap-3 px-4 py-3 text-sm"
+                    >
+                      <item.icon className="size-4 shrink-0" />
+                      <span className="flex-1">{item.title}</span>
+                      <Badge variant="secondary" appearance="light" size="sm">
+                        Soon
+                      </Badge>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </SectionCard>
         </section>
       ))}
     </nav>
