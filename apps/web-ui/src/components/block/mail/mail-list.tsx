@@ -116,6 +116,14 @@ function EmptyList() {
   return <p className="text-muted-foreground p-4 text-center text-sm">No mail here.</p>
 }
 
+/**
+ * A row's columns: the checkbox, then the mail, 12px apart. The header puts
+ * its checkbox and title on the same lines (CHECK_GAP), so they align. The
+ * unread dot or star sits in the row's left padding, not a column of its own.
+ */
+const ROW_COLUMNS = 'grid-cols-[1.25rem_minmax(0,1fr)] gap-x-3'
+const CHECK_GAP = 'me-1' // + the header's gap-2: the same 12px as gap-x-3
+
 /** The folders a selection can move to, as the Move to menu lists them. */
 const MOVE_TARGETS: { folder: Models.MailMoveTarget; label: string; icon: typeof Inbox }[] = [
   { folder: 'inbox', label: 'Inbox', icon: Inbox },
@@ -399,7 +407,8 @@ export default function MailList({ className }: { className?: string }) {
         <div
           key={mail.id}
           className={cn(
-            'hover:bg-accent/50 relative grid grid-cols-[1rem_1rem_1fr] gap-x-2 border-b px-4 py-4 text-sm',
+            'hover:bg-accent/50 relative grid border-b px-4 py-4 text-sm',
+            ROW_COLUMNS,
             isSelected && 'bg-accent/40',
             selectedId === mail.id && 'bg-accent hover:bg-accent'
           )}
@@ -412,8 +421,9 @@ export default function MailList({ className }: { className?: string }) {
               className="after:absolute after:-inset-2.5 after:content-['']"
             />
           </span>
-          <span className="flex h-5 items-center justify-center">
-            {/* Screen readers hear the state as text; the dot and star are only its picture. */}
+          {/* In the left padding, centred on the first line. Screen readers hear
+              the state as text; the dot and star are only its picture. */}
+          <span className="absolute start-0 top-4 flex h-5 w-4 items-center justify-center">
             {!mail.is_read && (
               <>
                 <span className="bg-primary size-2 rounded-full" aria-hidden />
@@ -422,7 +432,7 @@ export default function MailList({ className }: { className?: string }) {
             )}
             {mail.is_read && mail.is_starred && (
               <>
-                <Star className="size-3.5 fill-amber-400 text-amber-400" aria-hidden />
+                <Star className="size-3 fill-amber-400 text-amber-400" aria-hidden />
                 <span className="sr-only">Starred,</span>
               </>
             )}
@@ -472,11 +482,14 @@ export default function MailList({ className }: { className?: string }) {
                 setSelected(allSelected ? new Set() : new Set(mails.map((mail) => mail.id)))
               }
               aria-label={allSelected ? 'Clear the selection' : 'Select all on this page'}
-              className="me-1"
+              className={CHECK_GAP}
             />
           )}
-          <h2 className="flex min-w-0 items-baseline gap-2">
-            <span className="text-lg font-semibold">{folder.title}</span>
+          {/* The title takes what the actions leave. A phone has no room for the
+              count, and a count cut to its first digit would misread, so it hides;
+              the select-all box still shows whether mail is selected. */}
+          <h2 className="flex min-w-0 flex-1 items-baseline gap-2">
+            <span className="shrink-0 text-lg font-semibold">{folder.title}</span>
             {/* "N unread" and "N selected" cross-fade; the count itself just updates. */}
             <AnimatePresence mode="popLayout" initial={false}>
               {selecting ? (
@@ -486,7 +499,7 @@ export default function MailList({ className }: { className?: string }) {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.18, ease: EASE_OUT }}
-                  className="text-muted-foreground text-xs whitespace-nowrap tabular-nums"
+                  className="text-muted-foreground hidden truncate text-xs tabular-nums sm:inline"
                 >
                   {selectedMails.length} selected
                 </motion.span>
@@ -498,7 +511,7 @@ export default function MailList({ className }: { className?: string }) {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.18, ease: EASE_OUT }}
-                    className="text-muted-foreground text-xs whitespace-nowrap"
+                    className="text-muted-foreground hidden truncate text-xs sm:inline"
                   >
                     {unreadCount} unread
                   </motion.span>
@@ -508,7 +521,8 @@ export default function MailList({ className }: { className?: string }) {
           </h2>
           {/* The actions and the search share this space and cross-fade, so
               nothing around them shifts. The search stays mounted for ⌘K. */}
-          <div className="relative flex h-9 min-w-0 flex-1 items-center justify-end">
+          {/* Wide enough for the five actions, at touch size too. */}
+          <div className="relative flex h-9 w-44 shrink-0 items-center justify-end pointer-coarse:w-52">
             <AnimatePresence>
               {selecting && (
                 <BulkActions folder={folder.id} mails={selectedMails} onDone={afterBulk} />
@@ -522,7 +536,7 @@ export default function MailList({ className }: { className?: string }) {
               inert={selecting}
               aria-hidden={selecting}
               className={cn(
-                'bg-muted/60 focus-within:ring-ring/50 flex h-9 w-44 items-center gap-2 rounded-lg px-2.5 focus-within:ring-[3px]',
+                'bg-muted/60 focus-within:ring-ring/50 flex h-9 w-full items-center gap-2 rounded-lg px-2.5 focus-within:ring-[3px]',
                 selecting && 'pointer-events-none'
               )}
             >
@@ -563,7 +577,8 @@ export default function MailList({ className }: { className?: string }) {
           <Select value={String(size)} onValueChange={(value) => setSize(Number(value))}>
             <SelectTrigger
               size="sm"
-              className="ms-auto h-7 w-auto gap-1 text-xs"
+              // As quiet as the page buttons beside it: no fill until hovered or open.
+              className="text-muted-foreground hover:bg-accent hover:text-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground ms-auto h-7 w-auto gap-1 border-transparent bg-transparent px-2 text-xs font-normal shadow-none"
               aria-label="Mails per page"
             >
               <SelectValue />
