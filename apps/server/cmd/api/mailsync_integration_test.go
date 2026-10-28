@@ -303,6 +303,54 @@ Content-Type: text/html
 		t.Fatal("deleted mail is still there")
 	}
 
+	// The list's bulk actions: one session and one UID set for many mails.
+	full := func(name string) []models.Mail {
+		var out []models.Mail
+		for _, m := range folder(name) {
+			got, err := application.Repositories.Mail.Get(ctx, m.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			out = append(out, got)
+		}
+		return out
+	}
+	bulkInbox := full(constant.FolderInbox)
+	if len(bulkInbox) != 2 {
+		t.Fatalf("bulkInbox before the bulk actions: %d", len(bulkInbox))
+	}
+	if err := syncer.SetReadMany(ctx, account, bulkInbox, true); err != nil {
+		t.Fatalf("mark many read: %v", err)
+	}
+	for _, m := range bulkInbox {
+		if flags := serverFlags(t, port, pool, "INBOX", m.UID); !slices.Contains(flags, imap.FlagSeen) {
+			t.Fatalf("mail %d not seen on the server: %v", m.UID, flags)
+		}
+	}
+	if err := application.Repositories.Mail.SetSummary(ctx, bulkInbox[0].ID, "bulk summary"); err != nil {
+		t.Fatal(err)
+	}
+	if err := syncer.MoveMany(ctx, account, bulkInbox, constant.FolderTrash); err != nil {
+		t.Fatalf("move many to trash: %v", err)
+	}
+	bulkTrash := full(constant.FolderTrash)
+	if len(folder(constant.FolderInbox)) != 0 || len(bulkTrash) != 2 {
+		t.Fatalf("after moving many: bulkInbox %d, trash %d", len(folder(constant.FolderInbox)), len(bulkTrash))
+	}
+	kept := false
+	for _, m := range bulkTrash {
+		kept = kept || (m.Summary != nil && *m.Summary == "bulk summary")
+	}
+	if !kept {
+		t.Fatal("a mail moved in bulk lost its summary")
+	}
+	if err := syncer.DeleteMany(ctx, account, bulkTrash); err != nil {
+		t.Fatalf("delete many: %v", err)
+	}
+	if len(folder(constant.FolderTrash)) != 0 || serverFlags(t, port, pool, "Trash", bulkTrash[0].UID) != nil {
+		t.Fatal("mails deleted in bulk are still there")
+	}
+
 	// A failed sync is recorded on the account.
 	account.Password = application.Secrets.Seal("revoked")
 	if err := syncer.Sync(ctx, account); err == nil {

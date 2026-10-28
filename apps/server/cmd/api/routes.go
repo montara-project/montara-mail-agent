@@ -116,6 +116,7 @@ func routes(r *fiber.App, app *app.Application) {
 	emailAccounts.Post("/:id/send", slow, idempotent, h.EmailAccount.Send)
 
 	mails := v1.Group("/mails", m.Authorization)
+	mails.Post("/bulk", slow, idempotent, h.Mail.Bulk)
 	mails.Get("/:id", h.Mail.Get)
 	mails.Patch("/:id", idempotent, h.Mail.Patch)
 	// Each of these talks to the mail server, so they share the slow budget.
@@ -128,7 +129,6 @@ func routes(r *fiber.App, app *app.Application) {
 	mails.Post("/:id/draft-reply", slow, h.Mail.DraftReply)
 	mails.Post("/:id/skills/:key", slow, h.Mail.RunSkill)
 
-	// Agent bots are organization settings, so the flat group lets the web app
 	// A hosted MCP server's sign-in returns here: a browser navigation, so
 	// registered before the authorized group below, like the mail callback.
 	v1.Get("/mcp-servers/oauth/callback", h.MCPServer.OAuthCallback)
@@ -142,6 +142,7 @@ func routes(r *fiber.App, app *app.Application) {
 	mcpServers.Post("/:id/test", slow, h.MCPServer.Test)
 	mcpServers.Post("/:id/oauth/start", slow, h.MCPServer.OAuthStart)
 
+	// Agent bots are organization settings, so the flat group lets the web app
 	// edit one by its own id without repeating the organization.
 	agentBots := v1.Group("/agent-bots", m.Authorization)
 	agentBots.Get("/:id", h.AgentBot.Get)

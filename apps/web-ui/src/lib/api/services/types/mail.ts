@@ -44,6 +44,16 @@ export type MailReplyBody = {
   attachments?: File[]
 }
 
+/**
+ * The list's bulk action: read or unread, a move to folder, or trash (deleted
+ * for good when the mails are already there).
+ */
+export type MailBulkAction =
+  | { action: 'read' | 'unread' | 'trash' }
+  | { action: 'move'; folder: Models.MailMoveTarget }
+
+export type MailBulkBody = MailBulkAction & { ids: string[] }
+
 export type MailResources = {
   get: (id: string) => Promise<AxiosItemResponse<Models.Mail>>
   patch: (id: string, body: MailPatchBody) => Promise<AxiosItemResponse<Models.Mail>>
@@ -66,6 +76,8 @@ export type MailResources = {
   /** Moves the mail to the trash, or deletes it for good when it is there. */
   delete: (id: string) => Promise<AxiosDeleteResponse>
   forward: (id: string, body: MailForwardBody) => Promise<AxiosDeleteResponse>
+  /** One action on mails of one account and folder, in one mail server session. */
+  bulk: (body: MailBulkBody) => Promise<AxiosDeleteResponse>
   /** Replies to the mail's sender from its account. */
   reply: (id: string, body: MailReplyBody) => Promise<AxiosDeleteResponse>
 }

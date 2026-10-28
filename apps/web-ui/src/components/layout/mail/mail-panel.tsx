@@ -152,6 +152,7 @@ function AccountSwitcher() {
         {accounts?.map((item) => (
           <DropdownMenuItem key={item.id} asChild>
             <Link to="/mail" search={{ account: item.id }}>
+              <ProviderIcon provider={item.provider} className="size-7 shrink-0 rounded-md" />
               <span className="grid min-w-0 flex-1 leading-tight">
                 <span className="truncate">{mask(item.label)}</span>
                 <span className="text-muted-foreground truncate text-xs">{mask(item.email)}</span>

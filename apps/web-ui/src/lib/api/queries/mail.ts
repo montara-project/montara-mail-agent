@@ -5,6 +5,7 @@ import { getQueryClient } from '@/lib/providers/react-query'
 import type { Models } from '../models'
 import type { MailListParams } from '../services/types/email-account'
 import type {
+  MailBulkBody,
   MailDraftReplyBody,
   MailForwardBody,
   MailRunSkillBody,
@@ -114,6 +115,16 @@ const remove = (id: string) =>
     onSuccess: invalidateMailboxes,
   })
 
+/** One action on the list's selection; every mailbox view refreshes after. */
+const bulk = () =>
+  mutationOptions({
+    mutationFn: async (body: MailBulkBody) => {
+      const res = await services.mails.bulk(body)
+      return res.data
+    },
+    onSettled: invalidateMailboxes,
+  })
+
 const forward = (id: string) =>
   mutationOptions({
     mutationFn: async (body: MailForwardBody) => {
@@ -166,6 +177,7 @@ export const mailQueries = {
   runSkill,
   move,
   delete: remove,
+  bulk,
   forward,
   reply,
 } as const

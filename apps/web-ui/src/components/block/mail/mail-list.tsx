@@ -1,8 +1,29 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useSearch } from '@tanstack/react-router'
-import { ChevronLeft, ChevronRight, Plus, RefreshCw, Search, Star } from 'lucide-react'
+import {
+  Archive,
+  ChevronLeft,
+  ChevronRight,
+  FolderInput,
+  Inbox,
+  Mail,
+  MailOpen,
+  OctagonAlert,
+  Plus,
+  RefreshCw,
+  Search,
+  Star,
+  Trash2,
+} from 'lucide-react'
+import { AnimatePresence, MotionConfig, motion, type Variants } from 'motion/react'
 import React from 'react'
+import { toast } from 'sonner'
 
+import type { Models } from '@/lib/api/models'
+import type { MailBulkAction } from '@/lib/api/services/types/mail'
+
+import Hint from '@/components/block/common/hint'
+import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import { formatMailListDate, senderName } from '@/components/layout/mail/mail-data'
 import {
   MobileMailBar,
@@ -11,35 +32,57 @@ import {
   useMailFolder,
 } from '@/components/layout/mail/mail-panel'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Pagination, PaginationContent, PaginationItem } from '@/components/ui/pagination'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDebounce } from '@/hooks/use-debounce'
 import { useHideEmails } from '@/hooks/use-hide-emails'
-import { axiosErrorMessage } from '@/lib/api/axios-error'
+import { axiosErrorMessage, toastAxiosError } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
 
-const PAGE_SIZE = 10
+/** The page sizes the list offers; the server caps a page at 100. */
+export const PAGE_SIZES = [10, 25, 50, 100] as const
+export const DEFAULT_PAGE_SIZE = 25
+
+/** A ?limit= from the URL as a page size, the default for anything else. */
+export const pageSize = (limit: unknown) =>
+  PAGE_SIZES.find((size) => size === Number(limit)) ?? DEFAULT_PAGE_SIZE
 
 // The search shortcut as this platform writes it; Ctrl K works everywhere but a Mac.
 const SEARCH_KEYS =
   typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K'
 
-/** The page of mail the URL points at: account, folder, label, search and page. */
+/** The page of mail the URL points at: account, folder, label, search, page and page size. */
 export function useMailPage() {
   const folder = useMailFolder()
   const account = useMailAccount()
-  const { label, q, page = 1 } = useSearch({ strict: false })
+  const { label, q, page = 1, limit } = useSearch({ strict: false })
+  const size = pageSize(limit)
   const query = useQuery(
     queries.mails.list(account?.id, {
       folder: folder.id,
       importance: label,
       search: q,
-      offset: (page - 1) * PAGE_SIZE,
-      limit: PAGE_SIZE,
+      offset: (page - 1) * size,
+      limit: size,
     })
   )
-  return { ...query, page, account, folder }
+  return { ...query, page, size, account, folder }
 }
 
 /** What the list shows instead of mail: no account, a first sync, a failed one, or an empty folder. */
@@ -73,11 +116,174 @@ function EmptyList() {
   return <p className="text-muted-foreground p-4 text-center text-sm">No mail here.</p>
 }
 
+/** The folders a selection can move to, as the Move to menu lists them. */
+const MOVE_TARGETS: { folder: Models.MailMoveTarget; label: string; icon: typeof Inbox }[] = [
+  { folder: 'inbox', label: 'Inbox', icon: Inbox },
+  { folder: 'archive', label: 'Archive', icon: Archive },
+  { folder: 'spam', label: 'Spam', icon: OctagonAlert },
+  { folder: 'trash', label: 'Trash', icon: Trash2 },
+]
+
+// The header's selection motion: quick, eased out, no bounce, so a click on
+// select all feels immediate. Actions come in left to right and leave right
+// to left.
+const EASE_OUT = [0.2, 0, 0, 1] as const
+const ACTIONS: Variants = {
+  hidden: { transition: { staggerChildren: 0.02, staggerDirection: -1 } },
+  shown: { transition: { staggerChildren: 0.035 } },
+}
+const ACTION: Variants = {
+  hidden: { opacity: 0, x: -6, scale: 0.9, transition: { duration: 0.14, ease: EASE_OUT } },
+  shown: { opacity: 1, x: 0, scale: 1, transition: { duration: 0.2, ease: EASE_OUT } },
+}
+
+/** An icon button for a bulk action, named by its tooltip. */
+function ActionButton({
+  label,
+  icon: Icon,
+  ...props
+}: { label: string; icon: typeof Inbox } & React.ComponentProps<typeof Button>) {
+  return (
+    <motion.span variants={ACTION} className="flex">
+      <Hint label={label}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-8 pointer-coarse:size-10"
+          aria-label={label}
+          {...props}
+        >
+          <Icon />
+        </Button>
+      </Hint>
+    </motion.span>
+  )
+}
+
+/**
+ * What the selection can do from this folder: archive, spam (or not spam
+ * from the spam folder), trash (or delete for good from the trash), read or
+ * unread, and move to another folder.
+ */
+function BulkActions({
+  folder,
+  mails,
+  onDone,
+}: {
+  folder: string
+  mails: Models.Mail[]
+  onDone: (ids: string[]) => void
+}) {
+  const bulk = useMutation(queries.mails.bulk())
+  const [confirmDelete, setConfirmDelete] = React.useState(false)
+  const ids = mails.map((mail) => mail.id)
+  const allRead = mails.every((mail) => mail.is_read)
+
+  const run = (action: MailBulkAction) =>
+    bulk.mutate(
+      { ...action, ids },
+      {
+        onSuccess: (res) => {
+          toast.success(res.message ?? 'Done')
+          onDone(ids)
+        },
+        onError: toastAxiosError,
+      }
+    )
+  const moveTo = (target: Models.MailMoveTarget) => run({ action: 'move', folder: target })
+
+  return (
+    <motion.div
+      variants={ACTIONS}
+      initial="hidden"
+      animate="shown"
+      exit="hidden"
+      className="absolute inset-y-0 start-0 flex items-center"
+      aria-busy={bulk.isPending}
+    >
+      {folder !== 'archive' && (
+        <ActionButton
+          label="Archive"
+          icon={Archive}
+          disabled={bulk.isPending}
+          onClick={() => moveTo('archive')}
+        />
+      )}
+      {folder === 'spam' ? (
+        <ActionButton
+          label="Not spam"
+          icon={Inbox}
+          disabled={bulk.isPending}
+          onClick={() => moveTo('inbox')}
+        />
+      ) : (
+        <ActionButton
+          label="Report spam"
+          icon={OctagonAlert}
+          disabled={bulk.isPending}
+          onClick={() => moveTo('spam')}
+        />
+      )}
+      <ActionButton
+        label={folder === 'trash' ? 'Delete forever' : 'Move to trash'}
+        icon={Trash2}
+        disabled={bulk.isPending}
+        onClick={() => (folder === 'trash' ? setConfirmDelete(true) : run({ action: 'trash' }))}
+      />
+      <ActionButton
+        label={allRead ? 'Mark as unread' : 'Mark as read'}
+        icon={allRead ? Mail : MailOpen}
+        disabled={bulk.isPending}
+        onClick={() => run({ action: allRead ? 'unread' : 'read' })}
+      />
+      <motion.span variants={ACTION} className="flex">
+        <DropdownMenu>
+          <Hint label="Move to">
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 pointer-coarse:size-10"
+                aria-label="Move to"
+                disabled={bulk.isPending}
+              >
+                <FolderInput />
+              </Button>
+            </DropdownMenuTrigger>
+          </Hint>
+          <DropdownMenuContent align="start">
+            <DropdownMenuLabel className="text-muted-foreground text-xs">Move to</DropdownMenuLabel>
+            {MOVE_TARGETS.filter((target) => target.folder !== folder).map((target) => (
+              <DropdownMenuItem key={target.folder} onSelect={() => moveTo(target.folder)}>
+                <target.icon />
+                {target.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </motion.span>
+
+      <SimpleAlertDialog
+        title={`Delete ${mails.length} ${mails.length === 1 ? 'mail' : 'mails'} forever?`}
+        description="They are removed from the mail server too. This cannot be undone."
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        onConfirm={() => {
+          setConfirmDelete(false)
+          run({ action: 'trash' })
+        }}
+        confirmText="Delete forever"
+        variant="destructive"
+      />
+    </motion.div>
+  )
+}
+
 /** Middle column of the mailbox: the mail of the active folder and label. */
 export default function MailList({ className }: { className?: string }) {
   const navigate = useNavigate()
   const { mail: selectedId, q } = useSearch({ strict: false })
-  const { data, isPending, isError, error, refetch, page, account, folder } = useMailPage()
+  const { data, isPending, isError, error, refetch, page, size, account, folder } = useMailPage()
   const [search, setSearch] = React.useState(q ?? '')
   // A term cleared or changed elsewhere (a folder link, the back button) shows in the box.
   const [shownQ, setShownQ] = React.useState(q)
@@ -86,6 +292,16 @@ export default function MailList({ className }: { className?: string }) {
     setSearch(q ?? '')
   }
   const debounced = useDebounce({ value: search.trim(), delay: 300 })
+  // The selection lives on one page: another page, folder, label or search
+  // starts it empty.
+  const { label } = useSearch({ strict: false })
+  const [selected, setSelected] = React.useState<ReadonlySet<string>>(new Set())
+  const pageKey = [account?.id, folder.id, label, q, page, size].join('|')
+  const [seenPageKey, setSeenPageKey] = React.useState(pageKey)
+  if (pageKey !== seenPageKey) {
+    setSeenPageKey(pageKey)
+    setSelected(new Set())
+  }
   const searchRef = React.useRef<HTMLInputElement>(null)
   const scrollRef = React.useRef<HTMLDivElement>(null)
 
@@ -113,38 +329,219 @@ export default function MailList({ className }: { className?: string }) {
   React.useEffect(() => pushSearch(debounced), [debounced])
 
   const mails = data?.data ?? []
+  // Only what is still on the page counts, so a refetch drops moved mail.
+  const selectedMails = mails.filter((mail) => selected.has(mail.id))
+  const allSelected = mails.length > 0 && selectedMails.length === mails.length
+  const selecting = selectedMails.length > 0
+  const toggle = (id: string, on: boolean) =>
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (on) next.add(id)
+      else next.delete(id)
+      return next
+    })
+  // A bulk action that took the open mail away closes it too.
+  const afterBulk = (ids: string[]) => {
+    setSelected(new Set())
+    if (selectedId && ids.includes(selectedId)) {
+      navigate({ to: '/mail', search: (prev) => ({ ...prev, mail: undefined }) })
+    }
+  }
   const total = data?.metadata.total ?? 0
   const unreadCount = data?.metadata.unread ?? 0
-  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
-  const first = (page - 1) * PAGE_SIZE
+  const pageCount = Math.max(1, Math.ceil(total / size))
+  const first = (page - 1) * size
+
+  // A new size starts from the first page; the default stays out of the URL.
+  const setSize = (next: number) => {
+    navigate({
+      to: '/mail',
+      search: (prev) => ({
+        ...prev,
+        limit: next === DEFAULT_PAGE_SIZE ? undefined : next,
+        page: undefined,
+      }),
+    })
+    scrollRef.current?.scrollTo({ top: 0 })
+  }
 
   const goTo = (next: number) => {
     navigate({ to: '/mail', search: (prev) => ({ ...prev, page: next > 1 ? next : undefined }) })
     scrollRef.current?.scrollTo({ top: 0 })
   }
 
+  const content = () => {
+    if (isPending && account) {
+      return Array.from({ length: 5 }, (_, i) => (
+        <div key={i} className="grid gap-2 border-b px-4 py-4">
+          <Skeleton className="h-4 w-1/2" />
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-4 w-full" />
+        </div>
+      ))
+    }
+    if (isError) {
+      return (
+        <div role="alert" className="grid justify-items-center gap-3 p-6 text-center text-sm">
+          <p className="text-destructive">{axiosErrorMessage(error)}</p>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <RefreshCw />
+            Try again
+          </Button>
+        </div>
+      )
+    }
+    if (mails.length === 0) return <EmptyList />
+    return mails.map((mail) => {
+      const isSelected = selected.has(mail.id)
+      return (
+        // The link stretches over the row; the checkbox sits above it.
+        <div
+          key={mail.id}
+          className={cn(
+            'hover:bg-accent/50 relative grid grid-cols-[1rem_1rem_1fr] gap-x-2 border-b px-4 py-4 text-sm',
+            isSelected && 'bg-accent/40',
+            selectedId === mail.id && 'bg-accent hover:bg-accent'
+          )}
+        >
+          <span className="relative z-10 flex h-5 items-center">
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={(on) => toggle(mail.id, on === true)}
+              aria-label={`Select ${senderName(mail)}: ${mail.subject || '(no subject)'}`}
+              className="after:absolute after:-inset-2.5 after:content-['']"
+            />
+          </span>
+          <span className="flex h-5 items-center justify-center">
+            {/* Screen readers hear the state as text; the dot and star are only its picture. */}
+            {!mail.is_read && (
+              <>
+                <span className="bg-primary size-2 rounded-full" aria-hidden />
+                <span className="sr-only">Unread,</span>
+              </>
+            )}
+            {mail.is_read && mail.is_starred && (
+              <>
+                <Star className="size-3.5 fill-amber-400 text-amber-400" aria-hidden />
+                <span className="sr-only">Starred,</span>
+              </>
+            )}
+          </span>
+          <Link
+            to="/mail"
+            search={(prev) => ({ ...prev, mail: mail.id })}
+            aria-current={selectedId === mail.id ? 'page' : undefined}
+            className="grid min-w-0 gap-1 outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px] focus-visible:after:ring-ring/50 focus-visible:after:ring-inset"
+          >
+            <div className="flex items-center gap-1.5">
+              <span
+                className={cn(
+                  'truncate text-[15px]',
+                  mail.is_read ? 'font-medium' : 'font-semibold'
+                )}
+              >
+                {senderName(mail)}
+              </span>
+              <span
+                className={cn(
+                  'ml-auto shrink-0 text-xs',
+                  mail.is_read ? 'text-muted-foreground' : 'text-foreground font-medium'
+                )}
+              >
+                {formatMailListDate(mail.received_at)}
+              </span>
+            </div>
+            <span className="truncate font-medium">{mail.subject || '(no subject)'}</span>
+            {mail.teaser && (
+              <span className="text-muted-foreground line-clamp-2">{mail.teaser}</span>
+            )}
+          </Link>
+        </div>
+      )
+    })
+  }
+
   return (
     <div className={cn('flex min-h-0 flex-col', className)}>
-      <div className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
-        <h2 className="flex items-baseline gap-2">
-          <span className="text-lg font-semibold">{folder.title}</span>
-          {unreadCount > 0 && (
-            <span className="text-muted-foreground text-xs">{unreadCount} unread</span>
+      <MotionConfig reducedMotion="user">
+        <div className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+          {mails.length > 0 && (
+            <Checkbox
+              checked={allSelected ? true : selecting ? 'indeterminate' : false}
+              onCheckedChange={() =>
+                setSelected(allSelected ? new Set() : new Set(mails.map((mail) => mail.id)))
+              }
+              aria-label={allSelected ? 'Clear the selection' : 'Select all on this page'}
+              className="me-1"
+            />
           )}
-        </h2>
-        <label className="bg-muted/60 focus-within:ring-ring/50 ml-auto flex h-9 w-44 items-center gap-2 rounded-lg px-2.5 focus-within:ring-[3px]">
-          <Search className="text-muted-foreground size-4 shrink-0" />
-          <input
-            ref={searchRef}
-            placeholder="Search"
-            aria-label="Search mail"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            className="placeholder:text-muted-foreground min-w-0 flex-1 bg-transparent text-sm outline-none"
-          />
-          <kbd className="text-muted-foreground text-xs pointer-coarse:hidden">{SEARCH_KEYS}</kbd>
-        </label>
-      </div>
+          <h2 className="flex min-w-0 items-baseline gap-2">
+            <span className="text-lg font-semibold">{folder.title}</span>
+            {/* "N unread" and "N selected" cross-fade; the count itself just updates. */}
+            <AnimatePresence mode="popLayout" initial={false}>
+              {selecting ? (
+                <motion.span
+                  key="selected"
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.18, ease: EASE_OUT }}
+                  className="text-muted-foreground text-xs whitespace-nowrap tabular-nums"
+                >
+                  {selectedMails.length} selected
+                </motion.span>
+              ) : (
+                unreadCount > 0 && (
+                  <motion.span
+                    key="unread"
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.18, ease: EASE_OUT }}
+                    className="text-muted-foreground text-xs whitespace-nowrap"
+                  >
+                    {unreadCount} unread
+                  </motion.span>
+                )
+              )}
+            </AnimatePresence>
+          </h2>
+          {/* The actions and the search share this space and cross-fade, so
+              nothing around them shifts. The search stays mounted for ⌘K. */}
+          <div className="relative flex h-9 min-w-0 flex-1 items-center justify-end">
+            <AnimatePresence>
+              {selecting && (
+                <BulkActions folder={folder.id} mails={selectedMails} onDone={afterBulk} />
+              )}
+            </AnimatePresence>
+            <motion.label
+              animate={
+                selecting ? { opacity: 0, x: 8, scale: 0.98 } : { opacity: 1, x: 0, scale: 1 }
+              }
+              transition={{ duration: 0.18, ease: EASE_OUT }}
+              inert={selecting}
+              aria-hidden={selecting}
+              className={cn(
+                'bg-muted/60 focus-within:ring-ring/50 flex h-9 w-44 items-center gap-2 rounded-lg px-2.5 focus-within:ring-[3px]',
+                selecting && 'pointer-events-none'
+              )}
+            >
+              <Search className="text-muted-foreground size-4 shrink-0" />
+              <input
+                ref={searchRef}
+                placeholder="Search"
+                aria-label="Search mail"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                className="placeholder:text-muted-foreground min-w-0 flex-1 bg-transparent text-sm outline-none"
+              />
+              <kbd className="text-muted-foreground text-xs pointer-coarse:hidden">
+                {SEARCH_KEYS}
+              </kbd>
+            </motion.label>
+          </div>
+        </div>
+      </MotionConfig>
       <MobileMailBar />
       {account?.sync_error && (
         <p role="alert" className="text-destructive border-b px-4 py-2 text-xs">
@@ -156,86 +553,30 @@ export default function MailList({ className }: { className?: string }) {
         className="min-h-0 flex-1 overflow-y-auto"
         aria-busy={isPending && !!account}
       >
-        {isPending && account ? (
-          Array.from({ length: 5 }, (_, i) => (
-            <div key={i} className="grid gap-2 border-b px-4 py-4">
-              <Skeleton className="h-4 w-1/2" />
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-4 w-full" />
-            </div>
-          ))
-        ) : isError ? (
-          <div role="alert" className="grid justify-items-center gap-3 p-6 text-center text-sm">
-            <p className="text-destructive">{axiosErrorMessage(error)}</p>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <RefreshCw />
-              Try again
-            </Button>
-          </div>
-        ) : mails.length === 0 ? (
-          <EmptyList />
-        ) : (
-          mails.map((mail) => (
-            <Link
-              key={mail.id}
-              to="/mail"
-              search={(prev) => ({ ...prev, mail: mail.id })}
-              aria-current={selectedId === mail.id ? 'page' : undefined}
-              className={cn(
-                'hover:bg-accent/50 grid grid-cols-[1rem_1fr] gap-x-2 border-b px-4 py-4 text-sm',
-                selectedId === mail.id && 'bg-accent hover:bg-accent'
-              )}
-            >
-              <span className="flex h-5 items-center justify-center">
-                {/* Screen readers hear the state as text; the dot and star are only its picture. */}
-                {!mail.is_read ? (
-                  <>
-                    <span className="bg-primary size-2 rounded-full" aria-hidden />
-                    <span className="sr-only">Unread,</span>
-                  </>
-                ) : (
-                  mail.is_starred && (
-                    <>
-                      <Star className="size-3.5 fill-amber-400 text-amber-400" aria-hidden />
-                      <span className="sr-only">Starred,</span>
-                    </>
-                  )
-                )}
-              </span>
-              <div className="grid min-w-0 gap-1">
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className={cn(
-                      'truncate text-[15px]',
-                      mail.is_read ? 'font-medium' : 'font-semibold'
-                    )}
-                  >
-                    {senderName(mail)}
-                  </span>
-                  <span
-                    className={cn(
-                      'ml-auto shrink-0 text-xs',
-                      mail.is_read ? 'text-muted-foreground' : 'text-foreground font-medium'
-                    )}
-                  >
-                    {formatMailListDate(mail.received_at)}
-                  </span>
-                </div>
-                <span className="truncate font-medium">{mail.subject || '(no subject)'}</span>
-                {mail.teaser && (
-                  <span className="text-muted-foreground line-clamp-2">{mail.teaser}</span>
-                )}
-              </div>
-            </Link>
-          ))
-        )}
+        {content()}
       </div>
-      {pageCount > 1 && (
-        <div className="flex shrink-0 items-center justify-between gap-2 border-t px-4 py-2">
-          <span className="text-muted-foreground text-xs">
+      {total > 0 && (
+        <div className="flex shrink-0 items-center gap-2 border-t px-4 py-2">
+          <span className="text-muted-foreground text-xs whitespace-nowrap">
             {first + 1}–{first + mails.length} of {total}
           </span>
-          <Pagination className="mx-0 w-auto">
+          <Select value={String(size)} onValueChange={(value) => setSize(Number(value))}>
+            <SelectTrigger
+              size="sm"
+              className="ms-auto h-7 w-auto gap-1 text-xs"
+              aria-label="Mails per page"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent position="popper" align="end">
+              {PAGE_SIZES.map((option) => (
+                <SelectItem key={option} value={String(option)} className="text-xs">
+                  {option} per page
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Pagination className={cn('mx-0 w-auto', pageCount <= 1 && 'hidden')}>
             <PaginationContent>
               <PaginationItem>
                 <Button
