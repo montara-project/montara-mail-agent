@@ -1,7 +1,7 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
+
+import SettingsNav from '@/components/block/settings/settings-nav'
 
 export const Route = createFileRoute('/(app)/settings/')({
-  beforeLoad: () => {
-    throw redirect({ to: '/settings/profile', replace: true })
-  },
+  component: SettingsNav,
 })
