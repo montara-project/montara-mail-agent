@@ -84,6 +84,15 @@ func routes(r *fiber.App, app *app.Application) {
 	organizations.Put("/:id/llm-provider", idempotent, h.LLMProvider.Put)
 	organizations.Delete("/:id/llm-provider", idempotent, h.LLMProvider.Delete)
 	organizations.Post("/:id/llm-provider/models", slow, h.LLMProvider.Models)
+
+	// Every provider the user can see, the global one (super user only to
+	// change) and moving a provider between organizations and global.
+	llmProviders := v1.Group("/llm-providers", m.Authorization)
+	llmProviders.Get("/", h.LLMProvider.List)
+	llmProviders.Put("/global", idempotent, h.LLMProvider.Put)
+	llmProviders.Delete("/global", idempotent, h.LLMProvider.Delete)
+	llmProviders.Post("/global/models", slow, h.LLMProvider.Models)
+	llmProviders.Put("/:id/scope", idempotent, h.LLMProvider.SetScope)
 	organizations.Get("/:id/agent-bots", h.AgentBot.List)
 	organizations.Post("/:id/agent-bots", idempotent, h.AgentBot.Create)
 	organizations.Get("/:id/skills", h.AgentSkill.List)

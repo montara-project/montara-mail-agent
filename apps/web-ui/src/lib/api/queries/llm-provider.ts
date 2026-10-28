@@ -2,53 +2,62 @@ import { mutationOptions, queryOptions } from '@tanstack/react-query'
 
 import { getQueryClient } from '@/lib/providers/react-query'
 
-import type { LLMModelsBody, LLMProviderBody } from '../services/types/llm-provider'
+import type {
+  LLMModelsBody,
+  LLMProviderBody,
+  LLMProviderScope,
+} from '../services/types/llm-provider'
 
 import { services } from '../services'
 
 const LLM_PROVIDER_QUERY_KEY = 'llm-provider'
 
-/** The organization's provider (data null when it has none) and whether a fallback exists. */
-const get = (organizationId?: string) =>
+/** Every provider the user can see, and what they may do with the global one. */
+const list = () =>
   queryOptions({
-    queryKey: [LLM_PROVIDER_QUERY_KEY, organizationId],
+    queryKey: [LLM_PROVIDER_QUERY_KEY, 'list'],
     queryFn: async () => {
-      const res = await services.llmProvider.get(organizationId!)
+      const res = await services.llmProvider.list()
       return res.data
     },
-    enabled: !!organizationId,
   })
 
-const save = (organizationId: string) => {
-  const qc = getQueryClient()
+const invalidate = () => getQueryClient().invalidateQueries({ queryKey: [LLM_PROVIDER_QUERY_KEY] })
 
-  return mutationOptions({
+const save = (scope: LLMProviderScope) =>
+  mutationOptions({
     mutationFn: async (body: LLMProviderBody) => {
-      const res = await services.llmProvider.save(organizationId, body)
+      const res = await services.llmProvider.save(scope, body)
       return res.data.data
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: [LLM_PROVIDER_QUERY_KEY, organizationId] }),
+    onSuccess: invalidate,
   })
-}
 
-const del = (organizationId: string) => {
-  const qc = getQueryClient()
-
-  return mutationOptions({
-    mutationFn: async () => {
-      const res = await services.llmProvider.delete(organizationId)
+const del = () =>
+  mutationOptions({
+    mutationFn: async (scope: LLMProviderScope) => {
+      const res = await services.llmProvider.delete(scope)
       return res.data
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: [LLM_PROVIDER_QUERY_KEY, organizationId] }),
+    onSuccess: invalidate,
   })
-}
 
-/** The models a provider offers; cached per kind, base URL and key. */
-const models = (organizationId: string, body: LLMModelsBody, enabled: boolean) =>
+/** Moves a provider to an organization, or to global with null. */
+const setScope = () =>
+  mutationOptions({
+    mutationFn: async ({ id, scope }: { id: string; scope: LLMProviderScope }) => {
+      const res = await services.llmProvider.setScope(id, scope)
+      return res.data.data
+    },
+    onSuccess: invalidate,
+  })
+
+/** The models a provider offers; cached per scope, kind, base URL and key. */
+const models = (scope: LLMProviderScope, body: LLMModelsBody, enabled: boolean) =>
   queryOptions({
-    queryKey: [LLM_PROVIDER_QUERY_KEY, organizationId, 'models', body],
+    queryKey: [LLM_PROVIDER_QUERY_KEY, scope, 'models', body],
     queryFn: async () => {
-      const res = await services.llmProvider.models(organizationId, body)
+      const res = await services.llmProvider.models(scope, body)
       return res.data.data
     },
     enabled,
@@ -57,4 +66,4 @@ const models = (organizationId: string, body: LLMModelsBody, enabled: boolean) =
     staleTime: 5 * 60_000,
   })
 
-export const llmProviderQueries = { get, save, delete: del, models } as const
+export const llmProviderQueries = { list, save, delete: del, setScope, models } as const

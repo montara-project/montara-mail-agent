@@ -2,10 +2,12 @@ package dtos
 
 import "montara-mail-agent/server/internal/lib/validator"
 
-// LLMProviderBody sets an organization's model. An empty base URL means the
-// vendor's own API; an empty API key keeps the saved one while the kind and
-// base URL stay the same.
+// LLMProviderBody sets the model of an organization, or the global one. The
+// name is what the list shows; an empty base URL means the vendor's own API;
+// an empty API key keeps the saved one while the kind and base URL stay the
+// same.
 type LLMProviderBody struct {
+	Name    string `json:"name"`
 	Kind    string `json:"kind"`
 	BaseURL string `json:"base_url"`
 	Model   string `json:"model"`
@@ -15,6 +17,17 @@ type LLMProviderBody struct {
 func (dto LLMProviderBody) Validate(v *validator.MapValidator) {
 	validateLLMProvider(v)
 	v.Field("model").Required().String().MaxLen(200)
+	v.Field("name").String().MaxLen(100)
+}
+
+// LLMProviderScopeBody moves a provider to an organization, or to global
+// when organization_id is empty.
+type LLMProviderScopeBody struct {
+	OrganizationID string `json:"organization_id"`
+}
+
+func (dto LLMProviderScopeBody) Validate(v *validator.MapValidator) {
+	v.Field("organization_id").Regex(optionalUUID)
 }
 
 // LLMModelsBody is a provider, saved or not, whose models to list.
