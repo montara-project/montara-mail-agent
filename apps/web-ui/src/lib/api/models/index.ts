@@ -1,4 +1,6 @@
 export namespace Models {
+  export type APIKey = import('./api-key').APIKey
+  export type CreatedAPIKey = import('./api-key').CreatedAPIKey
   export type Role = import('./role').Role
   export type User = import('./user').User
   export type MeData = import('./user').MeData

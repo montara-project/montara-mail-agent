@@ -1,0 +1,41 @@
+---
+title: Connect mailboxes
+description: Providers, app passwords, OAuth, and what the sync keeps in step with your mail server.
+---
+
+## Providers
+
+Every provider connects over IMAP (to read) and SMTP (to send) with your address and an **app password**, not your account password. The servers of the known providers are built in.
+
+| Provider | How to get the app password | OAuth |
+| --- | --- | --- |
+| Gmail | Turn on 2-Step Verification, then create an app password under Google Account › Security › App passwords. | Yes, when the server has a Google client |
+| Outlook | Create an app password under Microsoft account › Security › Advanced security options. Some Microsoft 365 organizations turn IMAP sign-in off. | Yes, when the server has a Microsoft client |
+| Yahoo | Create an app password under Yahoo Account Security › Generate app password. | Pending provider approval |
+| iCloud | Create an app-specific password at account.apple.com › Sign-In and Security. | No |
+| Lark | In Lark Mail, open Settings › Third-party email client, turn on IMAP/SMTP and generate a password for this device. | No |
+| Zoho | Turn on IMAP access in Zoho Mail settings, then create an app password under Zoho Accounts › Security › App passwords. Custom-domain or non-US accounts: use IMAP with the servers shown in Zoho Mail settings. | Yes, when the server has a Zoho client |
+| IMAP | Use the IMAP server and port your provider documents. The connection always uses TLS. | No |
+
+Connecting signs in first: a wrong password or a server that refuses IMAP is reported before anything is saved.
+
+<Callout type="info" title="Where your credentials live">
+  App passwords and OAuth tokens are encrypted in the database with a key derived from the server's `APP_SECRET`. They are never shown again after you save them.
+</Callout>
+
+## What the sync does
+
+- **First sync:** the newest 50 messages of each folder: Inbox, Archive, Drafts, Sent, Spam and Trash.
+- **After that:** everything new, on every run. The hosted app syncs every 5 minutes; a self-hosted server sets `MAIL_SYNC_INTERVAL`. **Sync now** on the account card runs one right away.
+- **Sorting:** new inbox mail is classified by the organization's model (see [AI features](/ai-features#sorting)).
+- **Write-back:** reading, starring, moving and deleting in the app is written back to the mail server, so your phone's mail app sees the same state.
+
+Read and starred states come from the server when a message is first synced. Gmail archives into All Mail, which is not synced, so archived Gmail mail leaves the app.
+
+## When a sync fails
+
+The account card shows when it last synced and why the last sync failed, if it did; the mail list shows the error too. A changed or revoked app password is the usual cause: disconnect the account and connect it again with a new one.
+
+## Disconnecting
+
+**Disconnect** removes the account and the mail synced from it. Nothing is deleted on your mail server.

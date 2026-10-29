@@ -234,54 +234,58 @@ function EditorBody({
         <AttachmentList files={attachments} onChange={onAttachmentsChange} />
       )}
       {aside}
-      <div className="flex flex-wrap items-center gap-1">
-        {leading && <div className="mr-2">{leading}</div>}
-        {onAttachmentsChange && (
-          <>
-            <Hint label="Attach files">
+      {/* The tools stay on one line and scroll sideways when the pane is
+          narrow; Cancel and Send wrap below them instead of a lone icon. */}
+      <div className="flex flex-wrap items-center gap-x-1 gap-y-2">
+        <div className="-m-[3px] flex max-w-[calc(100%+6px)] min-w-0 items-center gap-1 overflow-x-auto p-[3px] *:shrink-0 [scrollbar-width:none]">
+          {leading && <div className="mr-2 shrink-0">{leading}</div>}
+          {onAttachmentsChange && (
+            <>
+              <Hint label="Attach files">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground size-8"
+                  aria-label="Attach files"
+                  onClick={() => fileInput.current?.click()}
+                >
+                  <Paperclip />
+                </Button>
+              </Hint>
+              <input
+                ref={fileInput}
+                type="file"
+                multiple
+                hidden
+                onChange={(e) => {
+                  attach(e.target.files)
+                  // Picking the same file again must fire change again.
+                  e.target.value = ''
+                }}
+              />
+            </>
+          )}
+          {format.map((item) => (
+            <Hint key={item.label} label={item.label}>
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="text-muted-foreground size-8"
-                aria-label="Attach files"
-                onClick={() => fileInput.current?.click()}
+                className={cn(
+                  'text-muted-foreground size-8',
+                  item.active && 'bg-accent text-foreground'
+                )}
+                aria-label={item.label}
+                aria-pressed={item.active}
+                onClick={() => item.run()}
               >
-                <Paperclip />
+                <item.icon />
               </Button>
             </Hint>
-            <input
-              ref={fileInput}
-              type="file"
-              multiple
-              hidden
-              onChange={(e) => {
-                attach(e.target.files)
-                // Picking the same file again must fire change again.
-                e.target.value = ''
-              }}
-            />
-          </>
-        )}
-        {format.map((item) => (
-          <Hint key={item.label} label={item.label}>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className={cn(
-                'text-muted-foreground size-8',
-                item.active && 'bg-accent text-foreground'
-              )}
-              aria-label={item.label}
-              aria-pressed={item.active}
-              onClick={() => item.run()}
-            >
-              <item.icon />
-            </Button>
-          </Hint>
-        ))}
-        <div className="ml-auto flex items-center gap-2">
+          ))}
+        </div>
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           <Button type="button" variant="outline" onClick={cancel} title="Esc">
             {cancelLabel}
           </Button>

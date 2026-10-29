@@ -5,7 +5,7 @@ description: Work on the Fumadocs docs site in apps/docs (Next.js + Fumadocs MDX
 
 # Fumadocs
 
-Docs site lives in `apps/docs`. Content source is Fumadocs MDX (Config API); routing by Next.js App Router.
+Docs site lives in `apps/docs`, deployed to docs.montaramail.web.id. Content source is Fumadocs MDX (Config API); routing by Next.js App Router, exported as static files (`output: 'export'`) and served by Cloudflare Workers assets (`wrangler.jsonc`).
 
 ## Pick a branch
 
@@ -16,8 +16,8 @@ Wrong branch wastes the whole change: content edits never touch `lib/` or `app/`
 
 ## Rules for both
 
-1. **Follow the existing wiring, don't re-derive it.** `apps/docs/lib/source.ts`, `apps/docs/source.config.ts`, `apps/docs/app/docs/layout.tsx`, `apps/docs/app/docs/[[...slug]]/page.tsx` are the source of truth. Match their patterns; don't introduce a second convention (e.g. macro API alongside the Config API).
+1. **Follow the existing wiring, don't re-derive it.** `apps/docs/lib/source.ts`, `apps/docs/source.config.ts`, `apps/docs/app/(docs)/layout.tsx`, `apps/docs/app/(docs)/[[...slug]]/page.tsx` are the source of truth. Pages are served at the site root (`baseUrl: '/'`), never under `/docs`. Match their patterns; don't introduce a second convention (e.g. macro API alongside the Config API).
 2. **Slugs and sidebar are generated, never hardcoded.** File paths under `apps/docs/content/docs` plus `meta.json` produce slugs and the page tree via `loader()`. No manual route lists.
 3. **Title comes from frontmatter, not `# h1`.** Every doc file needs `title` in frontmatter; body starts at `##`.
 4. **Next.js here is not training-data Next.js.** Before writing any `app/` or `next.config` code, read the versioned guide in `node_modules/next/dist/docs/` (resolved from `apps/docs/`). Heed deprecations.
-5. **Verify by running.** Content: `pnpm --filter @tera/docs dev` (port 3001) and open the page. Wiring: also run `typecheck` in `apps/docs` (`next typegen && tsc --noEmit`). Generated `.source/` output is build artifact, never edited by hand.
+5. **Verify by running.** Content: `pnpm --filter @montara-mail/docs dev` (port 3001) and open the page. Wiring: also run `typecheck` in `apps/docs` (`next typegen && tsc --noEmit`). Generated `.source/` output is build artifact, never edited by hand.

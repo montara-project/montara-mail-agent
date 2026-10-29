@@ -19,6 +19,7 @@ import { Route as appMailIndexRouteImport } from './routes/(app)/mail/index'
 import { Route as appSettingsIndexRouteImport } from './routes/(app)/settings/index'
 import { Route as appSettingsAgentBotsRouteImport } from './routes/(app)/settings/agent-bots'
 import { Route as appSettingsAiProvidersRouteImport } from './routes/(app)/settings/ai-providers'
+import { Route as appSettingsApiKeysRouteImport } from './routes/(app)/settings/api-keys'
 import { Route as appSettingsBillingRouteImport } from './routes/(app)/settings/billing'
 import { Route as appSettingsDeleteAccountRouteImport } from './routes/(app)/settings/delete-account'
 import { Route as appSettingsMcpRouteImport } from './routes/(app)/settings/mcp'
@@ -76,6 +77,11 @@ const appSettingsAiProvidersRoute = appSettingsAiProvidersRouteImport.update({
   path: '/ai-providers',
   getParentRoute: () => appSettingsRouteRoute,
 } as any)
+const appSettingsApiKeysRoute = appSettingsApiKeysRouteImport.update({
+  id: '/api-keys',
+  path: '/api-keys',
+  getParentRoute: () => appSettingsRouteRoute,
+} as any)
 const appSettingsBillingRoute = appSettingsBillingRouteImport.update({
   id: '/billing',
   path: '/billing',
@@ -119,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/sign-in/': typeof SignInIndexRoute
   '/settings/agent-bots': typeof appSettingsAgentBotsRoute
   '/settings/ai-providers': typeof appSettingsAiProvidersRoute
+  '/settings/api-keys': typeof appSettingsApiKeysRoute
   '/settings/billing': typeof appSettingsBillingRoute
   '/settings/delete-account': typeof appSettingsDeleteAccountRoute
   '/settings/mcp': typeof appSettingsMcpRoute
@@ -136,6 +143,7 @@ export interface FileRoutesByTo {
   '/sign-in': typeof SignInIndexRoute
   '/settings/agent-bots': typeof appSettingsAgentBotsRoute
   '/settings/ai-providers': typeof appSettingsAiProvidersRoute
+  '/settings/api-keys': typeof appSettingsApiKeysRoute
   '/settings/billing': typeof appSettingsBillingRoute
   '/settings/delete-account': typeof appSettingsDeleteAccountRoute
   '/settings/mcp': typeof appSettingsMcpRoute
@@ -156,6 +164,7 @@ export interface FileRoutesById {
   '/sign-in/': typeof SignInIndexRoute
   '/(app)/settings/agent-bots': typeof appSettingsAgentBotsRoute
   '/(app)/settings/ai-providers': typeof appSettingsAiProvidersRoute
+  '/(app)/settings/api-keys': typeof appSettingsApiKeysRoute
   '/(app)/settings/billing': typeof appSettingsBillingRoute
   '/(app)/settings/delete-account': typeof appSettingsDeleteAccountRoute
   '/(app)/settings/mcp': typeof appSettingsMcpRoute
@@ -176,6 +185,7 @@ export interface FileRouteTypes {
     | '/sign-in/'
     | '/settings/agent-bots'
     | '/settings/ai-providers'
+    | '/settings/api-keys'
     | '/settings/billing'
     | '/settings/delete-account'
     | '/settings/mcp'
@@ -193,6 +203,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/settings/agent-bots'
     | '/settings/ai-providers'
+    | '/settings/api-keys'
     | '/settings/billing'
     | '/settings/delete-account'
     | '/settings/mcp'
@@ -212,6 +223,7 @@ export interface FileRouteTypes {
     | '/sign-in/'
     | '/(app)/settings/agent-bots'
     | '/(app)/settings/ai-providers'
+    | '/(app)/settings/api-keys'
     | '/(app)/settings/billing'
     | '/(app)/settings/delete-account'
     | '/(app)/settings/mcp'
@@ -303,6 +315,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof appSettingsAiProvidersRouteImport
       parentRoute: typeof appSettingsRouteRoute
     }
+    '/(app)/settings/api-keys': {
+      id: '/(app)/settings/api-keys'
+      path: '/api-keys'
+      fullPath: '/settings/api-keys'
+      preLoaderRoute: typeof appSettingsApiKeysRouteImport
+      parentRoute: typeof appSettingsRouteRoute
+    }
     '/(app)/settings/billing': {
       id: '/(app)/settings/billing'
       path: '/billing'
@@ -358,6 +377,7 @@ declare module '@tanstack/react-router' {
 interface appSettingsRouteRouteChildren {
   appSettingsAgentBotsRoute: typeof appSettingsAgentBotsRoute
   appSettingsAiProvidersRoute: typeof appSettingsAiProvidersRoute
+  appSettingsApiKeysRoute: typeof appSettingsApiKeysRoute
   appSettingsBillingRoute: typeof appSettingsBillingRoute
   appSettingsDeleteAccountRoute: typeof appSettingsDeleteAccountRoute
   appSettingsMcpRoute: typeof appSettingsMcpRoute
@@ -371,6 +391,7 @@ interface appSettingsRouteRouteChildren {
 const appSettingsRouteRouteChildren: appSettingsRouteRouteChildren = {
   appSettingsAgentBotsRoute: appSettingsAgentBotsRoute,
   appSettingsAiProvidersRoute: appSettingsAiProvidersRoute,
+  appSettingsApiKeysRoute: appSettingsApiKeysRoute,
   appSettingsBillingRoute: appSettingsBillingRoute,
   appSettingsDeleteAccountRoute: appSettingsDeleteAccountRoute,
   appSettingsMcpRoute: appSettingsMcpRoute,

@@ -98,11 +98,12 @@ func TestIntegration(t *testing.T) {
 
 	ctx := context.Background()
 	superUser := seeders.SuperUserSeeder{
-		DB:       db,
-		Auth:     auth.CoreServices(),
-		Promote:  promoteSuperUser(&repos.User, mirror),
-		Email:    superEmail,
-		Password: "the-first-password",
+		DB:         db,
+		Auth:       auth.CoreServices(),
+		Promote:    promoteSuperUser(&repos.User, mirror),
+		RevokeKeys: func(ctx context.Context, userID string) error { return deleteAPIKeys(ctx, auth, userID) },
+		Email:      superEmail,
+		Password:   "the-first-password",
 	}
 	// Twice: seeding must be repeatable.
 	for range 2 {
@@ -386,6 +387,7 @@ func TestIntegration(t *testing.T) {
 	testLLMProviderScope(t, call, application, userToken, superToken, userOrg)
 	testMCPServers(t, call, callStream, application, userToken, superToken, userOrg)
 	testActivityLogs(t, call, userToken, superToken, userOrg, superOrg, userEmail)
+	testMCPEndpoint(t, call, server, application, userToken, userOrg, superOrg)
 	testAccountSettings(t, call, func() string { return cookies }, db, userEmail, userPass)
 
 	// Signing out revokes the access token.

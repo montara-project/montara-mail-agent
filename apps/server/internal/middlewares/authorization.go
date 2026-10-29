@@ -5,6 +5,7 @@ import (
 	"time"
 
 	authulamodels "github.com/Authula/authula/models"
+	apikeyplugintypes "github.com/Authula/authula/plugins/api-key/types"
 	authulaservices "github.com/Authula/authula/services"
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
@@ -41,6 +42,42 @@ func (m *Middlewares) Authorization(c fiber.Ctx) error {
 	}
 	lib.ContextSetUID(c, uid)
 
+	return c.Next()
+}
+
+// APIKey requires one of the user's API keys as "Authorization: Bearer
+// <key>" and stores its owner's id like Authorization does. Only /mcp takes
+// it: a key leaked from an MCP client reaches the mailbox tools, not the
+// account. Access tokens and session cookies are not accepted here.
+func (m *Middlewares) APIKey(c fiber.Ctx) error {
+	token := bearerToken(c.Get(fiber.HeaderAuthorization))
+	keys, ok := m.app.APIKeys()
+	if token == "" || !ok {
+		return apperr.ErrUnauthorized
+	}
+
+	result, err := keys.Verify(c.Context(), apikeyplugintypes.VerifyApiKeyRequest{Key: token})
+	if err != nil {
+		return err
+	}
+	if !result.Valid || result.ApiKey.OwnerType != apikeyplugintypes.OwnerTypeUser {
+		return apperr.ErrUnauthorized
+	}
+	uid, err := uuid.Parse(result.ApiKey.OwnerID)
+	if err != nil {
+		return apperr.ErrUnauthorized
+	}
+
+	// The settings page shows when a key was last used, to the minute: a busy
+	// client writes the stamp once a minute, not on every call. A failed stamp
+	// only costs that.
+	now := time.Now().UTC()
+	if last := result.ApiKey.LastRequestedAt; last == nil || now.Sub(*last) > time.Minute {
+		if _, err := keys.RecordLastRequest(c.Context(), result.ApiKey.ID, now); err != nil {
+			m.app.Logger.Warn("api key last use not recorded", "api_key", result.ApiKey.ID, "error", err)
+		}
+	}
+	lib.ContextSetUID(c, uid)
 	return c.Next()
 }
 

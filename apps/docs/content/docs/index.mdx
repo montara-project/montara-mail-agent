@@ -1,0 +1,34 @@
+---
+title: Introduction
+description: Montara Mail is an AI mail client that runs your own model, on our servers or on yours.
+---
+
+## What it is
+
+Montara Mail puts every mailbox you use in one place: Gmail, Outlook, Yahoo, iCloud, Lark, Zoho or any IMAP server. A background sync keeps each one current, and an AI agent sorts new inbox mail, summarizes long threads and drafts replies for you to review.
+
+You stay the one who sends. The agent prepares replies, forwards and new mail; nothing leaves your mailbox until you approve it.
+
+## Your model, your server
+
+Each organization picks the model its AI features use: any OpenAI- or Anthropic-compatible endpoint, or a model you host yourself, such as Ollama. The whole product is open source under GPL-3.0 and ships as one Docker image, so you can also run the server yourself.
+
+Your email data is used only to provide the service and is never sold.
+
+## Where to start
+
+<Cards>
+  <Card title="Getting started" href="/getting-started" description="Sign in, create an organization and connect your first mailbox." />
+  <Card title="Connect mailboxes" href="/mailboxes" description="App passwords, OAuth, and what the sync keeps in step." />
+  <Card title="Self-hosting" href="/self-hosting" description="Run the API and web app on your own server with Docker." />
+  <Card title="Connect MCP clients" href="/connect-mcp-clients" description="Use your mailboxes from Claude Desktop, Cursor and other MCP clients." />
+</Cards>
+
+## How it fits together
+
+| Part | What it is |
+| --- | --- |
+| Web app | The mail client at [app.montaramail.web.id](https://app.montaramail.web.id), a single-page app. |
+| API | A Go server: sign-in, organizations, IMAP sync, SMTP send, AI features and the activity log. In production it also serves the web app. |
+| Your model | The LLM provider each organization configures, called by the API. |
+| Your mailboxes | Read over IMAP and sent through over SMTP, with your app password or an OAuth sign-in. |

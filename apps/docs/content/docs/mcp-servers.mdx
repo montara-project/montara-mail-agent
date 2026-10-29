@@ -1,0 +1,28 @@
+---
+title: MCP servers
+description: Give the assistant tools from outside servers, such as web search, your docs or your tickets.
+---
+
+Under **Control Center › MCP**, an organization's owner adds [Model Context Protocol](https://modelcontextprotocol.io) servers. Their tools are offered to the assistant chat, never to the automatic drafts.
+
+<Callout>
+  This page is about servers the assistant **calls**. To use your mailboxes **from** another MCP client, see [Connect MCP clients](/connect-mcp-clients).
+</Callout>
+
+## Kinds
+
+| Kind | For | Who can add it |
+| --- | --- | --- |
+| Hosted | A provider's MCP server you sign in to with OAuth (for example Notion or Linear). **Connect** opens the provider's sign-in. | The owner |
+| HTTP | A streamable HTTP endpoint, with optional headers such as an API key. | The owner |
+| Command | A program the server runs over stdio. | A super user only: it runs on the server's machine. |
+
+Names are lowercase letters, digits, `-` and `_`. Header and environment values are stored encrypted and never shown again; leave one blank when editing to keep it.
+
+## Status and tools
+
+Saving an HTTP or command server connects and lists its tools; a hosted server waits until you connect it. Each server shows its status (Connected, Not synced, Needs sign-in, Error) and its tools with their parameters. **Test** checks the connection, **Sync tools** lists them again, and the switch turns a server off without deleting it.
+
+In the chat, a tool appears as `mcp__<server>__<tool>`. What it returns is treated as outside data, never as instructions.
+
+A plain `http://` URL is only accepted on a self-hosted server that allows private hosts (`ALLOW_PRIVATE_HOSTS`).

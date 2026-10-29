@@ -1,0 +1,12 @@
+{
+  "title": "Self-hosting",
+  "pages": [
+    "index",
+    "docker",
+    "configuration",
+    "llm-providers",
+    "oauth",
+    "reverse-proxy",
+    "maintenance"
+  ]
+}

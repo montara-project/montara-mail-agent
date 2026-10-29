@@ -5,6 +5,7 @@ import {
   Building2,
   ChevronRight,
   CreditCard,
+  KeyRound,
   Package,
   Plug,
   ShieldCheck,
@@ -27,6 +28,7 @@ const SETTINGS_GROUPS: { title: string; items: SettingsItem[] }[] = [
     items: [
       { title: 'My Profile', icon: User, url: '/settings/profile' },
       { title: 'Security', icon: ShieldCheck, url: '/settings/security' },
+      { title: 'API Keys', icon: KeyRound, url: '/settings/api-keys' },
     ],
   },
   {

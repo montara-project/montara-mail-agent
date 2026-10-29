@@ -1,0 +1,23 @@
+{
+  "title": "Montara Mail",
+  "pages": [
+    "index",
+    "getting-started",
+    "---Using Montara---",
+    "mailboxes",
+    "reading-and-sending",
+    "ai-features",
+    "ai-assistant",
+    "bots-and-skills",
+    "mcp-servers",
+    "connect-mcp-clients",
+    "organizations",
+    "account-security",
+    "---Self-hosting---",
+    "...self-hosting",
+    "---API---",
+    "...api",
+    "---Development---",
+    "...development"
+  ]
+}

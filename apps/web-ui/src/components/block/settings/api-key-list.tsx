@@ -1,0 +1,346 @@
+import { IconPlus } from '@tabler/icons-react'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { format, formatDistanceToNow, isPast } from 'date-fns'
+import { Copy, KeyRound, RefreshCw, Trash2 } from 'lucide-react'
+import React from 'react'
+import { toast } from 'sonner'
+
+import type { Models } from '@/lib/api/models'
+
+import EmptyState from '@/components/block/common/empty-state'
+import SectionCard from '@/components/block/common/section-card'
+import SectionHeading from '@/components/block/common/section-heading'
+import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
+import SimpleAlertScrollableDialogForm from '@/components/block/common/simple-alert-scrollable-dialog-form'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useAppForm } from '@/hooks/form'
+import { axiosErrorMessage, toastAxiosError } from '@/lib/api/axios-error'
+import { parseDto } from '@/lib/api/dtos/parse'
+import { API_KEY_LIFETIMES, APIKeySchema } from '@/lib/api/dtos/settings/api-key/schema'
+import { queries } from '@/lib/api/queries'
+import { SERVER_URL } from '@/lib/api/server-url'
+
+/** Where MCP clients connect: the server this browser uses. */
+const MCP_ENDPOINT = `${SERVER_URL || window.location.origin}/mcp`
+
+const LIFETIME_OPTIONS = API_KEY_LIFETIMES.map((days) => ({
+  value: days,
+  label: days === '365' ? '1 year' : `${days} days`,
+}))
+
+/** The block an MCP host's config file takes, Claude Desktop's and Cursor's shape. */
+const clientConfig = (key: string) =>
+  JSON.stringify(
+    {
+      mcpServers: {
+        'montara-mail': {
+          type: 'http',
+          url: MCP_ENDPOINT,
+          headers: { Authorization: `Bearer ${key}` },
+        },
+      },
+    },
+    null,
+    2
+  )
+
+const copy = (text: string, what: string) =>
+  navigator.clipboard.writeText(text).then(
+    () => toast.success(`${what} copied`),
+    () => toast.error(`Couldn't copy the ${what.toLowerCase()}; select it instead.`)
+  )
+
+const day = (iso: string) => format(new Date(iso), 'd MMM yyyy')
+
+/** "Created 29 Oct 2026 · Expires 27 Jan 2027 · Used 3 hours ago". */
+function KeyMeta({ apiKey }: { apiKey: Models.APIKey }) {
+  const expired = !!apiKey.expires_at && isPast(new Date(apiKey.expires_at))
+  return (
+    <span className="text-muted-foreground text-xs">
+      Created {day(apiKey.created_at)}
+      {apiKey.expires_at && (
+        <span className={expired ? 'text-destructive' : undefined}>
+          {' · '}
+          {expired ? 'Expired' : 'Expires'} {day(apiKey.expires_at)}
+        </span>
+      )}
+      {' · '}
+      {apiKey.last_used_at
+        ? `Used ${formatDistanceToNow(new Date(apiKey.last_used_at), { addSuffix: true })}`
+        : 'Never used'}
+    </span>
+  )
+}
+
+function KeyRow({ apiKey }: { apiKey: Models.APIKey }) {
+  const [confirming, setConfirming] = React.useState(false)
+  const remove = useMutation(queries.apiKeys.delete())
+
+  return (
+    <li className="flex flex-wrap items-center gap-3 px-4 py-3">
+      <KeyRound className="text-muted-foreground size-4 shrink-0" aria-hidden />
+      <span className="grid min-w-0 flex-1 gap-0.5">
+        <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+          <span className="truncate text-sm font-medium">{apiKey.name}</span>
+          <span className="text-muted-foreground font-mono text-xs">{apiKey.hint}</span>
+        </span>
+        <KeyMeta apiKey={apiKey} />
+      </span>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="text-destructive hover:text-destructive"
+        disabled={remove.isPending}
+        onClick={() => setConfirming(true)}
+      >
+        <Trash2 />
+        Revoke
+      </Button>
+
+      <SimpleAlertDialog
+        title={`Revoke ${apiKey.name}?`}
+        description="Apps using this key lose access to your mailboxes at once. This cannot be undone."
+        open={confirming}
+        onOpenChange={setConfirming}
+        onConfirm={() =>
+          remove.mutate(apiKey.id, {
+            onSuccess: () => {
+              toast.success(`${apiKey.name} revoked`)
+              setConfirming(false)
+            },
+            onError: toastAxiosError,
+          })
+        }
+        confirmText="Revoke"
+        variant="destructive"
+      />
+    </li>
+  )
+}
+
+function CreateKeyDialog({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void
+  onCreated: (created: Models.CreatedAPIKey) => void
+}) {
+  const create = useMutation(queries.apiKeys.create())
+  const form = useAppForm({
+    defaultValues: { name: '', expires_in_days: '90' as (typeof API_KEY_LIFETIMES)[number] },
+    validators: { onSubmit: APIKeySchema, onChange: APIKeySchema },
+    onSubmit: async ({ value }) => {
+      const dto = parseDto(APIKeySchema, value)
+      try {
+        onCreated(
+          await create.mutateAsync({
+            name: dto.name.trim(),
+            expires_in_days: Number(dto.expires_in_days),
+          })
+        )
+      } catch (error) {
+        toastAxiosError(error)
+      }
+    },
+  })
+
+  return (
+    <SimpleAlertScrollableDialogForm
+      open
+      onOpenChange={(open) => !open && onClose()}
+      onSubmit={(e) => {
+        e.preventDefault()
+        form.handleSubmit()
+      }}
+      title="Create API key"
+      description="For one app, so you can revoke it alone."
+      confirmText="Create key"
+      loading={create.isPending}
+      size="md"
+    >
+      <div className="grid gap-4">
+        <form.AppField
+          name="name"
+          children={(field) => (
+            <field.TextField asterisk label="Name" placeholder="Claude Desktop on my laptop" />
+          )}
+        />
+        <form.AppField
+          name="expires_in_days"
+          children={(field) => (
+            <field.SelectField label="Expires after" options={LIFETIME_OPTIONS} />
+          )}
+        />
+      </div>
+    </SimpleAlertScrollableDialogForm>
+  )
+}
+
+/** The new key, once: the server keeps only its hash. */
+function KeyCreatedDialog({
+  created,
+  onClose,
+}: {
+  created: Models.CreatedAPIKey
+  onClose: () => void
+}) {
+  const config = clientConfig(created.key)
+  return (
+    <AlertDialog open onOpenChange={(open) => !open && onClose()}>
+      <AlertDialogContent className="sm:max-w-lg">
+        <AlertDialogHeader>
+          <AlertDialogTitle>{created.api_key.name} is ready</AlertDialogTitle>
+          <AlertDialogDescription>
+            Copy the key now. It is not shown again; if you lose it, revoke it and create another.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="grid min-w-0 gap-4">
+          <div className="flex min-w-0 items-center gap-2">
+            <code className="bg-muted/60 min-w-0 flex-1 truncate rounded-md border px-3 py-2 font-mono text-sm select-all">
+              {created.key}
+            </code>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => copy(created.key, 'Key')}
+            >
+              <Copy />
+              Copy
+            </Button>
+          </div>
+          <div className="grid min-w-0 gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-medium">Client config</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => copy(config, 'Config')}
+              >
+                <Copy />
+                Copy
+              </Button>
+            </div>
+            <pre className="bg-muted/60 overflow-x-auto rounded-md border p-3 font-mono text-xs leading-relaxed">
+              {config}
+            </pre>
+            <p className="text-muted-foreground text-xs text-pretty">
+              Add it to your MCP client's servers, e.g. Claude Desktop's or Cursor's{' '}
+              <code className="font-mono">mcp.json</code>.
+            </p>
+          </div>
+        </div>
+        <AlertDialogFooter>
+          <Button onClick={onClose}>Done</Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+
+/** Shaped like the rows it stands in for. */
+function Loading() {
+  return (
+    <div className="grid gap-5 py-3">
+      {[0, 1].map((index) => (
+        <div key={index} className="flex items-center gap-3">
+          <Skeleton className="size-4 rounded" />
+          <div className="grid flex-1 gap-1.5">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-3 w-64" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * The user's API keys, which let MCP clients outside the app reach their
+ * mailboxes through /mcp.
+ */
+export default function APIKeyList() {
+  const [creating, setCreating] = React.useState(false)
+  const [created, setCreated] = React.useState<Models.CreatedAPIKey | null>(null)
+  const { data: keys = [], isPending, isError, error, refetch } = useQuery(queries.apiKeys.list())
+
+  return (
+    <section className="grid gap-3">
+      <SectionHeading
+        title="API keys"
+        description="Let MCP clients such as Claude Desktop or Cursor search and sort your mail. What they propose to send waits for your approval in the AI assistant."
+        action={
+          <Button className="h-8.5 rounded-lg" onClick={() => setCreating(true)}>
+            <IconPlus />
+            <span>Create key</span>
+          </Button>
+        }
+      />
+
+      <SectionCard>
+        <div className="grid gap-2">
+          <span className="text-sm font-medium">MCP endpoint</span>
+          <div className="flex min-w-0 items-center gap-2">
+            <code className="bg-muted/60 min-w-0 flex-1 truncate rounded-md border px-3 py-2 font-mono text-sm">
+              {MCP_ENDPOINT}
+            </code>
+            <Button variant="outline" size="sm" onClick={() => copy(MCP_ENDPOINT, 'Endpoint')}>
+              <Copy />
+              Copy
+            </Button>
+          </div>
+          <p className="text-muted-foreground text-xs text-pretty">
+            Streamable HTTP. Send a key as <code className="font-mono">Authorization: Bearer</code>;
+            it opens this endpoint only, not your account.
+          </p>
+        </div>
+      </SectionCard>
+
+      <SectionCard>
+        {isPending ? (
+          <Loading />
+        ) : isError ? (
+          <div role="alert" className="grid justify-items-center gap-3 p-6 text-center text-sm">
+            <p className="text-destructive">{axiosErrorMessage(error)}</p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              <RefreshCw />
+              Try again
+            </Button>
+          </div>
+        ) : keys.length === 0 ? (
+          <EmptyState
+            title="No API keys yet"
+            description="Create one for each app you connect, so you can revoke it alone."
+          />
+        ) : (
+          <ul className="-m-4 divide-y overflow-hidden rounded-lg">
+            {keys.map((apiKey) => (
+              <KeyRow key={apiKey.id} apiKey={apiKey} />
+            ))}
+          </ul>
+        )}
+      </SectionCard>
+
+      {creating && (
+        <CreateKeyDialog
+          onClose={() => setCreating(false)}
+          onCreated={(next) => {
+            setCreating(false)
+            setCreated(next)
+          }}
+        />
+      )}
+      {created && <KeyCreatedDialog created={created} onClose={() => setCreated(null)} />}
+    </section>
+  )
+}

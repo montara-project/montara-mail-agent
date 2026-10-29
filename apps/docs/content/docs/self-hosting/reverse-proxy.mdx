@@ -1,0 +1,36 @@
+---
+title: Reverse proxy and HTTPS
+description: Put the API behind HTTPS, keep rate limits honest, and use the hosted web app with your server.
+---
+
+## Behind a proxy
+
+Terminate TLS in a reverse proxy (Caddy, nginx, Traefik, a load balancer) and forward to port 8080. Then set:
+
+| Variable | To |
+| --- | --- |
+| `AUTH_BASE_URL` | Your public URL, e.g. `https://mail.example.com`. Email links and OAuth callbacks use it. |
+| `TRUSTED_PROXIES` | The proxy's IP or CIDR only. |
+| `ENV` | `production` (the default), so the session cookie is `Secure`. |
+
+Rate limits key on the client IP. The API reads it from `X-Forwarded-For` only when the request comes from a trusted proxy, taking the rightmost entry that is not a proxy. A wider `TRUSTED_PROXIES` range lets anyone inside it fake their IP past the limits.
+
+```text title="Caddyfile"
+mail.example.com {
+  reverse_proxy localhost:8080
+}
+```
+
+## Limits
+
+Per client IP and minute: 30 requests to sign-in routes, 120 to the rest of the API, and 10 for model calls and mailbox syncs.
+
+## Using the hosted web app
+
+You can keep the web app at `app.montaramail.web.id` and point it at your own server:
+
+1. Serve your API over HTTPS.
+2. Add `https://app.montaramail.web.id` to `CORS_ALLOWED_ORIGINS`.
+3. In the web app, open **Control Center › Organization › Self hosted** (or **Change** on the sign-in page) and enter your server's URL.
+
+Outside development the two-factor pending cookie is `SameSite=None`, so the two-factor step works across sites too. The Community Edition's web app always uses its own server.

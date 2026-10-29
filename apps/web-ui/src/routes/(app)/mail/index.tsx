@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
+import React from 'react'
 
-import AgentPanel from '@/components/block/mail/agent-panel'
 import MailList, { DEFAULT_PAGE_SIZE, pageSize } from '@/components/block/mail/mail-list'
 import MailReader from '@/components/block/mail/mail-reader'
 import { MAIL_LABELS, useMailAccount } from '@/components/layout/mail/mail-panel'
@@ -23,6 +23,10 @@ type MailSearch = {
   /** The email attached to the assistant's next questions. */
   about?: string
 }
+
+// The assistant pane is closed by default and desktop only, so its code waits until it opens.
+const AgentPanel = React.lazy(() => import('@/components/block/mail/agent-panel'))
+const AGENT_PANE = 'hidden w-80 shrink-0 border-l lg:flex xl:w-96'
 
 const str = (value: unknown) => (typeof value === 'string' && value !== '' ? value : undefined)
 
@@ -68,11 +72,14 @@ function RouteComponent() {
         </div>
       )}
       {agent && (
-        <AgentPanel
-          emailAccountId={account?.id}
-          organizationId={organization?.id}
-          className="hidden w-80 shrink-0 border-l lg:flex xl:w-96"
-        />
+        // The empty pane holds its width while the code loads, so the reader doesn't jump.
+        <React.Suspense fallback={<div className={AGENT_PANE} />}>
+          <AgentPanel
+            emailAccountId={account?.id}
+            organizationId={organization?.id}
+            className={AGENT_PANE}
+          />
+        </React.Suspense>
       )}
     </div>
   )

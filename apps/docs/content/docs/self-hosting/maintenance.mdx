@@ -1,0 +1,35 @@
+---
+title: Maintenance
+description: Migrations, the super user, secrets, and upgrades.
+---
+
+## Migrations
+
+With `MIGRATE_ON_BOOT=true` the API applies its migrations as it starts. Run them yourself with the `migrate` binary instead:
+
+```sh
+/app/migrate up                 # apply
+/app/migrate force <version>    # after a failed migration
+```
+
+From a checkout, `apps/server/Makefile` has the same as `make db/migrations/up`, `make db/migrations/up/seed` and `make db/migrations/force version=N`.
+
+`down` and `refresh` delete all data, users included, so they refuse a database that is not on localhost unless `--allow-remote` is passed.
+
+Sign-in tables live in the `authula` schema and are created on boot; `public.users` mirrors them and adds the role.
+
+## The super user
+
+`SUPER_USER` is the source of truth for that account's password. If it differs on a seeded boot, the password is reset, every session ends, and the account's API keys are revoked. That is also how you reset it when email is off: change `SUPER_USER` and restart.
+
+## Secrets
+
+`APP_SECRET` encrypts mailbox passwords, OAuth tokens and LLM keys. Changing it makes them unreadable: every mailbox has to be connected again and every provider saved again. Keep it in a secret store and back it up with the database.
+
+## Upgrading
+
+Pull the new image and restart. With `MIGRATE_ON_BOOT=true`, or the compose file's `migrate` job, the schema follows. Release notes are in [`CHANGELOG.md`](https://github.com/montara-project/montara-mail-agent/blob/main/CHANGELOG.md).
+
+## Health
+
+`GET /health` answers `{"data":{"status":"ok"}}`; the image's `HEALTHCHECK` runs `/app/healthcheck` against it.

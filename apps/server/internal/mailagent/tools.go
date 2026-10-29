@@ -257,6 +257,9 @@ func (t *toolset) search(ctx context.Context, query, folder string, unreadOnly b
 	return string(payload), payload
 }
 
+// emailFence defuses the tags getMail fences an email with.
+var emailFence = strings.NewReplacer("<email", "&lt;email", "</email", "&lt;/email")
+
 // getMail reads one mail in full, wrapped so its content stays data.
 func (t *toolset) getMail(ctx context.Context, mailID string) (string, json.RawMessage) {
 	m, ok := t.mailOf(ctx, mailID)
@@ -264,9 +267,12 @@ func (t *toolset) getMail(ctx context.Context, mailID string) (string, json.RawM
 		return "no such email in this mailbox", nil
 	}
 
+	// The sender writes these fields: one holding "</email>" would end the
+	// fence early and pass what follows off as instructions.
+	esc := emailFence.Replace
 	wrapped := fmt.Sprintf("<email id=%q>\nFrom: %s\nTo: %s\nDate: %s\nSubject: %s\n\n%s\n</email>",
-		m.ID, mailAddress(m.FromName, m.FromEmail), mailAddresses(m.To),
-		m.ReceivedAt.Format(time.RFC3339), m.Subject, clip(m.Body, mailBodyLimit))
+		m.ID, esc(mailAddress(m.FromName, m.FromEmail)), esc(mailAddresses(m.To)),
+		m.ReceivedAt.Format(time.RFC3339), esc(m.Subject), esc(clip(m.Body, mailBodyLimit)))
 	return wrapped, nil
 }
 

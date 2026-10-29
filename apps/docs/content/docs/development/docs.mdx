@@ -1,0 +1,27 @@
+---
+title: Writing these docs
+description: Where the pages live, and how to preview and publish them.
+---
+
+The docs are `apps/docs`, a Next.js app built with [Fumadocs](https://fumadocs.dev) and exported as static files.
+
+## Pages
+
+- Pages are MDX files under `apps/docs/content/docs`. The file path is the URL: `self-hosting/docker.mdx` is `/self-hosting/docker`. There is no `/docs` prefix.
+- Every page sets `title` (and usually `description`) in its frontmatter; the body starts at `##`.
+- `meta.json` in a folder orders its pages and names the sidebar group. Never hand-write a route list.
+- Link between pages with root paths, such as `/self-hosting/configuration`.
+
+## Preview
+
+```sh
+pnpm --filter @montara-mail/docs dev          # http://localhost:3001
+pnpm --filter @montara-mail/docs typecheck
+pnpm --filter @montara-mail/docs build        # static site in apps/docs/out
+```
+
+Search, `llms.txt` and `llms-full.txt` are generated at build time.
+
+## Publish
+
+The **Release** workflow builds the site and deploys `out/` to Cloudflare Workers as static assets (`apps/docs/wrangler.jsonc`), at `docs.montaramail.web.id`. Run the workflow by hand to publish a docs change without a release.

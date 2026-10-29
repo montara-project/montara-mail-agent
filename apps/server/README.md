@@ -118,6 +118,44 @@ answers `{"totp_redirect": true}` and a short-lived pending cookie instead of
 tokens; `POST /api/v1/auth/totp/verify` (or `/verify-backup-code`) with the
 code then answers like a sign-in.
 
+## MCP clients
+
+`/mcp` serves the mail agent's tools to MCP clients outside the app (Claude
+Desktop, Cursor, any client of the streamable HTTP transport). It is
+stateless and answers plain JSON, so each POST is a whole exchange.
+
+| Route                                  | What it does                                                                                   |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `GET, POST /api/v1/me/api-keys`        | List the user's API keys, or create one: `name`, and `expires_in_days` (1 to 365, default 90). The key itself is in the create answer only. |
+| `DELETE /api/v1/me/api-keys/:id`       | Revoke a key.                                                                                  |
+| `POST /mcp`                            | MCP, signed in with `Authorization: Bearer <api key>`.                                         |
+
+A key opens `/mcp` and nothing else: not the rest of the API, and not
+Authula's routes. `/mcp` takes no access token or cookie. A key reaches the
+mailboxes of every organization the user is a member of (a super user's
+other organizations stay in the app). Changing or resetting the password
+revokes every key.
+
+The tools are the in-app agent's: `list_accounts` names the mailboxes;
+`search_mails`, `mailbox_stats` and `propose_email` take its `account_id`,
+and the tools on one email take its `mail_id`. Moving, flags and importance
+apply at once. Nothing is sent: `propose_reply`, `propose_forward` and
+`propose_email` queue the mail under the mailbox's "Connected apps"
+conversation in the AI assistant, where the user approves or denies it. The
+external MCP servers an organization added are not passed on.
+
+```json
+{
+  "mcpServers": {
+    "montara-mail": {
+      "type": "http",
+      "url": "https://app.montaramail.web.id/mcp",
+      "headers": { "Authorization": "Bearer mm_..." }
+    }
+  }
+}
+```
+
 ### Self-hosting behind the hosted web app
 
 Each browser picks its server under Settings > Self hosted (or "Change" on the

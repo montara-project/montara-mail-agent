@@ -66,6 +66,12 @@ func routes(r *fiber.App, app *app.Application) {
 	me.Get("/activity-logs", h.ActivityLog.ListMine)
 	me.Patch("/", idempotent, h.Profile.Update)
 	me.Put("/password", slow, idempotent, h.Profile.ChangePassword)
+	// The keys MCP clients sign in to /mcp with.
+	me.Get("/api-keys", h.APIKey.List)
+	// Not idempotent: a replay would serve the key itself from the cache. A
+	// duplicate key is cheap to revoke.
+	me.Post("/api-keys", h.APIKey.Create)
+	me.Delete("/api-keys/:id", idempotent, h.APIKey.Delete)
 
 	organizations := v1.Group("/organizations", m.Authorization)
 	organizations.Get("/", h.Organization.List)
@@ -141,6 +147,11 @@ func routes(r *fiber.App, app *app.Application) {
 	mcpServers.Post("/:id/sync", slow, h.MCPServer.Sync)
 	mcpServers.Post("/:id/test", slow, h.MCPServer.Test)
 	mcpServers.Post("/:id/oauth/start", slow, h.MCPServer.OAuthStart)
+
+	// MCP clients outside the app: the agent's mailbox tools, signed in with
+	// an API key only (see middlewares.APIKey). Every method goes to the MCP
+	// handler, which answers the ones a stateless server has no use for.
+	r.All(handlers.MCPPath, middlewares.RateLimit(apiRateLimit, exemptLoopback, exemptIPs), m.APIKey, h.MCP.Serve)
 
 	// Agent bots are organization settings, so the flat group lets the web app
 	// edit one by its own id without repeating the organization.

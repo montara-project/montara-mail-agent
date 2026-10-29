@@ -87,6 +87,21 @@ func (r *AgentRepository) Conversations(ctx context.Context, orgID, userID uuid.
 	return collectRows(rows, scanAgentConversation)
 }
 
+// ConversationTitled returns a user's oldest conversation over one mailbox
+// with this title.
+func (r *AgentRepository) ConversationTitled(ctx context.Context, orgID, userID, accountID uuid.UUID, title string) (models.AgentConversation, error) {
+	query := `SELECT ` + agentConversationColumns + ` FROM agent_conversations
+		WHERE organization_id = $1 AND user_id = $2 AND email_account_id = $3 AND title = $4
+		ORDER BY created_at LIMIT 1`
+	return scanAgentConversation(r.queryRowContext(ctx, query, orgID, userID, accountID, title))
+}
+
+// TouchConversation moves a conversation to the top of the recent list.
+func (r *AgentRepository) TouchConversation(ctx context.Context, id uuid.UUID) error {
+	_, err := r.execContext(ctx, `UPDATE agent_conversations SET updated_at = now() WHERE id = $1`, id)
+	return err
+}
+
 // RenameConversation sets the title a conversation carries.
 func (r *AgentRepository) RenameConversation(ctx context.Context, id uuid.UUID, title string) error {
 	res, err := r.execContext(ctx, `

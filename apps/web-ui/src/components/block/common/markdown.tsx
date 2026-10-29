@@ -1,6 +1,11 @@
-import ReactMarkdown, { type Components } from 'react-markdown'
+import type { Components } from 'react-markdown'
+
+import React from 'react'
 
 import { cn } from '@/lib/utils'
+
+// The parser is ~100 kB and only AI answers need it, so it loads on the first one.
+const ReactMarkdown = React.lazy(() => import('react-markdown'))
 
 // No typography plugin here, so each element gets its spacing explicitly.
 // Bold text is the model's way of flagging what matters: show it highlighted.
@@ -42,7 +47,10 @@ export default function Markdown({
 }) {
   return (
     <div className={cn('text-sm', className)}>
-      <ReactMarkdown components={components}>{children}</ReactMarkdown>
+      {/* Until the parser arrives, the text shows as written. */}
+      <React.Suspense fallback={<p className="leading-relaxed whitespace-pre-wrap">{children}</p>}>
+        <ReactMarkdown components={components}>{children}</ReactMarkdown>
+      </React.Suspense>
     </div>
   )
 }

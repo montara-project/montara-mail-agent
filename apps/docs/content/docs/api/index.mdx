@@ -1,0 +1,62 @@
+---
+title: Overview
+description: Authentication, the response envelope, errors, rate limits and idempotent writes.
+---
+
+The web app is a client of the same REST API you can call. Every route is under `/api/v1` on your server, or `https://app.montaramail.web.id` for the hosted one. Bodies are JSON.
+
+## Authentication
+
+Sign in to get tokens:
+
+```sh
+curl -X POST https://app.montaramail.web.id/api/v1/auth/email-password/sign-in \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"you@example.com","password":"..."}'
+```
+
+A successful sign-in sets the session cookie and returns `access_token`, `refresh_token`, `expires_at` and `expires_in` beside `user` and `session`. Send either the cookie or the header:
+
+```text
+Authorization: Bearer <access_token>
+```
+
+- The access token lasts 15 minutes and the refresh token 24 hours. Renew them with `POST /api/v1/auth/token/refresh` and `{"refresh_token": "..."}`.
+- `POST /api/v1/auth/token` returns a new pair for the session in the cookie. It refuses a bearer token, so a stolen access token cannot outlive its 15 minutes.
+- Signing out revokes that session's tokens; a password change or reset ends every session.
+- With two-factor sign-in on, a sign-in answers `{"totp_redirect": true}` and a short-lived cookie; `POST /api/v1/auth/totp/verify` with the code then answers like a sign-in.
+
+API keys are different: they only open [`/mcp`](/connect-mcp-clients), never `/api/v1`.
+
+## Responses
+
+```json
+{ "data": { "id": "…" }, "metadata": { "total": 42, "offset": 0, "limit": 25 }, "message": "…" }
+```
+
+`metadata` comes with lists, `message` with some writes. Errors carry a `message`, and validation failures (422) list each field:
+
+```json
+{
+  "message": "validation failed",
+  "errors": [{ "code": "validation", "field": "name", "message": "name is required", "param": "name" }]
+}
+```
+
+Someone else's organization, mailbox or mail answers 404, never 403.
+
+## Rate limits
+
+Per client IP and minute: 30 requests to `/api/v1/auth`, 120 to the rest of the API, and 10 for model calls and mailbox syncs. Over the limit answers 429.
+
+## Idempotent writes
+
+Send `X-Idempotency-Key: <uuid>` (or `Idempotency-Key`) with a write to make retries safe:
+
+- The first request runs and its answer is stored for 30 minutes. A retry with the same key gets that answer back, marked `Idempotent-Replayed: true`.
+- The key is scoped to you and the route. A key that is not a UUID answers 400.
+- Only successful answers are stored, so a failed write stays retryable.
+
+## Cross-site requests
+
+A state-changing request a browser sends from another origin is refused with 403 unless that origin is in `CORS_ALLOWED_ORIGINS`. Clients that are not browsers are unaffected.

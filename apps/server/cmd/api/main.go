@@ -103,11 +103,12 @@ func run() error {
 	// Seeding follows Authula because the super user is created through it.
 	if cfg.App.SeedOnBoot {
 		superUser := seeders.SuperUserSeeder{
-			DB:       db,
-			Auth:     auth.CoreServices(),
-			Promote:  promoteSuperUser(&repos.User, mirror),
-			Email:    cfg.App.SuperUserEmail,
-			Password: cfg.App.SuperUserPassword,
+			DB:         db,
+			Auth:       auth.CoreServices(),
+			Promote:    promoteSuperUser(&repos.User, mirror),
+			RevokeKeys: func(ctx context.Context, userID string) error { return deleteAPIKeys(ctx, auth, userID) },
+			Email:      cfg.App.SuperUserEmail,
+			Password:   cfg.App.SuperUserPassword,
 		}
 		if err := seedAll(db, superUser, logger); err != nil {
 			return err

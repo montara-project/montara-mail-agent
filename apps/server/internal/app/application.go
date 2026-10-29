@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	authula "github.com/Authula/authula"
+	apikeyplugin "github.com/Authula/authula/plugins/api-key"
 	"github.com/google/uuid"
 
 	"montara-mail-agent/server/internal/config"
@@ -34,6 +35,17 @@ type Application struct {
 	// HTTPClient calls user-supplied hosts, such as an LLM base URL, through
 	// lib.GuardedDialer.
 	HTTPClient *http.Client
+}
+
+// APIKeyService is the name the api-key plugin's API is registered under in
+// Authula's service registry; the plugin itself registers nothing there.
+const APIKeyService = "montara_api_key_service"
+
+// APIKeys returns the API keys users create for the /mcp endpoint, or false
+// when the api-key plugin is not set up.
+func (a *Application) APIKeys() (*apikeyplugin.API, bool) {
+	keys, ok := a.Auth.ServiceRegistry.Get(APIKeyService).(*apikeyplugin.API)
+	return keys, ok && keys != nil
 }
 
 // ErrAINotConfigured answers an AI request of an organization with no provider
