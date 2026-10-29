@@ -66,14 +66,22 @@ func NewMCPHandler(app *app.Application, sync *mailsync.Syncer) http.Handler {
 		Stateless:                  true,
 		JSONResponse:               true,
 		DisableLocalhostProtection: true,
-		Logger:                     app.Logger,
+		// Tool arguments are small; a reply body is 20k characters at most.
+		MaxRequestBodyBytes: 256 << 10,
+		Logger:              app.Logger,
 	})
 }
 
 func newMCPServer(app *app.Application, sync *mailsync.Syncer, uid uuid.UUID) *mcp.Server {
 	server := mcp.NewServer(
 		&mcp.Implementation{Name: "montara-mail", Title: "Montara Mail", Version: "1.0.0"},
-		&mcp.ServerOptions{Instructions: mcpInstructions},
+		&mcp.ServerOptions{
+			Instructions: mcpInstructions,
+			// The tool list never changes, and a stateless server has nothing to
+			// push: advertising list changes would let subscriptions/listen
+			// hold a request open.
+			Capabilities: &mcp.ServerCapabilities{Tools: &mcp.ToolCapabilities{}},
+		},
 	)
 	m := mcpMailbox{app: app, sync: sync, uid: uid}
 
@@ -94,12 +102,23 @@ func newMCPServer(app *app.Application, sync *mailsync.Syncer, uid uuid.UUID) *m
 			Name:        def.Name,
 			Description: def.Description,
 			InputSchema: schema,
-			Annotations: &mcp.ToolAnnotations{ReadOnlyHint: slices.Contains(mcpReadOnly, def.Name)},
+			Annotations: mcpAnnotations(def.Name),
 		}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return m.call(ctx, def.Name, req.Params.Arguments, byMail), nil
 		})
 	}
 	return server
+}
+
+// mcpAnnotations tells the client which tools only read, and which act on
+// the mail server: hosts ask before running a destructive one.
+func mcpAnnotations(name string) *mcp.ToolAnnotations {
+	if slices.Contains(mcpReadOnly, name) {
+		return &mcp.ToolAnnotations{ReadOnlyHint: true}
+	}
+	// A proposal only queues a mail for the user's approval.
+	destructive := !slices.Contains(mcpProposals, name)
+	return &mcp.ToolAnnotations{DestructiveHint: &destructive}
 }
 
 // mcpSchema adds a required account_id to a tool's schema, unless the tool
@@ -144,7 +163,8 @@ func mcpError(text string) *mcp.CallToolResult {
 func (m mcpMailbox) listAccounts(ctx context.Context) *mcp.CallToolResult {
 	orgs, err := m.app.Repositories.Organization.List(ctx, repositories.ListParams{Limit: 100}, m.uid)
 	if err != nil {
-		return mcpError("the accounts could not be listed: " + err.Error())
+		m.app.Logger.Error("mcp: list organizations", "user", m.uid, "error", err)
+		return mcpError("the accounts could not be listed")
 	}
 	type account struct {
 		ID           string `json:"id"`
@@ -157,7 +177,8 @@ func (m mcpMailbox) listAccounts(ctx context.Context) *mcp.CallToolResult {
 	for _, org := range orgs {
 		accounts, err := m.app.Repositories.EmailAccount.ListByOrganization(ctx, org.ID)
 		if err != nil {
-			return mcpError("the accounts could not be listed: " + err.Error())
+			m.app.Logger.Error("mcp: list accounts", "organization", org.ID, "error", err)
+			return mcpError("the accounts could not be listed")
 		}
 		for _, a := range accounts {
 			out = append(out, account{ID: a.ID.String(), Label: a.Label, Email: a.Email, Provider: a.Provider, Organization: org.Name})
@@ -199,7 +220,8 @@ func (m mcpMailbox) call(ctx context.Context, name string, args json.RawMessage,
 	if slices.Contains(mcpProposals, name) {
 		var err error
 		if conv, err = m.conversation(ctx, account); err != nil {
-			return mcpError("the proposal could not be stored: " + err.Error())
+			m.app.Logger.Error("mcp: proposal conversation", "account", account.ID, "error", err)
+			return mcpError("the proposal could not be stored")
 		}
 	}
 
@@ -234,10 +256,14 @@ func (m mcpMailbox) mailAccount(ctx context.Context, id string) (models.EmailAcc
 	return m.account(ctx, mail.EmailAccountID.String())
 }
 
-// member reports whether the user belongs to the organization. A super user
-// reaches other organizations in the app, not over MCP.
+// member reports whether the user belongs to the organization and it is not
+// in the trash. A super user reaches other organizations in the app, not over
+// MCP.
 func (m mcpMailbox) member(ctx context.Context, orgID uuid.UUID) bool {
-	_, err := m.app.Repositories.Organization.MemberRole(ctx, orgID, m.uid)
+	if _, err := m.app.Repositories.Organization.MemberRole(ctx, orgID, m.uid); err != nil {
+		return false
+	}
+	_, err := m.app.Repositories.Organization.Get(ctx, orgID)
 	return err == nil
 }
 

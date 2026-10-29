@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
@@ -137,6 +138,21 @@ func testMCPEndpoint(t *testing.T, call callFunc, server *fiber.App, application
 	}
 
 	testMCPClient(t, server, key)
+
+	// Nothing holds a request open: the tool list never changes, so a
+	// subscription to it is not offered.
+	started := time.Now()
+	status, out = call(http.MethodPost, "/mcp", key,
+		map[string]any{"jsonrpc": "2.0", "id": 9, "method": "subscriptions/listen", "params": map[string]any{"notifications": map[string]any{"toolsListChanged": true}}},
+		"Accept", "application/json, text/event-stream", "Mcp-Protocol-Version", "2025-06-18")
+	if time.Since(started) > 5*time.Second {
+		t.Fatalf("subscriptions/listen held the request for %s: %d %v", time.Since(started), status, out)
+	}
+	// A batch would run many tool calls under one request of the rate limit.
+	batch := []byte(`[{"jsonrpc":"2.0","id":1,"method":"tools/list"},{"jsonrpc":"2.0","id":2,"method":"tools/list"}]`)
+	if status, _ := call(http.MethodPost, "/mcp", key, batch, "Accept", "application/json, text/event-stream"); status != http.StatusBadRequest {
+		t.Fatalf("JSON-RPC batch: %d, want 400", status)
+	}
 
 	// Revoking the key closes /mcp to it.
 	if status, out := call(http.MethodDelete, "/api/v1/me/api-keys/"+keyID, userToken, nil); status != http.StatusOK {

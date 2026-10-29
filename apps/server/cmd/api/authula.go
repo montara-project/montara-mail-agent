@@ -433,10 +433,10 @@ func newAuth(cfg config.Config, mirror func(*authulamodels.User) error, activiti
 					// one, and the API keys they could have made with it.
 					PasswordChange: &emailpasswordplugintypes.PasswordChangeServiceHooksConfig{
 						AfterChangePassword: func(ctx context.Context, u *authulamodels.User) error {
-							if err := auth.CoreServices().SessionService.DeleteAllByUserID(ctx, u.ID); err != nil {
+							if err := deleteAPIKeys(ctx, auth, u.ID); err != nil {
 								return err
 							}
-							return deleteAPIKeys(ctx, auth, u.ID)
+							return auth.CoreServices().SessionService.DeleteAllByUserID(ctx, u.ID)
 						},
 					},
 				},

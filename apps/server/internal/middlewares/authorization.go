@@ -68,10 +68,14 @@ func (m *Middlewares) APIKey(c fiber.Ctx) error {
 		return apperr.ErrUnauthorized
 	}
 
-	// The settings page shows when a key was last used; a failed stamp only
-	// costs that.
-	if _, err := keys.RecordLastRequest(c.Context(), result.ApiKey.ID, time.Now().UTC()); err != nil {
-		m.app.Logger.Warn("api key last use not recorded", "api_key", result.ApiKey.ID, "error", err)
+	// The settings page shows when a key was last used, to the minute: a busy
+	// client writes the stamp once a minute, not on every call. A failed stamp
+	// only costs that.
+	now := time.Now().UTC()
+	if last := result.ApiKey.LastRequestedAt; last == nil || now.Sub(*last) > time.Minute {
+		if _, err := keys.RecordLastRequest(c.Context(), result.ApiKey.ID, now); err != nil {
+			m.app.Logger.Warn("api key last use not recorded", "api_key", result.ApiKey.ID, "error", err)
+		}
 	}
 	lib.ContextSetUID(c, uid)
 	return c.Next()

@@ -35,11 +35,14 @@ func ValidateSuperUser(email, password string) error {
 // promotes it: Promote mirrors the user into the public users table and gives
 // it the super user role.
 type SuperUserSeeder struct {
-	DB       *sql.DB
-	Auth     *authulaservices.CoreServices
-	Promote  func(*authulamodels.User) error
-	Email    string
-	Password string
+	DB      *sql.DB
+	Auth    *authulaservices.CoreServices
+	Promote func(*authulamodels.User) error
+	// RevokeKeys ends the user's API keys when the password is reset; nil
+	// leaves them.
+	RevokeKeys func(ctx context.Context, userID string) error
+	Email      string
+	Password   string
 }
 
 func (s SuperUserSeeder) Name() string {
@@ -103,6 +106,11 @@ func (s SuperUserSeeder) Seed() error {
 
 		// Ahead of the promotion: no session from before this seed may hold the role.
 		if revoke {
+			if s.RevokeKeys != nil {
+				if err := s.RevokeKeys(ctx, user.ID); err != nil {
+					return err
+				}
+			}
 			if err := s.Auth.SessionService.DeleteAllByUserID(ctx, user.ID); err != nil {
 				return err
 			}

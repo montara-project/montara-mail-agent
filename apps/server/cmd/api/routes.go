@@ -68,7 +68,9 @@ func routes(r *fiber.App, app *app.Application) {
 	me.Put("/password", slow, idempotent, h.Profile.ChangePassword)
 	// The keys MCP clients sign in to /mcp with.
 	me.Get("/api-keys", h.APIKey.List)
-	me.Post("/api-keys", idempotent, h.APIKey.Create)
+	// Not idempotent: a replay would serve the key itself from the cache. A
+	// duplicate key is cheap to revoke.
+	me.Post("/api-keys", h.APIKey.Create)
 	me.Delete("/api-keys/:id", idempotent, h.APIKey.Delete)
 
 	organizations := v1.Group("/organizations", m.Authorization)

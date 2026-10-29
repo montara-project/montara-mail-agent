@@ -127,14 +127,15 @@ func (h *profileHandler) ChangePassword(c fiber.Ctx) error {
 	if _, err := services.AccountService.Update(c.Context(), account); err != nil {
 		return err
 	}
-	if err := services.SessionService.DeleteAllByUserID(c.Context(), uid.String()); err != nil {
-		return err
-	}
-	// The API keys too: whoever knew the old password could have made one.
+	// The API keys too, first: whoever knew the old password could have made
+	// one, and a failure here must not leave them working behind ended sessions.
 	if keys, ok := h.app.APIKeys(); ok {
 		if err := keys.DeleteAllByOwner(c.Context(), userActor(uid), apikeyplugintypes.OwnerTypeUser, uid.String()); err != nil {
 			return err
 		}
+	}
+	if err := services.SessionService.DeleteAllByUserID(c.Context(), uid.String()); err != nil {
+		return err
 	}
 	recordActivity(c, h.app, uuid.Nil, constant.ActivityPasswordChanged, "Changed their password", nil)
 	return dtos.Message(c, fiber.StatusOK, "password changed, sign in again")
