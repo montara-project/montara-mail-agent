@@ -15,7 +15,7 @@ All routes need a signed-in user unless noted. `:id` is a UUID.
 | `PATCH /api/v1/me` | Name, avatar (an `https` URL) and timezone. |
 | `PUT /api/v1/me/password` | Change the password after checking the current one; ends every session and revokes your API keys. |
 | `GET /api/v1/me/activity-logs` | Your own activity. |
-| `GET, POST /api/v1/me/api-keys` | List your API keys, or create one: `name`, `expires_in_days` (1 to 365, default 90), and `organization_id` to scope it to one organization (leave it out for every organization). The key is in the create answer only. |
+| `GET, POST /api/v1/me/api-keys` | List your API keys, or create one: `name`, `expires_in_days` (1 to 365, default 90), `organization_id` to scope it to one organization (leave it out for every organization), and `read_only` to limit it to listing, searching and reading. The key is in the create answer only. |
 | `DELETE /api/v1/me/api-keys/:id` | Revoke a key. |
 | `POST /api/v1/auth/totp/enable`, `/disable`, `/generate-backup-codes` | Two-factor sign-in. |
 
@@ -34,7 +34,8 @@ All routes need a signed-in user unless noted. `:id` is a UUID.
 | Route | Does |
 | --- | --- |
 | `GET, POST /api/v1/organizations/:id/email-accounts` | List, or connect one (signs in over IMAP first, then syncs in the background). |
-| `POST /api/v1/organizations/:id/email-accounts/oauth/:provider` | Start an OAuth connection; answers the consent URL. |
+| `POST /api/v1/organizations/:id/email-accounts/oauth/:provider` | Start an OAuth connection; answers the consent URL. The provider returns the browser to the web app with a `code` and `state`. |
+| `POST /api/v1/email-accounts/oauth/:provider/finish` | Finish it with that `code` and `state`, as the user who started it. |
 | `GET /api/v1/email-accounts/:id/mails` | One folder, filtered by `importance` and `search`, paginated. |
 | `POST /api/v1/email-accounts/:id/sync` | Sync now. |
 | `DELETE /api/v1/email-accounts/:id` | Disconnect and drop the synced mail. |
@@ -70,6 +71,7 @@ Send and reply take JSON, or `multipart/form-data` with that JSON in a `payload`
 | `GET, POST /api/v1/organizations/:id/skills`, `PUT /api/v1/organizations/:id/skills/builtin/:key`, `PUT, DELETE /api/v1/skills/:id` | Skills. |
 | `GET, POST /api/v1/organizations/:id/mcp-servers`, `POST .../mcp-servers/test` | MCP servers the assistant calls. |
 | `PUT, DELETE /api/v1/mcp-servers/:id`, `POST /api/v1/mcp-servers/:id/sync`, `/test`, `/oauth/start` | Manage one. |
+| `POST /api/v1/mcp-servers/oauth/finish` | Finish a hosted server's sign-in with the `code` and `state` it returned, as the user who started it. |
 
 ## Platform
 

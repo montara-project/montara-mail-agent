@@ -10,6 +10,7 @@ Montara serves its mailbox tools over MCP at `/mcp`, so an MCP client outside th
 Open **Control Center › API Keys** and **Create key**. Name it after the app it is for, then pick:
 
 - **Access:** one organization, or **All organizations** you can open, including ones you join later. It starts at the organization open now; give each app only what it needs.
+- **Can:** **Read mail only** (the default: list, search and read), or **Read, organize and propose replies**, which adds moving, flags, labels and proposals.
 - **Expires after:** 30, 90 or 180 days, or a year.
 
 The key is shown **once**, with a ready-made client config. Copy it then: the server keeps only a hash. Lost it? Revoke it and create another.
@@ -42,7 +43,7 @@ On a self-hosted server, use its own URL. The endpoint speaks streamable HTTP, o
 
 Proposals land in the mailbox's **Connected apps** conversation in the AI assistant. Open it, read each one, then approve or deny. Nothing is sent from `/mcp`.
 
-Clients that ask before running a destructive tool will ask for moves, flags and labels.
+Clients that ask before running a destructive tool will ask for moves, flags and labels. A read-only key doesn't offer those tools, or the proposals, at all.
 
 ## What a key can reach
 

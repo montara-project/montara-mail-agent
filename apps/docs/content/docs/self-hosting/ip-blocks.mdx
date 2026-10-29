@@ -20,6 +20,9 @@ The server blocks an address for **1 hour** when, within **10 minutes**, it make
 
 Automatic blocks are listed as **Automatic** and lift on their own. A manual block of the same address is never replaced by an automatic one.
 
+- An IPv6 client is counted, rate-limited and blocked by its `/64`, since one host usually holds a whole `/64` and could otherwise rotate past every limit.
+- Private addresses and your `TRUSTED_PROXIES` are never blocked automatically: when the proxy setting is wrong, every visitor looks like one of them, and blocking it would shut everyone out.
+
 ## Not locking yourself out
 
 - You can't block a range that contains the address you are using.
