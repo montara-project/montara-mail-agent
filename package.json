@@ -1,6 +1,6 @@
 {
   "name": "montara-mail-agent",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "scripts": {
     "dev": "pnpm -r --parallel run dev",

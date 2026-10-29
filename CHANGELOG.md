@@ -3,6 +3,25 @@
 All notable changes to this project are documented in this file. Versions follow the git tags (`v*`); Docker images are published to ghcr.io with the same version.
 
 
+## [0.5.0](https://github.com/montara-project/montara-mail-agent/compare/v0.4.0...v0.5.0) (2026-10-29)
+
+### Features
+
+* **docs:** add the docs site at docs.montaramail.web.id ([7b531d0](https://github.com/montara-project/montara-mail-agent/commit/7b531d081d59eb715c8510b944dbd3ab12c3c029))
+* **server:** serve the mail agent's tools to MCP clients at /mcp ([87d5c5a](https://github.com/montara-project/montara-mail-agent/commit/87d5c5a4e3ddb94639d3919a7035e9950cbbf798))
+* **web-ui:** manage API keys for MCP clients in the Control Center ([a96e173](https://github.com/montara-project/montara-mail-agent/commit/a96e1732beb1a6c47072acc933e8816d00c0ebd0))
+* **web-ui:** show a progress toast while a bulk mail action runs ([530a306](https://github.com/montara-project/montara-mail-agent/commit/530a306a4fad1bb19a3e0bdef72a4582f80e399a))
+* **web-ui:** show each account's unread count in the account switcher ([2052451](https://github.com/montara-project/montara-mail-agent/commit/205245112416264e5fe660d77af03373094b5969))
+
+### Bug Fixes
+
+* **server:** close the /mcp holes the security review found ([44d86f0](https://github.com/montara-project/montara-mail-agent/commit/44d86f0a5279a03bee7b9776415692ee5fbc3a8f))
+* **server:** drop newsletter preheader filler from mail list teasers ([7dba173](https://github.com/montara-project/montara-mail-agent/commit/7dba173608318e6b7523ccf8d5ca9faf811c8297))
+
+### Performance Improvements
+
+* **web-ui:** load less JavaScript on the mail page ([ca71e03](https://github.com/montara-project/montara-mail-agent/commit/ca71e03d22abfae3d833b2b248d49c7fdea2b596))
+
 ## [0.4.0](https://github.com/montara-project/montara-mail-agent/compare/v0.3.0...v0.4.0) (2026-10-28)
 
 ### Features
