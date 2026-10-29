@@ -62,6 +62,8 @@ export interface UserSecurity {
   /** False for a user who only signs in with Google or a magic link. */
   has_password: boolean
   totp_enabled: boolean
+  /** Sees the Platform pages, such as IP Block. */
+  super_user: boolean
 }
 
 /** POST /api/v1/auth/totp/enable: on once a first code is verified. */

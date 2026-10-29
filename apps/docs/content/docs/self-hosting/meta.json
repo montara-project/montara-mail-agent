@@ -7,6 +7,7 @@
     "llm-providers",
     "oauth",
     "reverse-proxy",
+    "ip-blocks",
     "maintenance"
   ]
 }

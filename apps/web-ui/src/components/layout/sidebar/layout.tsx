@@ -25,6 +25,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   'ai-providers': 'AI Providers',
   mcp: 'MCP',
   'api-keys': 'API Keys',
+  'ip-blocks': 'IP Block',
 }
 
 const segmentLabel = (segment: string) => SEGMENT_LABELS[segment] ?? capitalizeFirstLetter(segment)

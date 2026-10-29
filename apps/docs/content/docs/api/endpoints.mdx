@@ -11,7 +11,7 @@ All routes need a signed-in user unless noted. `:id` is a UUID.
 | --- | --- |
 | `GET /api/v1/auth/me` | The signed-in user and session. |
 | `POST /api/v1/auth/sign-out` | Ends the session. |
-| `GET /api/v1/me/security` | Whether you have a password and two-factor sign-in. |
+| `GET /api/v1/me/security` | Whether you have a password and two-factor sign-in, and whether you are a super user. |
 | `PATCH /api/v1/me` | Name, avatar (an `https` URL) and timezone. |
 | `PUT /api/v1/me/password` | Change the password after checking the current one; ends every session and revokes your API keys. |
 | `GET /api/v1/me/activity-logs` | Your own activity. |
@@ -70,6 +70,13 @@ Send and reply take JSON, or `multipart/form-data` with that JSON in a `payload`
 | `GET, POST /api/v1/organizations/:id/skills`, `PUT /api/v1/organizations/:id/skills/builtin/:key`, `PUT, DELETE /api/v1/skills/:id` | Skills. |
 | `GET, POST /api/v1/organizations/:id/mcp-servers`, `POST .../mcp-servers/test` | MCP servers the assistant calls. |
 | `PUT, DELETE /api/v1/mcp-servers/:id`, `POST /api/v1/mcp-servers/:id/sync`, `/test`, `/oauth/start` | Manage one. |
+
+## Platform
+
+| Route | Does |
+| --- | --- |
+| `GET, POST /api/v1/ip-blocks` | Blocked addresses in force, with the automatic rule; or block an `address` (IP or CIDR) with a `reason` and `expires_in_hours` (0: until removed). Super user only. |
+| `DELETE /api/v1/ip-blocks/:id` | Lift a block. |
 
 ## Outside `/api/v1`
 
