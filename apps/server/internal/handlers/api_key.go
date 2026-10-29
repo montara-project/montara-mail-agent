@@ -28,22 +28,27 @@ type apiKeyHandler struct {
 }
 
 // apiKeyView is a key as the API shows it: never its value or hash. Hint is
-// its first and last characters, enough to tell keys apart.
+// its first and last characters, enough to tell keys apart. A key scoped to
+// one organization names it; a global one has no organization.
 type apiKeyView struct {
-	ID         string     `json:"id"`
-	Name       string     `json:"name"`
-	Hint       string     `json:"hint"`
-	CreatedAt  time.Time  `json:"created_at"`
-	ExpiresAt  *time.Time `json:"expires_at"`
-	LastUsedAt *time.Time `json:"last_used_at"`
+	ID               string     `json:"id"`
+	Name             string     `json:"name"`
+	Hint             string     `json:"hint"`
+	OrganizationID   *string    `json:"organization_id"`
+	OrganizationName *string    `json:"organization_name"`
+	CreatedAt        time.Time  `json:"created_at"`
+	ExpiresAt        *time.Time `json:"expires_at"`
+	LastUsedAt       *time.Time `json:"last_used_at"`
 }
 
-func newAPIKeyView(k *apikeyplugintypes.ApiKey) apiKeyView {
+// newAPIKeyView shows k; orgName is the name of the organization it is scoped
+// to, if any.
+func newAPIKeyView(k *apikeyplugintypes.ApiKey, orgName string) apiKeyView {
 	prefix := ""
 	if k.Prefix != nil {
 		prefix = *k.Prefix
 	}
-	return apiKeyView{
+	v := apiKeyView{
 		ID:         k.ID,
 		Name:       k.Name,
 		Hint:       prefix + k.Start + "…" + k.Last,
@@ -51,6 +56,25 @@ func newAPIKeyView(k *apikeyplugintypes.ApiKey) apiKeyView {
 		ExpiresAt:  k.ExpiresAt,
 		LastUsedAt: k.LastRequestedAt,
 	}
+	if orgID := lib.APIKeyOrganization(k); orgID != uuid.Nil {
+		id := orgID.String()
+		v.OrganizationID, v.OrganizationName = &id, &orgName
+	}
+	return v
+}
+
+// orgName names the organization a key is scoped to: "" for a global key, or
+// for an organization since deleted for good.
+func (h *apiKeyHandler) orgName(c fiber.Ctx, k *apikeyplugintypes.ApiKey) string {
+	orgID := lib.APIKeyOrganization(k)
+	if orgID == uuid.Nil {
+		return ""
+	}
+	org, err := h.app.Repositories.Organization.Get(c.Context(), orgID)
+	if err != nil {
+		return ""
+	}
+	return org.Name
 }
 
 func userActor(uid uuid.UUID) *authulamodels.Actor {
@@ -85,7 +109,7 @@ func (h *apiKeyHandler) List(c fiber.Ctx) error {
 	}
 	views := make([]apiKeyView, 0, len(page.Items))
 	for _, k := range page.Items {
-		views = append(views, newAPIKeyView(k))
+		views = append(views, newAPIKeyView(k, h.orgName(c, k)))
 	}
 	return dtos.List(c, views, dtos.ListMeta(len(views), 0, len(views)))
 }
@@ -107,17 +131,38 @@ func (h *apiKeyHandler) Create(c fiber.Ctx) error {
 	}
 	expires := time.Now().UTC().AddDate(0, 0, days)
 
+	// A scoped key names an organization its owner reaches today: a member's,
+	// or any live one for a super user. /mcp checks the owner's reach again on
+	// every call, so leaving the organization ends the key's access too.
+	orgID, orgName, metadata := uuid.Nil, "", map[string]any(nil)
+	if body.OrganizationID != "" {
+		orgID = uuid.MustParse(body.OrganizationID)
+		if _, err := member(c, h.app, orgID); err != nil {
+			return err
+		}
+		org, err := h.app.Repositories.Organization.Get(c.Context(), orgID)
+		if err != nil {
+			return err
+		}
+		orgName, metadata = org.Name, map[string]any{lib.APIKeyOrganizationField: orgID.String()}
+	}
+
 	created, err := keys.Create(c.Context(), userActor(uid), apikeyplugintypes.CreateApiKeyRequest{
 		Name:      body.Name,
 		OwnerType: apikeyplugintypes.OwnerTypeUser,
 		OwnerID:   uid.String(),
 		ExpiresAt: &expires,
+		Metadata:  metadata,
 	})
 	if err != nil {
 		return err
 	}
-	recordActivity(c, h.app, uuid.Nil, constant.ActivityAPIKeyCreated, "Created the API key "+body.Name, map[string]any{"api_key_id": created.ApiKey.ID})
-	return dtos.Created(c, fiber.Map{"api_key": newAPIKeyView(created.ApiKey), "key": created.RawApiKey}, "API key created")
+	scope := "for every organization"
+	if orgName != "" {
+		scope = "for " + orgName
+	}
+	recordActivity(c, h.app, orgID, constant.ActivityAPIKeyCreated, "Created the API key "+body.Name+" "+scope, map[string]any{"api_key_id": created.ApiKey.ID})
+	return dtos.Created(c, fiber.Map{"api_key": newAPIKeyView(created.ApiKey, orgName), "key": created.RawApiKey}, "API key created")
 }
 
 // Delete revokes one of the caller's keys. Someone else's key reads as

@@ -7,7 +7,10 @@ Montara serves its mailbox tools over MCP at `/mcp`, so an MCP client outside th
 
 ## 1. Create an API key
 
-Open **Control Center › API Keys** and **Create key**. Name it after the app it is for, and pick when it expires: 30, 90 or 180 days, or a year.
+Open **Control Center › API Keys** and **Create key**. Name it after the app it is for, then pick:
+
+- **Access:** one organization, or **All organizations** you can open, including ones you join later. It starts at the organization open now; give each app only what it needs.
+- **Expires after:** 30, 90 or 180 days, or a year.
 
 The key is shown **once**, with a ready-made client config. Copy it then: the server keeps only a hash. Lost it? Revoke it and create another.
 
@@ -31,7 +34,7 @@ On a self-hosted server, use its own URL. The endpoint speaks streamable HTTP, o
 
 | Tool | Does |
 | --- | --- |
-| `list_accounts` | Lists the mailboxes of every organization you belong to, with their ids. |
+| `list_accounts` | Lists the organizations you can reach, each with your role (`owner`, `member` or `super_user`) and its mailboxes' ids. An organization without a mailbox is listed too. |
 | `search_mails`, `mailbox_stats` | Take an `account_id` from `list_accounts`. |
 | `get_mail` | Reads one email in full, by its `mail_id`. |
 | `move_mail`, `set_flags`, `set_importance` | Act on one email right away, on the mail server too. |
@@ -44,7 +47,8 @@ Clients that ask before running a destructive tool will ask for moves, flags and
 ## What a key can reach
 
 - A key opens `/mcp` and nothing else: not the rest of the API, not your account settings.
-- It reaches the mailboxes of the organizations you are a member of, not ones in the trash.
+- A key for one organization reaches that organization alone. An **All organizations** key reaches what you reach in the app: the organizations you are a member of, or every organization if you are a super user. Never ones in the trash.
+- Access is checked on every call, so leaving an organization ends your keys' access to it. A key's access can't be changed: create a new one.
 - It always expires, at most a year after it was made. **Revoke** ends it at once.
 - Changing or resetting your password revokes every key.
 

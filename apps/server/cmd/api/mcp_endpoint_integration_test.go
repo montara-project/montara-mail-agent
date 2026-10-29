@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"net"
 	"net/http"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -41,7 +43,7 @@ func mcpTool(t *testing.T, call callFunc, key, name string, args map[string]any)
 // testMCPEndpoint walks /mcp: an API key reaches the user's mailboxes and
 // nothing else, a proposal waits in the app for approval, and a revoked key
 // stops working.
-func testMCPEndpoint(t *testing.T, call callFunc, server *fiber.App, application *app.Application, userToken, userOrg, otherOrg string) {
+func testMCPEndpoint(t *testing.T, call callFunc, server *fiber.App, application *app.Application, userToken, superToken, userOrg, otherOrg string) {
 	t.Helper()
 	ctx := context.Background()
 
@@ -80,7 +82,7 @@ func testMCPEndpoint(t *testing.T, call callFunc, server *fiber.App, application
 	mine := []models.Mail{{FromEmail: "vendor@example.com", FromName: "Vendor", Subject: "Quote 42", Body: "Here is the quote you asked for.", Folder: "inbox"}}
 	account := seedAccount(t, application, userOrg, mine...)
 	theirs := []models.Mail{{FromEmail: "secret@example.com", Subject: "Someone else's", Body: "Not yours.", Folder: "inbox"}}
-	seedAccount(t, application, otherOrg, theirs...)
+	otherAccount := seedAccount(t, application, otherOrg, theirs...)
 
 	status, out = mcpRPC(call, key, "tools/list", nil)
 	if status != http.StatusOK {
@@ -100,8 +102,57 @@ func testMCPEndpoint(t *testing.T, call callFunc, server *fiber.App, application
 		t.Fatalf("search_mails takes no account_id: %v", tools["search_mails"])
 	}
 
-	if text, isError := mcpTool(t, call, key, "list_accounts", nil); isError || !strings.Contains(text, account.ID.String()) || strings.Contains(text, "secret@example.com") {
-		t.Fatalf("list_accounts: %v %s", isError, text)
+	// The user's organizations, each with its mailboxes; not someone else's.
+	orgs := listAccounts(t, call, key)
+	if org := orgs[userOrg]; org.Role != "owner" || !slices.ContainsFunc(org.Accounts, func(a mcpAccount) bool { return a.ID == account.ID.String() }) {
+		t.Fatalf("list_accounts misses the user's mailbox: %+v", orgs)
+	}
+	if _, ok := orgs[otherOrg]; ok {
+		t.Fatalf("list_accounts shows an organization the user is not in: %+v", orgs)
+	}
+
+	// A super user reaches every organization over MCP, as in the app: one
+	// they are not a member of too, listed even without a mailbox.
+	_, out = call(http.MethodPost, "/api/v1/me/api-keys", superToken, map[string]any{"name": "Super"})
+	superKey, _ := data(out)["key"].(string)
+	_, out = call(http.MethodPost, "/api/v1/organizations", superToken, map[string]any{"name": "Empty"})
+	emptyOrg := data(out)["id"].(string)
+	superOrgs := listAccounts(t, call, superKey)
+	if org := superOrgs[userOrg]; org.Role != "super_user" || len(org.Accounts) == 0 {
+		t.Fatalf("super user's list_accounts misses another's organization: %+v", superOrgs)
+	}
+	if org, ok := superOrgs[emptyOrg]; !ok || len(org.Accounts) != 0 {
+		t.Fatalf("super user's list_accounts misses an organization without a mailbox: %+v", superOrgs)
+	}
+	if text, isError := mcpTool(t, call, superKey, "search_mails", map[string]any{"account_id": account.ID}); isError || !strings.Contains(text, "Quote 42") {
+		t.Fatalf("super user's search_mails in another's organization: %v %s", isError, text)
+	}
+
+	// A key scoped to one organization reaches it alone, even a super user's.
+	status, out = call(http.MethodPost, "/api/v1/me/api-keys", userToken, map[string]any{"name": "Elsewhere", "organization_id": otherOrg})
+	if status != http.StatusNotFound {
+		t.Fatalf("a key scoped to an organization the user is not in: %d %v, want 404", status, out)
+	}
+	status, out = call(http.MethodPost, "/api/v1/me/api-keys", superToken, map[string]any{"name": "Scoped", "organization_id": userOrg})
+	scopedKey, _ := data(out)["key"].(string)
+	if view, _ := data(out)["api_key"].(map[string]any); status != http.StatusCreated || view["organization_id"] != userOrg || view["organization_name"] == "" {
+		t.Fatalf("create a scoped key: %d %v", status, out)
+	}
+	if scoped := listAccounts(t, call, scopedKey); len(scoped) != 1 || len(scoped[userOrg].Accounts) == 0 {
+		t.Fatalf("scoped key's list_accounts: %+v", scoped)
+	}
+	if _, isError := mcpTool(t, call, scopedKey, "search_mails", map[string]any{"account_id": otherAccount.ID}); !isError {
+		t.Fatal("scoped key searched another organization's mailbox")
+	}
+	if text, isError := mcpTool(t, call, scopedKey, "get_mail", map[string]any{"mail_id": theirs[0].ID}); !isError || strings.Contains(text, "Not yours") {
+		t.Fatalf("scoped key read another organization's mail: %v %s", isError, text)
+	}
+	if text, isError := mcpTool(t, call, scopedKey, "search_mails", map[string]any{"account_id": account.ID}); isError || !strings.Contains(text, "Quote 42") {
+		t.Fatalf("scoped key in its own organization: %v %s", isError, text)
+	}
+	// A global key shows as one: no organization.
+	if _, out := call(http.MethodGet, "/api/v1/me/api-keys", userToken, nil); list(out)[0].(map[string]any)["organization_id"] != nil {
+		t.Fatalf("a global key shows an organization: %v", out)
 	}
 	if text, isError := mcpTool(t, call, key, "search_mails", map[string]any{"account_id": account.ID}); isError || !strings.Contains(text, "Quote 42") {
 		t.Fatalf("search_mails: %v %s", isError, text)
@@ -209,4 +260,31 @@ func testMCPClient(t *testing.T, server *fiber.App, key string) {
 	if err != nil || res.IsError {
 		t.Fatalf("MCP client list_accounts: %v %v", err, res)
 	}
+}
+
+type mcpAccount struct {
+	ID string `json:"id"`
+}
+
+type mcpOrganization struct {
+	Role     string       `json:"role"`
+	Accounts []mcpAccount `json:"accounts"`
+}
+
+// listAccounts calls list_accounts and returns its organizations by id.
+func listAccounts(t *testing.T, call callFunc, key string) map[string]mcpOrganization {
+	t.Helper()
+	text, isError := mcpTool(t, call, key, "list_accounts", nil)
+	var orgs []struct {
+		ID string `json:"id"`
+		mcpOrganization
+	}
+	if err := json.Unmarshal([]byte(text), &orgs); isError || err != nil {
+		t.Fatalf("list_accounts: %v %v %s", isError, err, text)
+	}
+	byID := map[string]mcpOrganization{}
+	for _, o := range orgs {
+		byID[o.ID] = o.mcpOrganization
+	}
+	return byID
 }

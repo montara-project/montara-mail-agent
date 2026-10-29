@@ -78,6 +78,7 @@ func (m *Middlewares) APIKey(c fiber.Ctx) error {
 		}
 	}
 	lib.ContextSetUID(c, uid)
+	lib.ContextSetAPIKeyOrganization(c, lib.APIKeyOrganization(result.ApiKey))
 	return c.Next()
 }
 

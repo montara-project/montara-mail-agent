@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"net/http"
 	"slices"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"montara-mail-agent/server/internal/app"
 	"montara-mail-agent/server/internal/lib/apperr"
+	"montara-mail-agent/server/internal/lib/constant"
 	"montara-mail-agent/server/internal/lib/llm"
 	"montara-mail-agent/server/internal/mailsync"
 	"montara-mail-agent/server/internal/models"
@@ -19,8 +21,10 @@ import (
 
 // The /mcp endpoint serves the agent's own mailbox tools to MCP clients
 // outside the app (Claude Desktop, Cursor, ...), signed in with one of the
-// user's API keys. One connection reaches every mailbox of the user's
-// organizations: list_accounts names them, a tool on one email takes its
+// user's API keys. One connection reaches what the user reaches in the app:
+// every mailbox of the organizations they belong to, and of every live
+// organization for a super user, narrowed to one organization when the key is
+// scoped to it. list_accounts names them, a tool on one email takes its
 // mail_id, and the rest take an account_id. Nothing is sent from here: the
 // propose tools queue a mail that the user approves in the app.
 
@@ -42,9 +46,17 @@ var mcpProposals = []string{toolProposeReply, toolProposeForward, toolProposeEma
 
 type mcpUserKey struct{}
 
-// WithMCPUser marks the request as the given user's, for NewMCPHandler.
-func WithMCPUser(ctx context.Context, uid uuid.UUID) context.Context {
-	return context.WithValue(ctx, mcpUserKey{}, uid)
+// mcpCaller is who signed in to /mcp: the key's owner, and the organization
+// the key is scoped to (uuid.Nil: every one the owner reaches).
+type mcpCaller struct {
+	uid uuid.UUID
+	org uuid.UUID
+}
+
+// WithMCPUser marks the request as the given user's, through a key scoped to
+// org (uuid.Nil for a global key), for NewMCPHandler.
+func WithMCPUser(ctx context.Context, uid, org uuid.UUID) context.Context {
+	return context.WithValue(ctx, mcpUserKey{}, mcpCaller{uid: uid, org: org})
 }
 
 // NewMCPHandler serves MCP over streamable HTTP for the user WithMCPUser
@@ -57,11 +69,11 @@ func WithMCPUser(ctx context.Context, uid uuid.UUID) context.Context {
 // only an API key the page does not have.
 func NewMCPHandler(app *app.Application, sync *mailsync.Syncer) http.Handler {
 	return mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
-		uid, ok := r.Context().Value(mcpUserKey{}).(uuid.UUID)
+		caller, ok := r.Context().Value(mcpUserKey{}).(mcpCaller)
 		if !ok {
 			return nil
 		}
-		return newMCPServer(app, sync, uid)
+		return newMCPServer(app, sync, caller)
 	}, &mcp.StreamableHTTPOptions{
 		Stateless:                  true,
 		JSONResponse:               true,
@@ -72,7 +84,7 @@ func NewMCPHandler(app *app.Application, sync *mailsync.Syncer) http.Handler {
 	})
 }
 
-func newMCPServer(app *app.Application, sync *mailsync.Syncer, uid uuid.UUID) *mcp.Server {
+func newMCPServer(app *app.Application, sync *mailsync.Syncer, caller mcpCaller) *mcp.Server {
 	server := mcp.NewServer(
 		&mcp.Implementation{Name: "montara-mail", Title: "Montara Mail", Version: "1.0.0"},
 		&mcp.ServerOptions{
@@ -83,11 +95,11 @@ func newMCPServer(app *app.Application, sync *mailsync.Syncer, uid uuid.UUID) *m
 			Capabilities: &mcp.ServerCapabilities{Tools: &mcp.ToolCapabilities{}},
 		},
 	)
-	m := mcpMailbox{app: app, sync: sync, uid: uid}
+	m := mcpMailbox{app: app, sync: sync, uid: caller.uid, org: caller.org, super: isSuperUser(context.Background(), app, caller.uid)}
 
 	server.AddTool(&mcp.Tool{
 		Name:        toolListAccounts,
-		Description: "List the email accounts you can reach: id, label, address, provider and organization. Other tools take one of these ids as account_id.",
+		Description: "List the organizations this key can reach (one, for a key scoped to an organization), each with its email accounts (id, label, address, provider). Other tools take an account's id as account_id.",
 		InputSchema: json.RawMessage(`{"type": "object"}`),
 		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true},
 	}, func(ctx context.Context, _ *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -149,7 +161,24 @@ type mcpMailbox struct {
 	app  *app.Application
 	sync *mailsync.Syncer
 	uid  uuid.UUID
+	// super is a super user, who reaches every organization, as in the app.
+	super bool
+	// org is the one organization the key is scoped to; uuid.Nil is global.
+	org uuid.UUID
 }
+
+// isSuperUser reports the user's role the way the app's handlers read it; a
+// failed read counts as a plain user, who reaches less.
+func isSuperUser(ctx context.Context, app *app.Application, uid uuid.UUID) bool {
+	role, err := app.Repositories.User.Role(ctx, uid)
+	if err != nil && !apperr.IsNotFound(err) {
+		app.Logger.Error("mcp: read user role", "user", uid, "error", err)
+	}
+	return err == nil && role == constant.RoleSuperUser
+}
+
+// mcpOrgPage is how many organizations listAccounts reads per query.
+const mcpOrgPage = 100
 
 func mcpText(text string) *mcp.CallToolResult {
 	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: text}}}
@@ -159,31 +188,65 @@ func mcpError(text string) *mcp.CallToolResult {
 	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: text}}, IsError: true}
 }
 
-// listAccounts lists the mailboxes of the organizations the user belongs to.
+// listAccounts lists the organizations the user reaches, the same ones the
+// app's organization switcher shows, each with its mailboxes; one without a
+// mailbox is listed too.
 func (m mcpMailbox) listAccounts(ctx context.Context) *mcp.CallToolResult {
-	orgs, err := m.app.Repositories.Organization.List(ctx, repositories.ListParams{Limit: 100}, m.uid)
-	if err != nil {
-		m.app.Logger.Error("mcp: list organizations", "user", m.uid, "error", err)
-		return mcpError("the accounts could not be listed")
-	}
 	type account struct {
-		ID           string `json:"id"`
-		Label        string `json:"label"`
-		Email        string `json:"email"`
-		Provider     string `json:"provider"`
-		Organization string `json:"organization"`
+		ID       string `json:"id"`
+		Label    string `json:"label"`
+		Email    string `json:"email"`
+		Provider string `json:"provider"`
 	}
-	out := []account{}
-	for _, org := range orgs {
-		accounts, err := m.app.Repositories.EmailAccount.ListByOrganization(ctx, org.ID)
+	type organization struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+		// owner or member; super_user for a super user who is neither.
+		Role     string    `json:"role"`
+		Accounts []account `json:"accounts"`
+	}
+
+	// uuid.Nil lists every live organization, as the app does for a super user.
+	memberID := m.uid
+	if m.super {
+		memberID = uuid.Nil
+	}
+	out := []organization{}
+	for offset := 0; ; offset += mcpOrgPage {
+		orgs, err := m.app.Repositories.Organization.List(ctx, repositories.ListParams{Offset: offset, Limit: mcpOrgPage, Sorted: "created_at:asc"}, memberID)
 		if err != nil {
-			m.app.Logger.Error("mcp: list accounts", "organization", org.ID, "error", err)
+			m.app.Logger.Error("mcp: list organizations", "user", m.uid, "error", err)
 			return mcpError("the accounts could not be listed")
 		}
-		for _, a := range accounts {
-			out = append(out, account{ID: a.ID.String(), Label: a.Label, Email: a.Email, Provider: a.Provider, Organization: org.Name})
+		for _, org := range orgs {
+			if m.org != uuid.Nil && org.ID != m.org {
+				continue
+			}
+			role, err := m.app.Repositories.Organization.MemberRole(ctx, org.ID, m.uid)
+			if apperr.IsNotFound(err) {
+				role, err = constant.RoleSuperUser, nil
+			}
+			if err != nil {
+				m.app.Logger.Error("mcp: read member role", "organization", org.ID, "error", err)
+				return mcpError("the accounts could not be listed")
+			}
+			accounts, err := m.app.Repositories.EmailAccount.ListByOrganization(ctx, org.ID)
+			if err != nil {
+				m.app.Logger.Error("mcp: list accounts", "organization", org.ID, "error", err)
+				return mcpError("the accounts could not be listed")
+			}
+			o := organization{ID: org.ID.String(), Name: org.Name, Role: role, Accounts: []account{}}
+			for _, a := range accounts {
+				o.Accounts = append(o.Accounts, account{ID: a.ID.String(), Label: a.Label, Email: a.Email, Provider: a.Provider})
+			}
+			out = append(out, o)
+		}
+		if len(orgs) < mcpOrgPage {
+			break
 		}
 	}
+	// Paged by creation, which is stable; read by name.
+	slices.SortStableFunc(out, func(a, b organization) int { return strings.Compare(a.Name, b.Name) })
 	payload, err := json.Marshal(out)
 	if err != nil {
 		return mcpError("the accounts could not be rendered")
@@ -256,12 +319,17 @@ func (m mcpMailbox) mailAccount(ctx context.Context, id string) (models.EmailAcc
 	return m.account(ctx, mail.EmailAccountID.String())
 }
 
-// member reports whether the user belongs to the organization and it is not
-// in the trash. A super user reaches other organizations in the app, not over
-// MCP.
+// member reports whether the key may reach the organization: it is the one
+// the key is scoped to, if any; it is not in the trash; and the user belongs
+// to it or is a super user, as in the app.
 func (m mcpMailbox) member(ctx context.Context, orgID uuid.UUID) bool {
-	if _, err := m.app.Repositories.Organization.MemberRole(ctx, orgID, m.uid); err != nil {
+	if m.org != uuid.Nil && orgID != m.org {
 		return false
+	}
+	if !m.super {
+		if _, err := m.app.Repositories.Organization.MemberRole(ctx, orgID, m.uid); err != nil {
+			return false
+		}
 	}
 	_, err := m.app.Repositories.Organization.Get(ctx, orgID)
 	return err == nil
