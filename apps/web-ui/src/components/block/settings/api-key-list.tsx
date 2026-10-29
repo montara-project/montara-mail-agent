@@ -20,12 +20,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { FieldDescription } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAppForm } from '@/hooks/form'
+import { useActiveOrganization } from '@/hooks/use-active-organization'
 import { axiosErrorMessage, toastAxiosError } from '@/lib/api/axios-error'
 import { parseDto } from '@/lib/api/dtos/parse'
-import { API_KEY_LIFETIMES, APIKeySchema } from '@/lib/api/dtos/settings/api-key/schema'
+import {
+  API_KEY_LIFETIMES,
+  APIKeySchema,
+  GLOBAL_SCOPE,
+} from '@/lib/api/dtos/settings/api-key/schema'
 import { queries } from '@/lib/api/queries'
 import { SERVER_URL } from '@/lib/api/server-url'
 
@@ -92,6 +99,13 @@ function KeyRow({ apiKey }: { apiKey: Models.APIKey }) {
         <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
           <span className="truncate text-sm font-medium">{apiKey.name}</span>
           <span className="text-muted-foreground font-mono text-xs">{apiKey.hint}</span>
+          <Badge variant="secondary" appearance="light" size="sm" className="max-w-48">
+            <span className="truncate">
+              {apiKey.organization_id
+                ? apiKey.organization_name || 'Deleted organization'
+                : 'All organizations'}
+            </span>
+          </Badge>
         </span>
         <KeyMeta apiKey={apiKey} />
       </span>
@@ -135,8 +149,19 @@ function CreateKeyDialog({
   onCreated: (created: Models.CreatedAPIKey) => void
 }) {
   const create = useMutation(queries.apiKeys.create())
+  // The organizations the switcher lists: every one for a super user.
+  const { organization, organizations } = useActiveOrganization()
+  const scopeOptions = [
+    { value: GLOBAL_SCOPE, label: 'All organizations' },
+    ...organizations.map((org) => ({ value: org.id, label: org.name })),
+  ]
   const form = useAppForm({
-    defaultValues: { name: '', expires_in_days: '90' as (typeof API_KEY_LIFETIMES)[number] },
+    // The narrower choice by default: the organization open now.
+    defaultValues: {
+      name: '',
+      expires_in_days: '90' as (typeof API_KEY_LIFETIMES)[number],
+      scope: organization?.id ?? GLOBAL_SCOPE,
+    },
     validators: { onSubmit: APIKeySchema, onChange: APIKeySchema },
     onSubmit: async ({ value }) => {
       const dto = parseDto(APIKeySchema, value)
@@ -145,6 +170,7 @@ function CreateKeyDialog({
           await create.mutateAsync({
             name: dto.name.trim(),
             expires_in_days: Number(dto.expires_in_days),
+            organization_id: dto.scope === GLOBAL_SCOPE ? undefined : dto.scope,
           })
         )
       } catch (error) {
@@ -174,6 +200,16 @@ function CreateKeyDialog({
             <field.TextField asterisk label="Name" placeholder="Claude Desktop on my laptop" />
           )}
         />
+        <div className="grid gap-2">
+          <form.AppField
+            name="scope"
+            children={(field) => <field.SelectField label="Access" options={scopeOptions} />}
+          />
+          <FieldDescription>
+            One organization's mailboxes, or every organization you can open, including ones added
+            later. Give each app only what it needs.
+          </FieldDescription>
+        </div>
         <form.AppField
           name="expires_in_days"
           children={(field) => (
