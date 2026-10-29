@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"montara-mail-agent/server/internal/lib/apperr"
 	"montara-mail-agent/server/internal/lib/constant"
 	"montara-mail-agent/server/internal/models"
 )
@@ -102,16 +103,6 @@ func (r *AgentRepository) TouchConversation(ctx context.Context, id uuid.UUID) e
 	return err
 }
 
-// RenameConversation sets the title a conversation carries.
-func (r *AgentRepository) RenameConversation(ctx context.Context, id uuid.UUID, title string) error {
-	res, err := r.execContext(ctx, `
-		UPDATE agent_conversations SET title = $2, updated_at = now() WHERE id = $1`, id, title)
-	if err != nil {
-		return err
-	}
-	return requireAffected(res, "conversation")
-}
-
 // DeleteConversation removes a conversation and, through the foreign keys,
 // its messages and actions.
 func (r *AgentRepository) DeleteConversation(ctx context.Context, id uuid.UUID) error {
@@ -204,6 +195,23 @@ func (r *AgentRepository) Action(ctx context.Context, id uuid.UUID) (models.Agen
 	query := `SELECT id, created_at, updated_at, conversation_id, organization_id, user_id, kind, payload, status, error
 		FROM agent_actions WHERE id = $1`
 	return scanAgentAction(r.queryRowContext(ctx, query, id))
+}
+
+// ClaimAction decides a pending action, approved or denied. Only one caller
+// wins: a second click, or a second tab, finds it decided and gets a
+// conflict instead of sending the mail again.
+func (r *AgentRepository) ClaimAction(ctx context.Context, id uuid.UUID, status string) error {
+	res, err := r.execContext(ctx, `
+		UPDATE agent_actions SET status = $2, updated_at = now() WHERE id = $1 AND status = $3`,
+		id, status, models.AgentActionPending,
+	)
+	if err != nil {
+		return err
+	}
+	if n, err := res.RowsAffected(); err != nil || n == 0 {
+		return apperr.New(apperr.KindConflict, "this proposal was already decided")
+	}
+	return nil
 }
 
 // SetActionStatus moves an action along its lifecycle, recording why a failed
@@ -303,16 +311,21 @@ func (r *AgentRepository) Drafts(ctx context.Context, orgID uuid.UUID, status st
 	return collectRows(rows, scanAgentDraft)
 }
 
-// SetDraftStatus moves a draft along its lifecycle, recording who decided.
+// SetDraftStatus decides a pending draft, recording who decided.
 func (r *AgentRepository) SetDraftStatus(ctx context.Context, id uuid.UUID, status string, decidedBy uuid.UUID) error {
 	res, err := r.execContext(ctx, `
-		UPDATE agent_drafts SET status = $2, decided_by = $3, updated_at = now() WHERE id = $1`,
-		id, status, nullUUID(decidedBy),
+		UPDATE agent_drafts SET status = $2, decided_by = $3, updated_at = now() WHERE id = $1 AND status = $4`,
+		id, status, nullUUID(decidedBy), models.AgentDraftPending,
 	)
 	if err != nil {
 		return err
 	}
-	return requireAffected(res, "agent draft")
+	// Only a pending draft is decided, and only once: a second approval
+	// would send the reply twice.
+	if n, err := res.RowsAffected(); err != nil || n == 0 {
+		return apperr.New(apperr.KindConflict, "this draft was already decided")
+	}
+	return nil
 }
 
 // HasDraftForMail reports whether a mail already has a draft in any state,

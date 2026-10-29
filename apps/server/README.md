@@ -126,17 +126,20 @@ stateless and answers plain JSON, so each POST is a whole exchange.
 
 | Route                                  | What it does                                                                                   |
 | -------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `GET, POST /api/v1/me/api-keys`        | List the user's API keys, or create one: `name`, and `expires_in_days` (1 to 365, default 90). The key itself is in the create answer only. |
+| `GET, POST /api/v1/me/api-keys`        | List the user's API keys, or create one: `name`, `expires_in_days` (1 to 365, default 90), `organization_id` to scope it to one organization (empty: every organization the user reaches), and `read_only` to limit it to listing, searching and reading. The key itself is in the create answer only. |
 | `DELETE /api/v1/me/api-keys/:id`       | Revoke a key.                                                                                  |
 | `POST /mcp`                            | MCP, signed in with `Authorization: Bearer <api key>`.                                         |
 
 A key opens `/mcp` and nothing else: not the rest of the API, and not
-Authula's routes. `/mcp` takes no access token or cookie. A key reaches the
-mailboxes of every organization the user is a member of (a super user's
-other organizations stay in the app). Changing or resetting the password
+Authula's routes. `/mcp` takes no access token or cookie. A global key reaches what
+its owner reaches in the app: the organizations they are a member of, or every
+live organization for a super user. A key scoped to one organization (stored
+in the key's metadata, fixed at creation) reaches that one alone, and only
+while its owner still reaches it. Changing or resetting the password
 revokes every key.
 
-The tools are the in-app agent's: `list_accounts` names the mailboxes;
+The tools are the in-app agent's: `list_accounts` lists the organizations,
+each with its role and mailboxes, an organization without one included;
 `search_mails`, `mailbox_stats` and `propose_email` take its `account_id`,
 and the tools on one email take its `mail_id`. Moving, flags and importance
 apply at once. Nothing is sent: `propose_reply`, `propose_forward` and
@@ -155,6 +158,20 @@ external MCP servers an organization added are not passed on.
   }
 }
 ```
+
+## IP blocks
+
+A blocked address (or range) is refused with 403 before any route runs. A
+super user manages them; the server also blocks an address for an hour after
+10 failed sign-ins or 5 rate-limited requests within 10 minutes. Addresses in
+`RATE_LIMIT_EXEMPT_IPS` are never blocked, and the caller cannot block their
+own address. An IPv6 client is counted and blocked by its /64, and private
+addresses and trusted proxies are never blocked automatically.
+
+| Route                          | What it does                                                                                           |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| `GET, POST /api/v1/ip-blocks`  | The blocks in force, or block an `address` with a `reason` and `expires_in_hours` (0: until removed). |
+| `DELETE /api/v1/ip-blocks/:id` | Lift a block and reset that address's failure count.                                                  |
 
 ### Self-hosting behind the hosted web app
 

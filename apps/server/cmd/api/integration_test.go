@@ -18,6 +18,7 @@ import (
 
 	"montara-mail-agent/server/internal/app"
 	"montara-mail-agent/server/internal/config"
+	"montara-mail-agent/server/internal/ipblock"
 	"montara-mail-agent/server/internal/lib"
 	"montara-mail-agent/server/internal/lib/constant"
 	"montara-mail-agent/server/internal/repositories"
@@ -387,7 +388,9 @@ func TestIntegration(t *testing.T) {
 	testLLMProviderScope(t, call, application, userToken, superToken, userOrg)
 	testMCPServers(t, call, callStream, application, userToken, superToken, userOrg)
 	testActivityLogs(t, call, userToken, superToken, userOrg, superOrg, userEmail)
-	testMCPEndpoint(t, call, server, application, userToken, userOrg, superOrg)
+	testMCPEndpoint(t, call, server, application, userToken, superToken, userOrg, superOrg)
+	testIPBlocks(t, call, userToken, superToken)
+	testOAuthFinish(t, call, application, userToken, userOrg)
 	testAccountSettings(t, call, func() string { return cookies }, db, userEmail, userPass)
 
 	// Signing out revokes the access token.
@@ -411,14 +414,22 @@ func TestIntegration(t *testing.T) {
 		}
 	}
 
-	// Behind a proxy the limiter keys on the client the proxy saw, not on
-	// the header prefix the client chose, so changing it does not reset the count.
+	// Behind a proxy the limits key on the client the proxy saw, not on the
+	// header prefix the client chose, so changing it resets nothing: the rate
+	// limit counts every request...
 	status = 0
 	for i := range authRateLimit + 1 {
+		status, _ = call(http.MethodGet, "/api/v1/auth/me", "", nil, "X-Forwarded-For", fmt.Sprintf("10.0.0.%d, 198.51.100.9", i))
+	}
+	if status != http.StatusTooManyRequests {
+		t.Fatalf("%d requests with spoofed prefixes: last %d, want 429", authRateLimit+1, status)
+	}
+	// ...and failed sign-ins block the client before the rate limit would.
+	for i := range ipblock.FailedSignInLimit + 1 {
 		status, _ = call(http.MethodPost, "/api/v1/auth/email-password/sign-in", "", map[string]string{"email": "nobody@example.com", "password": "wrong-password"},
 			"X-Forwarded-For", fmt.Sprintf("10.0.0.%d, 203.0.113.9", i))
 	}
-	if status != http.StatusTooManyRequests {
-		t.Fatalf("sign in %d times with spoofed prefixes: last %d, want 429", authRateLimit+1, status)
+	if status != http.StatusForbidden {
+		t.Fatalf("%d failed sign-ins with spoofed prefixes: last %d, want 403", ipblock.FailedSignInLimit+1, status)
 	}
 }

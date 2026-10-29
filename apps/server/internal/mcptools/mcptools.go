@@ -135,7 +135,7 @@ func Failure(kind string, err error) (status, message string) {
 func ToModel(tools []mcpclient.Tool) []models.MCPTool {
 	list := make([]models.MCPTool, len(tools))
 	for i, t := range tools {
-		list[i] = models.MCPTool{Name: t.Name, Description: t.Description, InputSchema: t.InputSchema}
+		list[i] = models.MCPTool{Name: t.Name, Description: t.Description, InputSchema: t.InputSchema, ReadOnly: t.ReadOnly}
 	}
 	return list
 }

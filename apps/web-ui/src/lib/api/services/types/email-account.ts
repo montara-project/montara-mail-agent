@@ -43,6 +43,9 @@ export type MailSendBody = {
   attachments?: File[]
 }
 
+/** The code and state an OAuth callback returns to the web app with. */
+export type OAuthFinishBody = { code: string; state: string }
+
 export type EmailAccountResources = {
   list: (organizationId: string) => Promise<AxiosListResponse<Models.EmailAccount>>
   create: (
@@ -64,6 +67,11 @@ export type EmailAccountResources = {
    * provider's OAuth client secret and receives the user back once the
    * account is connected.
    */
+  /** Finishes an OAuth connection with the code and state the callback handed back. */
+  oauthFinish: (
+    provider: string,
+    body: OAuthFinishBody
+  ) => Promise<AxiosItemResponse<{ email: string; provider: string }>>
   oauthConnect: (
     organizationId: string,
     provider: Models.EmailProvider

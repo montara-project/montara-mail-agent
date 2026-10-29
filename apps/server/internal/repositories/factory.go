@@ -13,6 +13,7 @@ type Repositories struct {
 	AgentBot     AgentBotRepository
 	AgentSkill   AgentSkillRepository
 	MCPServer    MCPServerRepository
+	IPBlock      IPBlockRepository
 }
 
 // New builds every repository over db.
@@ -30,5 +31,6 @@ func New(db *sql.DB) Repositories {
 		AgentBot:     AgentBotRepository{base},
 		AgentSkill:   AgentSkillRepository{base},
 		MCPServer:    MCPServerRepository{base},
+		IPBlock:      IPBlockRepository{base},
 	}
 }

@@ -5,6 +5,7 @@ import { agentSkillQueries } from './agent-skill'
 import { apiKeyQueries } from './api-key'
 import { authQueries } from './auth'
 import { emailAccountQueries } from './email-account'
+import { ipBlockQueries } from './ip-block'
 import { llmProviderQueries } from './llm-provider'
 import { mailQueries } from './mail'
 import { mcpServerQueries } from './mcp-server'
@@ -24,4 +25,5 @@ export const queries = {
   agentSkills: agentSkillQueries,
   mcpServers: mcpServerQueries,
   apiKeys: apiKeyQueries,
+  ipBlocks: ipBlockQueries,
 } as const

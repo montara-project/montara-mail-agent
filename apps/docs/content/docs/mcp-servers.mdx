@@ -25,4 +25,6 @@ Saving an HTTP or command server connects and lists its tools; a hosted server w
 
 In the chat, a tool appears as `mcp__<server>__<tool>`. What it returns is treated as outside data, never as instructions.
 
+Once a turn has read an email, or anything an MCP tool returned, the assistant stops offering the tools that change things outside the mailbox: an email can carry text written to steer it into posting a message or opening a ticket. Tools a server marks read-only stay available. Ask in a fresh conversation, or run the tool yourself, when you need a writing tool after reading mail.
+
 A plain `http://` URL is only accepted on a self-hosted server that allows private hosts (`ALLOW_PRIVATE_HOSTS`).

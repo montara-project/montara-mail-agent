@@ -2,7 +2,13 @@ import type { AxiosDeleteResponse, AxiosItemResponse, AxiosListResponse } from '
 
 import type { Models } from '../../models'
 
-export type APIKeyBody = { name: string; expires_in_days: number }
+/** organization_id scopes the key to one organization; leave it out for a global key. */
+export type APIKeyBody = {
+  name: string
+  expires_in_days: number
+  organization_id?: string
+  read_only?: boolean
+}
 
 export type APIKeyResources = {
   list: () => Promise<AxiosListResponse<Models.APIKey>>

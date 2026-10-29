@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/url"
 	"slices"
 	"strings"
@@ -125,8 +124,9 @@ func (h *mcpServerHandler) manage(c fiber.Ctx, orgID uuid.UUID, kind string) err
 }
 
 // build turns a body into a server and its secrets. On an update (saved not
-// nil) a blank header or environment value keeps the saved one, and a hosted
-// server keeps its sign-in while its URL stays the same.
+// nil) a blank environment value keeps the saved one; a blank header value
+// and a hosted server's sign-in are kept only while the URL stays the same,
+// so a saved secret never goes to a host it wasn't given for.
 func (h *mcpServerHandler) build(body dtos.MCPServerBody, saved *models.MCPServer) (models.MCPServer, mcptools.Secrets, error) {
 	var old mcptools.Secrets
 	if saved != nil {
@@ -153,7 +153,11 @@ func (h *mcpServerHandler) build(body dtos.MCPServerBody, saved *models.MCPServe
 		}
 		s.URL, s.Command, s.Args = body.URL, "", []string{}
 		if body.Kind == models.MCPKindHTTP {
-			if sec.Headers, err = mergePairs("header", body.Headers, old.Headers); err != nil {
+			var savedHeaders map[string]string
+			if saved != nil && saved.URL == body.URL {
+				savedHeaders = old.Headers
+			}
+			if sec.Headers, err = mergePairs("header", body.Headers, savedHeaders); err != nil {
 				return s, sec, err
 			}
 		} else if saved != nil && saved.URL == body.URL {
@@ -433,7 +437,7 @@ func (h *mcpServerHandler) OAuthStart(c fiber.Ctx) error {
 	if s.Kind != models.MCPKindHosted {
 		return apperr.New(apperr.KindBadRequest, "only a hosted server signs in with OAuth")
 	}
-	origin, err := requestOrigin(c, h.app.Config.App.CORSAllowedOrigins)
+	origin, err := requestOrigin(c, h.app)
 	if err != nil {
 		return err
 	}
@@ -475,10 +479,11 @@ func (h *mcpServerHandler) OAuthStart(c fiber.Ctx) error {
 	return dtos.OK(c, fiber.Map{"auth_url": sec.OAuth.AuthCodeURL(redirectURI, state, verifier)})
 }
 
-// OAuthCallback is where a hosted server's sign-in returns the browser: it
-// trades the code for a token, syncs the tools and sends the browser back to
-// the MCP page, which toasts the outcome. Failures redirect too, since the
-// browser is on its way back from the sign-in, not in the web app.
+// OAuthCallback is where a hosted server's sign-in returns the browser. It
+// checks the state and hands the code back to the web app, which finishes
+// with OAuthFinish as the user who started it; a callback with no caller of
+// its own saves nothing, so a sign-in link someone else started can't put a
+// victim's token on their server.
 func (h *mcpServerHandler) OAuthCallback(c fiber.Ctx) error {
 	back := func(origin, query string) error {
 		return c.Redirect().To(origin + "/settings/mcp?" + query)
@@ -488,43 +493,72 @@ func (h *mcpServerHandler) OAuthCallback(c fiber.Ctx) error {
 		return back(origin, "error="+url.QueryEscape(err.Error()))
 	}
 
-	state, err := mailoauth.VerifyState(h.app.Config.App.Secret, c.Query("state"))
+	raw := c.Query("state")
+	state, err := mailoauth.VerifyState(h.app.Config.App.Secret, raw)
 	if err != nil {
 		return fail(fallbackOrigin(h.app), err)
 	}
-	rawID, ok := strings.CutPrefix(state.Provider, mcpStatePrefix)
-	if !ok {
+	if !strings.HasPrefix(state.Provider, mcpStatePrefix) {
 		return fail(state.Origin, errors.New("the sign-in state isn't an MCP server's"))
 	}
 	if c.Query("error") != "" {
 		return fail(state.Origin, errors.New(c.Query("error_description", c.Query("error"))))
 	}
+	return back(state.Origin, "code="+url.QueryEscape(c.Query("code"))+"&state="+url.QueryEscape(raw))
+}
+
+// OAuthFinish trades the code the callback handed to the web app for the
+// server's token, then syncs its tools. Only the user who started the
+// sign-in may finish it, while they still own the organization.
+func (h *mcpServerHandler) OAuthFinish(c fiber.Ctx) error {
+	var body dtos.OAuthFinishBody
+	if err := lib.ValidateRequestBody(c, &body); err != nil {
+		return err
+	}
+	state, err := mailoauth.VerifyState(h.app.Config.App.Secret, body.State)
+	if err != nil {
+		return apperr.New(apperr.KindBadRequest, "%s", err.Error())
+	}
+	rawID, ok := strings.CutPrefix(state.Provider, mcpStatePrefix)
+	if !ok {
+		return apperr.New(apperr.KindBadRequest, "the sign-in state isn't an MCP server's")
+	}
+	uid, err := lib.ContextGetUID(c)
+	if err != nil {
+		return apperr.ErrUnauthorized
+	}
+	if state.UserID != uid.String() {
+		return apperr.New(apperr.KindForbidden, "this sign-in was started by someone else: connect the server again")
+	}
 	id, err := uuid.Parse(rawID)
 	if err != nil {
-		return fail(state.Origin, errors.New("the server in the state is malformed"))
+		return apperr.New(apperr.KindBadRequest, "the server in the state is malformed")
 	}
 	s, err := h.app.Repositories.MCPServer.Get(c.Context(), id)
 	if err != nil || s.OrganizationID.String() != state.OrganizationID {
-		return fail(state.Origin, errors.New("the MCP server is gone"))
+		return apperr.New(apperr.KindNotFound, "the MCP server is gone")
+	}
+	if err := owner(c, h.app, s.OrganizationID); err != nil {
+		return err
 	}
 	sec, err := mcptools.OpenSecrets(h.app, s)
 	if err != nil || sec.OAuth == nil {
-		return fail(state.Origin, errors.New("start the sign-in again"))
+		return apperr.New(apperr.KindBadRequest, "start the sign-in again")
 	}
 
 	ctx, cancel := context.WithTimeout(c.Context(), mcptools.Timeout)
 	defer cancel()
-	token, err := sec.OAuth.Exchange(ctx, mcptools.RedirectURI(h.app.Config.Auth.BaseURL), c.Query("code"), state.Verifier, h.app.HTTPClient)
+	token, err := sec.OAuth.Exchange(ctx, mcptools.RedirectURI(h.app.Config.Auth.BaseURL), body.Code, state.Verifier, h.app.HTTPClient)
 	if err != nil {
-		return fail(state.Origin, fmt.Errorf("the sign-in wasn't accepted: %w", err))
+		return apperr.New(apperr.KindBadRequest, "the sign-in wasn't accepted: %v", err)
 	}
 	sec.OAuth.Token = token
 	s.Secrets = mcptools.SealSecrets(h.app, sec)
 	if err := h.app.Repositories.MCPServer.SetSecrets(c.Context(), s.ID, s.Secrets); err != nil {
-		return fail(state.Origin, err)
+		return err
 	}
 	if _, err := mcptools.Sync(c.Context(), h.app, s, true); err != nil {
-		return fail(state.Origin, err)
+		return apperr.New(apperr.KindBadGateway, "%s", err.Error())
 	}
-	return back(state.Origin, "connected="+url.QueryEscape(s.Name))
+	return dtos.OK(c, fiber.Map{"name": s.Name})
 }

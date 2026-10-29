@@ -1,28 +1,236 @@
 ---
 title: Run with Docker
-description: Docker Compose with PostgreSQL, or a single container next to your own database.
+description: Deploy with Docker Compose, Dokploy or Coolify, or run a single container next to your own database.
 ---
 
-## Docker Compose
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
 
-`apps/server/docker-compose.yml` runs PostgreSQL 18, a one-shot migration and the API on port 8080. Secrets come from `apps/server/.env`.
+The examples use the **Community** image: one self-hosted account, the super user from `SUPER_USER`. For the Cloud image, see [Cloud instead of Community](#cloud-instead-of-community).
 
-```sh
-git clone https://github.com/montara-project/montara-mail-agent.git
-cd montara-mail-agent/apps/server
-cp .env.example .env    # set APP_SECRET, SUPER_USER, and the rest you need
-docker compose up -d --build
+Pin a release: `v0.5` follows its patch releases, `v0.5.0` stays put. The image has its own health check, so the compose files leave it out.
+
+## Deploy
+
+<Tabs items={['Docker Compose', 'Dokploy', 'Coolify']}>
+<Tab value="Docker Compose">
+
+PostgreSQL 18 and the app on one host. Put a reverse proxy with HTTPS in front of port 8080 for anything beyond your own machine (see [Reverse proxy and HTTPS](/self-hosting/reverse-proxy)).
+
+```yaml title="compose.yaml"
+services:
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: montara
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: montara_mail_agent
+    volumes:
+      # postgres:18 keeps its data under /var/lib/postgresql/18/...
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U montara -d montara_mail_agent']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  montara-mail-agent:
+    image: ghcr.io/montara-project/montara-mail-agent/community:v0.5
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - '8080:8080'
+    environment:
+      ENV: production
+      APP_SECRET: ${APP_SECRET:?set APP_SECRET to at least 32 characters}
+      DB_DSN: postgres://montara:${POSTGRES_PASSWORD}@db:5432/montara_mail_agent?sslmode=disable
+      MIGRATE_ON_BOOT: 'true'
+      # Community: the only account, created on boot.
+      SEED_ON_BOOT: 'true'
+      SUPER_USER: ${SUPER_USER:?set SUPER_USER to email:password (12+ characters)}
+      AUTH_BASE_URL: ${AUTH_BASE_URL:-http://localhost:8080}
+      # Your reverse proxy's IP or CIDR; empty when nothing sits in front.
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
+      RATE_LIMIT_EXEMPT_IPS: ${RATE_LIMIT_EXEMPT_IPS:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+
+volumes:
+  pgdata:
 ```
 
-The compose file overrides what differs inside its network: `DB_DSN` points at its own database, `MIGRATE_ON_BOOT` is off because the `migrate` job runs first, and these come from your shell:
+```sh title=".env"
+POSTGRES_PASSWORD=change-me
+APP_SECRET=          # openssl rand -base64 32
+SUPER_USER=you@example.com:a-long-password
+AUTH_BASE_URL=https://mail.example.com
+```
 
-| Variable | Default | Sets |
+```sh
+docker compose up -d
+```
+
+Every other setting from [Configuration](/self-hosting/configuration) can be added under `environment` the same way.
+
+</Tab>
+<Tab value="Dokploy">
+
+Dokploy's Traefik routes to the app over `dokploy-network`, and PostgreSQL runs as a Dokploy database.
+
+1. **Database:** in the project, **Create Service › Database › PostgreSQL**, with the Docker image `postgres:18`. Copy its **Internal Connection URL** and add `?sslmode=disable`.
+2. **Compose:** **Create Service › Compose**, source **Raw**, and paste the file below.
+3. **Environment:** fill in the values in the Compose service's **Environment** tab.
+4. **Domain:** in **Domains**, add your domain for the service `montara-mail-agent`, port `8080`, with HTTPS (Let's Encrypt). Use the same URL for `AUTH_BASE_URL`.
+5. **Deploy.**
+
+```yaml title="docker-compose.yml"
+services:
+  montara-mail-agent:
+    image: ghcr.io/montara-project/montara-mail-agent/community:v0.5
+    restart: unless-stopped
+    environment:
+      # App
+      - ENV=${ENV:-production}
+      - PORT=${PORT:-8080}
+      - APP_NAME=${APP_NAME:-montara-mail-agent}
+      - APP_SECRET=${APP_SECRET:?set APP_SECRET to at least 32 characters}
+
+      # Database & boot: Community needs the seed, which creates SUPER_USER
+      - DB_DSN=${DB_DSN:?set DB_DSN to the PostgreSQL 18 internal URL}
+      - DB_MAX_OPEN_CONNS=${DB_MAX_OPEN_CONNS:-25}
+      - DB_MAX_IDLE_CONNS=${DB_MAX_IDLE_CONNS:-25}
+      - DB_MAX_IDLE_TIME=${DB_MAX_IDLE_TIME:-15m}
+      - MIGRATE_ON_BOOT=${MIGRATE_ON_BOOT:-true}
+      - SEED_ON_BOOT=${SEED_ON_BOOT:-true}
+      - SUPER_USER=${SUPER_USER:?set SUPER_USER to email:password (12+ characters)}
+
+      # Auth: Resend is optional on Community (no password reset or magic links without it)
+      - AUTH_BASE_URL=${AUTH_BASE_URL:?set AUTH_BASE_URL to the public URL}
+      - FROM_ADDRESS=${FROM_ADDRESS:-}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+
+      # Proxy & CORS
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
+      - TRUSTED_PROXIES=${TRUSTED_PROXIES:?set TRUSTED_PROXIES to the dokploy-network subnet}
+      - RATE_LIMIT_EXEMPT_IPS=${RATE_LIMIT_EXEMPT_IPS:-}
+
+      # Mailbox OAuth
+      - OAUTH_GOOGLE_CLIENT_ID=${OAUTH_GOOGLE_CLIENT_ID:-}
+      - OAUTH_GOOGLE_CLIENT_SECRET=${OAUTH_GOOGLE_CLIENT_SECRET:-}
+      - OAUTH_MICROSOFT_CLIENT_ID=${OAUTH_MICROSOFT_CLIENT_ID:-}
+      - OAUTH_MICROSOFT_CLIENT_SECRET=${OAUTH_MICROSOFT_CLIENT_SECRET:-}
+      - OAUTH_YAHOO_CLIENT_ID=${OAUTH_YAHOO_CLIENT_ID:-}
+      - OAUTH_YAHOO_CLIENT_SECRET=${OAUTH_YAHOO_CLIENT_SECRET:-}
+      - OAUTH_ZOHO_CLIENT_ID=${OAUTH_ZOHO_CLIENT_ID:-}
+      - OAUTH_ZOHO_CLIENT_SECRET=${OAUTH_ZOHO_CLIENT_SECRET:-}
+
+      # Mail sync, AI & agent
+      - MAIL_SYNC_INTERVAL=${MAIL_SYNC_INTERVAL:-5m}
+      - ALLOW_PRIVATE_HOSTS=${ALLOW_PRIVATE_HOSTS:-false}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - AGENT_AUTO_DRAFT_INTERVAL=${AGENT_AUTO_DRAFT_INTERVAL:-1h}
+      - AGENT_AUTO_DRAFT_DAILY_CAP=${AGENT_AUTO_DRAFT_DAILY_CAP:-10}
+      - ACTIVITY_LOG_RETENTION=${ACTIVITY_LOG_RETENTION:-8760h}
+
+      - SENTRY_DSN=${SENTRY_DSN:-}
+    networks:
+      - dokploy-network
+
+networks:
+  dokploy-network:
+    external: true
+```
+
+`TRUSTED_PROXIES` is the subnet Traefik reaches the app from. On the Dokploy server:
+
+```sh
+docker network inspect dokploy-network --format '{{(index .IPAM.Config 0).Subnet}}'
+```
+
+</Tab>
+<Tab value="Coolify">
+
+Coolify generates the domain, the secrets and the database password from the `SERVICE_*` variables, and its proxy joins the stack on its own: no ports and no external network.
+
+1. **Create:** in a project, **+ New › Docker Compose Empty**, and paste the file below.
+2. **Domain:** Coolify fills `SERVICE_URL_MONTARA_8080` with a generated domain. Set your own on the `montara` service (port `8080` is in the variable's name).
+3. **Environment:** enter `SUPER_USER` and `TRUSTED_PROXIES`; the generated values are already there.
+4. **Deploy.**
+
+```yaml title="docker-compose.yml"
+services:
+  montara:
+    image: ghcr.io/montara-project/montara-mail-agent/community:v0.5
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # The public URL Coolify routes to port 8080; email links and OAuth use it.
+      - SERVICE_URL_MONTARA_8080
+      - AUTH_BASE_URL=${SERVICE_URL_MONTARA_8080}
+      - ENV=production
+      # 64 random characters, generated once and kept: changing it later
+      # means reconnecting every mailbox.
+      - APP_SECRET=${SERVICE_PASSWORD_64_APPSECRET}
+      - DB_DSN=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@db:5432/montara_mail_agent?sslmode=disable
+      - MIGRATE_ON_BOOT=true
+      # Community: the only account, created on boot.
+      - SEED_ON_BOOT=true
+      - SUPER_USER=${SUPER_USER:?}
+      # The subnet of the network Coolify's proxy shares with this stack.
+      - TRUSTED_PROXIES=${TRUSTED_PROXIES:?}
+      - RATE_LIMIT_EXEMPT_IPS=${RATE_LIMIT_EXEMPT_IPS:-}
+      - FROM_ADDRESS=${FROM_ADDRESS:-}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - MAIL_SYNC_INTERVAL=${MAIL_SYNC_INTERVAL:-5m}
+
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${SERVICE_USER_POSTGRES}
+      - POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}
+      - POSTGRES_DB=montara_mail_agent
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d montara_mail_agent']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  pgdata:
+```
+
+For `TRUSTED_PROXIES`, deploy once, then on the server find the network the stack and `coolify-proxy` share and use its subnet:
+
+```sh
+docker inspect coolify-proxy --format '{{json .NetworkSettings.Networks}}'
+docker network inspect <network> --format '{{(index .IPAM.Config 0).Subnet}}'
+```
+
+</Tab>
+</Tabs>
+
+<Callout type="warn" title="TRUSTED_PROXIES matters">
+  Rate limits and [IP blocks](/self-hosting/ip-blocks) key on the client's address, which the API reads from `X-Forwarded-For` only when the request comes from a trusted proxy. Left empty behind a proxy, every visitor looks like the proxy: one abusive client gets everyone rate-limited or blocked. Trust only the proxy's network, never a wide public range.
+</Callout>
+
+## Cloud instead of Community
+
+Use `ghcr.io/montara-project/montara-mail-agent/cloud` and change the boot settings:
+
+| Setting | Community | Cloud |
 | --- | --- | --- |
-| `POSTGRES_PASSWORD` | `postgres` | The database password. |
-| `PUBLIC_URL` | `http://localhost:8080` | `AUTH_BASE_URL`: the public URL of the API. |
-| `TRUSTED_PROXIES` | empty | The reverse proxy's IP or CIDR. |
-| `API_PORT` | `8080` | The host port. |
-| `APP_ENV` | `production` | `ENV`. |
+| Sign-up | None: only `SUPER_USER` | Open |
+| `SEED_ON_BOOT`, `SUPER_USER` | Required | Optional: a super user to manage every organization |
+| `FROM_ADDRESS`, `RESEND_API_KEY` | Optional (no password reset or magic links without them) | Required, for verification emails |
 
 ## A single container
 
@@ -32,14 +240,14 @@ docker run -d --name montara \
   -e DB_DSN='postgres://user:pass@db-host:5432/montara?sslmode=require' \
   -e MIGRATE_ON_BOOT=true \
   -p 8080:8080 \
-  ghcr.io/montara-project/montara-mail-agent/community:latest
+  ghcr.io/montara-project/montara-mail-agent/community:v0.5
 ```
 
 The image holds `/app/api` (the entrypoint), `/app/migrate` and `/app/healthcheck` on a distroless, non-root base. To migrate by hand instead of on boot:
 
 ```sh
 docker run --rm --env-file .env --entrypoint /app/migrate \
-  ghcr.io/montara-project/montara-mail-agent/community:latest up
+  ghcr.io/montara-project/montara-mail-agent/community:v0.5 up
 ```
 
 ## Building the image
@@ -56,6 +264,8 @@ docker build -f apps/server/Dockerfile --build-arg EDITION=community -t montara-
 | `VITE_APP_NAME` | `Montara Mail` | The name the web app shows. |
 | `VITE_API_URL` | empty | The server a Cloud web app talks to by default. Empty keeps the edition's default; Community always uses its own origin. |
 
+`apps/server/docker-compose.yml` builds the image from a checkout and runs it with PostgreSQL and a one-shot migration, reading secrets from `apps/server/.env`: `cd apps/server && docker compose up -d --build`.
+
 ## First sign-in
 
-With `SEED_ON_BOOT=true`, the API creates the `SUPER_USER` account (`email:password`, a password of 12 to 128 characters) and gives it the super user role. Sign in with it at `http://localhost:8080`.
+With `SEED_ON_BOOT=true`, the API creates the `SUPER_USER` account (`email:password`, a password of 12 to 128 characters) and gives it the super user role. Open your domain (or `http://localhost:8080`) and sign in with it.

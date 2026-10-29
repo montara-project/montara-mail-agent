@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import {
   Bot,
@@ -8,6 +9,7 @@ import {
   KeyRound,
   Package,
   Plug,
+  ShieldBan,
   ShieldCheck,
   Trash2,
   User,
@@ -17,6 +19,7 @@ import {
 
 import SectionCard from '@/components/block/common/section-card'
 import { Badge } from '@/components/ui/badge'
+import { queries } from '@/lib/api/queries'
 import { COMMUNITY } from '@/lib/constants/edition'
 
 /** A page of the Control Center; one without a url isn't built yet and shows as Soon. */
@@ -56,11 +59,22 @@ const SETTINGS_GROUPS: { title: string; items: SettingsItem[] }[] = [
   },
 ]
 
+/** Server-wide settings, shown to a super user only, before the danger zone. */
+const PLATFORM_GROUP: { title: string; items: SettingsItem[] } = {
+  title: 'Platform',
+  items: [{ title: 'IP Block', icon: ShieldBan, url: '/settings/ip-blocks' }],
+}
+
 /** The settings index: each group a SectionCard of rows that open their page. */
 export default function SettingsNav() {
+  const { data: security } = useQuery(queries.profile.security())
+  const groups = security?.super_user
+    ? [...SETTINGS_GROUPS.slice(0, -1), PLATFORM_GROUP, ...SETTINGS_GROUPS.slice(-1)]
+    : SETTINGS_GROUPS
+
   return (
     <nav aria-label="Control Center" className="grid gap-8">
-      {SETTINGS_GROUPS.map((group) => (
+      {groups.map((group) => (
         <section key={group.title} className="grid gap-2">
           <h2 className="text-muted-foreground text-sm">{group.title}</h2>
           <SectionCard>

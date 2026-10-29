@@ -3,7 +3,11 @@ import { mutationOptions, queryOptions } from '@tanstack/react-query'
 import { getQueryClient } from '@/lib/providers/react-query'
 
 import type { Models } from '../models'
-import type { EmailAccountBody, MailSendBody } from '../services/types/email-account'
+import type {
+  EmailAccountBody,
+  MailSendBody,
+  OAuthFinishBody,
+} from '../services/types/email-account'
 
 import { services } from '../services'
 import { MAIL_QUERY_KEY } from './mail'
@@ -63,6 +67,16 @@ const oauthConnect = (organizationId: string, provider: Models.EmailProvider) =>
     },
   })
 
+/** Finishes an OAuth connection the provider sent the browser back from. */
+const oauthFinish = () =>
+  mutationOptions({
+    mutationFn: async ({ provider, ...body }: OAuthFinishBody & { provider: string }) => {
+      const res = await services.emailAccounts.oauthFinish(provider, body)
+      return res.data.data
+    },
+    onSettled: invalidateMailboxes,
+  })
+
 const del = () =>
   mutationOptions({
     mutationFn: async (id: string) => {
@@ -81,4 +95,12 @@ const send = () =>
     },
   })
 
-export const emailAccountQueries = { list, create, sync, oauthConnect, send, delete: del } as const
+export const emailAccountQueries = {
+  list,
+  create,
+  sync,
+  oauthConnect,
+  oauthFinish,
+  send,
+  delete: del,
+} as const

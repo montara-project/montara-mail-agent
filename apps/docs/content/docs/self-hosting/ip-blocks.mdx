@@ -1,0 +1,35 @@
+---
+title: IP blocks
+description: Refuse addresses by hand, and let the server block abusive ones on its own.
+---
+
+Under **Control Center › Platform › IP Block** a super user sees every blocked address. A blocked address is refused with 403 on every route (sign-in, the web app, the API and `/mcp`) before anything else runs.
+
+## Blocking by hand
+
+**Block address** takes an IP (`203.0.113.7`) or a range (`203.0.113.0/24`), an optional reason, and how long: 1 hour, 24 hours, 7 days, 30 days, or until removed. A range can be as wide as `/8` for IPv4 or `/32` for IPv6. Blocking a range that already has a block replaces it.
+
+**Unblock** lifts a block at once and resets that address's count of failures.
+
+## Automatic blocks
+
+The server blocks an address for **1 hour** when, within **10 minutes**, it makes:
+
+- **10 failed sign-ins** (a 401 from a sign-in route: password, magic link, Google, two-factor), or
+- **5 requests the rate limiter refused** (429).
+
+Automatic blocks are listed as **Automatic** and lift on their own. A manual block of the same address is never replaced by an automatic one.
+
+- An IPv6 client is counted, rate-limited and blocked by its `/64`, since one host usually holds a whole `/64` and could otherwise rotate past every limit.
+- Private addresses and your `TRUSTED_PROXIES` are never blocked automatically: when the proxy setting is wrong, every visitor looks like one of them, and blocking it would shut everyone out.
+
+## Not locking yourself out
+
+- You can't block a range that contains the address you are using.
+- Addresses in `RATE_LIMIT_EXEMPT_IPS` are never blocked or counted (and loopback, with `ENV=development`). Keep your office or VPN address there as a way back in.
+- Behind a reverse proxy, set `TRUSTED_PROXIES` so blocks see the real client address, not the proxy's. See [Reverse proxy and HTTPS](/self-hosting/reverse-proxy).
+- As a last resort, remove a block in the database: `DELETE FROM ip_blocks WHERE network = '203.0.113.7/32';`. Running servers pick the change up within 30 seconds.
+
+<Callout title="Several replicas">
+  Blocks are stored in PostgreSQL and shared by every replica. Failures are counted per replica, so with several of them an address can make up to that many times the failures before one replica blocks it.
+</Callout>

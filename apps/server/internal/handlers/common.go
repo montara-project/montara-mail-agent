@@ -55,8 +55,24 @@ var errOrganizationNotFound = apperr.New(apperr.KindNotFound, "organization not 
 
 // member checks that the signed-in user belongs to the organization or is a
 // super user, and returns the user's role in it ("" for a super user who is
-// no member).
+// no member). An organization in the trash reads as missing: its mailboxes
+// and mail are out of reach until it is restored.
 func member(c fiber.Ctx, app *app.Application, organizationID uuid.UUID) (string, error) {
+	role, err := memberOfAny(c, app, organizationID)
+	if err != nil {
+		return role, err
+	}
+	if _, err := app.Repositories.Organization.Get(c.Context(), organizationID); apperr.IsNotFound(err) {
+		return "", errOrganizationNotFound
+	} else if err != nil {
+		return "", err
+	}
+	return role, nil
+}
+
+// memberOfAny is member for an organization in the trash too: restoring it
+// or deleting it for good.
+func memberOfAny(c fiber.Ctx, app *app.Application, organizationID uuid.UUID) (string, error) {
 	uid, err := lib.ContextGetUID(c)
 	if err != nil {
 		return "", apperr.ErrUnauthorized
@@ -82,6 +98,19 @@ func owner(c fiber.Ctx, app *app.Application, organizationID uuid.UUID) error {
 	if err != nil {
 		return err
 	}
+	return ownerRole(role)
+}
+
+// ownerOfAny is owner for an organization in the trash too.
+func ownerOfAny(c fiber.Ctx, app *app.Application, organizationID uuid.UUID) error {
+	role, err := memberOfAny(c, app, organizationID)
+	if err != nil {
+		return err
+	}
+	return ownerRole(role)
+}
+
+func ownerRole(role string) error {
 	if role == constant.MemberRoleMember {
 		return apperr.New(apperr.KindForbidden, "only the organization's owner can do this")
 	}

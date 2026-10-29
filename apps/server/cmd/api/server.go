@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/netip"
 	"os"
 	"os/signal"
+	"slices"
 	"strings"
 	"syscall"
 	"time"
@@ -24,7 +26,10 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/static"
 
 	"montara-mail-agent/server/internal/app"
+	"montara-mail-agent/server/internal/config"
 	"montara-mail-agent/server/internal/handlers"
+	"montara-mail-agent/server/internal/ipblock"
+	"montara-mail-agent/server/internal/lib"
 	"montara-mail-agent/server/internal/mailagent"
 	"montara-mail-agent/server/internal/mailsync"
 	"montara-mail-agent/server/internal/middlewares"
@@ -50,6 +55,7 @@ func serve(app *app.Application) error {
 		go mailagent.AutoDraftLoop(ctx, app, every, app.Config.App.AgentAutoDraftDailyCap)
 	}
 	go sweepActivityLogs(ctx, app)
+	go app.IPBlocks.Run(ctx)
 
 	app.Logger.Info("starting server", "port", app.Config.App.Port, "env", app.Config.App.Env, "auth", authBasePath)
 	return server.Listen(fmt.Sprintf(":%d", app.Config.App.Port), fiber.ListenConfig{
@@ -154,6 +160,17 @@ func newServer(app *app.Application) (*fiber.App, error) {
 			"object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'",
 	}))
 	server.Use(requestid.New())
+
+	// Blocked addresses are refused before anything else runs. The rate
+	// limiter's exempt addresses are never blocked: they are the way back in
+	// for a super user who blocked their own range.
+	app.IPBlocks = ipblock.New(&app.Repositories.IPBlock, app.Logger, clientExempt(app), isSignInPath, autoBlockable(app))
+	loadCtx, cancelLoad := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancelLoad()
+	if err := app.IPBlocks.Reload(loadCtx); err != nil {
+		return nil, fmt.Errorf("load ip blocks: %w", err)
+	}
+	server.Use(app.IPBlocks.Middleware)
 	// The agent's SSE route must not pass through the compressor: it buffers
 	// the body, which would hold every event back until the stream ends.
 	server.Use(compress.New(compress.Config{
@@ -212,4 +229,31 @@ func newServer(app *app.Application) (*fiber.App, error) {
 	}
 
 	return server, nil
+}
+
+// clientExempt is the rule the rate limiters and the IP guard share: the
+// addresses in RATE_LIMIT_EXEMPT_IPS, and loopback in development, are never
+// counted, limited or blocked.
+func clientExempt(app *app.Application) func(ip string) bool {
+	exemptIPs := splitCSV(app.Config.App.RateLimitExemptIPs)
+	exemptLoopback := app.Config.App.Env == config.EnvDevelopment
+	return func(ip string) bool {
+		return slices.Contains(exemptIPs, ip) || (exemptLoopback && ip == "127.0.0.1")
+	}
+}
+
+// autoBlockable keeps automatic blocks to public client addresses: a private
+// address or a trusted proxy is what every client looks like when the proxy
+// setting is wrong, and blocking it would shut everyone out. Manual blocks
+// are unaffected.
+func autoBlockable(app *app.Application) func(netip.Addr) bool {
+	var proxies []netip.Prefix
+	for _, p := range splitCSV(app.Config.App.TrustedProxies) {
+		if prefix, err := ipblock.ParseNetwork(p); err == nil {
+			proxies = append(proxies, prefix)
+		}
+	}
+	return func(addr netip.Addr) bool {
+		return lib.PublicAddr(addr) && !slices.ContainsFunc(proxies, func(p netip.Prefix) bool { return p.Contains(addr) })
+	}
 }

@@ -33,13 +33,15 @@ func (h *mcpEndpointHandler) Serve(c fiber.Ctx) error {
 	if err != nil {
 		return apperr.ErrUnauthorized
 	}
+	scope := lib.ContextGetAPIKeyOrganization(c)
+	readOnly := lib.ContextGetAPIKeyReadOnly(c)
 	// A JSON-RPC batch would run many tool calls under one request of the
 	// rate limit; MCP clients send one message per POST.
 	if body := bytes.TrimLeft(c.Body(), " \t\r\n"); len(body) > 0 && body[0] == '[' {
 		return apperr.New(apperr.KindBadRequest, "JSON-RPC batches are not supported: send one message per request")
 	}
 	return adaptor.HTTPHandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(mailagent.WithMCPUser(r.Context(), uid), mcpRequestLimit)
+		ctx, cancel := context.WithTimeout(mailagent.WithMCPUser(r.Context(), uid, scope, readOnly), mcpRequestLimit)
 		defer cancel()
 		h.mcp.ServeHTTP(w, r.WithContext(ctx))
 	})(c)

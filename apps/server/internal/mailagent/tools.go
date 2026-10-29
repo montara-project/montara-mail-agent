@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"montara-mail-agent/server/internal/mailai"
 	"slices"
 	"strings"
 	"time"
@@ -45,6 +46,12 @@ type toolset struct {
 	sync *mailsync.Syncer
 	s    Session
 	mcp  mcpTools
+	// tainted is set once the turn holds untrusted text: an email read or
+	// searched, or an outside tool's answer. From then on an MCP tool that
+	// writes is neither offered nor run, so text in an email can't make the
+	// model post to Slack or open a ticket; the mailbox's own writes stay,
+	// and sending still waits for approval.
+	tainted bool
 }
 
 func newToolset(app *app.Application, sync *mailsync.Syncer, s Session) toolset {
@@ -160,7 +167,12 @@ func (t *toolset) defs() []llm.ToolDef {
 			}`),
 		},
 	}
-	return append(defs, t.mcp.defs...)
+	for _, def := range t.mcp.defs {
+		if !t.tainted || t.mcp.tools[def.Name].readOnly {
+			defs = append(defs, def)
+		}
+	}
+	return defs
 }
 
 // execute runs one tool call, answering (content, payload): content goes back
@@ -186,7 +198,14 @@ func (t *toolset) execute(ctx context.Context, call llm.ToolCall) (string, json.
 	_ = json.Unmarshal(call.Args, &args)
 
 	if tool, ok := t.mcp.tools[call.Name]; ok {
+		if t.tainted && !tool.readOnly {
+			return fmt.Sprintf("%s changes things outside the mailbox, and this turn has read untrusted content: it can't run now. Ask the user to run it themselves.", call.Name), nil
+		}
+		t.tainted = true
 		return t.callMCP(ctx, tool, call.Args)
+	}
+	if call.Name == toolGet || call.Name == toolSearch {
+		t.tainted = true
 	}
 
 	switch call.Name {
@@ -257,9 +276,6 @@ func (t *toolset) search(ctx context.Context, query, folder string, unreadOnly b
 	return string(payload), payload
 }
 
-// emailFence defuses the tags getMail fences an email with.
-var emailFence = strings.NewReplacer("<email", "&lt;email", "</email", "&lt;/email")
-
 // getMail reads one mail in full, wrapped so its content stays data.
 func (t *toolset) getMail(ctx context.Context, mailID string) (string, json.RawMessage) {
 	m, ok := t.mailOf(ctx, mailID)
@@ -269,7 +285,7 @@ func (t *toolset) getMail(ctx context.Context, mailID string) (string, json.RawM
 
 	// The sender writes these fields: one holding "</email>" would end the
 	// fence early and pass what follows off as instructions.
-	esc := emailFence.Replace
+	esc := mailai.Defuse
 	wrapped := fmt.Sprintf("<email id=%q>\nFrom: %s\nTo: %s\nDate: %s\nSubject: %s\n\n%s\n</email>",
 		m.ID, esc(mailAddress(m.FromName, m.FromEmail)), esc(mailAddresses(m.To)),
 		m.ReceivedAt.Format(time.RFC3339), esc(m.Subject), esc(clip(m.Body, mailBodyLimit)))

@@ -37,8 +37,21 @@ func from(m models.Mail) string {
 	return fmt.Sprintf("%s <%s>", m.FromName, m.FromEmail)
 }
 
+// fence defuses the tags the prompts fence untrusted text with, so an email
+// (or a tool's answer) that writes "</email>" can't end its fence early and
+// pass what follows off as instructions, or as another email's label.
+var fence = strings.NewReplacer(
+	"<email", "&lt;email", "</email", "&lt;/email",
+	"<draft", "&lt;draft", "</draft", "&lt;/draft",
+	"<instruction", "&lt;instruction", "</instruction", "&lt;/instruction",
+	"<mcp_result", "&lt;mcp_result", "</mcp_result", "&lt;/mcp_result",
+)
+
+// Defuse escapes text that goes inside a prompt fence (see fence).
+func Defuse(text string) string { return fence.Replace(text) }
+
 func wrap(m models.Mail, attrs string, bodyLen int) string {
-	return fmt.Sprintf("<email%s>\nFrom: %s\nSubject: %s\n\n%s\n</email>", attrs, from(m), m.Subject, clip(m.Body, bodyLen))
+	return fmt.Sprintf("<email%s>\nFrom: %s\nSubject: %s\n\n%s\n</email>", attrs, Defuse(from(m)), Defuse(m.Subject), Defuse(clip(m.Body, bodyLen)))
 }
 
 const summaryPrompt = `You summarize one email for the person who received it.
@@ -121,7 +134,7 @@ const maxDraftLen = 20000
 // says (humanize, copy edit), in the bot's voice when one is given.
 func RewriteDraft(ctx context.Context, client llm.Client, m models.Mail, bot *models.AgentBot, skill models.AgentSkill, draft string) (string, error) {
 	system := withSkill(withPersona(bot, rewritePrompt), skill)
-	input := wrap(m, "", maxBodyLen) + "\n\n<draft>\n" + clip(strings.TrimSpace(draft), maxDraftLen) + "\n</draft>"
+	input := wrap(m, "", maxBodyLen) + "\n\n<draft>\n" + Defuse(clip(strings.TrimSpace(draft), maxDraftLen)) + "\n</draft>"
 	answer, err := client.Complete(ctx, system, input, maxDraftTokens)
 	if err != nil {
 		return "", err
@@ -173,7 +186,7 @@ The email they are answering is inside <email> tags, for its language and contex
 // TranslateDraft translates the user's reply draft to m into m's language, in
 // tone (one of replyTones, professional when empty).
 func TranslateDraft(ctx context.Context, client llm.Client, m models.Mail, bot *models.AgentBot, draft, tone string) (string, error) {
-	input := wrap(m, "", maxBodyLen) + "\n\n<draft>\n" + clip(strings.TrimSpace(draft), maxDraftLen) + "\n</draft>"
+	input := wrap(m, "", maxBodyLen) + "\n\n<draft>\n" + Defuse(clip(strings.TrimSpace(draft), maxDraftLen)) + "\n</draft>"
 	answer, err := client.Complete(ctx, translateDraftSystem(bot, tone), input, maxTranslateTokens)
 	if err != nil {
 		return "", err
