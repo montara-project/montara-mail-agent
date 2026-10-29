@@ -22,11 +22,20 @@ const mailColumns = `
 	importance, importance_by, summary`
 
 // mailListColumns swaps the body for a 200-character, one-line teaser and
-// leaves the HTML and the summary out.
+// leaves the HTML and the summary out. Newsletters pad their preview text with
+// invisible characters and non-breaking spaces; those go too, or the list
+// shows a line of blank filler.
 const mailListColumns = `
 	id, created_at, updated_at, email_account_id, folder, uid_validity, uid, message_id,
-	from_name, from_email, "to", cc, subject, left(regexp_replace(body, '\s+', ' ', 'g'), 200), NULL, received_at, is_read, is_starred,
+	from_name, from_email, "to", cc, subject, ` + mailTeaser + `, NULL, received_at, is_read, is_starred,
 	importance, importance_by, NULL`
+
+// mailTeaser strips soft hyphens, zero-width characters and the combining
+// grapheme joiner (U+200D stays, it joins emoji), then folds every run of
+// whitespace, non-breaking spaces included, into one space.
+const mailTeaser = `left(btrim(regexp_replace(regexp_replace(body,
+	'[\u00ad\u034f\u200b\u200c\u2060\ufeff]', '', 'g'),
+	'[\s\u00a0\u2007\u202f]+', ' ', 'g')), 200)`
 
 func scanMail(row rowScanner) (models.Mail, error) {
 	var m models.Mail
