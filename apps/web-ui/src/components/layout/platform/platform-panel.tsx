@@ -1,7 +1,9 @@
 import { Link, useLocation } from '@tanstack/react-router'
-import { HardDrive, LayoutDashboard, Settings, UserRound } from 'lucide-react'
+import { LayoutDashboard, Settings, Sparkles, UserRound } from 'lucide-react'
+import { toast } from 'sonner'
 
 import OrganizationSwitcher from '@/components/layout/organization/organization-switcher'
+import { Button } from '@/components/ui/button'
 import {
   Sidebar,
   SidebarContent,
@@ -20,14 +22,9 @@ const PLATFORM_ITEMS = [
   { title: 'Control Center', icon: Settings, url: '/settings' },
 ]
 
-const STORAGE_LIMIT_GB = 5
-// ponytail: sample usage until the server reports it; swap for a query then.
-const STORAGE_USED_GB = 2.4
-
 /** Second panel of the sidebar-09 shell on the Platform pages. */
 export default function PlatformPanel() {
   const pathname = useLocation().pathname
-  const usedPercent = Math.min(100, (STORAGE_USED_GB / STORAGE_LIMIT_GB) * 100)
 
   return (
     <Sidebar collapsible="none" className="hidden flex-1 md:flex">
@@ -55,26 +52,15 @@ export default function PlatformPanel() {
       <SidebarFooter className="p-4">
         <div className="grid gap-2 rounded-lg border p-3 text-sm">
           <div className="flex items-center gap-2 font-medium">
-            <HardDrive className="size-4" />
-            Storage
-          </div>
-          <div
-            role="progressbar"
-            aria-label="Storage used"
-            aria-valuemin={0}
-            aria-valuemax={STORAGE_LIMIT_GB}
-            aria-valuenow={STORAGE_USED_GB}
-            aria-valuetext={`${STORAGE_USED_GB} GB of ${STORAGE_LIMIT_GB} GB`}
-            className="bg-muted h-2 overflow-hidden rounded-full"
-          >
-            <div
-              className={usedPercent >= 90 ? 'bg-destructive h-full' : 'bg-primary h-full'}
-              style={{ width: `${usedPercent}%` }}
-            />
+            <Sparkles className="text-accent-ink size-4" aria-hidden />
+            Subscribe now
           </div>
           <p className="text-muted-foreground text-xs">
-            {STORAGE_USED_GB} GB of {STORAGE_LIMIT_GB} GB used
+            Plans for teams and heavier use are on the way.
           </p>
+          <Button size="sm" onClick={() => toast.info('Coming Soon')}>
+            Subscribe now
+          </Button>
         </div>
       </SidebarFooter>
     </Sidebar>
