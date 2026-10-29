@@ -15,6 +15,17 @@ const config = defineConfig({
     tanstackRouter({ target: 'react', autoCodeSplitting: true }),
     viteReact(),
   ],
+  build: {
+    rolldownOptions: {
+      // @lexkit/editor imports react-dom/server at the top of its one bundled file,
+      // for code the mail editor never reaches. Without side effects assumed, the
+      // unused import drops out: ~200 kB less in the editor chunk.
+      treeshake: {
+        moduleSideEffects: (id) =>
+          !/node_modules\/react-dom\/(server|cjs\/react-dom-server)/.test(id),
+      },
+    },
+  },
   server: {
     proxy: {
       '/api': { target: apiTarget, changeOrigin: true },
