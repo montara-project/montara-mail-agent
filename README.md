@@ -129,7 +129,7 @@ every mailbox and saving the LLM providers again.
 
 To use the hosted web app with your own server, serve the API over HTTPS, add
 `https://app.montaramail.web.id` to `CORS_ALLOWED_ORIGINS` and pick the
-server under Settings > Self hosted.
+server under Control Center > Organization > Self hosted.
 
 ## Releases
 
