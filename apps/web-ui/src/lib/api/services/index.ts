@@ -2,6 +2,7 @@ import { activityLogServices } from './activity-log'
 import { agentServices } from './agent'
 import { agentBotServices } from './agent-bot'
 import { agentSkillServices } from './agent-skill'
+import { apiKeyServices } from './api-key'
 import { authServices } from './auth'
 import { emailAccountServices } from './email-account'
 import { llmProviderServices } from './llm-provider'
@@ -22,4 +23,5 @@ export const services = {
   agentBots: agentBotServices,
   agentSkills: agentSkillServices,
   mcpServers: mcpServerServices,
+  apiKeys: apiKeyServices,
 } as const

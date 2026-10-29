@@ -2,6 +2,7 @@ import { activityLogQueries } from './activity-log'
 import { agentQueries } from './agent'
 import { agentBotQueries } from './agent-bot'
 import { agentSkillQueries } from './agent-skill'
+import { apiKeyQueries } from './api-key'
 import { authQueries } from './auth'
 import { emailAccountQueries } from './email-account'
 import { llmProviderQueries } from './llm-provider'
@@ -22,4 +23,5 @@ export const queries = {
   agentBots: agentBotQueries,
   agentSkills: agentSkillQueries,
   mcpServers: mcpServerQueries,
+  apiKeys: apiKeyQueries,
 } as const
