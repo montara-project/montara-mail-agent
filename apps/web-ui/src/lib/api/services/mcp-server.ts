@@ -14,6 +14,7 @@ const resources = (): MCPServerResources => ({
   test: (id) => api.post(`${path}/${id}/test`),
   sync: (id) => api.post(`${path}/${id}/sync`),
   oauthStart: (id) => api.post(`${path}/${id}/oauth/start`),
+  oauthFinish: (body) => api.post(`${path}/oauth/finish`, body),
 })
 
 export const mcpServerServices = resources()

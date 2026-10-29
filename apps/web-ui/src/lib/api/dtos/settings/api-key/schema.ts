@@ -12,6 +12,7 @@ export const APIKeySchema = z.object({
   name: requiredString('name').max(100, 'The name must be at most 100 characters.'),
   expires_in_days: z.enum(API_KEY_LIFETIMES),
   scope: requiredString('access'),
+  permission: z.enum(['read', 'act']),
 })
 
 export type APIKeyDto = z.infer<typeof APIKeySchema>

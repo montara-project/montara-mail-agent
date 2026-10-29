@@ -13,6 +13,8 @@ export interface APIKey {
   organization_id: string | null
   /** Empty when that organization was since deleted for good. */
   organization_name: string | null
+  /** Lists, searches and reads mail only: no moves, flags, labels or proposals. */
+  read_only: boolean
   created_at: ISO8601DateString
   expires_at: ISO8601DateString | null
   last_used_at: ISO8601DateString | null

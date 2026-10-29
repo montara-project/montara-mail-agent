@@ -3,6 +3,7 @@ import type { AxiosResponse } from 'axios'
 import type { ApiListResponse, AxiosDeleteResponse, AxiosItemResponse, Metadata } from '@/types/api'
 
 import type { Models } from '../../models'
+import type { OAuthFinishBody } from './email-account'
 
 /** A header or environment variable; on an edit a blank value keeps the saved one. */
 export type MCPPair = { name: string; value: string }
@@ -43,4 +44,6 @@ export type MCPServerResources = {
   sync: (id: string) => Promise<AxiosItemResponse<MCPContactResult>>
   /** A hosted server's sign-in page, where the browser goes next. */
   oauthStart: (id: string) => Promise<AxiosItemResponse<{ auth_url: string }>>
+  /** Finishes a hosted server's sign-in with the code and state the callback handed back. */
+  oauthFinish: (body: OAuthFinishBody) => Promise<AxiosItemResponse<{ name: string }>>
 }

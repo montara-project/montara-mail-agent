@@ -2,6 +2,7 @@ import { mutationOptions, queryOptions } from '@tanstack/react-query'
 
 import { getQueryClient } from '@/lib/providers/react-query'
 
+import type { OAuthFinishBody } from '../services/types/email-account'
 import type { MCPServerBody } from '../services/types/mcp-server'
 
 import { services } from '../services'
@@ -74,6 +75,16 @@ const oauthStart = () =>
     },
   })
 
+/** Finishes a hosted server's sign-in the provider sent the browser back from. */
+const oauthFinish = () =>
+  mutationOptions({
+    mutationFn: async (body: OAuthFinishBody) => {
+      const res = await services.mcpServers.oauthFinish(body)
+      return res.data.data
+    },
+    onSettled: invalidate,
+  })
+
 export const mcpServerQueries = {
   list,
   create,
@@ -83,4 +94,5 @@ export const mcpServerQueries = {
   test: () => contact('test'),
   sync: () => contact('sync'),
   oauthStart,
+  oauthFinish,
 } as const

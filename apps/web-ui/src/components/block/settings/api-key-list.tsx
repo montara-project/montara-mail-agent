@@ -106,6 +106,11 @@ function KeyRow({ apiKey }: { apiKey: Models.APIKey }) {
                 : 'All organizations'}
             </span>
           </Badge>
+          {apiKey.read_only && (
+            <Badge variant="info" appearance="light" size="sm">
+              Read only
+            </Badge>
+          )}
         </span>
         <KeyMeta apiKey={apiKey} />
       </span>
@@ -161,6 +166,7 @@ function CreateKeyDialog({
       name: '',
       expires_in_days: '90' as (typeof API_KEY_LIFETIMES)[number],
       scope: organization?.id ?? GLOBAL_SCOPE,
+      permission: 'read' as 'read' | 'act',
     },
     validators: { onSubmit: APIKeySchema, onChange: APIKeySchema },
     onSubmit: async ({ value }) => {
@@ -171,6 +177,7 @@ function CreateKeyDialog({
             name: dto.name.trim(),
             expires_in_days: Number(dto.expires_in_days),
             organization_id: dto.scope === GLOBAL_SCOPE ? undefined : dto.scope,
+            read_only: dto.permission === 'read',
           })
         )
       } catch (error) {
@@ -208,6 +215,24 @@ function CreateKeyDialog({
           <FieldDescription>
             One organization's mailboxes, or every organization you can open, including ones added
             later. Give each app only what it needs.
+          </FieldDescription>
+        </div>
+        <div className="grid gap-2">
+          <form.AppField
+            name="permission"
+            children={(field) => (
+              <field.SelectField
+                label="Can"
+                options={[
+                  { value: 'read', label: 'Read mail only' },
+                  { value: 'act', label: 'Read, organize and propose replies' },
+                ]}
+              />
+            )}
+          />
+          <FieldDescription>
+            Read only is safest: an email can carry text written to steer an AI. Organizing moves
+            and labels mail at once; proposals still wait for your approval.
           </FieldDescription>
         </div>
         <form.AppField

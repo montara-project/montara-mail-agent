@@ -1,3 +1,4 @@
+import { useMutation } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import React from 'react'
 import { toast } from 'sonner'
@@ -6,28 +7,47 @@ import EmptyState from '@/components/block/common/empty-state'
 import MCPServerList from '@/components/block/mcp/mcp-server-list'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useActiveOrganization } from '@/hooks/use-active-organization'
+import { axiosErrorMessage } from '@/lib/api/axios-error'
+import { queries } from '@/lib/api/queries'
 
-// A hosted server's sign-in returns the browser here with how it went in the
-// query, which the route toasts and strips.
-type MCPSearch = { connected?: string; error?: string }
+// A hosted server's sign-in returns the browser here with the code and state
+// (or an error); the route finishes it as the signed-in user, toasts how it
+// went and strips the query.
+type MCPSearch = { code?: string; state?: string; error?: string }
+
+const str = (value: unknown) => (typeof value === 'string' && value !== '' ? value : undefined)
 
 export const Route = createFileRoute('/(app)/settings/mcp')({
   validateSearch: (search: Record<string, unknown>): MCPSearch => ({
-    connected: typeof search.connected === 'string' ? search.connected : undefined,
-    error: typeof search.error === 'string' ? search.error : undefined,
+    code: str(search.code),
+    state: str(search.state),
+    error: str(search.error),
   }),
   component: RouteComponent,
 })
 
 function OAuthOutcome() {
-  const { connected, error } = Route.useSearch()
+  const { code, state, error } = Route.useSearch()
   const navigate = useNavigate()
+  const finish = useMutation(queries.mcpServers.oauthFinish())
+  // React runs the effect twice in development; a code is good for one exchange.
+  const started = React.useRef(false)
   React.useEffect(() => {
-    if (!connected && !error) return
-    if (error) toast.error(error)
-    else toast.success(`${connected} connected; its tools are synced`)
+    if (started.current || (!error && !(code && state))) return
+    started.current = true
     navigate({ to: '/settings/mcp', search: {}, replace: true })
-  }, [connected, error, navigate])
+    if (error || !code || !state) {
+      toast.error(error ?? 'The sign-in came back incomplete')
+      return
+    }
+    finish.mutate(
+      { code, state },
+      {
+        onSuccess: ({ name }) => toast.success(`${name} connected; its tools are synced`),
+        onError: (err) => toast.error(axiosErrorMessage(err)),
+      }
+    )
+  }, [code, state, error, navigate, finish])
   return null
 }
 
