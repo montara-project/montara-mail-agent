@@ -20,6 +20,7 @@ import type { Models } from '@/lib/api/models'
 import { ProviderIcon } from '@/components/block/account/connector-list'
 import ComposeSheet from '@/components/block/mail/compose-sheet'
 import OrganizationSwitcher from '@/components/layout/organization/organization-switcher'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -157,6 +158,11 @@ function AccountSwitcher() {
                 <span className="truncate">{mask(item.label)}</span>
                 <span className="text-muted-foreground truncate text-xs">{mask(item.email)}</span>
               </span>
+              {item.unread > 0 && (
+                <Badge size="sm" aria-label={`${item.unread} unread`}>
+                  {item.unread}
+                </Badge>
+              )}
               {item.id === account.id && <Check />}
             </Link>
           </DropdownMenuItem>
