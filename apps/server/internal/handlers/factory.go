@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"montara-mail-agent/server/internal/app"
+	"montara-mail-agent/server/internal/mailagent"
 	"montara-mail-agent/server/internal/mailsync"
 )
 
@@ -17,6 +18,8 @@ type Handlers struct {
 	AgentBot     *agentBotHandler
 	AgentSkill   *agentSkillHandler
 	MCPServer    *mcpServerHandler
+	APIKey       *apiKeyHandler
+	MCP          *mcpEndpointHandler
 }
 
 func New(app *app.Application) *Handlers {
@@ -33,5 +36,7 @@ func New(app *app.Application) *Handlers {
 		AgentBot:     &agentBotHandler{app: app},
 		AgentSkill:   &agentSkillHandler{app: app},
 		MCPServer:    &mcpServerHandler{app: app},
+		APIKey:       &apiKeyHandler{app: app},
+		MCP:          &mcpEndpointHandler{mcp: mailagent.NewMCPHandler(app, sync)},
 	}
 }

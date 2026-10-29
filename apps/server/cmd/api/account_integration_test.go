@@ -94,8 +94,17 @@ func testAccountSettings(t *testing.T, call callFunc, cookies func() string, db 
 	if status, _ := call(http.MethodPut, "/api/v1/me/password", token, map[string]string{"current_password": password, "new_password": "short"}); status != http.StatusBadRequest {
 		t.Fatalf("short new password: %d, want 400", status)
 	}
+	// An API key made before the change, which the change must revoke.
+	_, out = call(http.MethodPost, "/api/v1/me/api-keys", token, map[string]any{"name": "Before the change"})
+	key, _ := data(out)["key"].(string)
+	if status, _ := mcpRPC(call, key, "tools/list", nil); status != http.StatusOK {
+		t.Fatalf("new key on /mcp: %d, want 200", status)
+	}
 	if status, out := call(http.MethodPut, "/api/v1/me/password", token, map[string]string{"current_password": password, "new_password": "a-new-password"}); status != http.StatusOK {
 		t.Fatalf("change password: %d %v", status, out)
+	}
+	if status, _ := mcpRPC(call, key, "tools/list", nil); status != http.StatusUnauthorized {
+		t.Fatalf("API key after the change: %d, want 401", status)
 	}
 	if status, _ := call(http.MethodGet, "/api/v1/me/security", token, nil); status != http.StatusUnauthorized {
 		t.Fatalf("old token after the change: %d, want 401", status)

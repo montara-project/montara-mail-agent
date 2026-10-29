@@ -370,6 +370,7 @@ func newAuth(cfg config.Config, mirror func(*authulamodels.User) error, activiti
 			},
 		}),
 		authulaconfig.WithRouteMappings(authRouteMappings),
+		authulaconfig.WithPlugins(apiKeyPluginsConfig),
 		authulaconfig.WithCoreServiceHooks(&authulamodels.CoreServiceHooksConfig{Users: userHooks}),
 	)
 
@@ -394,6 +395,7 @@ func newAuth(cfg config.Config, mirror func(*authulamodels.User) error, activiti
 	} else {
 		logger.Warn("auth emails disabled: resend-api-key is not set; no password reset or magic-link sign-in, change SUPER_USER to reset the password")
 	}
+	plugins = append(plugins, apiKeyPlugins()...)
 
 	auth = authula.New(&authula.AuthConfig{
 		Config: authConfig,
@@ -427,10 +429,14 @@ func newAuth(cfg config.Config, mirror func(*authulamodels.User) error, activiti
 					SignIn: &emailpasswordplugintypes.SignInServiceHooksConfig{
 						BeforeSignIn: refuseUnverified,
 					},
-					// A reset password must also lock out whoever stole the old one.
+					// A reset password must also lock out whoever stole the old
+					// one, and the API keys they could have made with it.
 					PasswordChange: &emailpasswordplugintypes.PasswordChangeServiceHooksConfig{
 						AfterChangePassword: func(ctx context.Context, u *authulamodels.User) error {
-							return auth.CoreServices().SessionService.DeleteAllByUserID(ctx, u.ID)
+							if err := auth.CoreServices().SessionService.DeleteAllByUserID(ctx, u.ID); err != nil {
+								return err
+							}
+							return deleteAPIKeys(ctx, auth, u.ID)
 						},
 					},
 				},

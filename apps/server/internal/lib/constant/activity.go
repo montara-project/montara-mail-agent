@@ -26,4 +26,6 @@ const (
 	ActivityMCPServerAdded          = "mcp_server.added"
 	ActivityMCPServerUpdated        = "mcp_server.updated"
 	ActivityMCPServerRemoved        = "mcp_server.removed"
+	ActivityAPIKeyCreated           = "api_key.created"
+	ActivityAPIKeyRevoked           = "api_key.revoked"
 )

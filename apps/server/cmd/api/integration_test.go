@@ -386,6 +386,7 @@ func TestIntegration(t *testing.T) {
 	testLLMProviderScope(t, call, application, userToken, superToken, userOrg)
 	testMCPServers(t, call, callStream, application, userToken, superToken, userOrg)
 	testActivityLogs(t, call, userToken, superToken, userOrg, superOrg, userEmail)
+	testMCPEndpoint(t, call, server, application, userToken, userOrg, superOrg)
 	testAccountSettings(t, call, func() string { return cookies }, db, userEmail, userPass)
 
 	// Signing out revokes the access token.
