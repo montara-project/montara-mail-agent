@@ -33,10 +33,17 @@ func TestVerifyStateRejectsTampering(t *testing.T) {
 		t.Fatalf("sign: %v", err)
 	}
 
-	// A forged payload with the original signature.
-	payload, _, _ := strings.Cut(signed, ".")
-	if _, err := VerifyState(stateSecret, payload+"."+forgedSignature); err == nil {
-		t.Fatal("a forged signature was accepted")
+	// A sealed state with one byte flipped.
+	raw, _ := encoding.DecodeString(signed)
+	raw[len(raw)-1] ^= 1
+	if _, err := VerifyState(stateSecret, encoding.EncodeToString(raw)); err == nil {
+		t.Fatal("a tampered state was accepted")
+	}
+	// The verifier is not readable in the sealed state.
+	withVerifier, _ := SignState(stateSecret, State{Verifier: "pkce-secret-verifier"})
+	decoded, _ := encoding.DecodeString(withVerifier)
+	if strings.Contains(string(decoded), "pkce-secret-verifier") {
+		t.Fatal("the verifier is readable in the state")
 	}
 	// A different secret's signature.
 	other, err := SignState("another-secret-also-at-least-32-chars!!", State{OrganizationID: "org-1"})
@@ -53,6 +60,3 @@ func TestVerifyStateRejectsTampering(t *testing.T) {
 		}
 	}
 }
-
-// forgedSignature is a valid base64 of 32 bytes that signs nothing.
-const forgedSignature = "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE"

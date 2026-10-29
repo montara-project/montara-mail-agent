@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -46,6 +47,7 @@ type Tool struct {
 	Name        string          `json:"name"`
 	Description string          `json:"description"`
 	InputSchema json.RawMessage `json:"input_schema"`
+	ReadOnly    bool            `json:"read_only,omitempty"`
 }
 
 // ErrUnauthorized means the server refused the credentials: an OAuth server
@@ -65,7 +67,11 @@ func Connect(ctx context.Context, cfg Config) (*mcp.ClientSession, error) {
 		if base == nil {
 			base = http.DefaultClient
 		}
-		ht := &headerTransport{base: transportOf(base), headers: headers}
+		endpoint, err := url.Parse(cfg.URL)
+		if err != nil {
+			return nil, fmt.Errorf("the server URL is malformed: %w", err)
+		}
+		ht := &headerTransport{base: transportOf(base), headers: headers, host: endpoint.Host}
 		// Server-initiated messages aren't used, so no standing SSE stream.
 		session, err := client.Connect(ctx, &mcp.StreamableClientTransport{
 			Endpoint:             cfg.URL,
@@ -122,7 +128,8 @@ func SessionTools(ctx context.Context, session *mcp.ClientSession) ([]Tool, erro
 		if err != nil || string(schema) == "null" {
 			schema = json.RawMessage(`{"type":"object"}`)
 		}
-		tools = append(tools, Tool{Name: tool.Name, Description: tool.Description, InputSchema: schema})
+		readOnly := tool.Annotations != nil && tool.Annotations.ReadOnlyHint
+		tools = append(tools, Tool{Name: tool.Name, Description: tool.Description, InputSchema: schema, ReadOnly: readOnly})
 	}
 	return tools, nil
 }
@@ -182,18 +189,24 @@ func clip(s string) string {
 	return s
 }
 
-// headerTransport adds a server's headers to every request and notes a 401,
-// which the SDK otherwise reports as a generic connection failure.
+// headerTransport adds a server's headers to its requests and notes a 401,
+// which the SDK otherwise reports as a generic connection failure. Only the
+// server's own host gets them: the transport sits below http.Client, so it
+// would otherwise put back the Authorization header Go drops when a
+// redirect leaves for another host.
 type headerTransport struct {
 	base    http.RoundTripper
 	headers map[string]string
+	host    string
 	refused bool
 }
 
 func (t *headerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req = req.Clone(req.Context())
-	for key, value := range t.headers {
-		req.Header.Set(key, value)
+	if req.URL.Host == t.host {
+		for key, value := range t.headers {
+			req.Header.Set(key, value)
+		}
 	}
 	res, err := t.base.RoundTrip(req)
 	if err == nil && res.StatusCode == http.StatusUnauthorized {

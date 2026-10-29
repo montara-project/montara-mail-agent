@@ -150,6 +150,24 @@ func testMCPEndpoint(t *testing.T, call callFunc, server *fiber.App, application
 	if text, isError := mcpTool(t, call, scopedKey, "search_mails", map[string]any{"account_id": account.ID}); isError || !strings.Contains(text, "Quote 42") {
 		t.Fatalf("scoped key in its own organization: %v %s", isError, text)
 	}
+	// A read-only key lists, searches and reads, and nothing else.
+	_, out = call(http.MethodPost, "/api/v1/me/api-keys", userToken, map[string]any{"name": "Reader", "read_only": true})
+	readKey, _ := data(out)["key"].(string)
+	if view, _ := data(out)["api_key"].(map[string]any); view["read_only"] != true {
+		t.Fatalf("create a read-only key: %v", out)
+	}
+	_, out = mcpRPC(call, readKey, "tools/list", nil)
+	readTools := map[string]bool{}
+	for _, raw := range out["result"].(map[string]any)["tools"].([]any) {
+		readTools[raw.(map[string]any)["name"].(string)] = true
+	}
+	if !readTools["get_mail"] || readTools["move_mail"] || readTools["propose_reply"] {
+		t.Fatalf("read-only key's tools: %v", readTools)
+	}
+	if status, out := mcpRPC(call, readKey, "tools/call", map[string]any{"name": "move_mail", "arguments": map[string]any{"mail_id": mine[0].ID, "folder": "trash"}}); status != http.StatusOK || out["error"] == nil && !out["result"].(map[string]any)["isError"].(bool) {
+		t.Fatalf("read-only key moved mail: %d %v", status, out)
+	}
+
 	// A global key shows as one: no organization.
 	if _, out := call(http.MethodGet, "/api/v1/me/api-keys", userToken, nil); list(out)[0].(map[string]any)["organization_id"] != nil {
 		t.Fatalf("a global key shows an organization: %v", out)

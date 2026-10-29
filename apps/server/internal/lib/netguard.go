@@ -1,9 +1,10 @@
 package lib
 
 import (
-	"fmt"
+	"errors"
 	"net"
 	"net/netip"
+	"slices"
 	"syscall"
 	"time"
 )
@@ -24,7 +25,9 @@ func GuardedDialer(allowPrivate bool) *net.Dialer {
 			return err
 		}
 		if !PublicAddr(ap.Addr()) {
-			return fmt.Errorf("connecting to %s is not allowed", ap.Addr())
+			// The address stays out of the message: it is shown to whoever typed
+			// the host, and would map internal names to addresses.
+			return errors.New("connecting to a private or reserved address is not allowed")
 		}
 		return nil
 	}
@@ -36,6 +39,19 @@ func PublicAddr(ip netip.Addr) bool {
 	ip = ip.Unmap()
 	return ip.IsValid() && !ip.IsLoopback() && !ip.IsPrivate() && !ip.IsLinkLocalUnicast() &&
 		!ip.IsLinkLocalMulticast() && !ip.IsMulticast() && !ip.IsUnspecified() &&
-		// 100.64.0.0/10, carrier-grade NAT, is internal on many clouds.
-		!netip.MustParsePrefix("100.64.0.0/10").Contains(ip)
+		!slices.ContainsFunc(reservedPrefixes, func(p netip.Prefix) bool { return p.Contains(ip) })
+}
+
+// reservedPrefixes are not public although the netip predicates pass them.
+var reservedPrefixes = []netip.Prefix{
+	// Carrier-grade NAT, internal on many clouds.
+	netip.MustParsePrefix("100.64.0.0/10"),
+	// IETF protocol assignments, benchmarking, and the old class E.
+	netip.MustParsePrefix("192.0.0.0/24"),
+	netip.MustParsePrefix("198.18.0.0/15"),
+	netip.MustParsePrefix("240.0.0.0/4"),
+	// IPv6 forms that carry an IPv4 address a gateway may reach: NAT64 and
+	// 6to4.
+	netip.MustParsePrefix("64:ff9b::/96"),
+	netip.MustParsePrefix("2002::/16"),
 }

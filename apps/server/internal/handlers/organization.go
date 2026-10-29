@@ -138,12 +138,16 @@ func (h *organizationHandler) Update(c fiber.Ctx) error {
 
 // mutateLogged runs an owner-guarded by-id write, records it in the activity
 // log naming the organization when readable, then answers with {message}.
-func (h *organizationHandler) mutateLogged(c fiber.Ctx, action, verb string, fn func(context.Context, uuid.UUID) error, message string) error {
+func (h *organizationHandler) mutateLogged(c fiber.Ctx, action, verb string, fn func(context.Context, uuid.UUID) error, message string, trashed bool) error {
 	id, err := pathID(c, "organization")
 	if err != nil {
 		return err
 	}
-	if err := owner(c, h.app, id); err != nil {
+	check := owner
+	if trashed {
+		check = ownerOfAny
+	}
+	if err := check(c, h.app, id); err != nil {
 		return err
 	}
 	name := ""
@@ -166,15 +170,15 @@ func orgSentence(verb, name string) string {
 }
 
 func (h *organizationHandler) Delete(c fiber.Ctx) error {
-	return h.mutateLogged(c, constant.ActivityOrganizationDeleted, "Deleted", h.repo().Delete, "organization deleted")
+	return h.mutateLogged(c, constant.ActivityOrganizationDeleted, "Deleted", h.repo().Delete, "organization deleted", false)
 }
 
 func (h *organizationHandler) Restore(c fiber.Ctx) error {
-	return h.mutateLogged(c, constant.ActivityOrganizationRestored, "Restored", h.repo().Restore, "organization restored")
+	return h.mutateLogged(c, constant.ActivityOrganizationRestored, "Restored", h.repo().Restore, "organization restored", true)
 }
 
 func (h *organizationHandler) DeletePermanently(c fiber.Ctx) error {
-	return h.mutateLogged(c, constant.ActivityOrganizationPurged, "Permanently deleted", h.repo().ForceDelete, "organization permanently deleted")
+	return h.mutateLogged(c, constant.ActivityOrganizationPurged, "Permanently deleted", h.repo().ForceDelete, "organization permanently deleted", true)
 }
 
 // Stats returns the dashboard totals: unread inbox mail, spam and connected accounts.

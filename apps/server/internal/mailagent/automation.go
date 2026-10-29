@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"html"
+	"montara-mail-agent/server/internal/mailai"
 	"time"
 
 	"github.com/google/uuid"
@@ -147,8 +148,8 @@ func draftReply(ctx context.Context, app *app.Application, orgID uuid.UUID, mail
 	}
 	prompt := fmt.Sprintf(
 		"Draft the reply this mailbox's owner would send:\n\n<email id=%q>\nFrom: %s\nSubject: %s\n\n%s\n</email>",
-		mail.ID, mailAddress(mail.FromName, mail.FromEmail), mail.Subject,
-		clip(mail.Body, mailBodyLimit),
+		mail.ID, mailai.Defuse(mailAddress(mail.FromName, mail.FromEmail)), mailai.Defuse(mail.Subject),
+		mailai.Defuse(clip(mail.Body, mailBodyLimit)),
 	)
 	return client.Complete(ctx, draftSystemFor(persona), prompt, draftPromptTokens)
 }

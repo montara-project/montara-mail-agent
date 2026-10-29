@@ -11,11 +11,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"montara-mail-agent/server/internal/repositories"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"golang.org/x/oauth2"
 
 	"montara-mail-agent/server/internal/lib"
@@ -244,19 +244,13 @@ func claimEmail(claims map[string]any, fields []string) string {
 	return ""
 }
 
-// TokenStore persists a refreshed token pair on the account; the email
-// account repository implements it.
-type TokenStore interface {
-	SetOAuthTokens(ctx context.Context, id uuid.UUID, access, refresh []byte, expiry time.Time) error
-}
-
 // AccessToken returns the account's working IMAP access token: the stored
 // one while it is still fresh, else a refresh exchange whose new pair is
 // stored through store. ponytail: two replicas may refresh at once and the
 // loser's write is overwritten; every provider here honors a refresh token
 // that was already turned in, so that is safe, and a Postgres advisory lock
 // per account becomes worthwhile with more than one replica.
-func AccessToken(ctx context.Context, clients Clients, secrets *lib.SecretBox, store TokenStore, account models.EmailAccount) (string, error) {
+func AccessToken(ctx context.Context, clients Clients, secrets *lib.SecretBox, store *repositories.EmailAccountRepository, account models.EmailAccount) (string, error) {
 	if len(account.OAuthRefreshToken) == 0 {
 		return "", errors.New("the account has no OAuth tokens, connect it again")
 	}

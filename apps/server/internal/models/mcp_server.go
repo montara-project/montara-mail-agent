@@ -43,4 +43,7 @@ type MCPTool struct {
 	Name        string          `json:"name"`
 	Description string          `json:"description"`
 	InputSchema json.RawMessage `json:"input_schema"`
+	// ReadOnly is the server's readOnlyHint: the tool only reads. A tool
+	// that writes is not offered once a turn has read untrusted content.
+	ReadOnly bool `json:"read_only,omitempty"`
 }

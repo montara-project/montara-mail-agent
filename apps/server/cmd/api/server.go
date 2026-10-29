@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/netip"
 	"os"
 	"os/signal"
 	"slices"
@@ -28,6 +29,7 @@ import (
 	"montara-mail-agent/server/internal/config"
 	"montara-mail-agent/server/internal/handlers"
 	"montara-mail-agent/server/internal/ipblock"
+	"montara-mail-agent/server/internal/lib"
 	"montara-mail-agent/server/internal/mailagent"
 	"montara-mail-agent/server/internal/mailsync"
 	"montara-mail-agent/server/internal/middlewares"
@@ -162,11 +164,7 @@ func newServer(app *app.Application) (*fiber.App, error) {
 	// Blocked addresses are refused before anything else runs. The rate
 	// limiter's exempt addresses are never blocked: they are the way back in
 	// for a super user who blocked their own range.
-	exemptIPs := splitCSV(app.Config.App.RateLimitExemptIPs)
-	exemptLoopback := app.Config.App.Env == config.EnvDevelopment
-	app.IPBlocks = ipblock.New(&app.Repositories.IPBlock, app.Logger,
-		func(ip string) bool { return slices.Contains(exemptIPs, ip) || (exemptLoopback && ip == "127.0.0.1") },
-		isSignInPath)
+	app.IPBlocks = ipblock.New(&app.Repositories.IPBlock, app.Logger, clientExempt(app), isSignInPath, autoBlockable(app))
 	loadCtx, cancelLoad := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancelLoad()
 	if err := app.IPBlocks.Reload(loadCtx); err != nil {
@@ -231,4 +229,31 @@ func newServer(app *app.Application) (*fiber.App, error) {
 	}
 
 	return server, nil
+}
+
+// clientExempt is the rule the rate limiters and the IP guard share: the
+// addresses in RATE_LIMIT_EXEMPT_IPS, and loopback in development, are never
+// counted, limited or blocked.
+func clientExempt(app *app.Application) func(ip string) bool {
+	exemptIPs := splitCSV(app.Config.App.RateLimitExemptIPs)
+	exemptLoopback := app.Config.App.Env == config.EnvDevelopment
+	return func(ip string) bool {
+		return slices.Contains(exemptIPs, ip) || (exemptLoopback && ip == "127.0.0.1")
+	}
+}
+
+// autoBlockable keeps automatic blocks to public client addresses: a private
+// address or a trusted proxy is what every client looks like when the proxy
+// setting is wrong, and blocking it would shut everyone out. Manual blocks
+// are unaffected.
+func autoBlockable(app *app.Application) func(netip.Addr) bool {
+	var proxies []netip.Prefix
+	for _, p := range splitCSV(app.Config.App.TrustedProxies) {
+		if prefix, err := ipblock.ParseNetwork(p); err == nil {
+			proxies = append(proxies, prefix)
+		}
+	}
+	return func(addr netip.Addr) bool {
+		return lib.PublicAddr(addr) && !slices.ContainsFunc(proxies, func(p netip.Prefix) bool { return p.Contains(addr) })
+	}
 }

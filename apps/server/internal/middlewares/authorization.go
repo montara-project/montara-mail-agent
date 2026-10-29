@@ -79,6 +79,7 @@ func (m *Middlewares) APIKey(c fiber.Ctx) error {
 	}
 	lib.ContextSetUID(c, uid)
 	lib.ContextSetAPIKeyOrganization(c, lib.APIKeyOrganization(result.ApiKey))
+	lib.ContextSetAPIKeyReadOnly(c, lib.APIKeyReadOnly(result.ApiKey))
 	return c.Next()
 }
 

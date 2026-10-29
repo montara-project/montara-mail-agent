@@ -10,6 +10,8 @@ type APIKeyBody struct {
 	Name           string `json:"name"`
 	ExpiresInDays  int    `json:"expires_in_days"`
 	OrganizationID string `json:"organization_id"`
+	// ReadOnly limits the key to listing, searching and reading mail.
+	ReadOnly bool `json:"read_only"`
 }
 
 func (dto APIKeyBody) Validate(v *validator.MapValidator) {

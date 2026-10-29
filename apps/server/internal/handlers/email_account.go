@@ -3,11 +3,11 @@ package handlers
 import (
 	"cmp"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"html"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -181,7 +181,7 @@ func (h *emailAccountHandler) OAuthStart(c fiber.Ctx) error {
 	// organization it is for, who started it (the callback has no caller of
 	// its own, so the activity log needs this), which web app to return to,
 	// and the PKCE verifier for the exchange.
-	origin, err := requestOrigin(c, h.app.Config.App.CORSAllowedOrigins)
+	origin, err := requestOrigin(c, h.app)
 	if err != nil {
 		return err
 	}
@@ -205,26 +205,25 @@ func (h *emailAccountHandler) OAuthStart(c fiber.Ctx) error {
 	return dtos.OK(c, fiber.Map{"auth_url": authURL})
 }
 
-// OAuthCallback is where the provider sends the browser after consent: it
-// trades the code for tokens, checks the mailbox accepts them, saves the
-// account and returns the browser to the web app, whose account list shows
-// it syncing. Every failure redirects with an error message instead of
-// answering JSON — the browser is on the provider's way back, not in the SPA.
+// OAuthCallback is where the provider sends the browser after consent. It
+// checks the state and hands the code back to the web app, which finishes
+// the flow with OAuthFinish as the signed-in user who started it: the
+// callback itself has no caller, so it must not save anything, or a consent
+// link someone else started would land the victim's mailbox in their
+// organization. Every failure redirects with an error message instead of
+// answering JSON: the browser is on the provider's way back, not in the SPA.
 func (h *emailAccountHandler) OAuthCallback(c fiber.Ctx) error {
 	provider := c.Params("provider")
-	toAccount := func(origin, message string) error {
-		target := origin + "/account"
-		if message != "" {
-			target += "?" + message
-		}
-		return c.Redirect().To(target)
+	toAccount := func(origin, query string) error {
+		return c.Redirect().To(origin + "/account?" + query)
 	}
 	fail := func(origin string, err error) error {
 		h.app.Logger.Warn("oauth callback failed", "provider", provider, "error", err)
 		return toAccount(origin, "error="+url.QueryEscape(err.Error()))
 	}
 
-	state, err := mailoauth.VerifyState(h.app.Config.App.Secret, c.Query("state"))
+	raw := c.Query("state")
+	state, err := mailoauth.VerifyState(h.app.Config.App.Secret, raw)
 	if err != nil {
 		return fail(fallbackOrigin(h.app), err)
 	}
@@ -234,33 +233,61 @@ func (h *emailAccountHandler) OAuthCallback(c fiber.Ctx) error {
 	if c.Query("error") != "" {
 		return fail(state.Origin, errors.New(c.Query("error_description", c.Query("error"))))
 	}
+	return toAccount(state.Origin, "oauth="+url.QueryEscape(provider)+"&code="+url.QueryEscape(c.Query("code"))+"&state="+url.QueryEscape(raw))
+}
+
+// OAuthFinish trades the code the callback handed to the web app for tokens,
+// checks the mailbox accepts them and saves the account. Only the user who
+// started the flow may finish it, in an organization they still belong to.
+func (h *emailAccountHandler) OAuthFinish(c fiber.Ctx) error {
+	provider := c.Params("provider")
+	var body dtos.OAuthFinishBody
+	if err := lib.ValidateRequestBody(c, &body); err != nil {
+		return err
+	}
+	state, err := mailoauth.VerifyState(h.app.Config.App.Secret, body.State)
+	if err != nil {
+		return apperr.New(apperr.KindBadRequest, "%s", err.Error())
+	}
+	if state.Provider != provider {
+		return apperr.New(apperr.KindBadRequest, "the provider in the state doesn't match")
+	}
+	uid, err := lib.ContextGetUID(c)
+	if err != nil {
+		return apperr.ErrUnauthorized
+	}
+	if state.UserID != uid.String() {
+		return apperr.New(apperr.KindForbidden, "this sign-in was started by someone else: start it again from your account")
+	}
+	organizationID, err := uuid.Parse(state.OrganizationID)
+	if err != nil {
+		return apperr.New(apperr.KindBadRequest, "the organization in the state is malformed")
+	}
+	if _, err := member(c, h.app, organizationID); err != nil {
+		return err
+	}
 
 	p, ok := mailoauth.Get(provider)
 	if !ok {
-		return fail(state.Origin, errors.New(provider+" has no OAuth sign-in"))
+		return apperr.New(apperr.KindBadRequest, "%s has no OAuth sign-in", provider)
 	}
 	creds, ok := h.app.MailOAuth.For(provider)
 	if !ok {
-		return fail(state.Origin, fmt.Errorf("OAuth for %s isn't configured on this server", provider))
+		return apperr.New(apperr.KindBadRequest, "OAuth for %s isn't configured on this server", provider)
 	}
 
 	exchangeCtx, cancel := context.WithTimeout(c.Context(), 30*time.Second)
 	defer cancel()
-	token, err := p.Exchange(exchangeCtx, creds, mailoauth.RedirectURI(h.app.Config.Auth.BaseURL, provider), c.Query("code"), state.Verifier)
+	token, err := p.Exchange(exchangeCtx, creds, mailoauth.RedirectURI(h.app.Config.Auth.BaseURL, provider), body.Code, state.Verifier)
 	if err != nil {
-		return fail(state.Origin, fmt.Errorf("the sign-in wasn't accepted: %w", err))
+		return apperr.New(apperr.KindBadRequest, "the sign-in wasn't accepted: %v", err)
 	}
 
 	clientCtx, cancel := context.WithTimeout(c.Context(), 30*time.Second)
 	defer cancel()
 	email, err := p.MailboxEmail(clientCtx, oauth2.NewClient(clientCtx, oauth2.StaticTokenSource(token)), idToken(token))
 	if err != nil {
-		return fail(state.Origin, err)
-	}
-
-	organizationID, err := uuid.Parse(state.OrganizationID)
-	if err != nil {
-		return fail(state.Origin, errors.New("the organization in the state is malformed"))
+		return apperr.New(apperr.KindBadGateway, "%s", err.Error())
 	}
 	account := models.EmailAccount{
 		OrganizationID: organizationID,
@@ -277,11 +304,11 @@ func (h *emailAccountHandler) OAuthCallback(c fiber.Ctx) error {
 	// The mailbox must accept the token before it is saved, like the
 	// password flow refuses a wrong password.
 	if err := h.sync.VerifyOAuth(clientCtx, account.IMAPHost, account.IMAPPort, account.Username, token.AccessToken); err != nil {
-		return fail(state.Origin, fmt.Errorf("the mailbox refused the sign-in: %w", err))
+		return apperr.New(apperr.KindBadGateway, "the mailbox refused the sign-in: %v", err)
 	}
 
 	if account.ID, err = uuid.NewV7(); err != nil {
-		return fail(state.Origin, err)
+		return err
 	}
 	account.OAuthAccessToken = h.app.Secrets.Seal(token.AccessToken)
 	account.OAuthRefreshToken = h.app.Secrets.Seal(token.RefreshToken)
@@ -290,7 +317,7 @@ func (h *emailAccountHandler) OAuthCallback(c fiber.Ctx) error {
 	}
 	account.OAuthTokenExpiry = &token.Expiry
 	if err := h.repo().Insert(c.Context(), account); err != nil {
-		return fail(state.Origin, err)
+		return err
 	}
 
 	// The first sync takes a while; the account list polls until it lands.
@@ -301,23 +328,10 @@ func (h *emailAccountHandler) OAuthCallback(c fiber.Ctx) error {
 		}
 	}()
 	h.app.Logger.Info("mailbox connected over OAuth", "account", account.ID, "provider", provider)
-	var metadata json.RawMessage
-	if raw, err := json.Marshal(map[string]any{"provider": provider, "email": email}); err == nil {
-		metadata = raw
-	}
-	entry := models.ActivityLog{
-		OrganizationID: &organizationID,
-		Action:         constant.ActivityEmailAccountConnected,
-		Description:    fmt.Sprintf("Connected the mailbox %s (%s) over OAuth", email, provider),
-		Metadata:       metadata,
-	}
-	if state.UserID != "" {
-		if uid, err := uuid.Parse(state.UserID); err == nil {
-			entry.UserID = &uid
-		}
-	}
-	h.app.Repositories.ActivityLog.Record(c.Context(), entry)
-	return toAccount(state.Origin, "connected="+url.QueryEscape(provider))
+	recordActivity(c, h.app, organizationID, constant.ActivityEmailAccountConnected,
+		fmt.Sprintf("Connected the mailbox %s (%s) over OAuth", email, provider),
+		map[string]any{"provider": provider, "email": email})
+	return dtos.Created(c, fiber.Map{"email": email, "provider": provider}, "mailbox connected")
 }
 
 // idToken returns the OIDC id token a token response carried, if any.
@@ -326,11 +340,17 @@ func idToken(token *oauth2.Token) string {
 	return id
 }
 
-// requestOrigin is the web app's origin that started the flow — the Origin
-// header, else the Referer's, else the first allowed CORS origin — which the
-// callback redirects back to; the API can't know where the SPA lives on its
-// own.
-func requestOrigin(c fiber.Ctx, allowedOrigins string) (string, error) {
+// requestOrigin is the web app's origin that started the flow (the Origin
+// header, else the Referer's, else the first allowed CORS origin), which the
+// callback redirects back to with the code. It must be one of the web apps
+// this server serves: an allowed CORS origin, or the API's own (the SPA it
+// serves itself); any other would receive the code.
+func requestOrigin(c fiber.Ctx, app *app.Application) (string, error) {
+	allowed := splitOrigins(app.Config.App.CORSAllowedOrigins)
+	if u, err := url.Parse(app.Config.Auth.BaseURL); err == nil && u.Host != "" {
+		allowed = append(allowed, u.Scheme+"://"+u.Host)
+	}
+
 	origin := c.Get(fiber.HeaderOrigin)
 	if origin == "" || origin == "null" {
 		if ref := c.Get(fiber.HeaderReferer); ref != "" {
@@ -339,16 +359,29 @@ func requestOrigin(c fiber.Ctx, allowedOrigins string) (string, error) {
 			}
 		}
 	}
-	if origin == "" || origin == "null" {
-		if first, _, _ := strings.Cut(allowedOrigins, ","); strings.TrimSpace(first) != "" {
-			origin = strings.TrimSpace(first)
-		}
+	if (origin == "" || origin == "null") && len(allowed) > 0 {
+		origin = allowed[0]
 	}
 	u, err := url.Parse(origin)
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.Path != "" {
 		return "", apperr.New(apperr.KindBadRequest, "the web app's origin can't be determined for the OAuth return")
 	}
-	return u.Scheme + "://" + u.Host, nil
+	origin = u.Scheme + "://" + u.Host
+	if !slices.Contains(allowed, origin) {
+		return "", apperr.New(apperr.KindBadRequest, "%s is not a web app of this server: add it to CORS_ALLOWED_ORIGINS", origin)
+	}
+	return origin, nil
+}
+
+// splitOrigins reads a comma-separated origin list, dropping blanks.
+func splitOrigins(list string) []string {
+	var out []string
+	for _, o := range strings.Split(list, ",") {
+		if o = strings.TrimSpace(o); o != "" {
+			out = append(out, strings.TrimRight(o, "/"))
+		}
+	}
+	return out
 }
 
 // fallbackOrigin is where a callback whose state is missing or broken sends

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"html"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -30,6 +31,42 @@ import (
 type agentHandler struct {
 	app  *app.Application
 	sync *mailsync.Syncer
+	runs runLimiter
+}
+
+// maxRunsPerUser bounds one user's agent answers in flight: each can make
+// several paid model calls and minute-long tool calls, and the per-address
+// rate limit alone would let them pile up.
+const maxRunsPerUser = 2
+
+// runLimiter counts each user's agent answers in flight.
+//
+// ponytail: counted per replica, so a user behind a load balancer gets that
+// many per replica; count in shared storage once that matters.
+type runLimiter struct {
+	mu     sync.Mutex
+	active map[uuid.UUID]int
+}
+
+func (l *runLimiter) acquire(uid uuid.UUID) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.active == nil {
+		l.active = map[uuid.UUID]int{}
+	}
+	if l.active[uid] >= maxRunsPerUser {
+		return false
+	}
+	l.active[uid]++
+	return true
+}
+
+func (l *runLimiter) release(uid uuid.UUID) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.active[uid]--; l.active[uid] <= 0 {
+		delete(l.active, uid)
+	}
 }
 
 // conversationOf loads one conversation the caller owns, in an organization
@@ -252,11 +289,15 @@ func (h *agentHandler) Chat(c fiber.Ctx) error {
 
 	// Server-sent events: fiber buffers its answer, so the run writes through
 	// a stream writer and flushes event by event.
+	if !h.runs.acquire(uid) {
+		return apperr.New(apperr.KindTooManyRequests, "%d answers are already running: wait for one to finish", maxRunsPerUser)
+	}
 	c.Set(fiber.HeaderContentType, "text/event-stream")
 	c.Set(fiber.HeaderCacheControl, "no-cache")
 	c.Set("X-Accel-Buffering", "no")
 
 	c.RequestCtx().SetBodyStreamWriter(fasthttp.StreamWriter(func(w *bufio.Writer) {
+		defer h.runs.release(uid)
 		emit := func(ev mailagent.Event) error {
 			raw, err := json.Marshal(ev)
 			if err != nil {
@@ -326,12 +367,17 @@ func (h *agentHandler) decideAction(c fiber.Ctx, approve bool) error {
 	if _, err := member(c, h.app, action.OrganizationID); err != nil {
 		return err
 	}
+	// A proposal is its conversation's owner's to decide, like the
+	// conversation itself; another member reads it as missing.
+	if uid, err := lib.ContextGetUID(c); err != nil || action.UserID != uid {
+		return apperr.New(apperr.KindNotFound, "record not found in agent actions")
+	}
 	if action.Status != models.AgentActionPending {
 		return apperr.New(apperr.KindConflict, "this proposal was already %s", action.Status)
 	}
 
 	if !approve {
-		if err := h.app.Repositories.Agent.SetActionStatus(c.Context(), action.ID, models.AgentActionDenied, ""); err != nil {
+		if err := h.app.Repositories.Agent.ClaimAction(c.Context(), action.ID, models.AgentActionDenied); err != nil {
 			return err
 		}
 		action.Status = models.AgentActionDenied
@@ -340,7 +386,7 @@ func (h *agentHandler) decideAction(c fiber.Ctx, approve bool) error {
 
 	// Execute after marking approved, so a crash mid-send reads as approved,
 	// not as silently dropped.
-	if err := h.app.Repositories.Agent.SetActionStatus(c.Context(), action.ID, models.AgentActionApproved, ""); err != nil {
+	if err := h.app.Repositories.Agent.ClaimAction(c.Context(), action.ID, models.AgentActionApproved); err != nil {
 		return err
 	}
 	ctx, cancel := context.WithTimeout(c.Context(), 2*time.Minute)

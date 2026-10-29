@@ -55,18 +55,45 @@ type Guard struct {
 	// a super user who blocked their own range.
 	exempt     func(ip string) bool
 	signInPath func(path string) bool
+	// autoBlockable says whether an address may be blocked automatically:
+	// never a private one or a trusted proxy, which stand for many clients
+	// when the proxy setting is wrong, so one abuser would shut out all.
+	autoBlockable func(addr netip.Addr) bool
 
 	blocks atomic.Pointer[[]netip.Prefix]
 
 	mu      sync.Mutex
-	strikes map[netip.Addr]map[strikeKind][]time.Time
+	strikes map[netip.Prefix]map[strikeKind][]time.Time
 }
 
 // New returns a guard with no blocks; Reload loads them.
-func New(repo *repositories.IPBlockRepository, logger *slog.Logger, exempt func(ip string) bool, signInPath func(path string) bool) *Guard {
-	g := &Guard{repo: repo, logger: logger, exempt: exempt, signInPath: signInPath, strikes: map[netip.Addr]map[strikeKind][]time.Time{}}
+func New(repo *repositories.IPBlockRepository, logger *slog.Logger, exempt func(ip string) bool, signInPath func(path string) bool, autoBlockable func(addr netip.Addr) bool) *Guard {
+	g := &Guard{repo: repo, logger: logger, exempt: exempt, signInPath: signInPath, autoBlockable: autoBlockable, strikes: map[netip.Prefix]map[strikeKind][]time.Time{}}
 	g.blocks.Store(&[]netip.Prefix{})
 	return g
+}
+
+// Subject is the network one client is counted and blocked as: the IPv4
+// address itself, or the IPv6 /64 around it, since one host is usually given
+// a whole /64 and could otherwise rotate addresses past every limit.
+func Subject(ip string) (netip.Prefix, bool) {
+	addr, ok := parseAddr(ip)
+	if !ok {
+		return netip.Prefix{}, false
+	}
+	if addr.Is6() {
+		return netip.PrefixFrom(addr, 64).Masked(), true
+	}
+	return netip.PrefixFrom(addr, 32), true
+}
+
+// SubjectKey is Subject as a string, for the rate limiter's key: an address
+// that does not parse keys as itself.
+func SubjectKey(ip string) string {
+	if p, ok := Subject(ip); ok {
+		return p.String()
+	}
+	return ip
 }
 
 // ParseNetwork reads an address or a range as a network: "203.0.113.7" is
@@ -122,14 +149,14 @@ func (g *Guard) Reload(ctx context.Context) error {
 	return nil
 }
 
-// Forget clears the strikes of the addresses in network, so an address a
-// super user unblocked starts over.
+// Forget clears the strikes of the clients in network, so an address a super
+// user unblocked starts over.
 func (g *Guard) Forget(network netip.Prefix) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	for addr := range g.strikes {
-		if network.Contains(addr) {
-			delete(g.strikes, addr)
+	for subject := range g.strikes {
+		if network.Overlaps(subject) {
+			delete(g.strikes, subject)
 		}
 	}
 }
@@ -154,7 +181,7 @@ func (g *Guard) Run(ctx context.Context) {
 func (g *Guard) prune(now time.Time) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	for addr, kinds := range g.strikes {
+	for subject, kinds := range g.strikes {
 		for kind, at := range kinds {
 			kinds[kind] = recent(at, now)
 			if len(kinds[kind]) == 0 {
@@ -162,7 +189,7 @@ func (g *Guard) prune(now time.Time) {
 			}
 		}
 		if len(kinds) == 0 {
-			delete(g.strikes, addr)
+			delete(g.strikes, subject)
 		}
 	}
 }
@@ -175,15 +202,16 @@ func recent(at []time.Time, now time.Time) []time.Time {
 // limit within the window.
 func (g *Guard) strike(ip string, kind strikeKind) {
 	addr, ok := parseAddr(ip)
-	if !ok {
+	if !ok || !g.autoBlockable(addr) {
 		return
 	}
+	subject, _ := Subject(ip)
 	now := time.Now()
 	g.mu.Lock()
-	kinds := g.strikes[addr]
+	kinds := g.strikes[subject]
 	if kinds == nil {
 		kinds = map[strikeKind][]time.Time{}
-		g.strikes[addr] = kinds
+		g.strikes[subject] = kinds
 	}
 	kinds[kind] = append(recent(kinds[kind], now), now)
 	count := len(kinds[kind])
@@ -193,7 +221,7 @@ func (g *Guard) strike(ip string, kind strikeKind) {
 	}
 	reached := count >= limit
 	if reached {
-		delete(g.strikes, addr)
+		delete(g.strikes, subject)
 	}
 	g.mu.Unlock()
 	if !reached {
@@ -204,7 +232,7 @@ func (g *Guard) strike(ip string, kind strikeKind) {
 	// the next one.
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	network := netip.PrefixFrom(addr, addr.BitLen())
+	network := subject
 	why := fmt.Sprintf("%d %s within %s", limit, reason, Window)
 	if err := g.repo.BlockAuto(ctx, network.String(), why, now.Add(AutoBlockFor)); err != nil {
 		g.logger.Error("ip not blocked", "ip", ip, "error", err)

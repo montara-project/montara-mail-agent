@@ -11,6 +11,25 @@ import (
 // not mounted (cmd/api/api_keys.go), so a key's scope is fixed at creation.
 const APIKeyOrganizationField = "organization_id"
 
+// APIKeyReadOnlyField marks a key that may only list, search and read mail.
+const APIKeyReadOnlyField = "read_only"
+
+// APIKeyReadOnly reports whether a key may only read.
+func APIKeyReadOnly(k *apikeyplugintypes.ApiKey) bool {
+	readOnly, _ := k.Metadata[APIKeyReadOnlyField].(bool)
+	return readOnly
+}
+
+// ContextSetAPIKeyReadOnly stores whether the signed-in key may only read.
+func ContextSetAPIKeyReadOnly(c fiber.Ctx, readOnly bool) {
+	fiber.Locals[bool](c, "api_key_read_only", readOnly)
+}
+
+// ContextGetAPIKeyReadOnly returns what ContextSetAPIKeyReadOnly stored.
+func ContextGetAPIKeyReadOnly(c fiber.Ctx) bool {
+	return fiber.Locals[bool](c, "api_key_read_only")
+}
+
 // APIKeyOrganization returns the organization a key is scoped to, or uuid.Nil
 // for a global key.
 func APIKeyOrganization(k *apikeyplugintypes.ApiKey) uuid.UUID {

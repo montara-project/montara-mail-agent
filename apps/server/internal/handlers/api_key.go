@@ -36,6 +36,7 @@ type apiKeyView struct {
 	Hint             string     `json:"hint"`
 	OrganizationID   *string    `json:"organization_id"`
 	OrganizationName *string    `json:"organization_name"`
+	ReadOnly         bool       `json:"read_only"`
 	CreatedAt        time.Time  `json:"created_at"`
 	ExpiresAt        *time.Time `json:"expires_at"`
 	LastUsedAt       *time.Time `json:"last_used_at"`
@@ -55,6 +56,7 @@ func newAPIKeyView(k *apikeyplugintypes.ApiKey, orgName string) apiKeyView {
 		CreatedAt:  k.CreatedAt,
 		ExpiresAt:  k.ExpiresAt,
 		LastUsedAt: k.LastRequestedAt,
+		ReadOnly:   lib.APIKeyReadOnly(k),
 	}
 	if orgID := lib.APIKeyOrganization(k); orgID != uuid.Nil {
 		id := orgID.String()
@@ -145,6 +147,12 @@ func (h *apiKeyHandler) Create(c fiber.Ctx) error {
 			return err
 		}
 		orgName, metadata = org.Name, map[string]any{lib.APIKeyOrganizationField: orgID.String()}
+	}
+	if body.ReadOnly {
+		if metadata == nil {
+			metadata = map[string]any{}
+		}
+		metadata[lib.APIKeyReadOnlyField] = true
 	}
 
 	created, err := keys.Create(c.Context(), userActor(uid), apikeyplugintypes.CreateApiKeyRequest{

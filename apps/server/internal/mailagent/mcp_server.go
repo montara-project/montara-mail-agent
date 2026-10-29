@@ -51,12 +51,14 @@ type mcpUserKey struct{}
 type mcpCaller struct {
 	uid uuid.UUID
 	org uuid.UUID
+	// readOnly keys get only the tools that read.
+	readOnly bool
 }
 
 // WithMCPUser marks the request as the given user's, through a key scoped to
-// org (uuid.Nil for a global key), for NewMCPHandler.
-func WithMCPUser(ctx context.Context, uid, org uuid.UUID) context.Context {
-	return context.WithValue(ctx, mcpUserKey{}, mcpCaller{uid: uid, org: org})
+// org (uuid.Nil for a global key) and possibly read-only, for NewMCPHandler.
+func WithMCPUser(ctx context.Context, uid, org uuid.UUID, readOnly bool) context.Context {
+	return context.WithValue(ctx, mcpUserKey{}, mcpCaller{uid: uid, org: org, readOnly: readOnly})
 }
 
 // NewMCPHandler serves MCP over streamable HTTP for the user WithMCPUser
@@ -109,6 +111,10 @@ func newMCPServer(app *app.Application, sync *mailsync.Syncer, caller mcpCaller)
 	// The external MCP servers an organization added stay with the in-app
 	// agent: this toolset never loads them.
 	for _, def := range (&toolset{}).defs() {
+		// A read-only key never sees the tools that move, label or propose.
+		if caller.readOnly && !slices.Contains(mcpReadOnly, def.Name) {
+			continue
+		}
 		schema, byMail := mcpSchema(def.Parameters)
 		server.AddTool(&mcp.Tool{
 			Name:        def.Name,

@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"slices"
 	"strings"
 
 	"github.com/google/uuid"
@@ -90,6 +91,9 @@ func Run(ctx context.Context, app *app.Application, sync *mailsync.Syncer, s Ses
 
 	tools := newToolset(app, sync, s)
 	tools.loadMCP(ctx)
+	// A turn about an email, or one following tool answers, already holds
+	// untrusted text.
+	tools.tainted = s.MailID != "" || slices.ContainsFunc(messages, func(m llm.ChatMessage) bool { return len(m.Results) > 0 })
 	defer tools.closeMCP()
 	system := systemPrompt(s)
 	if len(tools.mcp.defs) > 0 {

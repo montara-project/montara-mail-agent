@@ -126,7 +126,7 @@ stateless and answers plain JSON, so each POST is a whole exchange.
 
 | Route                                  | What it does                                                                                   |
 | -------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `GET, POST /api/v1/me/api-keys`        | List the user's API keys, or create one: `name`, `expires_in_days` (1 to 365, default 90), and `organization_id` to scope it to one organization (empty: every organization the user reaches). The key itself is in the create answer only. |
+| `GET, POST /api/v1/me/api-keys`        | List the user's API keys, or create one: `name`, `expires_in_days` (1 to 365, default 90), `organization_id` to scope it to one organization (empty: every organization the user reaches), and `read_only` to limit it to listing, searching and reading. The key itself is in the create answer only. |
 | `DELETE /api/v1/me/api-keys/:id`       | Revoke a key.                                                                                  |
 | `POST /mcp`                            | MCP, signed in with `Authorization: Bearer <api key>`.                                         |
 
@@ -165,7 +165,8 @@ A blocked address (or range) is refused with 403 before any route runs. A
 super user manages them; the server also blocks an address for an hour after
 10 failed sign-ins or 5 rate-limited requests within 10 minutes. Addresses in
 `RATE_LIMIT_EXEMPT_IPS` are never blocked, and the caller cannot block their
-own address.
+own address. An IPv6 client is counted and blocked by its /64, and private
+addresses and trusted proxies are never blocked automatically.
 
 | Route                          | What it does                                                                                           |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------ |

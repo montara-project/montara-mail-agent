@@ -5,7 +5,6 @@ import (
 	"github.com/gofiber/fiber/v3"
 
 	"montara-mail-agent/server/internal/app"
-	"montara-mail-agent/server/internal/config"
 	"montara-mail-agent/server/internal/handlers"
 	"montara-mail-agent/server/internal/middlewares"
 )
@@ -22,30 +21,22 @@ func routes(r *fiber.App, app *app.Application) {
 	h := handlers.New(app)
 	m := middlewares.New(app)
 
-	// With an SPA, / is its index.html (see server.go).
-	if app.Config.App.SPADir == "" {
-		r.Get("/", func(c fiber.Ctx) error {
-			return c.JSON(fiber.Map{
-				"message": "Hello, World!",
-			})
-		})
-	}
+	// With an SPA, / is its index.html (see server.go); /health answers
+	// liveness either way.
 	r.Get("/health", h.Health.Check)
+	exempt := clientExempt(app)
 
 	// Authula: email & password, Google OAuth2 and magic-link sign-in,
 	// plus GET /me and POST /sign-out, all under authBasePath. The limiter
 	// guards password guessing and sign-in/reset email flooding.
 	r.Use(authBasePath,
-		middlewares.RateLimit(authRateLimit, app.Config.App.Env == config.EnvDevelopment, splitCSV(app.Config.App.RateLimitExemptIPs)),
+		middlewares.RateLimit(authRateLimit, exempt),
 		fiberadapter.New(fiberadapter.Config{Handler: app.Auth.Handler()}),
 	)
 
-	exemptLoopback := app.Config.App.Env == config.EnvDevelopment
-	exemptIPs := splitCSV(app.Config.App.RateLimitExemptIPs)
-
 	// ponytail: the limiters count in memory, so each replica has its own
 	// budget; give them shared storage once there is more than one instance.
-	v1 := r.Group("/api/v1", middlewares.RateLimit(apiRateLimit, exemptLoopback, exemptIPs))
+	v1 := r.Group("/api/v1", middlewares.RateLimit(apiRateLimit, exempt))
 
 	// Every route below needs a signed-in user; what they may touch follows
 	// from their organizations (see handlers.member). Idempotency comes last,
@@ -57,7 +48,7 @@ func routes(r *fiber.App, app *app.Application) {
 
 	// Model calls and IMAP syncs are slow and may be paid, so they share a
 	// tighter budget.
-	slow := middlewares.RateLimit(aiRateLimit, exemptLoopback, exemptIPs)
+	slow := middlewares.RateLimit(aiRateLimit, exempt)
 
 	// The signed-in user's own account. Password checks share the slow
 	// budget, which also slows guessing the current password.
@@ -116,6 +107,9 @@ func routes(r *fiber.App, app *app.Application) {
 	v1.Get("/email-accounts/oauth/:provider/callback", h.EmailAccount.OAuthCallback)
 
 	emailAccounts := v1.Group("/email-accounts", m.Authorization)
+	// The web app finishes an OAuth connection here, signed in as whoever
+	// started it (see OAuthCallback).
+	emailAccounts.Post("/oauth/:provider/finish", slow, h.EmailAccount.OAuthFinish)
 	emailAccounts.Get("/:id/mails", h.EmailAccount.Mails)
 	emailAccounts.Delete("/:id", idempotent, h.EmailAccount.Delete)
 	emailAccounts.Post("/:id/sync", slow, h.EmailAccount.Sync)
@@ -142,6 +136,7 @@ func routes(r *fiber.App, app *app.Application) {
 	// Contacting a server (sync, test, sign-in) shares the slow budget: each
 	// one reaches out to a host the user typed.
 	mcpServers := v1.Group("/mcp-servers", m.Authorization)
+	mcpServers.Post("/oauth/finish", slow, h.MCPServer.OAuthFinish)
 	mcpServers.Put("/:id", slow, idempotent, h.MCPServer.Update)
 	mcpServers.Delete("/:id", idempotent, h.MCPServer.Delete)
 	mcpServers.Post("/:id/sync", slow, h.MCPServer.Sync)
@@ -151,7 +146,7 @@ func routes(r *fiber.App, app *app.Application) {
 	// MCP clients outside the app: the agent's mailbox tools, signed in with
 	// an API key only (see middlewares.APIKey). Every method goes to the MCP
 	// handler, which answers the ones a stateless server has no use for.
-	r.All(handlers.MCPPath, middlewares.RateLimit(apiRateLimit, exemptLoopback, exemptIPs), m.APIKey, h.MCP.Serve)
+	r.All(handlers.MCPPath, middlewares.RateLimit(apiRateLimit, exempt), m.APIKey, h.MCP.Serve)
 
 	// The addresses the whole server refuses; super user only (see
 	// ipblock.Guard, which enforces them before any route).
@@ -176,7 +171,7 @@ func routes(r *fiber.App, app *app.Application) {
 	// and the approvals its proposals wait for. The chat streams its answer
 	// over SSE, and one turn can run several model calls, so it shares the
 	// AI budget rather than the general one.
-	agent := v1.Group("/agent", m.Authorization, middlewares.RateLimit(aiRateLimit, exemptLoopback, exemptIPs))
+	agent := v1.Group("/agent", m.Authorization, middlewares.RateLimit(aiRateLimit, exempt))
 	agent.Get("/conversations", h.Agent.Conversations)
 	agent.Post("/conversations", h.Agent.CreateConversation)
 	agent.Get("/conversations/:id", h.Agent.Conversation)

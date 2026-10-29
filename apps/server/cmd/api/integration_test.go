@@ -390,6 +390,7 @@ func TestIntegration(t *testing.T) {
 	testActivityLogs(t, call, userToken, superToken, userOrg, superOrg, userEmail)
 	testMCPEndpoint(t, call, server, application, userToken, superToken, userOrg, superOrg)
 	testIPBlocks(t, call, userToken, superToken)
+	testOAuthFinish(t, call, application, userToken, userOrg)
 	testAccountSettings(t, call, func() string { return cookies }, db, userEmail, userPass)
 
 	// Signing out revokes the access token.
