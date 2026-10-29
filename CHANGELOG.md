@@ -3,6 +3,20 @@
 All notable changes to this project are documented in this file. Versions follow the git tags (`v*`); Docker images are published to ghcr.io with the same version.
 
 
+## [0.6.0](https://github.com/montara-project/montara-mail-agent/compare/v0.5.0...v0.6.0) (2026-10-29)
+
+### Features
+
+* **server:** block IP addresses, by hand and automatically ([478703a](https://github.com/montara-project/montara-mail-agent/commit/478703ab4a595b5d78b4628a02de2c1a78d7ce84))
+* **server:** scope API keys to one organization, and let /mcp reach what the app does ([726b890](https://github.com/montara-project/montara-mail-agent/commit/726b890a4c4a97d76647a1c985bf7a946c9e894c))
+* **web-ui:** pick an API key's access, one organization or all ([e0bf33e](https://github.com/montara-project/montara-mail-agent/commit/e0bf33ee2995ed8074158a657e56b2f152a1585d))
+* **web-ui:** replace the sample storage meter with a subscribe banner ([c83c524](https://github.com/montara-project/montara-mail-agent/commit/c83c5247fc29409d384bbeaac24ff00b21230c2f))
+
+### Bug Fixes
+
+* **server:** close the findings of the 2026-10-29 security audit ([4a458f0](https://github.com/montara-project/montara-mail-agent/commit/4a458f0a89c8056e13c13652324ad6d40332335a))
+* **web-ui:** finish OAuth in the app, never load images from AI answers ([97253bd](https://github.com/montara-project/montara-mail-agent/commit/97253bdf0c104c66d858a968bdf812c4be5a17e5))
+
 ## [0.5.0](https://github.com/montara-project/montara-mail-agent/compare/v0.4.0...v0.5.0) (2026-10-29)
 
 ### Features
