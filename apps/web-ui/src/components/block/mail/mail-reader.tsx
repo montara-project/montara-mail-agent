@@ -341,12 +341,13 @@ export default function MailReader({ mailId }: { mailId: string }) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-5">
+      <div className="@container flex-1 overflow-y-auto px-6 py-5">
         <div className="flex flex-wrap items-start gap-3 border-b pb-4">
           <Avatar className="size-10">
             <AvatarFallback>{mailInitials(senderName(mail))}</AvatarFallback>
           </Avatar>
-          <div className="grid min-w-0 flex-1 gap-0.5 text-sm">
+          {/* A narrow pane gives the sender the whole line; the date and actions wrap below. */}
+          <div className="grid min-w-0 flex-1 basis-[calc(100%-3.25rem)] gap-0.5 text-sm @lg:basis-0">
             <p className="truncate">
               <span className="font-semibold">{senderName(mail)}</span>{' '}
               {mail.from_name && <span className="text-muted-foreground">{mail.from_email}</span>}
@@ -369,7 +370,7 @@ export default function MailReader({ mailId }: { mailId: string }) {
               </p>
             )}
           </div>
-          <div className="text-muted-foreground flex shrink-0 items-center gap-0.5 text-sm">
+          <div className="text-muted-foreground flex shrink-0 items-center gap-0.5 text-sm @max-lg:ms-13">
             <span className="mr-1.5">{format(new Date(mail.received_at), 'MMM d, HH.mm')}</span>
             <IconButton label="Print" onClick={() => printMail(mail)}>
               <Printer />
@@ -411,7 +412,7 @@ export default function MailReader({ mailId }: { mailId: string }) {
             >
               <Sparkles className="text-accent-ink size-4 shrink-0" aria-hidden />
               {mail.importance
-                ? `This email is considered as ${IMPORTANCE_LABELS[mail.importance].toLowerCase()}`
+                ? `This email is considered ${IMPORTANCE_LABELS[mail.importance].toLowerCase()}`
                 : 'This email has not been classified yet'}
             </span>
             {mail.importance && (

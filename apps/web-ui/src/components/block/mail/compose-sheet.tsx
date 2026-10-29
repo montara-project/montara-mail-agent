@@ -132,7 +132,10 @@ export default function ComposeSheet({
           <Row label="From">
             {accounts?.length ? (
               <Select value={fromId} onValueChange={setFrom} indicatorPosition="right">
-                <SelectTrigger aria-label="From" className="h-9">
+                <SelectTrigger
+                  aria-label="From"
+                  className="h-9 [&>span]:min-w-0 [&>span]:flex-1 [&>span]:text-start [&>span]:break-all"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent position="popper">

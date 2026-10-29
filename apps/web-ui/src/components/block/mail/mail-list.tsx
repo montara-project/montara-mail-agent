@@ -88,12 +88,13 @@ export function useMailPage() {
 function EmptyList() {
   const { isPending } = useMailAccounts()
   const account = useMailAccount()
+  const folder = useMailFolder()
   const { mask } = useHideEmails()
 
   if (isPending) return null
   if (!account) {
     return (
-      <div className="grid justify-items-center gap-3 p-6 text-center text-sm">
+      <div className="grid h-full content-center justify-items-center gap-3 p-6 text-center text-sm">
         <p className="text-muted-foreground">No email account is connected to this organization.</p>
         <Button asChild size="sm">
           <Link to="/account">
@@ -106,13 +107,18 @@ function EmptyList() {
   }
   if (!account.synced_at && !account.sync_error) {
     return (
-      <p className="text-muted-foreground flex items-center justify-center gap-2 p-6 text-sm">
+      <p className="text-muted-foreground flex h-full items-center justify-center gap-2 p-6 text-sm">
         <RefreshCw className="size-4 animate-spin motion-reduce:animate-none" />
         Syncing {mask(account.email)}...
       </p>
     )
   }
-  return <p className="text-muted-foreground p-4 text-center text-sm">No mail here.</p>
+  return (
+    <div className="text-muted-foreground grid h-full content-center justify-items-center gap-2 p-6 text-center text-sm">
+      <folder.icon className="size-6 opacity-60" aria-hidden />
+      <p>No mail here.</p>
+    </div>
+  )
 }
 
 /**
@@ -581,7 +587,8 @@ export default function MailList({ className }: { className?: string }) {
         {content()}
       </div>
       {total > 0 && (
-        <div className="flex shrink-0 items-center gap-2 border-t px-4 py-2">
+        // On a phone the floating compose button sits over the right end.
+        <div className="flex shrink-0 items-center gap-2 border-t px-4 py-2 max-md:pe-20">
           <span className="text-muted-foreground text-xs whitespace-nowrap">
             {first + 1}–{first + mails.length} of {total}
           </span>
