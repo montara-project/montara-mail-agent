@@ -17,7 +17,6 @@ import {
 } from 'lucide-react'
 import { AnimatePresence, MotionConfig, motion, type Variants } from 'motion/react'
 import React from 'react'
-import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
 import type { MailBulkAction } from '@/lib/api/services/types/mail'
@@ -51,7 +50,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDebounce } from '@/hooks/use-debounce'
 import { useHideEmails } from '@/hooks/use-hide-emails'
-import { axiosErrorMessage, toastAxiosError } from '@/lib/api/axios-error'
+import { axiosErrorMessage, toastProgress } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
 
@@ -168,6 +167,16 @@ function ActionButton({
   )
 }
 
+/** The progress word for a bulk action, e.g. "Archiving". */
+function bulkVerb(action: MailBulkAction, folder: string) {
+  if (action.action !== 'move') {
+    if (action.action === 'trash') return folder === 'trash' ? 'Deleting' : 'Moving to trash'
+    return `Marking as ${action.action}`
+  }
+  const target = MOVE_TARGETS.find((item) => item.folder === action.folder)
+  return action.folder === 'archive' ? 'Archiving' : `Moving to ${target?.label ?? action.folder}`
+}
+
 /**
  * What the selection can do from this folder: archive, spam (or not spam
  * from the spam folder), trash (or delete for good from the trash), read or
@@ -187,17 +196,19 @@ function BulkActions({
   const ids = mails.map((mail) => mail.id)
   const allRead = mails.every((mail) => mail.is_read)
 
-  const run = (action: MailBulkAction) =>
-    bulk.mutate(
-      { ...action, ids },
-      {
-        onSuccess: (res) => {
-          toast.success(res.message ?? 'Done')
-          onDone(ids)
-        },
-        onError: toastAxiosError,
-      }
-    )
+  // A loading toast that turns into the outcome. The promise, not mutate's
+  // callbacks, carries it: the bar unmounts once the moved mails leave the list.
+  const run = async (action: MailBulkAction) => {
+    const count = `${ids.length} ${ids.length === 1 ? 'mail' : 'mails'}`
+    const progress = toastProgress(`${bulkVerb(action, folder)} ${count}...`)
+    try {
+      const res = await bulk.mutateAsync({ ...action, ids })
+      progress.success(res.message ?? 'Done')
+      onDone(ids)
+    } catch (error) {
+      progress.error(error)
+    }
+  }
   const moveTo = (target: Models.MailMoveTarget) => run({ action: 'move', folder: target })
 
   return (
