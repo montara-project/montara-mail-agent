@@ -153,6 +153,13 @@ func routes(r *fiber.App, app *app.Application) {
 	// handler, which answers the ones a stateless server has no use for.
 	r.All(handlers.MCPPath, middlewares.RateLimit(apiRateLimit, exemptLoopback, exemptIPs), m.APIKey, h.MCP.Serve)
 
+	// The addresses the whole server refuses; super user only (see
+	// ipblock.Guard, which enforces them before any route).
+	ipBlocks := v1.Group("/ip-blocks", m.Authorization)
+	ipBlocks.Get("/", h.IPBlock.List)
+	ipBlocks.Post("/", idempotent, h.IPBlock.Create)
+	ipBlocks.Delete("/:id", idempotent, h.IPBlock.Delete)
+
 	// Agent bots are organization settings, so the flat group lets the web app
 	// edit one by its own id without repeating the organization.
 	agentBots := v1.Group("/agent-bots", m.Authorization)

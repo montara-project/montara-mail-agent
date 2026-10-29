@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 
 	"montara-mail-agent/server/internal/config"
+	"montara-mail-agent/server/internal/ipblock"
 	"montara-mail-agent/server/internal/lib"
 	"montara-mail-agent/server/internal/lib/apperr"
 	"montara-mail-agent/server/internal/lib/llm"
@@ -32,6 +33,9 @@ type Application struct {
 	// MailOAuth holds the configured providers' OAuth clients; a provider
 	// missing from it answers its OAuth sign-in with a clear error.
 	MailOAuth mailoauth.Clients
+	// IPBlocks refuses blocked addresses and blocks abusive ones on its own;
+	// set up with the server's middleware (cmd/api newServer).
+	IPBlocks *ipblock.Guard
 	// HTTPClient calls user-supplied hosts, such as an LLM base URL, through
 	// lib.GuardedDialer.
 	HTTPClient *http.Client

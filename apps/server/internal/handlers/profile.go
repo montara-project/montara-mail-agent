@@ -27,6 +27,8 @@ type security struct {
 	// HasPassword is false for a user who only signs in with Google or a magic link.
 	HasPassword bool `json:"has_password"`
 	TOTPEnabled bool `json:"totp_enabled"`
+	// SuperUser shows the platform pages (IP blocks) in the web app.
+	SuperUser bool `json:"super_user"`
 }
 
 // Security returns whether the user has a password and two-factor sign-in.
@@ -44,7 +46,11 @@ func (h *profileHandler) Security(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return dtos.OK(c, security{HasPassword: account != nil && account.Password != nil, TOTPEnabled: totp})
+	super, err := isSuperUser(c.Context(), h.app, uid)
+	if err != nil {
+		return err
+	}
+	return dtos.OK(c, security{HasPassword: account != nil && account.Password != nil, TOTPEnabled: totp, SuperUser: super})
 }
 
 // Update changes the user's name and avatar.

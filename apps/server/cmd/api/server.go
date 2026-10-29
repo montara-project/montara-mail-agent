@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"slices"
 	"strings"
 	"syscall"
 	"time"
@@ -24,7 +25,9 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/static"
 
 	"montara-mail-agent/server/internal/app"
+	"montara-mail-agent/server/internal/config"
 	"montara-mail-agent/server/internal/handlers"
+	"montara-mail-agent/server/internal/ipblock"
 	"montara-mail-agent/server/internal/mailagent"
 	"montara-mail-agent/server/internal/mailsync"
 	"montara-mail-agent/server/internal/middlewares"
@@ -50,6 +53,7 @@ func serve(app *app.Application) error {
 		go mailagent.AutoDraftLoop(ctx, app, every, app.Config.App.AgentAutoDraftDailyCap)
 	}
 	go sweepActivityLogs(ctx, app)
+	go app.IPBlocks.Run(ctx)
 
 	app.Logger.Info("starting server", "port", app.Config.App.Port, "env", app.Config.App.Env, "auth", authBasePath)
 	return server.Listen(fmt.Sprintf(":%d", app.Config.App.Port), fiber.ListenConfig{
@@ -154,6 +158,21 @@ func newServer(app *app.Application) (*fiber.App, error) {
 			"object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'",
 	}))
 	server.Use(requestid.New())
+
+	// Blocked addresses are refused before anything else runs. The rate
+	// limiter's exempt addresses are never blocked: they are the way back in
+	// for a super user who blocked their own range.
+	exemptIPs := splitCSV(app.Config.App.RateLimitExemptIPs)
+	exemptLoopback := app.Config.App.Env == config.EnvDevelopment
+	app.IPBlocks = ipblock.New(&app.Repositories.IPBlock, app.Logger,
+		func(ip string) bool { return slices.Contains(exemptIPs, ip) || (exemptLoopback && ip == "127.0.0.1") },
+		isSignInPath)
+	loadCtx, cancelLoad := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancelLoad()
+	if err := app.IPBlocks.Reload(loadCtx); err != nil {
+		return nil, fmt.Errorf("load ip blocks: %w", err)
+	}
+	server.Use(app.IPBlocks.Middleware)
 	// The agent's SSE route must not pass through the compressor: it buffers
 	// the body, which would hold every event back until the stream ends.
 	server.Use(compress.New(compress.Config{

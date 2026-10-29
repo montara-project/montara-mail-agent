@@ -159,6 +159,19 @@ external MCP servers an organization added are not passed on.
 }
 ```
 
+## IP blocks
+
+A blocked address (or range) is refused with 403 before any route runs. A
+super user manages them; the server also blocks an address for an hour after
+10 failed sign-ins or 5 rate-limited requests within 10 minutes. Addresses in
+`RATE_LIMIT_EXEMPT_IPS` are never blocked, and the caller cannot block their
+own address.
+
+| Route                          | What it does                                                                                           |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| `GET, POST /api/v1/ip-blocks`  | The blocks in force, or block an `address` with a `reason` and `expires_in_hours` (0: until removed). |
+| `DELETE /api/v1/ip-blocks/:id` | Lift a block and reset that address's failure count.                                                  |
+
 ### Self-hosting behind the hosted web app
 
 Each browser picks its server under Settings > Self hosted (or "Change" on the

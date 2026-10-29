@@ -20,6 +20,7 @@ type Handlers struct {
 	MCPServer    *mcpServerHandler
 	APIKey       *apiKeyHandler
 	MCP          *mcpEndpointHandler
+	IPBlock      *ipBlockHandler
 }
 
 func New(app *app.Application) *Handlers {
@@ -38,5 +39,6 @@ func New(app *app.Application) *Handlers {
 		MCPServer:    &mcpServerHandler{app: app},
 		APIKey:       &apiKeyHandler{app: app},
 		MCP:          &mcpEndpointHandler{mcp: mailagent.NewMCPHandler(app, sync)},
+		IPBlock:      &ipBlockHandler{app: app},
 	}
 }

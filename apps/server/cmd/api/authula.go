@@ -531,6 +531,17 @@ var signInPaths = []string{
 	authBasePath + "/totp/verify-backup-code",
 }
 
+// isSignInPath reports whether path completes a sign-in, so a 401 there is a
+// failed one (see ipblock).
+func isSignInPath(path string) bool {
+	for _, p := range signInPaths {
+		if strings.HasPrefix(path, p) {
+			return true
+		}
+	}
+	return false
+}
+
 // recordSignIn returns the after-hook that logs every completed sign-in. The
 // matcher lets through only a request the jwt plugin minted a token pair for,
 // which a successful sign-in does and a failed one doesn't. The write runs in
