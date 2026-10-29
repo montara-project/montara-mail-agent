@@ -10,13 +10,14 @@ yourself: the API and the web app ship as a single Docker image.
 
 ## What's inside
 
-A pnpm workspace with three apps:
+A pnpm workspace with four apps:
 
 | App                              | What it is                                                                                         | Stack                                                       |
 | -------------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | [`apps/server`](apps/server)     | The API: auth, organizations, IMAP sync, SMTP send, AI features, activity log. Also serves the web app in production. | Go 1.27, Fiber v3, PostgreSQL 18, [Authula](https://github.com/Authula/authula), golang-migrate |
 | [`apps/web-ui`](apps/web-ui)     | The mail client (SPA).                                                                             | React, Vite, TanStack Router/Query/Form, Tailwind, Lexical  |
 | [`apps/main-web`](apps/main-web) | The marketing site: home, contact, privacy, terms.                                                 | vinext on Cloudflare Workers                                |
+| [`apps/docs`](apps/docs)         | The docs at <https://docs.montaramail.web.id>: using, self-hosting, the API, development.          | Next.js + Fumadocs, static export on Cloudflare Workers     |
 
 [`apps/server/README.md`](apps/server/README.md) covers the API in depth:
 every environment variable, the routes, authentication, idempotent writes
@@ -67,6 +68,7 @@ pnpm dev            # every app in parallel
 pnpm dev:server     # API on :8080 (make run, reads apps/server/.env)
 pnpm dev:web-ui     # web app on :3000, proxies /api to :8080
 pnpm dev:main-web   # marketing site
+pnpm dev:docs       # docs on :3001
 ```
 
 With `MIGRATE_ON_BOOT=true` (the example default) the API applies its
@@ -141,8 +143,8 @@ in GitHub Actions:
    tags the merge commit, creates the GitHub release and dispatches the release
    workflow.
 3. **Release** (`release.yml`) builds and pushes both edition images to GHCR
-   (`vX.Y.Z`, `vX.Y`, `latest`) and deploys `apps/main-web` to Cloudflare
-   Workers.
+   (`vX.Y.Z`, `vX.Y`, `latest`), and deploys `apps/main-web` and `apps/docs`
+   to Cloudflare Workers.
 
 `security-audit.yml` runs govulncheck and `pnpm audit` on every push to
 `main`/`dev`, on pull requests and weekly. `react-doctor.yml` reviews React

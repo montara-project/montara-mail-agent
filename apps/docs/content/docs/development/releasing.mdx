@@ -1,0 +1,17 @@
+---
+title: Releasing
+description: How a version goes from main to the images, the website and these docs.
+---
+
+Releases are cut from `main` with [release-it](https://github.com/release-it/release-it), in three workflows:
+
+1. **Release Prepare** (`release-prepare.yml`, run by hand from the Actions tab) bumps the version from the conventional commits, updates `CHANGELOG.md` and opens a `chore: release vX.Y.Z` pull request.
+2. **Release Publish** (`release-publish.yml`) runs when that pull request merges: it tags the merge commit, creates the GitHub release and starts the release workflow.
+3. **Release** (`release.yml`):
+   - builds and pushes both edition images to GHCR as `vX.Y.Z`, `vX.Y` and `latest`;
+   - deploys `apps/main-web` to Cloudflare Workers;
+   - builds these docs and deploys them to `docs.montaramail.web.id`.
+
+Run **Release** by hand to publish images of any ref under their short commit SHA, and to redeploy the website and the docs.
+
+The repository needs the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets for the two deployments, and the setting "Allow GitHub Actions to create and approve pull requests" for step 1.

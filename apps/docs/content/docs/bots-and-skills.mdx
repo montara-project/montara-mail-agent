@@ -1,0 +1,25 @@
+---
+title: Bots and skills
+description: Give the agent a persona, and add your own skills.
+---
+
+Both live under **Control Center › Agent tools**. Only an organization's owner changes them.
+
+## Agent bots
+
+A bot is a persona the agent writes as. It has a name and description, and four parts that make up its system prompt:
+
+| Part | What goes in it |
+| --- | --- |
+| Soul | Who it is. |
+| Memory | What it should remember: your role, your products, the people you work with. |
+| Style | How it writes. |
+| Instruction | What it must or must not do. |
+
+The form previews the prompt the model receives. Mark one bot as the **default**: the [AI Drafts](/ai-assistant#ai-drafts) queue writes in its voice. Without one, the built-in persona is used.
+
+## Skills
+
+Skills run on one email from the reader's **Skills** menu or as a `/command` in the assistant. Each organization starts with the [built-in skills](/ai-features#skills); the owner can turn any of them off.
+
+A custom skill has a name, a description and an instruction. The instruction is yours, so it is part of the system prompt; the email stays in the conversation as data.

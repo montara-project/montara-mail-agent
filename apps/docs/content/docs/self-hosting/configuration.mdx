@@ -1,0 +1,65 @@
+---
+title: Configuration
+description: Every environment variable the API reads.
+---
+
+Every setting is an environment variable, or the flag of the same name (`/app/api -h`). Nothing secret has to be passed as a process argument.
+
+## Required
+
+| Variable | Notes |
+| --- | --- |
+| `APP_SECRET` | At least 32 characters. Signs tokens and derives the key that encrypts mailbox passwords, OAuth tokens and LLM keys. Rotating it means reconnecting every mailbox and saving the providers again. |
+| `DB_DSN` | PostgreSQL 18 URL. `AUTHULA_DATABASE_URL` must not be set. |
+
+## Server
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `ENV` | `production` | `development`, `staging` or `production`. Only `development` drops `Secure` from the session cookie and exempts loopback from rate limits. |
+| `DEBUG` | `false` | Logs every query, auth queries with their values; refused in production. |
+| `PORT` | `8080` | |
+| `APP_NAME` | `montara-mail-agent` | |
+| `SPA_DIR` | `/app/web` in the image | The built web app served at `/`. Empty serves the API only. |
+| `CORS_ALLOWED_ORIGINS` | empty | Comma-separated browser origins allowed to call the API cross-origin. Empty means same-origin only. |
+| `TRUSTED_PROXIES` | empty | IPs or CIDRs of your reverse proxy. The client IP is the rightmost `X-Forwarded-For` entry that is not one of them. |
+| `RATE_LIMIT_EXEMPT_IPS` | empty | Client IPs the rate limiter skips. |
+| `SENTRY_DSN` | empty | Reports panics when set. |
+
+## Database and boot
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `DB_MAX_OPEN_CONNS`, `DB_MAX_IDLE_CONNS` | `25` | The replica's whole budget: Authula's pool takes half, the API the rest. |
+| `DB_MAX_IDLE_TIME` | `15m` | |
+| `MIGRATE_ON_BOOT` | `false` | Apply the embedded migrations before serving. |
+| `SEED_ON_BOOT` | `false` | Run the seeders before serving; needs `SUPER_USER`. Required by the Community Edition. |
+| `SUPER_USER` | empty | `email:password`, password of 12 to 128 characters. See [Maintenance](/self-hosting/maintenance#the-super-user). |
+
+## Sign-in and email
+
+| Variable | Notes |
+| --- | --- |
+| `AUTH_BASE_URL` | The public URL of the API, used in email links and OAuth callbacks. Defaults to `http://localhost:$PORT`. |
+| `FROM_ADDRESS`, `RESEND_API_KEY` | The sender (a verified Resend domain) and key for verification, reset and magic-link emails. Required by Cloud; Community may leave them empty, which turns off password reset and magic links. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in; empty disables it. See [OAuth apps](/self-hosting/oauth). |
+
+## Mail
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `MAIL_SYNC_INTERVAL` | `5m` | How often every mailbox syncs. `0` disables the background sync; at least `1m` otherwise. |
+| `OAUTH_GOOGLE_CLIENT_ID`, `OAUTH_GOOGLE_CLIENT_SECRET` | empty | Connect Gmail with OAuth. |
+| `OAUTH_MICROSOFT_CLIENT_ID`, `OAUTH_MICROSOFT_CLIENT_SECRET` | empty | Connect Outlook with OAuth. |
+| `OAUTH_YAHOO_CLIENT_ID`, `OAUTH_YAHOO_CLIENT_SECRET` | empty | Connect Yahoo with OAuth. |
+| `OAUTH_ZOHO_CLIENT_ID`, `OAUTH_ZOHO_CLIENT_SECRET` | empty | Connect Zoho with OAuth. |
+| `ALLOW_PRIVATE_HOSTS` | `false` | Lets IMAP servers, LLM base URLs and MCP servers that users type in reach loopback or private addresses and use `http`. Turn on for a local Ollama; keep off when people you don't trust can sign up. |
+
+## AI and the agent
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `ANTHROPIC_API_KEY` | empty | Fallback model for organizations without their own provider. Without it, those organizations get no AI features. |
+| `AGENT_AUTO_DRAFT_INTERVAL` | `1h` | How often the agent drafts replies for important unread mail. `0` disables it. |
+| `AGENT_AUTO_DRAFT_DAILY_CAP` | `10` | Drafts each organization may queue per day. |
+| `ACTIVITY_LOG_RETENTION` | `8760h` | How long activity log entries are kept (they hold IPs and mail subjects). `0` keeps them forever. |

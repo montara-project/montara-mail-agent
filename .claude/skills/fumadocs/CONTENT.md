@@ -76,4 +76,4 @@ Full authoring reference: [markdown](https://www.fumadocs.dev/docs/markdown), [c
 1. Frontmatter has `title`; body starts at `##`.
 2. File placed so its derived slug is the intended URL; `(group)` used if the folder is organisational only.
 3. Folder `meta.json` `pages` includes the new file (when `pages` is explicit); no URL duplicated anywhere in the tree.
-4. `pnpm --filter @tera/docs dev`, open `http://localhost:3001/docs/<slug>`; sidebar order and TOC correct.
+4. `pnpm --filter @montara-mail/docs dev`, open `http://localhost:3001/<slug>`; sidebar order and TOC correct.

@@ -1,0 +1,41 @@
+---
+title: OAuth apps
+description: Google sign-in, and connecting mailboxes with OAuth instead of app passwords.
+---
+
+OAuth is optional. Without it, people sign in with email and password or a magic link, and connect mailboxes with app passwords.
+
+Every redirect URI starts with `AUTH_BASE_URL`, the public URL of your API.
+
+## Google sign-in
+
+Create an OAuth client (Web application) in the Google Cloud console, then set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+
+```text
+Authorized redirect URI: $AUTH_BASE_URL/api/v1/auth/oauth2/callback/google
+```
+
+## Connecting mailboxes
+
+Each provider has its own pair of variables; empty turns its OAuth button off, and its app password way in keeps working. iCloud and Lark offer no public IMAP OAuth.
+
+| Provider | Variables |
+| --- | --- |
+| Google (Gmail) | `OAUTH_GOOGLE_CLIENT_ID`, `OAUTH_GOOGLE_CLIENT_SECRET` |
+| Microsoft (Outlook) | `OAUTH_MICROSOFT_CLIENT_ID`, `OAUTH_MICROSOFT_CLIENT_SECRET` |
+| Yahoo | `OAUTH_YAHOO_CLIENT_ID`, `OAUTH_YAHOO_CLIENT_SECRET` |
+| Zoho | `OAUTH_ZOHO_CLIENT_ID`, `OAUTH_ZOHO_CLIENT_SECRET` |
+
+```text
+Authorized redirect URI: $AUTH_BASE_URL/api/v1/email-accounts/oauth/<provider>/callback
+```
+
+where `<provider>` is `gmail`, `outlook`, `yahoo` or `zoho`. The client needs the provider's IMAP and SMTP mail scopes.
+
+## Hosted MCP servers
+
+[Hosted MCP servers](/mcp-servers) sign in with the provider's own OAuth and return to:
+
+```text
+$AUTH_BASE_URL/api/v1/mcp-servers/oauth/callback
+```

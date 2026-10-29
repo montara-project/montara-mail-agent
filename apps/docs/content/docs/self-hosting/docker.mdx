@@ -1,0 +1,61 @@
+---
+title: Run with Docker
+description: Docker Compose with PostgreSQL, or a single container next to your own database.
+---
+
+## Docker Compose
+
+`apps/server/docker-compose.yml` runs PostgreSQL 18, a one-shot migration and the API on port 8080. Secrets come from `apps/server/.env`.
+
+```sh
+git clone https://github.com/montara-project/montara-mail-agent.git
+cd montara-mail-agent/apps/server
+cp .env.example .env    # set APP_SECRET, SUPER_USER, and the rest you need
+docker compose up -d --build
+```
+
+The compose file overrides what differs inside its network: `DB_DSN` points at its own database, `MIGRATE_ON_BOOT` is off because the `migrate` job runs first, and these come from your shell:
+
+| Variable | Default | Sets |
+| --- | --- | --- |
+| `POSTGRES_PASSWORD` | `postgres` | The database password. |
+| `PUBLIC_URL` | `http://localhost:8080` | `AUTH_BASE_URL`: the public URL of the API. |
+| `TRUSTED_PROXIES` | empty | The reverse proxy's IP or CIDR. |
+| `API_PORT` | `8080` | The host port. |
+| `APP_ENV` | `production` | `ENV`. |
+
+## A single container
+
+```sh
+docker run -d --name montara \
+  --env-file .env \
+  -e DB_DSN='postgres://user:pass@db-host:5432/montara?sslmode=require' \
+  -e MIGRATE_ON_BOOT=true \
+  -p 8080:8080 \
+  ghcr.io/montara-project/montara-mail-agent/community:latest
+```
+
+The image holds `/app/api` (the entrypoint), `/app/migrate` and `/app/healthcheck` on a distroless, non-root base. To migrate by hand instead of on boot:
+
+```sh
+docker run --rm --env-file .env --entrypoint /app/migrate \
+  ghcr.io/montara-project/montara-mail-agent/community:latest up
+```
+
+## Building the image
+
+Build from the repository root: the image installs from the workspace lockfile.
+
+```sh
+docker build -f apps/server/Dockerfile --build-arg EDITION=community -t montara-mail-agent/community .
+```
+
+| Build arg | Default | Does |
+| --- | --- | --- |
+| `EDITION` | `cloud` | `cloud` or `community`, for both the Go binary and the web app. |
+| `VITE_APP_NAME` | `Montara Mail` | The name the web app shows. |
+| `VITE_API_URL` | empty | The server a Cloud web app talks to by default. Empty keeps the edition's default; Community always uses its own origin. |
+
+## First sign-in
+
+With `SEED_ON_BOOT=true`, the API creates the `SUPER_USER` account (`email:password`, a password of 12 to 128 characters) and gives it the super user role. Sign in with it at `http://localhost:8080`.

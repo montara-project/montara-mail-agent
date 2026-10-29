@@ -1,0 +1,34 @@
+---
+title: Local setup
+description: Run the API, the web app, the marketing site and these docs on your machine.
+---
+
+## Requirements
+
+Node.js 24, pnpm 11 (`corepack enable`), Go 1.27.2+ and PostgreSQL 18.
+
+## Run it
+
+```sh
+git clone https://github.com/montara-project/montara-mail-agent.git
+cd montara-mail-agent
+pnpm install
+
+cp apps/server/.env.example apps/server/.env   # set APP_SECRET: openssl rand -base64 32
+cp apps/web-ui/.env.example apps/web-ui/.env
+
+pnpm dev              # every app at once
+```
+
+| Command | App | Port |
+| --- | --- | --- |
+| `pnpm dev:server` | API (`make run`, reads `apps/server/.env`) | 8080 |
+| `pnpm dev:web-ui` | Web app; proxies `/api`, `/health` and `/mcp` to the API | 3000 |
+| `pnpm dev:main-web` | Marketing site | Vite's |
+| `pnpm --filter @montara-mail/docs dev` | These docs | 3001 |
+
+With `MIGRATE_ON_BOOT=true` (the example's default) the API migrates its database when it starts. For a local Ollama, set `ALLOW_PRIVATE_HOSTS=true`.
+
+## Commits
+
+Commits follow [Conventional Commits](https://www.conventionalcommits.org): `feat(web-ui): …`, `fix(server): …`. Husky and commitlint enforce the format (body lines of 100 characters at most), lint-staged runs oxlint and oxfmt on staged files, and the release changelog is generated from the messages.

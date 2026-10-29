@@ -1,0 +1,24 @@
+---
+title: Organizations
+description: Who sees which mailboxes, and who can change what.
+---
+
+An organization holds mailboxes, its AI provider, agent bots, skills and MCP servers. Members share its mailboxes.
+
+## Roles
+
+| Role | Can |
+| --- | --- |
+| Member | Read and manage the organization's mailboxes and mail, use the assistant. |
+| Owner | Everything a member can, plus rename or delete the organization and change its AI provider, bots, skills and MCP servers. |
+| Super user | Sees and manages every organization. The account named in the server's `SUPER_USER`. |
+
+Someone else's organization, mailbox or mail answers as not found, never as forbidden.
+
+## Deleting
+
+Deleting an organization moves it to the trash, where the owner can restore it. **Delete for good** removes it and everything in it.
+
+## Activity log
+
+Each organization keeps an audit log of what happened in it: mailboxes connected, mail sent, settings changed. You also have your own log under **Control Center › Security**. Entries are kept for a year by default.

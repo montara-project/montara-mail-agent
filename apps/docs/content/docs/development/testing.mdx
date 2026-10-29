@@ -1,0 +1,32 @@
+---
+title: Testing and checks
+description: What runs locally and in CI, and the integration test against PostgreSQL.
+---
+
+## Checks
+
+```sh
+pnpm lint                                   # oxlint
+pnpm format:check                           # oxfmt
+pnpm --filter @montara-mail/web-ui exec tsc --noEmit
+pnpm --filter @montara-mail/docs typecheck
+cd apps/server && go test ./...
+```
+
+## The integration test
+
+`apps/server/cmd/api` boots the whole API against a real PostgreSQL 18: migrations up and down, the seeders, sign-up and sign-in, tokens, roles, mail flows with a seeded mailbox, the agent, MCP servers, `/mcp` and API keys, the activity log and the rate limit behind a proxy. It is skipped unless `TEST_DB_DSN` points at a database it may wipe:
+
+```sh
+docker run -d --rm --name montara-test-pg -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=montara_mail_agent_test -p 55432:5432 postgres:18
+TEST_DB_DSN='postgres://postgres:postgres@localhost:55432/montara_mail_agent_test?sslmode=disable' \
+  go test ./cmd/api
+```
+
+## In CI
+
+- `security-audit.yml` runs govulncheck and `pnpm audit --prod` on pushes to `main` and `dev`, on pull requests and weekly.
+- `react-doctor.yml` reviews React changes on pull requests.
+
+The release workflows run no tests, so run the checks above before merging to `main`.

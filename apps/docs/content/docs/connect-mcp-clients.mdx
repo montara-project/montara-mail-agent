@@ -1,0 +1,53 @@
+---
+title: Connect MCP clients
+description: Use your mailboxes from Claude Desktop, Cursor and other MCP clients, with an API key.
+---
+
+Montara serves its mailbox tools over MCP at `/mcp`, so an MCP client outside the app can search, read and sort your mail. What it proposes to send waits for your approval in the app.
+
+## 1. Create an API key
+
+Open **Control Center › API Keys** and **Create key**. Name it after the app it is for, and pick when it expires: 30, 90 or 180 days, or a year.
+
+The key is shown **once**, with a ready-made client config. Copy it then: the server keeps only a hash. Lost it? Revoke it and create another.
+
+## 2. Add the server to your client
+
+```json title="mcp.json"
+{
+  "mcpServers": {
+    "montara-mail": {
+      "type": "http",
+      "url": "https://app.montaramail.web.id/mcp",
+      "headers": { "Authorization": "Bearer mm_..." }
+    }
+  }
+}
+```
+
+On a self-hosted server, use its own URL. The endpoint speaks streamable HTTP, one JSON message per request.
+
+## What the client can do
+
+| Tool | Does |
+| --- | --- |
+| `list_accounts` | Lists the mailboxes of every organization you belong to, with their ids. |
+| `search_mails`, `mailbox_stats` | Take an `account_id` from `list_accounts`. |
+| `get_mail` | Reads one email in full, by its `mail_id`. |
+| `move_mail`, `set_flags`, `set_importance` | Act on one email right away, on the mail server too. |
+| `propose_reply`, `propose_forward`, `propose_email` | Queue a mail for your approval. |
+
+Proposals land in the mailbox's **Connected apps** conversation in the AI assistant. Open it, read each one, then approve or deny. Nothing is sent from `/mcp`.
+
+Clients that ask before running a destructive tool will ask for moves, flags and labels.
+
+## What a key can reach
+
+- A key opens `/mcp` and nothing else: not the rest of the API, not your account settings.
+- It reaches the mailboxes of the organizations you are a member of, not ones in the trash.
+- It always expires, at most a year after it was made. **Revoke** ends it at once.
+- Changing or resetting your password revokes every key.
+
+<Callout type="warn" title="Treat mail as untrusted">
+  An email can contain text written to steer an AI. Montara marks mail as data, but your MCP client decides what its model does with it, and may hold other tools (files, a shell, the web). Prefer a client that asks before it runs tools, and give each app its own key.
+</Callout>

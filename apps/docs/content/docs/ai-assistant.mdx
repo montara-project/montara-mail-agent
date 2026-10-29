@@ -1,0 +1,32 @@
+---
+title: AI assistant
+description: Chat with your mailbox, approve what it proposes, and review the drafts it queues.
+---
+
+## Chat
+
+Open the assistant with the sparkles button next to **Compose** (desktop). Ask it to find an email, summarize a thread, draft a reply or move mail out of the way. It works on the mailbox you have open, and keeps a history of conversations you can come back to.
+
+From the reader, **Ask AI about this email** opens the chat with that mail attached to your next questions.
+
+The assistant acts through tools:
+
+| Tool | What it does |
+| --- | --- |
+| Search and read | Search a folder, read one email in full, read mailbox counts. |
+| Move | Move an email to Inbox, Archive, Spam or Trash. |
+| Flags and labels | Mark read or unread, star, and set the importance label (never over one you set). |
+| Propose | Propose a reply, a forward or a new email. |
+| MCP tools | Tools from the [MCP servers](/mcp-servers) your organization added. |
+
+## Approvals
+
+Moving, flags and labels apply right away. Anything that would **send** stops as a proposal card in the chat: read it, then **Approve** to send it through the account's SMTP server, or **Deny**. Nothing is sent without your approval.
+
+## AI Drafts
+
+The **AI Drafts** tab of the assistant is the review queue the agent fills on its own. Every hour it looks at important mail that is still unread and has no draft yet, and drafts a reply in the organization's default bot persona. Approve a draft to send it, or discard it.
+
+- Mail you have already read is skipped: you are handling it.
+- An organization queues at most 10 drafts a day, which keeps a busy inbox from running up the model bill.
+- Self-hosted servers set both with `AGENT_AUTO_DRAFT_INTERVAL` and `AGENT_AUTO_DRAFT_DAILY_CAP`.

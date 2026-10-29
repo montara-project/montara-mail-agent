@@ -1,0 +1,55 @@
+---
+title: Architecture
+description: The apps in the monorepo, and how the server and the web app are laid out.
+---
+
+## The monorepo
+
+A pnpm workspace under `apps/`:
+
+| App | What it is | Stack |
+| --- | --- | --- |
+| `apps/server` | The API and the background jobs. Serves the web app in production. | Go, Fiber v3, PostgreSQL 18, [Authula](https://github.com/Authula/authula), golang-migrate |
+| `apps/web-ui` | The mail client, a single-page app. | React, Vite, TanStack Router, Query and Form, Tailwind, Lexical |
+| `apps/main-web` | The marketing site. | vinext on Cloudflare Workers |
+| `apps/docs` | These docs. | Next.js and Fumadocs, exported as static files to Cloudflare Workers |
+
+## The server
+
+| Path | Holds |
+| --- | --- |
+| `cmd/api` | Boot: flags, Authula setup, routes, the Fiber server, background loops. |
+| `cmd/migrate` | The migration CLI; migrations are embedded. |
+| `internal/handlers` | One handler per resource; membership checks live here. |
+| `internal/repositories` | SQL, one repository per table. |
+| `internal/mailsync` | IMAP sync, classification after each pull, write-back, SMTP send. |
+| `internal/mailai` | One-shot model tasks: summary, classification, reply suggestions, skills, translation. |
+| `internal/mailagent` | The assistant's tool loop, the auto-draft automation, and the `/mcp` server. |
+| `internal/lib` | The LLM clients, the guarded dialer for user-typed hosts, encryption, validation. |
+
+Authula, embedded as a library, owns users, sessions, tokens and two-factor sign-in in its own `authula` schema; `public.users` mirrors it.
+
+Three loops run beside the HTTP server: the mailbox sync (`MAIL_SYNC_INTERVAL`), the auto-drafter (`AGENT_AUTO_DRAFT_INTERVAL`) and a daily activity log sweep.
+
+## The web app
+
+The web app keeps its API code in layers, and the UI reaches the API only through queries:
+
+| Layer | Job |
+| --- | --- |
+| `src/lib/api/models` | Response shapes. |
+| `src/lib/api/dtos` | Request schemas (zod), shared with the forms. |
+| `src/lib/api/services` | HTTP calls. |
+| `src/lib/api/queries` | TanStack Query options, keys and invalidation. |
+| `src/components/block` | Feature UI. |
+| `src/routes` | File-based routes; each renders one block. |
+
+The edition (`VITE_EDITION`) is inlined at build time, so Community builds drop the Cloud-only screens.
+
+## Untrusted input
+
+Mail, MCP tool results and user-typed hosts are treated as hostile:
+
+- Prompts wrap mail in tags and tell the model never to obey it.
+- HTML mail renders in a sandboxed frame.
+- IMAP servers, LLM base URLs and MCP servers go through a dialer that refuses private addresses unless `ALLOW_PRIVATE_HOSTS` is on.

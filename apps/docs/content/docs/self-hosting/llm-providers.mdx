@@ -1,0 +1,34 @@
+---
+title: AI providers
+description: Which model each organization uses, and how to run your own.
+---
+
+## Which model answers
+
+For an organization, the API uses the first of:
+
+1. **The organization's own provider**, set by its owner under **Control Center › AI Providers**.
+2. **The global provider**, which a super user sets for every organization without one.
+3. **The fallback**, `ANTHROPIC_API_KEY` in the server's environment.
+
+With none of them, the organization's AI features are off: mail still syncs, it just isn't sorted or summarized.
+
+## Provider kinds
+
+| Kind | For |
+| --- | --- |
+| `openai` | Any endpoint that speaks the OpenAI chat format, at any base URL. |
+| `anthropic` | Anthropic's API, or anything compatible with it. |
+| `self_hosted` | Your own server in OpenAI format, such as Ollama, vLLM or LM Studio. The key is optional. |
+
+The form lists the models the endpoint offers. A saved key is only reused for the same kind and base URL, so pointing a provider elsewhere asks for the key again. Keys are encrypted with `APP_SECRET`.
+
+A super user can move a provider between an organization and global.
+
+## A local model
+
+To use Ollama on the same machine or network, set `ALLOW_PRIVATE_HOSTS=true` on the server (it lets base URLs reach private addresses and use `http`), then add a `self_hosted` provider with a base URL such as `http://ollama:11434/v1`.
+
+<Callout type="warn">
+  `ALLOW_PRIVATE_HOSTS` also lets users point IMAP servers and MCP servers at your private network. Keep it off on a server where people you don't trust can sign up.
+</Callout>

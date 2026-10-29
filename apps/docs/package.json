@@ -1,0 +1,35 @@
+{
+  "name": "@montara-mail/docs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "serve out",
+    "typecheck": "next typegen && tsc --noEmit",
+    "postinstall": "fumadocs-mdx",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "fumadocs-core": "^16.17.0",
+    "fumadocs-mdx": "^15.4.0",
+    "fumadocs-ui": "npm:@fumadocs/base-ui@^16.17.0",
+    "lucide-react": "^1.61.0",
+    "next": "16.4.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/mdx": "^2.0.14",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "postcss": "^8.5.31",
+    "serve": "^14.2.6",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.154.0"
+  }
+}
