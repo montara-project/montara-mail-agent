@@ -1,5 +1,8 @@
 import { useRouter } from '@tanstack/react-router'
-import { useState } from 'react'
+import { Mail } from 'lucide-react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { toast } from 'sonner'
 
 import googleLogo from '@/assets/brands/google.svg'
@@ -8,7 +11,6 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { Separator } from '@/components/ui/separator'
 import { useAppForm } from '@/hooks/form'
 import { SignInSchema } from '@/lib/api/dtos/auth/schema'
 import { DEFAULT_SERVER_URL, SERVER_URL } from '@/lib/api/server-url'
@@ -122,6 +124,10 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
   const [pickServer, setPickServer] = useState(false)
   // Stays set on success: the browser leaves for Google's consent screen.
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [showEmail, setShowEmail] = useState(false)
+  // MotionConfig's reducedMotion leaves height animating, so the duration drops instead.
+  const reduceMotion = useReducedMotion()
+  const changeServer = useRef<HTMLButtonElement>(null)
 
   const enter = async () => {
     await router.invalidate()
@@ -176,59 +182,114 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
           <FieldDescription>{STEP_DESCRIPTIONS[step]}</FieldDescription>
         </div>
 
-        {step === 'server' && <ServerURLForm onCancel={() => setPickServer(false)} />}
-        {step === 'code' && <TOTPStep onDone={enter} onBack={() => setNeedsCode(false)} />}
-        {step === 'password' && (
-          <form
-            className="flex flex-col gap-6"
-            onSubmit={(e) => {
-              e.preventDefault()
-              form.handleSubmit()
+        {step === 'server' && (
+          <ServerURLForm
+            autoFocus
+            onCancel={() => {
+              flushSync(() => setPickServer(false))
+              changeServer.current?.focus()
             }}
-          >
-            <form.AppField
-              name="email"
-              children={(field) => (
-                <field.TextField label="Email" placeholder="type your email" asterisk />
-              )}
-            />
-
-            <form.AppField
-              name="password"
-              children={(field) => (
-                <field.PasswordField label="Password" placeholder="type your password" asterisk />
-              )}
-            />
-
-            <Field>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? 'Signing in...' : 'Login'}
-              </Button>
-            </Field>
-
-            <div className="flex items-center gap-3">
-              <Separator className="flex-1" />
-              <span className="text-muted-foreground text-xs">or</span>
-              <Separator className="flex-1" />
-            </div>
-
+          />
+        )}
+        {step === 'code' && (
+          <TOTPStep
+            onDone={enter}
+            onBack={() => {
+              flushSync(() => setNeedsCode(false))
+              document.getElementById('password')?.focus()
+            }}
+          />
+        )}
+        {step === 'password' && (
+          <div className="flex flex-col gap-3">
             <Button
               type="button"
               variant="outline"
+              className="pointer-coarse:h-11"
               disabled={googleLoading}
               onClick={() => void signInWithGoogle()}
             >
               <img src={googleLogo} alt="" className="size-4" />
               {googleLoading ? 'Redirecting...' : 'Login with Google'}
             </Button>
-          </form>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="pointer-coarse:h-11"
+              aria-expanded={showEmail}
+              onClick={() => setShowEmail(!showEmail)}
+            >
+              <Mail className="size-4" />
+              Login with email
+            </Button>
+
+            <AnimatePresence initial={false}>
+              {showEmail && (
+                // The side padding keeps overflow-hidden from clipping the focus rings.
+                <motion.div
+                  className="-mx-1 overflow-hidden px-1"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: reduceMotion ? 0 : 0.25, ease: [0.2, 0, 0, 1] }}
+                >
+                  <form
+                    className="flex flex-col gap-6 pt-3 pb-1"
+                    noValidate
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      form.handleSubmit()
+                    }}
+                  >
+                    <form.AppField
+                      name="email"
+                      children={(field) => (
+                        <field.TextField
+                          label="Email"
+                          type="email"
+                          autoComplete="username"
+                          placeholder="type your email"
+                          asterisk
+                        />
+                      )}
+                    />
+
+                    <form.AppField
+                      name="password"
+                      children={(field) => (
+                        <field.PasswordField
+                          label="Password"
+                          placeholder="type your password"
+                          autoComplete="current-password"
+                          asterisk
+                        />
+                      )}
+                    />
+
+                    <Field>
+                      <Button type="submit" className="pointer-coarse:h-11" disabled={isLoading}>
+                        {isLoading ? 'Signing in...' : 'Login'}
+                      </Button>
+                    </Field>
+                  </form>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         )}
       </FieldGroup>
       {!pickServer && !COMMUNITY && (
         <p className="text-muted-foreground flex flex-wrap items-center justify-center gap-x-1 text-center text-sm">
           Server: <span className="text-foreground">{new URL(SERVER_URL).host}</span>
           {SERVER_URL === DEFAULT_SERVER_URL ? '' : ' (self hosted)'}
-          <Button mode="link" underline="solid" onClick={() => setPickServer(true)}>
+          <Button
+            ref={changeServer}
+            mode="link"
+            underlined="solid"
+            className="relative after:absolute after:-inset-x-1 after:-inset-y-3"
+            onClick={() => setPickServer(true)}
+          >
             Change
           </Button>
         </p>

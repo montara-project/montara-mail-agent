@@ -52,7 +52,9 @@ const inputWrapperVariants = cva(
     [&_[data-slot=input]]:p-0
     [&_[data-slot=input]]:shadow-none 
     [&_[data-slot=input]]:focus-visible:ring-0 
-    [&_[data-slot=input]]:h-auto 
+    [&_[data-slot=input]]:h-auto
+    [&_[data-slot=input]]:self-stretch
+    pointer-coarse:[&_[data-slot=input]]:text-base
     [&_[data-slot=input]]:disabled:cursor-not-allowed
     [&_[data-slot=input]]:disabled:opacity-50    
 

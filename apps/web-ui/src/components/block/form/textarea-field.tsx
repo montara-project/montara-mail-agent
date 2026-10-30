@@ -1,10 +1,8 @@
 import type { ChangeEvent } from 'react'
 
-import { useSelector } from '@tanstack/react-form'
-
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
 import { Textarea } from '@/components/ui/textarea'
-import { useFieldContext } from '@/hooks/form-context'
+import { useFieldContext, useVisibleFieldErrors } from '@/hooks/form-context'
 
 type TextareaFieldProps = React.ComponentProps<'textarea'> & {
   label?: string
@@ -23,7 +21,7 @@ export default function TextareaField({
   ...props
 }: TextareaFieldProps) {
   const field = useFieldContext<string>()
-  const errors = useSelector(field.store, (state) => state.meta.errors)
+  const errors = useVisibleFieldErrors()
 
   const isInvalid = !!errors?.length
 
@@ -48,7 +46,7 @@ export default function TextareaField({
         {...props}
       />
       {description && <FieldDescription>{description}</FieldDescription>}
-      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+      {isInvalid && <FieldError errors={errors} />}
     </Field>
   )
 }

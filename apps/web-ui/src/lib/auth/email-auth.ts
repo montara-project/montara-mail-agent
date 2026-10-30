@@ -47,6 +47,9 @@ export async function signInWithEmail({
     storeSignIn(payload as SignInData)
     return payload
   } catch (error) {
+    if ((error as { response?: { status?: number } })?.response?.status === 401) {
+      throw new Error('Wrong email or password.')
+    }
     throwAxiosError(error as Error)
   }
 }
