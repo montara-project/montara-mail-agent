@@ -24,6 +24,14 @@ export const Route = createRootRoute({
       { rel: 'icon', href: '/favicon/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
       { rel: 'apple-touch-icon', href: '/favicon/apple-touch-icon.png' },
     ],
+    // Cookieless visit counts; public/_headers allows the host in script-src and connect-src.
+    scripts: [
+      {
+        src: 'https://analytics.masb0ymas.com/script.js',
+        defer: true,
+        'data-website-id': '61904e18-06cf-450c-8b22-2ca9e6d0c111',
+      },
+    ],
   }),
   component: RootComponent,
 })
