@@ -4,32 +4,36 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev -p 3001",
-    "build": "next build",
-    "start": "serve out",
-    "typecheck": "next typegen && tsc --noEmit",
+    "dev": "vite dev --port 3001",
+    "build": "vite build",
+    "start": "vite preview --port 3001",
+    "typecheck": "tsc --noEmit",
     "postinstall": "fumadocs-mdx",
-    "deploy": "wrangler deploy"
+    "deploy": "cf deploy --prebuilt"
   },
   "dependencies": {
+    "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
+    "@tanstack/react-router": "^1.170.46",
+    "@tanstack/react-start": "^1.169.3",
     "fumadocs-core": "^16.17.0",
     "fumadocs-mdx": "^15.4.0",
     "fumadocs-ui": "npm:@fumadocs/base-ui@^16.17.0",
     "lucide-react": "^1.61.0",
-    "next": "16.4.2",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "takumi-js": "^2.17.1"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.3.3",
+    "@cloudflare/vite-plugin": "^2.0.0-beta.v.3",
+    "@tailwindcss/vite": "^4.3.3",
     "@types/mdx": "^2.0.14",
     "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "postcss": "^8.5.31",
-    "serve": "^14.2.6",
+    "@vitejs/plugin-react": "^6.1.2",
+    "cf": "^1.0.0-beta.20",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
-    "wrangler": "^4.154.0"
+    "vite": "^8.3.5"
   }
 }

@@ -12,7 +12,7 @@
 #
 # Sites:
 #   apps/main-web  montaramail.web.id       vinext Worker (apps/main-web/cloudflare.config.ts)
-#   apps/docs      docs.montaramail.web.id  static export served as Worker assets (apps/docs/wrangler.jsonc)
+#   apps/docs      docs.montaramail.web.id  TanStack Start Worker, pages prerendered (apps/docs/cloudflare.config.ts)
 
 name: Release
 
@@ -130,7 +130,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-  # The docs are a static export (apps/docs/out) served as Worker assets; like
+  # The docs are a TanStack Start Worker with every page prerendered; like
   # main-web, every release run redeploys them, so a manual run publishes a
   # docs-only change.
   release-docs:
@@ -156,14 +156,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --filter @montara-mail/docs...
 
-      # A broken page or link fails here, before anything is deployed.
       - name: Typecheck
         run: pnpm --filter @montara-mail/docs typecheck
 
+      # Prerenders every page; a broken page or link fails here, before
+      # anything is deployed.
       - name: Build
         run: pnpm --filter @montara-mail/docs build
 
-      # Uploads apps/docs/out to the Worker and its custom domain.
+      # cf deploys the build output (.cloudflare/output) as the Worker described
+      # in apps/docs/cloudflare.config.ts, with its custom domain.
       - name: Deploy
         run: pnpm --filter @montara-mail/docs run deploy
         env:

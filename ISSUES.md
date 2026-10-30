@@ -179,7 +179,7 @@ Metode:
 
 ### I-2 · Info — Situs docs tanpa header keamanan — ✅ FIXED
 
-- `apps/docs/public/_headers`: HSTS, CSP, nosniff, `X-Frame-Options: DENY`, Referrer-Policy (diterapkan oleh Workers static assets).
+- `apps/docs/public/_headers`: HSTS, CSP, nosniff, `X-Frame-Options: DENY`, Referrer-Policy (diterapkan oleh Workers static assets, jadi semua halaman yang di-prerender; respons yang dirender Worker, yaitu 404, salinan Markdown dan gambar OG, tidak memakainya).
 
 ### I-3 · Info — Organisasi di trash masih bisa diakses lewat aplikasi — ✅ FIXED
 
