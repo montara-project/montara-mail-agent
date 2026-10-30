@@ -89,7 +89,7 @@ function RouteComponent() {
       {mailId ? (
         <MailReader key={mailId} mailId={mailId} />
       ) : (
-        <div className="text-muted-foreground hidden flex-1 items-center justify-center text-sm md:flex">
+        <div className="text-muted-foreground hidden flex-1 items-center justify-center p-6 text-center text-sm md:flex">
           Select an email to read it.
         </div>
       )}

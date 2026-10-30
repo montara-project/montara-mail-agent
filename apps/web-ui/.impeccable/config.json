@@ -11,6 +11,15 @@
         ],
         "createdAt": "2026-10-27T09:06:56.319Z",
         "reason": "Claude: eq-bounce is the dictation level meter (ease-in-out scaleY loop), named for the equalizer, not bounce easing"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/components/block/mail/mail-list.tsx"
+        ],
+        "createdAt": "2026-10-30T15:28:08.392Z",
+        "reason": "user confirmed: asked for a 2px blue left border on unread mail rows, replacing the dot"
       }
     ]
   }

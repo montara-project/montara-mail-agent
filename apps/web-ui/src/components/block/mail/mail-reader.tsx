@@ -393,7 +393,7 @@ export default function MailReader({ mailId }: { mailId: string }) {
             )}
           </div>
           <div className="text-muted-foreground flex shrink-0 items-center gap-0.5 text-sm @max-lg:ms-13">
-            <span className="mr-1.5">{`${monthDay(new Date(mail.received_at))}, ${clock(new Date(mail.received_at), '.')}`}</span>
+            <span className="me-1.5">{`${monthDay(new Date(mail.received_at))}, ${clock(new Date(mail.received_at), '.')}`}</span>
             <IconButton label="Print" onClick={() => printMail(mail)}>
               <Printer />
             </IconButton>
@@ -420,7 +420,9 @@ export default function MailReader({ mailId }: { mailId: string }) {
           </div>
         </div>
 
-        <h1 className="mt-5 text-2xl font-semibold">{mail.subject || '(no subject)'}</h1>
+        <h1 dir="auto" className="mt-5 text-2xl font-semibold">
+          {mail.subject || '(no subject)'}
+        </h1>
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">

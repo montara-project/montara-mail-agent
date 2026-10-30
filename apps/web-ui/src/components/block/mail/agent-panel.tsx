@@ -405,7 +405,7 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
                   <Sparkles className="size-5" aria-hidden />
                 </div>
                 <p className="text-muted-foreground max-w-64 text-sm text-balance wrap-anywhere">
-                  Ask about {mailbox ? mask(mailbox.label) : 'this mailbox'}: find an email,
+                  Ask about {mailbox ? mask(mailbox.email) : 'this mailbox'}: find an email,
                   summarize a thread, draft a reply, or have mail moved out of the way.
                 </p>
                 {emailAccountId && (
@@ -512,7 +512,7 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
               disabled={!emailAccountId}
               inputRef={inputRef}
               label="Message the assistant"
-              placeholder={promptPlaceholder(emailAccountId, about, mailbox && mask(mailbox.label))}
+              placeholder={promptPlaceholder(emailAccountId, about, mailbox && mask(mailbox.email))}
               commands={[...skillCommands, ...(about ? EMAIL_QUICK_PROMPTS : QUICK_PROMPTS)]}
               models={personas}
               model={activeBotId}

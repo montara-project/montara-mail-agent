@@ -165,10 +165,14 @@ function EmptyList() {
 /**
  * A row's columns: the checkbox, then the mail, 12px apart. The header puts
  * its checkbox and title on the same lines (CHECK_GAP), so they align. The
- * unread dot or star sits in the row's left padding, not a column of its own.
+ * unread edge and the star sit in the row's left padding, not a column of their own.
  */
 const ROW_COLUMNS = 'grid-cols-[1.25rem_minmax(0,1fr)] gap-x-3'
 const CHECK_GAP = 'me-1' // + the header's gap-2: the same 12px as gap-x-3
+// Raised off the dark card, where the default background reads as a hole.
+const CHECK_SURFACE = 'dark:data-[state=unchecked]:bg-input/30'
+// Viewport breakpoints: the list is w-80 from md to lg, too narrow for the count.
+const COUNT_VISIBILITY = 'hidden sm:inline md:hidden lg:inline'
 
 /** The folders a selection can move to, as the Move to menu lists them. */
 const MOVE_TARGETS: { folder: Models.MailMoveTarget; label: string; icon: typeof Inbox }[] = [
@@ -450,6 +454,8 @@ export default function MailList({ className }: { className?: string }) {
           <Skeleton className="h-4 w-1/2" />
           <Skeleton className="h-4 w-3/4" />
           <Skeleton className="h-4 w-full" />
+          {/* The rows' account chip, so they don't jump in taller. */}
+          {!account && shown.length > 1 && <Skeleton className="mt-0.5 h-5 w-40 rounded-full" />}
         </div>
       ))
     }
@@ -475,7 +481,7 @@ export default function MailList({ className }: { className?: string }) {
           className={cn(
             'hover:bg-accent/50 relative grid border-b px-4 py-4 text-sm',
             ROW_COLUMNS,
-            // Unread mail is tinted, so it stands out without reading the dot.
+            // Unread mail is tinted, so it stands out without reading the edge.
             !mail.is_read && 'bg-blue-500/[0.06] dark:bg-blue-400/[0.08]',
             isSelected && 'bg-accent/40',
             selectedId === mail.id && 'bg-accent hover:bg-accent'
@@ -486,19 +492,23 @@ export default function MailList({ className }: { className?: string }) {
               checked={isSelected}
               onCheckedChange={(on) => toggle(mail.id, on === true)}
               aria-label={`Select ${mask(senderName(mail))}: ${mail.subject || '(no subject)'}`}
-              className="after:absolute after:-inset-2.5 after:content-['']"
+              className={cn("after:absolute after:-inset-2.5 after:content-['']", CHECK_SURFACE)}
             />
           </span>
-          {/* In the left padding, centred on the first line. Screen readers hear
-              the state as text; the dot and star are only its picture. */}
+          {/* An overlay, not a border, so a row's text doesn't move when it is read.
+              Screen readers hear the state as text; the edge is only its picture. */}
+          {!mail.is_read && (
+            <>
+              <span
+                className="absolute inset-y-0 start-0 w-0.5 bg-blue-500 dark:bg-blue-400"
+                aria-hidden
+              />
+              <span className="sr-only">Unread,</span>
+            </>
+          )}
+          {/* In the left padding, centred on the first line. */}
           <span className="absolute start-0 top-4 flex h-5 w-4 items-center justify-center">
-            {!mail.is_read && (
-              <>
-                <span className="size-2.5 rounded-full bg-blue-500 dark:bg-blue-400" aria-hidden />
-                <span className="sr-only">Unread,</span>
-              </>
-            )}
-            {mail.is_read && mail.is_starred && (
+            {mail.is_starred && (
               <>
                 <Star className="size-3 fill-amber-400 text-amber-400" aria-hidden />
                 <span className="sr-only">Starred,</span>
@@ -515,6 +525,7 @@ export default function MailList({ className }: { className?: string }) {
           >
             <div className="flex items-center gap-1.5">
               <span
+                dir="auto"
                 className={cn(
                   'truncate text-[15px]',
                   mail.is_read ? 'font-medium' : 'font-semibold'
@@ -524,18 +535,28 @@ export default function MailList({ className }: { className?: string }) {
               </span>
               <span
                 className={cn(
-                  'ml-auto shrink-0 text-xs',
+                  'ms-auto shrink-0 text-xs tabular-nums',
                   mail.is_read ? 'text-muted-foreground' : 'text-foreground font-medium'
                 )}
               >
                 {formatMailListDate(mail.received_at)}
               </span>
             </div>
-            <span className={cn('truncate', mail.is_read ? 'font-medium' : 'font-semibold')}>
+            {/* dir="auto": an Arabic or Hebrew mail reads right to left, punctuation included. */}
+            <span
+              dir="auto"
+              className={cn(
+                'truncate',
+                mail.is_read ? 'font-medium' : 'font-semibold',
+                !mail.subject && 'text-muted-foreground font-normal'
+              )}
+            >
               {mail.subject || '(no subject)'}
             </span>
             {mail.teaser && (
-              <span className="text-muted-foreground line-clamp-2">{mail.teaser}</span>
+              <span dir="auto" className="text-muted-foreground line-clamp-2">
+                {mail.teaser}
+              </span>
             )}
             {flag && (
               <>
@@ -561,12 +582,12 @@ export default function MailList({ className }: { className?: string }) {
                 setSelected(allSelected ? new Set() : new Set(mails.map((mail) => mail.id)))
               }
               aria-label={allSelected ? 'Clear the selection' : 'Select all on this page'}
-              className={CHECK_GAP}
+              className={cn(CHECK_GAP, CHECK_SURFACE)}
             />
           )}
-          {/* The title takes what the actions leave. A phone has no room for the
-              count, and a count cut to its first digit would misread, so it hides;
-              the select-all box still shows whether mail is selected. */}
+          {/* The title takes what the actions leave. A phone or the narrow tablet list
+              has no room for the count, and a count cut to its first digit would
+              misread, so it hides; the select-all box still shows whether mail is selected. */}
           <h2 className="flex min-w-0 flex-1 items-baseline gap-2">
             <span className="shrink-0 text-lg font-semibold">{folder.title}</span>
             {/* "N unread" and "N selected" cross-fade; the count itself just updates. */}
@@ -578,7 +599,7 @@ export default function MailList({ className }: { className?: string }) {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.18, ease: EASE_OUT }}
-                  className="text-muted-foreground hidden truncate text-xs tabular-nums sm:inline"
+                  className={`text-muted-foreground truncate text-xs tabular-nums ${COUNT_VISIBILITY}`}
                 >
                   {selectedMails.length} selected
                 </motion.span>
@@ -590,7 +611,7 @@ export default function MailList({ className }: { className?: string }) {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.18, ease: EASE_OUT }}
-                    className="text-muted-foreground hidden truncate text-xs sm:inline"
+                    className={`text-muted-foreground truncate text-xs tabular-nums ${COUNT_VISIBILITY}`}
                   >
                     {unreadCount} unread
                   </motion.span>
@@ -644,7 +665,7 @@ export default function MailList({ className }: { className?: string }) {
         >
           {failed.map((item) => (
             <p key={item.id}>
-              Last sync failed{account ? '' : ` for ${mask(item.label)}`}:{' '}
+              Last sync failed{account ? '' : ` for ${mask(item.email)}`}:{' '}
               {mask(item.sync_error ?? '')}
             </p>
           ))}
@@ -660,7 +681,7 @@ export default function MailList({ className }: { className?: string }) {
       {total > 0 && (
         // On a phone the floating compose button sits over the right end.
         <div className="flex shrink-0 items-center gap-2 border-t px-4 py-2 max-md:pe-20">
-          <span className="text-muted-foreground text-xs whitespace-nowrap">
+          <span className="text-muted-foreground text-xs whitespace-nowrap tabular-nums">
             {first + 1}–{first + mails.length} of {total}
           </span>
           <Select value={String(size)} onValueChange={(value) => setSize(Number(value))}>
