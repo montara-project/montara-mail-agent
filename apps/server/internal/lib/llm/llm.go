@@ -32,6 +32,33 @@ var Kinds = []string{KindOpenAI, KindAnthropic, KindSelfHosted}
 
 const defaultOpenAIBaseURL = "https://api.openai.com/v1"
 
+// clientHeaders names Montara to the provider. No standard field exists:
+// gateways read the User-Agent or OpenRouter's attribution headers, and a body
+// field could be rejected by a strict server.
+var clientHeaders = map[string]string{
+	"User-Agent":         "montara-mail",
+	"HTTP-Referer":       "https://app.montaramail.web.id",
+	"X-Title":            "montara-mail",
+	"X-OpenRouter-Title": "montara-mail",
+}
+
+func setClientHeaders(header http.Header) {
+	for name, value := range clientHeaders {
+		header.Set(name, value)
+	}
+}
+
+func anthropicOptions(cfg Config) []option.RequestOption {
+	opts := []option.RequestOption{option.WithAPIKey(cfg.APIKey), option.WithHTTPClient(cfg.HTTPClient)}
+	if cfg.BaseURL != "" {
+		opts = append(opts, option.WithBaseURL(cfg.BaseURL))
+	}
+	for name, value := range clientHeaders {
+		opts = append(opts, option.WithHeader(name, value))
+	}
+	return opts
+}
+
 // ErrRefused means the model declined to answer.
 var ErrRefused = errors.New("the model declined to answer")
 
@@ -55,11 +82,7 @@ type Config struct {
 func New(cfg Config) (ChatClient, error) {
 	switch cfg.Kind {
 	case KindAnthropic:
-		opts := []option.RequestOption{option.WithAPIKey(cfg.APIKey), option.WithHTTPClient(cfg.HTTPClient)}
-		if cfg.BaseURL != "" {
-			opts = append(opts, option.WithBaseURL(cfg.BaseURL))
-		}
-		return anthropicClient{client: anthropic.NewClient(opts...), model: cfg.Model, native: cfg.BaseURL == ""}, nil
+		return anthropicClient{client: anthropic.NewClient(anthropicOptions(cfg)...), model: cfg.Model, native: cfg.BaseURL == ""}, nil
 	case KindOpenAI, KindSelfHosted:
 		return openAIClient{http: cfg.HTTPClient, baseURL: openAIBaseURL(cfg), apiKey: cfg.APIKey, model: cfg.Model}, nil
 	}
@@ -83,11 +106,7 @@ func ListModels(ctx context.Context, cfg Config) ([]string, error) {
 	var ids []string
 	switch cfg.Kind {
 	case KindAnthropic:
-		opts := []option.RequestOption{option.WithAPIKey(cfg.APIKey), option.WithHTTPClient(cfg.HTTPClient)}
-		if cfg.BaseURL != "" {
-			opts = append(opts, option.WithBaseURL(cfg.BaseURL))
-		}
-		client := anthropic.NewClient(opts...)
+		client := anthropic.NewClient(anthropicOptions(cfg)...)
 		pages := client.Models.ListAutoPaging(ctx, anthropic.ModelListParams{Limit: anthropic.Int(maxModels)})
 		for pages.Next() && len(ids) < maxModels {
 			ids = append(ids, pages.Current().ID)
@@ -100,6 +119,7 @@ func ListModels(ctx context.Context, cfg Config) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
+		setClientHeaders(req.Header)
 		if cfg.APIKey != "" {
 			req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
 		}
@@ -196,6 +216,7 @@ func (c openAIClient) Complete(ctx context.Context, system, prompt string, maxTo
 		return "", err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	setClientHeaders(req.Header)
 	// A self-hosted server may run without a key.
 	if c.apiKey != "" {
 		req.Header.Set("Authorization", "Bearer "+c.apiKey)
