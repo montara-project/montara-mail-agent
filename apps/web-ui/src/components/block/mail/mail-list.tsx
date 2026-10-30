@@ -358,6 +358,9 @@ export default function MailList({ className }: { className?: string }) {
   const selectedMails = mails.filter((mail) => selected.has(mail.id))
   const allSelected = mails.length > 0 && selectedMails.length === mails.length
   const selecting = selectedMails.length > 0
+  let selectAllState: boolean | 'indeterminate' = false
+  if (allSelected) selectAllState = true
+  else if (selecting) selectAllState = 'indeterminate'
   const toggle = (id: string, on: boolean) =>
     setSelected((prev) => {
       const next = new Set(prev)
@@ -500,7 +503,7 @@ export default function MailList({ className }: { className?: string }) {
         <div className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
           {mails.length > 0 && (
             <Checkbox
-              checked={allSelected ? true : selecting ? 'indeterminate' : false}
+              checked={selectAllState}
               onCheckedChange={() =>
                 setSelected(allSelected ? new Set() : new Set(mails.map((mail) => mail.id)))
               }

@@ -337,6 +337,10 @@ export default function PromptBar({
   }
 
   const canSend = draft.trim().length > 0 && !locked
+  // The send button: accent with a worded label, ink as a bare arrow, muted when it can't send.
+  let sendColors = { background: 'var(--line-strong)', color: 'var(--ink-2)' }
+  if (canSend && sendLabel) sendColors = { background: 'var(--accent-ink)', color: 'white' }
+  else if (canSend) sendColors = { background: 'var(--ink)', color: 'var(--surface)' }
   const send = () => {
     if (!canSend) return
     onSend(draft.trim())
@@ -634,15 +638,7 @@ export default function PromptBar({
                 className={`flex h-7 shrink-0 items-center justify-center gap-1.5 transition-[background-color,color,transform] duration-200 enabled:active:scale-[0.96] ${
                   sendLabel ? 'px-2.5 text-[12.5px] font-medium' : 'w-7'
                 } ${roundness} ${wide ? 'row-start-2' : 'row-start-1'}`}
-                style={{
-                  gridColumnStart: columns.length,
-                  background: canSend
-                    ? sendLabel
-                      ? 'var(--accent-ink)'
-                      : 'var(--ink)'
-                    : 'var(--line-strong)',
-                  color: canSend ? (sendLabel ? 'white' : 'var(--surface)') : 'var(--ink-2)',
-                }}
+                style={{ gridColumnStart: columns.length, ...sendColors }}
               >
                 {sendLabel ? (
                   <>

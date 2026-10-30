@@ -1,11 +1,12 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Copy, KeyRound, Plus, RefreshCw, Trash2 } from 'lucide-react'
+import { Copy, KeyRound, Plus, Trash2 } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
 
 import EmptyState from '@/components/block/common/empty-state'
+import QueryState from '@/components/block/common/query-state'
 import SectionCard from '@/components/block/common/section-card'
 import SectionHeading from '@/components/block/common/section-heading'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
@@ -24,7 +25,7 @@ import { FieldDescription } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAppForm } from '@/hooks/form'
 import { useActiveOrganization } from '@/hooks/use-active-organization'
-import { axiosErrorMessage, toastAxiosError } from '@/lib/api/axios-error'
+import { toastAxiosError } from '@/lib/api/axios-error'
 import { parseDto } from '@/lib/api/dtos/parse'
 import {
   API_KEY_LIFETIMES,
@@ -366,28 +367,26 @@ export default function APIKeyList() {
       </SectionCard>
 
       <SectionCard>
-        {isPending ? (
-          <Loading />
-        ) : isError ? (
-          <div role="alert" className="grid justify-items-center gap-3 p-6 text-center text-sm">
-            <p className="text-destructive">{axiosErrorMessage(error)}</p>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <RefreshCw />
-              Try again
-            </Button>
-          </div>
-        ) : keys.length === 0 ? (
-          <EmptyState
-            title="No API keys yet"
-            description="Create one for each app you connect, so you can revoke it alone."
-          />
-        ) : (
+        <QueryState
+          isPending={isPending}
+          isError={isError}
+          error={error}
+          onRetry={() => refetch()}
+          isEmpty={keys.length === 0}
+          loading={<Loading />}
+          empty={
+            <EmptyState
+              title="No API keys yet"
+              description="Create one for each app you connect, so you can revoke it alone."
+            />
+          }
+        >
           <ul className="-m-4 divide-y overflow-hidden rounded-lg">
             {keys.map((apiKey) => (
               <KeyRow key={apiKey.id} apiKey={apiKey} />
             ))}
           </ul>
-        )}
+        </QueryState>
       </SectionCard>
 
       {creating && (
