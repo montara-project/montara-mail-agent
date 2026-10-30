@@ -3,6 +3,14 @@
 All notable changes to this project are documented in this file. Versions follow the git tags (`v*`); Docker images are published to ghcr.io with the same version.
 
 
+## [0.8.0](https://github.com/montara-project/montara-mail-agent/compare/v0.7.0...v0.8.0) (2026-10-30)
+
+### Features
+
+* **server:** identify as montara-mail to LLM providers ([24fe6d1](https://github.com/montara-project/montara-mail-agent/commit/24fe6d18c114e04432d9f6f2b61bcd4dfe1837cd))
+* **web-ui:** collapse email sign-in behind a button and harden the page ([b40017b](https://github.com/montara-project/montara-mail-agent/commit/b40017b84f2339f02bb8c0524b7a39219964c8c8))
+* **web-ui:** use HeroUI InputOTP for two-factor codes ([85d69d7](https://github.com/montara-project/montara-mail-agent/commit/85d69d7665d2ad62c9ace8351cf1a568f9d6d730))
+
 ## [0.7.0](https://github.com/montara-project/montara-mail-agent/compare/v0.6.0...v0.7.0) (2026-10-30)
 
 ### Features
