@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { OTPCodeInput } from '@/components/ui/input-otp'
 import { useAppForm } from '@/hooks/form'
 import { SignInSchema } from '@/lib/api/dtos/auth/schema'
 import { DEFAULT_SERVER_URL, SERVER_URL } from '@/lib/api/server-url'
@@ -53,17 +54,20 @@ function TOTPStep({ onDone, onBack }: { onDone: () => Promise<void>; onBack: () 
         <FieldLabel htmlFor="totp-code">
           {backup ? 'Backup code' : 'Authentication code'}
         </FieldLabel>
-        <Input
-          id="totp-code"
-          variant="lg"
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          autoFocus
-          autoComplete="one-time-code"
-          inputMode={backup ? 'text' : 'numeric'}
-          maxLength={backup ? 32 : 6}
-          placeholder={backup ? 'One of your saved backup codes' : '6-digit code'}
-        />
+        {backup ? (
+          <Input
+            id="totp-code"
+            variant="lg"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            autoFocus
+            autoComplete="one-time-code"
+            maxLength={32}
+            placeholder="One of your saved backup codes"
+          />
+        ) : (
+          <OTPCodeInput id="totp-code" value={code} onChange={setCode} autoFocus />
+        )}
         <FieldDescription>
           {backup
             ? 'Each backup code works once.'

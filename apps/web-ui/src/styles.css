@@ -203,6 +203,50 @@
     background-position: -100% 0;
   }
 }
+/* HeroUI InputOTP slots, from this app's tokens (see ui/input-otp.tsx). */
+@layer components {
+  .input-otp {
+    @apply relative flex w-full items-center gap-2;
+  }
+  .input-otp__group {
+    @apply flex min-w-0 items-center gap-2;
+  }
+  .input-otp__slot {
+    @apply border-input bg-background text-foreground relative flex h-10 w-9.5 min-w-0 flex-1 items-center justify-center rounded-md border text-lg font-semibold shadow-xs shadow-black/5 transition-[border-color,box-shadow] motion-reduce:transition-none pointer-coarse:h-11;
+
+    &[data-active='true'] {
+      @apply border-ring ring-ring/30 z-10 ring-[3px];
+    }
+  }
+  .input-otp__slot-value {
+    animation: slot-value-in 250ms ease-out both;
+    @apply motion-reduce:animate-none;
+  }
+  .input-otp__caret {
+    animation: caret-blink 1.2s ease-out infinite;
+    @apply bg-muted-foreground absolute h-4 w-0.5 rounded-sm motion-reduce:animate-none;
+  }
+  .input-otp__separator {
+    @apply bg-border h-0.5 w-1.5 shrink-0 rounded-sm;
+  }
+}
+@keyframes slot-value-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.8);
+  }
+}
+@keyframes caret-blink {
+  0%,
+  70%,
+  100% {
+    opacity: 1;
+  }
+  20%,
+  50% {
+    opacity: 0;
+  }
+}
 @keyframes eq-bounce {
   0%,
   100% {

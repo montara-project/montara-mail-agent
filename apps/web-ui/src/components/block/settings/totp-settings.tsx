@@ -11,7 +11,7 @@ import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
+import { OTPCodeInput } from '@/components/ui/input-otp'
 import { Skeleton } from '@/components/ui/skeleton'
 import { axiosErrorMessage, toastAxiosError } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
@@ -126,17 +126,7 @@ function Setup({ setup, onClose }: { setup: Models.TOTPSetup; onClose: () => voi
         <h3 className="font-medium">3. Enter a code</h3>
         <Field>
           <FieldLabel htmlFor="totp-confirm">Code from the app</FieldLabel>
-          <Input
-            id="totp-confirm"
-            variant="lg"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            autoComplete="one-time-code"
-            inputMode="numeric"
-            maxLength={6}
-            placeholder="6-digit code"
-            className="max-w-48"
-          />
+          <OTPCodeInput id="totp-confirm" value={code} onChange={setCode} />
         </Field>
         <div className="flex gap-2">
           <Button type="submit" disabled={verifying || !code.trim()}>
