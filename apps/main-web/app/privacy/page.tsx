@@ -102,7 +102,9 @@ export default function PrivacyPage() {
       <p>
         We use a cookie to keep you signed in. Your browser also stores a few preferences locally,
         such as your theme, your active organization, and whether email addresses are hidden. This
-        website does not use advertising or tracking cookies.
+        website does not use advertising or tracking cookies. It counts visits with a self-hosted,
+        cookieless analytics script that records the page, referrer, browser, device type and
+        country, never your name or email address.
       </p>
 
       <h2>Retention and deletion</h2>
