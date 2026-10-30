@@ -29,40 +29,18 @@ func envString(key, fallback string) string {
 	return fallback
 }
 
-func envBool(key string, fallback bool) bool {
+// envParse reads key with parse. Unset or empty means fallback; a value parse
+// rejects stops the process.
+func envParse[T any](key string, fallback T, parse func(string) (T, error)) T {
 	v, ok := os.LookupEnv(key)
 	if !ok || v == "" {
 		return fallback
 	}
-	b, err := strconv.ParseBool(v)
+	out, err := parse(v)
 	if err != nil {
-		log.Fatalf("env %s: %q is not a boolean", key, v)
+		log.Fatalf("env %s: %q is invalid: %v", key, v, err)
 	}
-	return b
-}
-
-func envInt(key string, fallback int) int {
-	v, ok := os.LookupEnv(key)
-	if !ok {
-		return fallback
-	}
-	n, err := strconv.Atoi(v)
-	if err != nil {
-		log.Fatalf("env %s: %q is not an integer", key, v)
-	}
-	return n
-}
-
-func envDuration(key string, fallback time.Duration) time.Duration {
-	v, ok := os.LookupEnv(key)
-	if !ok {
-		return fallback
-	}
-	d, err := time.ParseDuration(v)
-	if err != nil {
-		log.Fatalf("env %s: %q is not a duration", key, v)
-	}
-	return d
+	return out
 }
 
 // minSecretLen is the shortest APP_SECRET accepted, 256 bits for HS256.
@@ -71,8 +49,8 @@ const minSecretLen = 32
 func parseFlag(cfg *config.Config) {
 	// App
 	flag.StringVar(&cfg.App.Env, "env", envString("ENV", config.EnvProduction), "Environment: development, staging or production")
-	flag.BoolVar(&cfg.App.Debug, "debug", envBool("DEBUG", false), "Debug mode (also enabled by DEBUG=true)")
-	flag.IntVar(&cfg.App.Port, "port", envInt("PORT", 8080), "Port")
+	flag.BoolVar(&cfg.App.Debug, "debug", envParse("DEBUG", false, strconv.ParseBool), "Debug mode (also enabled by DEBUG=true)")
+	flag.IntVar(&cfg.App.Port, "port", envParse("PORT", 8080, strconv.Atoi), "Port")
 	flag.StringVar(&cfg.App.Name, "app-name", envString("APP_NAME", "montara-mail-agent"), "App Name")
 	flag.StringVar(&cfg.App.Secret, "app-secret", envString("APP_SECRET", ""), "App Secret")
 
@@ -89,25 +67,25 @@ func parseFlag(cfg *config.Config) {
 	flag.StringVar(&cfg.App.SPADir, "spa-dir", envString("SPA_DIR", ""), "Directory of a built single-page app served at / (empty disables)")
 
 	// Mail
-	flag.DurationVar(&cfg.App.MailSyncInterval, "mail-sync-interval", envDuration("MAIL_SYNC_INTERVAL", 5*time.Minute), "How often connected mailboxes are synced (0 disables the background sync)")
-	flag.BoolVar(&cfg.App.AllowPrivateHosts, "allow-private-hosts", envBool("ALLOW_PRIVATE_HOSTS", false), "Let IMAP servers and LLM base URLs resolve to loopback or private addresses")
+	flag.DurationVar(&cfg.App.MailSyncInterval, "mail-sync-interval", envParse("MAIL_SYNC_INTERVAL", 5*time.Minute, time.ParseDuration), "How often connected mailboxes are synced (0 disables the background sync)")
+	flag.BoolVar(&cfg.App.AllowPrivateHosts, "allow-private-hosts", envParse("ALLOW_PRIVATE_HOSTS", false, strconv.ParseBool), "Let IMAP servers and LLM base URLs resolve to loopback or private addresses")
 
 	// Activity log
-	flag.DurationVar(&cfg.App.ActivityLogRetention, "activity-log-retention", envDuration("ACTIVITY_LOG_RETENTION", 365*24*time.Hour), "How long activity log entries are kept before the daily sweep deletes them (0 keeps them forever)")
+	flag.DurationVar(&cfg.App.ActivityLogRetention, "activity-log-retention", envParse("ACTIVITY_LOG_RETENTION", 365*24*time.Hour, time.ParseDuration), "How long activity log entries are kept before the daily sweep deletes them (0 keeps them forever)")
 
 	// Agent
-	flag.DurationVar(&cfg.App.AgentAutoDraftInterval, "agent-autodraft-interval", envDuration("AGENT_AUTO_DRAFT_INTERVAL", time.Hour), "How often the agent drafts replies for important mail (0 disables the automation)")
-	flag.IntVar(&cfg.App.AgentAutoDraftDailyCap, "agent-autodraft-daily-cap", envInt("AGENT_AUTO_DRAFT_DAILY_CAP", 10), "How many drafts the agent may queue per organization per day")
+	flag.DurationVar(&cfg.App.AgentAutoDraftInterval, "agent-autodraft-interval", envParse("AGENT_AUTO_DRAFT_INTERVAL", time.Hour, time.ParseDuration), "How often the agent drafts replies for important mail (0 disables the automation)")
+	flag.IntVar(&cfg.App.AgentAutoDraftDailyCap, "agent-autodraft-daily-cap", envParse("AGENT_AUTO_DRAFT_DAILY_CAP", 10, strconv.Atoi), "How many drafts the agent may queue per organization per day")
 
 	// Database
 	flag.StringVar(&cfg.DB.DSN, "db-dsn", envString("DB_DSN", ""), "Database DSN")
-	flag.IntVar(&cfg.DB.MaxOpenConns, "db-max-open-conns", envInt("DB_MAX_OPEN_CONNS", 25), "Database max open connections")
-	flag.IntVar(&cfg.DB.MaxIdleConns, "db-max-idle-conns", envInt("DB_MAX_IDLE_CONNS", 25), "Database max idle connections")
-	flag.DurationVar(&cfg.DB.MaxIdleTime, "db-max-idle-time", envDuration("DB_MAX_IDLE_TIME", 15*time.Minute), "Database max idle time")
+	flag.IntVar(&cfg.DB.MaxOpenConns, "db-max-open-conns", envParse("DB_MAX_OPEN_CONNS", 25, strconv.Atoi), "Database max open connections")
+	flag.IntVar(&cfg.DB.MaxIdleConns, "db-max-idle-conns", envParse("DB_MAX_IDLE_CONNS", 25, strconv.Atoi), "Database max idle connections")
+	flag.DurationVar(&cfg.DB.MaxIdleTime, "db-max-idle-time", envParse("DB_MAX_IDLE_TIME", 15*time.Minute, time.ParseDuration), "Database max idle time")
 
 	// Boot
-	flag.BoolVar(&cfg.App.MigrateOnBoot, "migrate-on-boot", envBool("MIGRATE_ON_BOOT", false), "Apply embedded migrations before serving")
-	flag.BoolVar(&cfg.App.SeedOnBoot, "seed-on-boot", envBool("SEED_ON_BOOT", false), "Run the idempotent seeders before serving")
+	flag.BoolVar(&cfg.App.MigrateOnBoot, "migrate-on-boot", envParse("MIGRATE_ON_BOOT", false, strconv.ParseBool), "Apply embedded migrations before serving")
+	flag.BoolVar(&cfg.App.SeedOnBoot, "seed-on-boot", envParse("SEED_ON_BOOT", false, strconv.ParseBool), "Run the idempotent seeders before serving")
 	superUser := flag.String("super-user", envString("SUPER_USER", ""), "Super user seeded on boot, as email:password (required with seed-on-boot)")
 
 	// Auth (Authula). The env names match the ones Authula itself reads.
