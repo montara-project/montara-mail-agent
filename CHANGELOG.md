@@ -3,6 +3,18 @@
 All notable changes to this project are documented in this file. Versions follow the git tags (`v*`); Docker images are published to ghcr.io with the same version.
 
 
+## [0.7.0](https://github.com/montara-project/montara-mail-agent/compare/v0.6.0...v0.7.0) (2026-10-30)
+
+### Features
+
+* **docs:** add cookieless analytics ([501042d](https://github.com/montara-project/montara-mail-agent/commit/501042d4f9e78ba46b15cb3800b27a9ec90dc46d))
+* **docs:** migrate the docs site to TanStack Start on a Cloudflare Worker ([b058787](https://github.com/montara-project/montara-mail-agent/commit/b058787f5c1ab18fd7269cefa3022d0a7201182e))
+* **main-web:** add cookieless analytics ([370de50](https://github.com/montara-project/montara-mail-agent/commit/370de505a590a17ed9d5a06f373db90e6fd9df63))
+
+### Bug Fixes
+
+* **web-ui:** keep long sender names from widening mail list rows ([2065f5f](https://github.com/montara-project/montara-mail-agent/commit/2065f5fc9206de06859a66925245d132253e3352))
+
 ## [0.6.0](https://github.com/montara-project/montara-mail-agent/compare/v0.5.0...v0.6.0) (2026-10-29)
 
 ### Features
