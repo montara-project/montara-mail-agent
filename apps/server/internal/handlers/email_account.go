@@ -418,16 +418,10 @@ func (h *emailAccountHandler) Mails(c fiber.Ctx) error {
 		return err
 	}
 
-	var q dtos.MailListQuery
-	if err := lib.ValidateRequestQuery(c, &q); err != nil {
+	q, params, err := mailListQuery(c)
+	if err != nil {
 		return err
 	}
-	q.Clamp()
-	if q.Folder == "" {
-		q.Folder = constant.FolderInbox
-	}
-
-	params := repositories.MailListParams{ListParams: listParams(q.ListQuery), Folder: q.Folder, Importance: q.Importance}
 	repo := &h.app.Repositories.Mail
 
 	mails, err := repo.List(c.Context(), account.ID, params)
@@ -442,7 +436,56 @@ func (h *emailAccountHandler) Mails(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	return mailList(c, mails, q, total, unread)
+}
 
+// OrganizationMails is Mails over every account of the organization: the
+// global inbox.
+func (h *emailAccountHandler) OrganizationMails(c fiber.Ctx) error {
+	organizationID, err := pathID(c, "organization")
+	if err != nil {
+		return err
+	}
+	if _, err := member(c, h.app, organizationID); err != nil {
+		return err
+	}
+
+	q, params, err := mailListQuery(c)
+	if err != nil {
+		return err
+	}
+	repo := &h.app.Repositories.Mail
+
+	mails, err := repo.ListByOrganization(c.Context(), organizationID, params)
+	if err != nil {
+		return err
+	}
+	total, err := repo.CountByOrganization(c.Context(), organizationID, params)
+	if err != nil {
+		return err
+	}
+	unread, err := repo.UnreadByOrganization(c.Context(), organizationID, q.Folder)
+	if err != nil {
+		return err
+	}
+	return mailList(c, mails, q, total, unread)
+}
+
+// mailListQuery reads a mail list's query; the folder defaults to the inbox.
+func mailListQuery(c fiber.Ctx) (dtos.MailListQuery, repositories.MailListParams, error) {
+	var q dtos.MailListQuery
+	if err := lib.ValidateRequestQuery(c, &q); err != nil {
+		return q, repositories.MailListParams{}, err
+	}
+	q.Clamp()
+	if q.Folder == "" {
+		q.Folder = constant.FolderInbox
+	}
+	return q, repositories.MailListParams{ListParams: listParams(q.ListQuery), Folder: q.Folder, Importance: q.Importance}, nil
+}
+
+// mailList answers a page of mail with the folder's unread count in the metadata.
+func mailList(c fiber.Ctx, mails []models.Mail, q dtos.MailListQuery, total, unread int64) error {
 	meta := dtos.ListMeta(int(total), q.Offset, q.Limit)
 	meta["unread"] = unread
 	return dtos.List(c, mails, meta)

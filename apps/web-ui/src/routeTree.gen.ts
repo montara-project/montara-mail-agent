@@ -23,6 +23,7 @@ import { Route as appSettingsApiKeysRouteImport } from './routes/(app)/settings/
 import { Route as appSettingsBillingRouteImport } from './routes/(app)/settings/billing'
 import { Route as appSettingsDeleteAccountRouteImport } from './routes/(app)/settings/delete-account'
 import { Route as appSettingsIpBlocksRouteImport } from './routes/(app)/settings/ip-blocks'
+import { Route as appSettingsMailRouteImport } from './routes/(app)/settings/mail'
 import { Route as appSettingsMcpRouteImport } from './routes/(app)/settings/mcp'
 import { Route as appSettingsOrganizationRouteImport } from './routes/(app)/settings/organization'
 import { Route as appSettingsProfileRouteImport } from './routes/(app)/settings/profile'
@@ -99,6 +100,11 @@ const appSettingsIpBlocksRoute = appSettingsIpBlocksRouteImport.update({
   path: '/ip-blocks',
   getParentRoute: () => appSettingsRouteRoute,
 } as any)
+const appSettingsMailRoute = appSettingsMailRouteImport.update({
+  id: '/mail',
+  path: '/mail',
+  getParentRoute: () => appSettingsRouteRoute,
+} as any)
 const appSettingsMcpRoute = appSettingsMcpRouteImport.update({
   id: '/mcp',
   path: '/mcp',
@@ -135,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/settings/billing': typeof appSettingsBillingRoute
   '/settings/delete-account': typeof appSettingsDeleteAccountRoute
   '/settings/ip-blocks': typeof appSettingsIpBlocksRoute
+  '/settings/mail': typeof appSettingsMailRoute
   '/settings/mcp': typeof appSettingsMcpRoute
   '/settings/organization': typeof appSettingsOrganizationRoute
   '/settings/profile': typeof appSettingsProfileRoute
@@ -154,6 +161,7 @@ export interface FileRoutesByTo {
   '/settings/billing': typeof appSettingsBillingRoute
   '/settings/delete-account': typeof appSettingsDeleteAccountRoute
   '/settings/ip-blocks': typeof appSettingsIpBlocksRoute
+  '/settings/mail': typeof appSettingsMailRoute
   '/settings/mcp': typeof appSettingsMcpRoute
   '/settings/organization': typeof appSettingsOrganizationRoute
   '/settings/profile': typeof appSettingsProfileRoute
@@ -176,6 +184,7 @@ export interface FileRoutesById {
   '/(app)/settings/billing': typeof appSettingsBillingRoute
   '/(app)/settings/delete-account': typeof appSettingsDeleteAccountRoute
   '/(app)/settings/ip-blocks': typeof appSettingsIpBlocksRoute
+  '/(app)/settings/mail': typeof appSettingsMailRoute
   '/(app)/settings/mcp': typeof appSettingsMcpRoute
   '/(app)/settings/organization': typeof appSettingsOrganizationRoute
   '/(app)/settings/profile': typeof appSettingsProfileRoute
@@ -198,6 +207,7 @@ export interface FileRouteTypes {
     | '/settings/billing'
     | '/settings/delete-account'
     | '/settings/ip-blocks'
+    | '/settings/mail'
     | '/settings/mcp'
     | '/settings/organization'
     | '/settings/profile'
@@ -217,6 +227,7 @@ export interface FileRouteTypes {
     | '/settings/billing'
     | '/settings/delete-account'
     | '/settings/ip-blocks'
+    | '/settings/mail'
     | '/settings/mcp'
     | '/settings/organization'
     | '/settings/profile'
@@ -238,6 +249,7 @@ export interface FileRouteTypes {
     | '/(app)/settings/billing'
     | '/(app)/settings/delete-account'
     | '/(app)/settings/ip-blocks'
+    | '/(app)/settings/mail'
     | '/(app)/settings/mcp'
     | '/(app)/settings/organization'
     | '/(app)/settings/profile'
@@ -355,6 +367,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof appSettingsIpBlocksRouteImport
       parentRoute: typeof appSettingsRouteRoute
     }
+    '/(app)/settings/mail': {
+      id: '/(app)/settings/mail'
+      path: '/mail'
+      fullPath: '/settings/mail'
+      preLoaderRoute: typeof appSettingsMailRouteImport
+      parentRoute: typeof appSettingsRouteRoute
+    }
     '/(app)/settings/mcp': {
       id: '/(app)/settings/mcp'
       path: '/mcp'
@@ -400,6 +419,7 @@ interface appSettingsRouteRouteChildren {
   appSettingsBillingRoute: typeof appSettingsBillingRoute
   appSettingsDeleteAccountRoute: typeof appSettingsDeleteAccountRoute
   appSettingsIpBlocksRoute: typeof appSettingsIpBlocksRoute
+  appSettingsMailRoute: typeof appSettingsMailRoute
   appSettingsMcpRoute: typeof appSettingsMcpRoute
   appSettingsOrganizationRoute: typeof appSettingsOrganizationRoute
   appSettingsProfileRoute: typeof appSettingsProfileRoute
@@ -415,6 +435,7 @@ const appSettingsRouteRouteChildren: appSettingsRouteRouteChildren = {
   appSettingsBillingRoute: appSettingsBillingRoute,
   appSettingsDeleteAccountRoute: appSettingsDeleteAccountRoute,
   appSettingsIpBlocksRoute: appSettingsIpBlocksRoute,
+  appSettingsMailRoute: appSettingsMailRoute,
   appSettingsMcpRoute: appSettingsMcpRoute,
   appSettingsOrganizationRoute: appSettingsOrganizationRoute,
   appSettingsProfileRoute: appSettingsProfileRoute,

@@ -13,6 +13,7 @@ All routes need a signed-in user unless noted. `:id` is a UUID.
 | `POST /api/v1/auth/sign-out` | Ends the session. |
 | `GET /api/v1/me/security` | Whether you have a password and two-factor sign-in, and whether you are a super user. |
 | `PATCH /api/v1/me` | Name, avatar (an `https` URL) and timezone. |
+| `PATCH /api/v1/me/preferences` | Change your app preferences: `split_inbox`. |
 | `PUT /api/v1/me/password` | Change the password after checking the current one; ends every session and revokes your API keys. |
 | `GET /api/v1/me/activity-logs` | Your own activity. |
 | `GET, POST /api/v1/me/api-keys` | List your API keys, or create one: `name`, `expires_in_days` (1 to 365, default 90), `organization_id` to scope it to one organization (leave it out for every organization), and `read_only` to limit it to listing, searching and reading. The key is in the create answer only. |
@@ -37,12 +38,13 @@ All routes need a signed-in user unless noted. `:id` is a UUID.
 | `POST /api/v1/organizations/:id/email-accounts/oauth/:provider` | Start an OAuth connection; answers the consent URL. The provider returns the browser to the web app with a `code` and `state`. |
 | `POST /api/v1/email-accounts/oauth/:provider/finish` | Finish it with that `code` and `state`, as the user who started it. |
 | `GET /api/v1/email-accounts/:id/mails` | One folder, filtered by `importance` and `search`, paginated. |
+| `GET /api/v1/organizations/:id/mails` | The same across every account of the organization: the global inbox. |
 | `POST /api/v1/email-accounts/:id/sync` | Sync now. |
 | `DELETE /api/v1/email-accounts/:id` | Disconnect and drop the synced mail. |
 | `POST /api/v1/email-accounts/:id/send` | Send a new mail: To and Cc (20 addresses in all), subject, text and HTML. |
 | `GET, PATCH /api/v1/mails/:id` | Read a mail; mark it read or starred, or set its importance. |
 | `POST /api/v1/mails/:id/move`, `DELETE /api/v1/mails/:id` | Move to `inbox`, `archive`, `spam` or `trash`; delete moves to the trash, or deletes for good from it. |
-| `POST /api/v1/mails/bulk` | One action on many mails of one account and folder: `read`, `unread`, `trash` or `move`. |
+| `POST /api/v1/mails/bulk` | One action on many mails of one folder, across accounts: `read`, `unread`, `trash` or `move`. A mail you can't reach refuses the whole request. When one account's server refuses, the other accounts still go through and the error says how many mails did. |
 | `POST /api/v1/mails/:id/reply`, `/forward` | Reply (threaded, quoting the original) or forward (up to 20 addresses, optional note). |
 
 Send and reply take JSON, or `multipart/form-data` with that JSON in a `payload` field and the files in `attachments` (at most 10 files of 18 MB in all).

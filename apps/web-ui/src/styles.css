@@ -203,6 +203,31 @@
     background-position: -100% 0;
   }
 }
+/* HeroUI Chip, from this app's tokens: HeroUI's own stylesheet would replace them globally. */
+@layer components {
+  .chip {
+    @apply border-border bg-muted text-muted-foreground inline-flex max-w-full min-w-0 items-center gap-1 rounded-full border text-xs;
+  }
+  .chip--sm {
+    @apply h-5 px-1.5;
+  }
+  /* One hue per account (--chip-hue), with lightness fixed so every hue stays readable. */
+  .chip--account {
+    color: oklch(0.42 0.12 var(--chip-hue));
+    background-color: oklch(0.95 0.035 var(--chip-hue));
+    border-color: oklch(0.85 0.07 var(--chip-hue));
+
+    @variant dark {
+      color: oklch(0.84 0.11 var(--chip-hue));
+      background-color: oklch(0.28 0.05 var(--chip-hue));
+      border-color: oklch(0.42 0.08 var(--chip-hue));
+    }
+  }
+  .chip__label {
+    @apply truncate;
+  }
+}
+
 /* HeroUI InputOTP slots, from this app's tokens (see ui/input-otp.tsx). */
 @layer components {
   .input-otp {

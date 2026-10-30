@@ -35,7 +35,12 @@ import { printMail } from '@/components/block/mail/print-mail'
 import ReplyComposer from '@/components/block/mail/reply-composer'
 import SkillMenu, { SkillResult } from '@/components/block/mail/skill-menu'
 import { IMPORTANCE_LABELS, mailInitials, senderName } from '@/components/layout/mail/mail-data'
-import { MAIL_FOLDERS, MAIL_LABELS } from '@/components/layout/mail/mail-panel'
+import {
+  AccountFlag,
+  MAIL_FOLDERS,
+  MAIL_LABELS,
+  useFlaggedAccount,
+} from '@/components/layout/mail/mail-panel'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -49,6 +54,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useActiveAgentBot } from '@/hooks/use-active-agent-bot'
+import { useHideEmails } from '@/hooks/use-hide-emails'
 import { axiosErrorMessage, toastAxiosError, toastProgress } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
 import { clock, monthDay } from '@/lib/date'
@@ -70,10 +76,13 @@ function IconButton({ label, ...props }: React.ComponentProps<typeof Button> & {
 
 /** "Name email" pairs, as in the To and Cc lines. */
 function Contacts({ contacts }: { contacts: Models.MailContact[] }) {
+  const { mask } = useHideEmails()
+
   return contacts.map((contact, i) => (
     <React.Fragment key={contact.email}>
       {i > 0 && ', '}
-      {contact.name && <span className="text-foreground">{contact.name}</span>} {contact.email}
+      {contact.name && <span className="text-foreground">{mask(contact.name)}</span>}{' '}
+      {mask(contact.email)}
     </React.Fragment>
   ))
 }
@@ -151,6 +160,8 @@ export default function MailReader({ mailId }: { mailId: string }) {
 
   // Prev/next walk the list page the mail was opened from.
   const { data: page } = useMailPage()
+  const flaggedAccount = useFlaggedAccount()
+  const { mask } = useHideEmails()
   const pageMails = page?.data ?? []
   const index = pageMails.findIndex((item) => item.id === mailId)
   const prev = index > 0 ? pageMails[index - 1] : undefined
@@ -214,6 +225,8 @@ export default function MailReader({ mailId }: { mailId: string }) {
       </div>
     )
   }
+
+  const flag = flaggedAccount(mail)
 
   const summaryContent = () => {
     if (summaryText) return <Markdown>{summaryText}</Markdown>
@@ -349,8 +362,10 @@ export default function MailReader({ mailId }: { mailId: string }) {
           {/* A narrow pane gives the sender the whole line; the date and actions wrap below. */}
           <div className="grid min-w-0 flex-1 basis-[calc(100%-3.25rem)] gap-0.5 text-sm @lg:basis-0">
             <p className="truncate">
-              <span className="font-semibold">{senderName(mail)}</span>{' '}
-              {mail.from_name && <span className="text-muted-foreground">{mail.from_email}</span>}
+              <span className="font-semibold">{mask(senderName(mail))}</span>{' '}
+              {mail.from_name && (
+                <span className="text-muted-foreground">{mask(mail.from_email)}</span>
+              )}
             </p>
             {(mail.to.length > 0 || mail.cc.length > 0) && (
               <p className="text-muted-foreground">
@@ -369,9 +384,16 @@ export default function MailReader({ mailId }: { mailId: string }) {
                 )}
               </p>
             )}
+            {/* A reply goes out from this account. */}
+            {flag && (
+              <p className="flex min-w-0 items-center gap-1.5">
+                <span className="text-foreground shrink-0 font-medium">Received in:</span>
+                <AccountFlag account={flag} />
+              </p>
+            )}
           </div>
           <div className="text-muted-foreground flex shrink-0 items-center gap-0.5 text-sm @max-lg:ms-13">
-            <span className="mr-1.5">{`${monthDay(new Date(mail.received_at))}, ${clock(new Date(mail.received_at), '.')}`}</span>
+            <span className="me-1.5">{`${monthDay(new Date(mail.received_at))}, ${clock(new Date(mail.received_at), '.')}`}</span>
             <IconButton label="Print" onClick={() => printMail(mail)}>
               <Printer />
             </IconButton>
@@ -398,7 +420,9 @@ export default function MailReader({ mailId }: { mailId: string }) {
           </div>
         </div>
 
-        <h1 className="mt-5 text-2xl font-semibold">{mail.subject || '(no subject)'}</h1>
+        <h1 dir="auto" className="mt-5 text-2xl font-semibold">
+          {mail.subject || '(no subject)'}
+        </h1>
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">

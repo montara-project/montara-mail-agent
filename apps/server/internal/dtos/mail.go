@@ -35,9 +35,9 @@ func (dto MailMoveBody) Validate(v *validator.MapValidator) {
 	v.Field("folder").Required().Regex(`^(inbox|archive|spam|trash)$`)
 }
 
-// MailBulkBody applies one action to mails of one account and folder, as the
-// list's selection does: read, unread, move (to folder) or trash (deleted for
-// good when they are already there).
+// MailBulkBody applies one action to mails of one folder, as the list's
+// selection does: read, unread, move (to folder) or trash (deleted for good
+// when they are already there).
 type MailBulkBody struct {
 	IDs    []string `json:"ids"`
 	Action string   `json:"action"`

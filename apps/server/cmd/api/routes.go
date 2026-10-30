@@ -56,6 +56,7 @@ func routes(r *fiber.App, app *app.Application) {
 	me.Get("/security", h.Profile.Security)
 	me.Get("/activity-logs", h.ActivityLog.ListMine)
 	me.Patch("/", idempotent, h.Profile.Update)
+	me.Patch("/preferences", idempotent, h.Profile.UpdatePreferences)
 	me.Put("/password", slow, idempotent, h.Profile.ChangePassword)
 	// The keys MCP clients sign in to /mcp with.
 	me.Get("/api-keys", h.APIKey.List)
@@ -77,6 +78,7 @@ func routes(r *fiber.App, app *app.Application) {
 	organizations.Get("/:id/email-accounts", h.EmailAccount.List)
 	organizations.Post("/:id/email-accounts", slow, idempotent, h.EmailAccount.Create)
 	organizations.Post("/:id/email-accounts/oauth/:provider", h.EmailAccount.OAuthStart)
+	organizations.Get("/:id/mails", h.EmailAccount.OrganizationMails)
 	organizations.Get("/:id/llm-provider", h.LLMProvider.Get)
 	organizations.Put("/:id/llm-provider", idempotent, h.LLMProvider.Put)
 	organizations.Delete("/:id/llm-provider", idempotent, h.LLMProvider.Delete)

@@ -1,10 +1,17 @@
+import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import React from 'react'
 
 import MailList, { DEFAULT_PAGE_SIZE, pageSize } from '@/components/block/mail/mail-list'
 import MailReader from '@/components/block/mail/mail-reader'
-import { MAIL_LABELS, useMailAccount } from '@/components/layout/mail/mail-panel'
+import {
+  MAIL_LABELS,
+  useMailAccount,
+  useMailAccounts,
+  useSplitInbox,
+} from '@/components/layout/mail/mail-panel'
 import { useActiveOrganization } from '@/hooks/use-active-organization'
+import { queries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
 
 type MailSearch = {
@@ -55,9 +62,24 @@ export const Route = createFileRoute('/(app)/mail/')({
 })
 
 function RouteComponent() {
-  const { mail: mailId, agent } = Route.useSearch()
+  const { mail: mailId, agent, about } = Route.useSearch()
   const account = useMailAccount()
+  const split = useSplitInbox()
+  const { data: accounts } = useMailAccounts()
+  const aboutMail = useQuery(queries.mails.get(about))
+  const aboutAccountId = aboutMail.data?.email_account_id
   const { organization } = useActiveOrganization()
+  // A conversation works on one mailbox. The global inbox has none open, so the
+  // assistant takes the attached mail's, waiting for it to load. Removing the
+  // attachment changes no mailbox, so it stays on the last one, else the first.
+  const [lastAboutAccountId, setLastAboutAccountId] = React.useState<string>()
+  if (aboutAccountId && aboutAccountId !== lastAboutAccountId) {
+    setLastAboutAccountId(aboutAccountId)
+  }
+  const unattachedAccountId =
+    accounts?.find((item) => item.id === lastAboutAccountId)?.id ?? accounts?.[0]?.id
+  const globalAccountId = about && !aboutMail.isError ? aboutAccountId : unattachedAccountId
+  const agentAccountId = split === false ? globalAccountId : account?.id
 
   return (
     // Viewport height minus the 4rem page header and 2rem of padding, so each column scrolls on its own.
@@ -67,15 +89,17 @@ function RouteComponent() {
       {mailId ? (
         <MailReader key={mailId} mailId={mailId} />
       ) : (
-        <div className="text-muted-foreground hidden flex-1 items-center justify-center text-sm md:flex">
+        <div className="text-muted-foreground hidden flex-1 items-center justify-center p-6 text-center text-sm md:flex">
           Select an email to read it.
         </div>
       )}
       {agent && (
         // The empty pane holds its width while the code loads, so the reader doesn't jump.
         <React.Suspense fallback={<div className={AGENT_PANE} />}>
+          {/* Another mailbox starts another conversation. */}
           <AgentPanel
-            emailAccountId={account?.id}
+            key={agentAccountId}
+            emailAccountId={agentAccountId}
             organizationId={organization?.id}
             className={AGENT_PANE}
           />

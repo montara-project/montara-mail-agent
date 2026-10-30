@@ -32,6 +32,19 @@ const update = () => {
   })
 }
 
+const updatePreferences = () => {
+  const qc = getQueryClient()
+
+  return mutationOptions({
+    mutationFn: async (body: { split_inbox: boolean }) => {
+      const res = await services.profile.updatePreferences(body)
+      return res.data.data
+    },
+    // /me carries them. Returned, so the mutation stays pending until it has them.
+    onSuccess: () => qc.invalidateQueries({ queryKey: [PROFILE_QUERY_KEY] }),
+  })
+}
+
 const changePassword = () =>
   mutationOptions({
     mutationFn: async ({ current_password, new_password }: UpdatePasswordDto) => {
@@ -40,4 +53,4 @@ const changePassword = () =>
     },
   })
 
-export const profileQueries = { security, update, changePassword } as const
+export const profileQueries = { security, update, updatePreferences, changePassword } as const

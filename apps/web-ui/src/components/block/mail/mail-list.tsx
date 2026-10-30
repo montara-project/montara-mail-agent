@@ -19,16 +19,20 @@ import { AnimatePresence, MotionConfig, motion, type Variants } from 'motion/rea
 import React from 'react'
 
 import type { Models } from '@/lib/api/models'
+import type { MailScope } from '@/lib/api/queries/mail'
 import type { MailBulkAction } from '@/lib/api/services/types/mail'
 
 import Hint from '@/components/block/common/hint'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import { formatMailListDate, senderName } from '@/components/layout/mail/mail-data'
 import {
+  AccountFlag,
   MobileMailBar,
+  useFlaggedAccount,
   useMailAccount,
   useMailAccounts,
   useMailFolder,
+  useSplitInbox,
 } from '@/components/layout/mail/mail-panel'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -48,6 +52,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useActiveOrganization } from '@/hooks/use-active-organization'
 import { useDebounce } from '@/hooks/use-debounce'
 import { useHideEmails } from '@/hooks/use-hide-emails'
 import { axiosErrorMessage, toastProgress } from '@/lib/api/axios-error'
@@ -66,14 +71,33 @@ export const pageSize = (limit: unknown) =>
 const SEARCH_KEYS =
   typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K'
 
-/** The page of mail the URL points at: account, folder, label, search, page and page size. */
+/** The accounts on screen: the open one, or all of them in the global inbox. */
+function useShownAccounts() {
+  const split = useSplitInbox()
+  const account = useMailAccount()
+  const { data: accounts } = useMailAccounts()
+  if (split === undefined) return []
+  return split ? (account ? [account] : []) : (accounts ?? [])
+}
+
+/**
+ * The page of mail the URL points at: account or global inbox, folder, label,
+ * search, page and page size. It waits for the accounts and the Split inbox
+ * choice, so a split user never sees the global inbox flash by and a flag never
+ * pops in under a row.
+ */
 export function useMailPage() {
   const folder = useMailFolder()
   const account = useMailAccount()
+  const shown = useShownAccounts()
+  const { organization } = useActiveOrganization()
   const { label, q, page = 1, limit } = useSearch({ strict: false })
   const size = pageSize(limit)
+  let scope: MailScope | undefined
+  if (account) scope = { accountId: account.id }
+  else if (shown.length > 0 && organization) scope = { organizationId: organization.id }
   const query = useQuery(
-    queries.mails.list(account?.id, {
+    queries.mails.list(scope, {
       folder: folder.id,
       importance: label,
       search: q,
@@ -81,18 +105,30 @@ export function useMailPage() {
       limit: size,
     })
   )
-  return { ...query, page, size, account, folder }
+  return { ...query, page, size, account, shown, folder, scope }
 }
 
-/** What the list shows instead of mail: no account, a first sync, a failed one, or an empty folder. */
+/** What the list shows instead of mail: no account, a first sync, or an empty folder. */
 function EmptyList() {
-  const { isPending } = useMailAccounts()
-  const account = useMailAccount()
+  const { isPending, isError, error, refetch } = useMailAccounts()
+  const split = useSplitInbox()
+  const shown = useShownAccounts()
   const folder = useMailFolder()
   const { mask } = useHideEmails()
 
-  if (isPending) return null
-  if (!account) {
+  if (isError) {
+    return (
+      <div role="alert" className="grid justify-items-center gap-3 p-6 text-center text-sm">
+        <p className="text-destructive">{axiosErrorMessage(error)}</p>
+        <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <RefreshCw />
+          Try again
+        </Button>
+      </div>
+    )
+  }
+  if (isPending || split === undefined) return null
+  if (shown.length === 0) {
     return (
       <div className="grid h-full content-center justify-items-center gap-3 p-6 text-center text-sm">
         <p className="text-muted-foreground">No email account is connected to this organization.</p>
@@ -105,11 +141,16 @@ function EmptyList() {
       </div>
     )
   }
-  if (!account.synced_at && !account.sync_error) {
+  const syncing = shown.filter((account) => !account.synced_at && !account.sync_error)
+  if (syncing.length > 0) {
     return (
-      <p className="text-muted-foreground flex h-full items-center justify-center gap-2 p-6 text-sm">
-        <RefreshCw className="size-4 animate-spin motion-reduce:animate-none" />
-        Syncing {mask(account.email)}...
+      <p className="text-muted-foreground flex h-full items-center justify-center gap-2 p-6 text-center text-sm">
+        <RefreshCw className="size-4 shrink-0 animate-spin motion-reduce:animate-none" />
+        <span className="min-w-0 wrap-anywhere">
+          {syncing.length === 1
+            ? `Syncing ${mask(syncing[0].email)}...`
+            : 'Syncing your accounts...'}
+        </span>
       </p>
     )
   }
@@ -124,10 +165,14 @@ function EmptyList() {
 /**
  * A row's columns: the checkbox, then the mail, 12px apart. The header puts
  * its checkbox and title on the same lines (CHECK_GAP), so they align. The
- * unread dot or star sits in the row's left padding, not a column of its own.
+ * unread edge and the star sit in the row's left padding, not a column of their own.
  */
 const ROW_COLUMNS = 'grid-cols-[1.25rem_minmax(0,1fr)] gap-x-3'
 const CHECK_GAP = 'me-1' // + the header's gap-2: the same 12px as gap-x-3
+// Raised off the dark card, where the default background reads as a hole.
+const CHECK_SURFACE = 'dark:data-[state=unchecked]:bg-input/30'
+// Viewport breakpoints: the list is w-80 from md to lg, too narrow for the count.
+const COUNT_VISIBILITY = 'hidden sm:inline md:hidden lg:inline'
 
 /** The folders a selection can move to, as the Move to menu lists them. */
 const MOVE_TARGETS: { folder: Models.MailMoveTarget; label: string; icon: typeof Inbox }[] = [
@@ -308,7 +353,11 @@ function BulkActions({
 export default function MailList({ className }: { className?: string }) {
   const navigate = useNavigate()
   const { mail: selectedId, q } = useSearch({ strict: false })
-  const { data, isPending, isError, error, refetch, page, size, account, folder } = useMailPage()
+  const { data, isPending, isError, error, refetch, page, size, account, shown, folder, scope } =
+    useMailPage()
+  const flaggedAccount = useFlaggedAccount()
+  const { mask } = useHideEmails()
+  const failed = shown.filter((item) => item.sync_error)
   const [search, setSearch] = React.useState(q ?? '')
   // A term cleared or changed elsewhere (a folder link, the back button) shows in the box.
   const [shownQ, setShownQ] = React.useState(q)
@@ -321,7 +370,7 @@ export default function MailList({ className }: { className?: string }) {
   // starts it empty.
   const { label } = useSearch({ strict: false })
   const [selected, setSelected] = React.useState<ReadonlySet<string>>(new Set())
-  const pageKey = [account?.id, folder.id, label, q, page, size].join('|')
+  const pageKey = [JSON.stringify(scope), folder.id, label, q, page, size].join('|')
   const [seenPageKey, setSeenPageKey] = React.useState(pageKey)
   if (pageKey !== seenPageKey) {
     setSeenPageKey(pageKey)
@@ -399,12 +448,14 @@ export default function MailList({ className }: { className?: string }) {
   }
 
   const content = () => {
-    if (isPending && account) {
+    if (isPending && scope) {
       return Array.from({ length: 5 }, (_, i) => (
         <div key={i} className="grid gap-2 border-b px-4 py-4">
           <Skeleton className="h-4 w-1/2" />
           <Skeleton className="h-4 w-3/4" />
           <Skeleton className="h-4 w-full" />
+          {/* The rows' account chip, so they don't jump in taller. */}
+          {!account && shown.length > 1 && <Skeleton className="mt-0.5 h-5 w-40 rounded-full" />}
         </div>
       ))
     }
@@ -422,6 +473,7 @@ export default function MailList({ className }: { className?: string }) {
     if (mails.length === 0) return <EmptyList />
     return mails.map((mail) => {
       const isSelected = selected.has(mail.id)
+      const flag = flaggedAccount(mail)
       return (
         // The link stretches over the row; the checkbox sits above it.
         <div
@@ -429,7 +481,7 @@ export default function MailList({ className }: { className?: string }) {
           className={cn(
             'hover:bg-accent/50 relative grid border-b px-4 py-4 text-sm',
             ROW_COLUMNS,
-            // Unread mail is tinted, so it stands out without reading the dot.
+            // Unread mail is tinted, so it stands out without reading the edge.
             !mail.is_read && 'bg-blue-500/[0.06] dark:bg-blue-400/[0.08]',
             isSelected && 'bg-accent/40',
             selectedId === mail.id && 'bg-accent hover:bg-accent'
@@ -439,20 +491,24 @@ export default function MailList({ className }: { className?: string }) {
             <Checkbox
               checked={isSelected}
               onCheckedChange={(on) => toggle(mail.id, on === true)}
-              aria-label={`Select ${senderName(mail)}: ${mail.subject || '(no subject)'}`}
-              className="after:absolute after:-inset-2.5 after:content-['']"
+              aria-label={`Select ${mask(senderName(mail))}: ${mail.subject || '(no subject)'}`}
+              className={cn("after:absolute after:-inset-2.5 after:content-['']", CHECK_SURFACE)}
             />
           </span>
-          {/* In the left padding, centred on the first line. Screen readers hear
-              the state as text; the dot and star are only its picture. */}
+          {/* An overlay, not a border, so a row's text doesn't move when it is read.
+              Screen readers hear the state as text; the edge is only its picture. */}
+          {!mail.is_read && (
+            <>
+              <span
+                className="absolute inset-y-0 start-0 w-0.5 bg-blue-500 dark:bg-blue-400"
+                aria-hidden
+              />
+              <span className="sr-only">Unread,</span>
+            </>
+          )}
+          {/* In the left padding, centred on the first line. */}
           <span className="absolute start-0 top-4 flex h-5 w-4 items-center justify-center">
-            {!mail.is_read && (
-              <>
-                <span className="size-2.5 rounded-full bg-blue-500 dark:bg-blue-400" aria-hidden />
-                <span className="sr-only">Unread,</span>
-              </>
-            )}
-            {mail.is_read && mail.is_starred && (
+            {mail.is_starred && (
               <>
                 <Star className="size-3 fill-amber-400 text-amber-400" aria-hidden />
                 <span className="sr-only">Starred,</span>
@@ -469,27 +525,45 @@ export default function MailList({ className }: { className?: string }) {
           >
             <div className="flex items-center gap-1.5">
               <span
+                dir="auto"
                 className={cn(
                   'truncate text-[15px]',
                   mail.is_read ? 'font-medium' : 'font-semibold'
                 )}
               >
-                {senderName(mail)}
+                {mask(senderName(mail))}
               </span>
               <span
                 className={cn(
-                  'ml-auto shrink-0 text-xs',
+                  'ms-auto shrink-0 text-xs tabular-nums',
                   mail.is_read ? 'text-muted-foreground' : 'text-foreground font-medium'
                 )}
               >
                 {formatMailListDate(mail.received_at)}
               </span>
             </div>
-            <span className={cn('truncate', mail.is_read ? 'font-medium' : 'font-semibold')}>
+            {/* dir="auto": an Arabic or Hebrew mail reads right to left, punctuation included. */}
+            <span
+              dir="auto"
+              className={cn(
+                'truncate',
+                mail.is_read ? 'font-medium' : 'font-semibold',
+                !mail.subject && 'text-muted-foreground font-normal'
+              )}
+            >
               {mail.subject || '(no subject)'}
             </span>
             {mail.teaser && (
-              <span className="text-muted-foreground line-clamp-2">{mail.teaser}</span>
+              <span dir="auto" className="text-muted-foreground line-clamp-2">
+                {mail.teaser}
+              </span>
+            )}
+            {flag && (
+              <>
+                <span className="sr-only">Account:</span>
+                {/* Above the link's stretched overlay, so its tooltip shows; a click still opens the mail. */}
+                <AccountFlag account={flag} className="relative z-10 mt-0.5 w-fit" />
+              </>
             )}
           </Link>
         </div>
@@ -508,12 +582,12 @@ export default function MailList({ className }: { className?: string }) {
                 setSelected(allSelected ? new Set() : new Set(mails.map((mail) => mail.id)))
               }
               aria-label={allSelected ? 'Clear the selection' : 'Select all on this page'}
-              className={CHECK_GAP}
+              className={cn(CHECK_GAP, CHECK_SURFACE)}
             />
           )}
-          {/* The title takes what the actions leave. A phone has no room for the
-              count, and a count cut to its first digit would misread, so it hides;
-              the select-all box still shows whether mail is selected. */}
+          {/* The title takes what the actions leave. A phone or the narrow tablet list
+              has no room for the count, and a count cut to its first digit would
+              misread, so it hides; the select-all box still shows whether mail is selected. */}
           <h2 className="flex min-w-0 flex-1 items-baseline gap-2">
             <span className="shrink-0 text-lg font-semibold">{folder.title}</span>
             {/* "N unread" and "N selected" cross-fade; the count itself just updates. */}
@@ -525,7 +599,7 @@ export default function MailList({ className }: { className?: string }) {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.18, ease: EASE_OUT }}
-                  className="text-muted-foreground hidden truncate text-xs tabular-nums sm:inline"
+                  className={`text-muted-foreground truncate text-xs tabular-nums ${COUNT_VISIBILITY}`}
                 >
                   {selectedMails.length} selected
                 </motion.span>
@@ -537,7 +611,7 @@ export default function MailList({ className }: { className?: string }) {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.18, ease: EASE_OUT }}
-                    className="text-muted-foreground hidden truncate text-xs sm:inline"
+                    className={`text-muted-foreground truncate text-xs tabular-nums ${COUNT_VISIBILITY}`}
                   >
                     {unreadCount} unread
                   </motion.span>
@@ -583,22 +657,31 @@ export default function MailList({ className }: { className?: string }) {
         </div>
       </MotionConfig>
       <MobileMailBar />
-      {account?.sync_error && (
-        <p role="alert" className="text-destructive border-b px-4 py-2 text-xs">
-          Last sync failed: {account.sync_error}
-        </p>
+      {failed.length > 0 && (
+        // Scrolls on its own: many failing accounts must not push the mail away.
+        <div
+          role="alert"
+          className="text-destructive grid max-h-20 shrink-0 gap-1 overflow-y-auto border-b px-4 py-2 text-xs wrap-anywhere"
+        >
+          {failed.map((item) => (
+            <p key={item.id}>
+              Last sync failed{account ? '' : ` for ${mask(item.email)}`}:{' '}
+              {mask(item.sync_error ?? '')}
+            </p>
+          ))}
+        </div>
       )}
       <div
         ref={scrollRef}
         className="min-h-0 flex-1 overflow-y-auto"
-        aria-busy={isPending && !!account}
+        aria-busy={isPending && !!scope}
       >
         {content()}
       </div>
       {total > 0 && (
         // On a phone the floating compose button sits over the right end.
         <div className="flex shrink-0 items-center gap-2 border-t px-4 py-2 max-md:pe-20">
-          <span className="text-muted-foreground text-xs whitespace-nowrap">
+          <span className="text-muted-foreground text-xs whitespace-nowrap tabular-nums">
             {first + 1}–{first + mails.length} of {total}
           </span>
           <Select value={String(size)} onValueChange={(value) => setSize(Number(value))}>

@@ -318,6 +318,8 @@ func testMailFlow(t *testing.T, call callFunc, application *app.Application, tok
 		t.Fatalf("bulk on another organization's mail: %d, want 404", status)
 	}
 
+	testGlobalInbox(t, call, application, token, userOrg, otherOrg, otherMails[0].ID.String())
+
 	// LLM provider: absent, then set, kept without resending the key, removed.
 	llmPath := org + "/llm-provider"
 	if status, out := call(http.MethodGet, llmPath, token, nil); status != http.StatusOK || out["data"] != nil || out["metadata"].(map[string]any)["fallback"] != true {
@@ -374,6 +376,83 @@ func testMailFlow(t *testing.T, call callFunc, application *app.Application, tok
 	}
 	if status, out := call(http.MethodGet, mailPath, token, nil); status != http.StatusNotFound {
 		t.Fatalf("mail after disconnect: %d %v, want 404", status, out)
+	}
+}
+
+// testGlobalInbox covers the organization-wide list and bulk actions across
+// accounts, with a second account that is disconnected again at the end.
+func testGlobalInbox(t *testing.T, call callFunc, application *app.Application, token, userOrg, otherOrg, otherMailID string) {
+	org := "/api/v1/organizations/" + userOrg
+	unreadOf := func(out map[string]any) any { return out["metadata"].(map[string]any)["unread"] }
+
+	_, out := call(http.MethodGet, org+"/mails", token, nil)
+	before := len(list(out))
+	unreadBefore := unreadOf(out).(float64)
+
+	second := seedAccount(t, application, userOrg,
+		models.Mail{Folder: constant.FolderInbox, FromEmail: "first@example.com", Subject: "Newest of all", Body: "x", ReceivedAt: time.Now().Add(time.Hour)},
+		models.Mail{Folder: constant.FolderSpam, FromEmail: "junk@example.com", Subject: "Second account spam", Body: "x"},
+	)
+	defer func() {
+		if err := application.Repositories.EmailAccount.Delete(context.Background(), second.ID); err != nil {
+			t.Errorf("remove the second account: %v", err)
+		}
+	}()
+
+	// Both accounts, newest first, the unread count summed, the folder respected.
+	status, out := call(http.MethodGet, org+"/mails", token, nil)
+	if status != http.StatusOK || len(list(out)) != before+1 || unreadOf(out) != unreadBefore+1 {
+		t.Fatalf("global inbox: %d %v", status, out)
+	}
+	newest := list(out)[0].(map[string]any)
+	if newest["subject"] != "Newest of all" || newest["email_account_id"] != second.ID.String() {
+		t.Fatalf("global inbox order: %v", newest)
+	}
+	if status, out := call(http.MethodGet, org+"/mails?search=newest", token, nil); status != http.StatusOK || len(list(out)) != 1 {
+		t.Fatalf("global inbox search: %d %v", status, out)
+	}
+	if status, out := call(http.MethodGet, org+"/mails?folder=spam&search=second", token, nil); status != http.StatusOK || len(list(out)) != 1 {
+		t.Fatalf("global spam: %d %v", status, out)
+	}
+	if status, _ := call(http.MethodGet, "/api/v1/organizations/"+otherOrg+"/mails", token, nil); status != http.StatusNotFound {
+		t.Fatalf("another organization's global inbox: %d, want 404", status)
+	}
+
+	// A bulk action spans accounts, but not folders.
+	_, out = call(http.MethodGet, org+"/mails", token, nil)
+	var ids []string
+	accounts := map[any]bool{}
+	for _, item := range list(out) {
+		m := item.(map[string]any)
+		ids = append(ids, m["id"].(string))
+		accounts[m["email_account_id"]] = true
+	}
+	if len(accounts) != 2 {
+		t.Fatalf("the global inbox should hold two accounts: %v", accounts)
+	}
+	if status, out := call(http.MethodPost, "/api/v1/mails/bulk", token, map[string]any{"ids": ids, "action": "read"}); status != http.StatusOK {
+		t.Fatalf("bulk across accounts: %d %v", status, out)
+	}
+	if _, out := call(http.MethodGet, org+"/mails", token, nil); unreadOf(out) != float64(0) {
+		t.Fatalf("unread after bulk across accounts: %v", out)
+	}
+	if status, _ := call(http.MethodPost, "/api/v1/mails/bulk", token, map[string]any{"ids": ids, "action": "unread"}); status != http.StatusOK {
+		t.Fatalf("bulk unread across accounts: %d", status)
+	}
+
+	// One mail of another organization refuses all of it: nothing changes.
+	if status, _ := call(http.MethodPost, "/api/v1/mails/bulk", token, map[string]any{"ids": append(ids[:1:1], otherMailID), "action": "read"}); status != http.StatusNotFound {
+		t.Fatalf("bulk with another organization's mail: %d, want 404", status)
+	}
+	if _, out := call(http.MethodGet, "/api/v1/mails/"+ids[0], token, nil); data(out)["is_read"] != false {
+		t.Fatalf("a refused bulk changed the mail: %v", out)
+	}
+
+	// Mail from two folders stays refused.
+	_, out = call(http.MethodGet, org+"/mails?folder=spam", token, nil)
+	spamID := list(out)[0].(map[string]any)["id"].(string)
+	if status, _ := call(http.MethodPost, "/api/v1/mails/bulk", token, map[string]any{"ids": []string{ids[0], spamID}, "action": "read"}); status != http.StatusBadRequest {
+		t.Fatalf("bulk across folders: %d, want 400", status)
 	}
 }
 

@@ -441,9 +441,8 @@ func (h *mailHandler) RunSkill(c fiber.Ctx) error {
 	return dtos.OK(c, fiber.Map{"kind": "text", "text": text})
 }
 
-// Bulk applies one action to the mails the list has selected: they must
-// share an account and a folder, so the mail server sees one session and one
-// set of UIDs.
+// Bulk applies one action to the mails the list has selected: they must share
+// a folder, and each account gets its own session and set of UIDs.
 func (h *mailHandler) Bulk(c fiber.Ctx) error {
 	var body dtos.MailBulkBody
 	if err := lib.ValidateRequestBody(c, &body); err != nil {
@@ -453,8 +452,11 @@ func (h *mailHandler) Bulk(c fiber.Ctx) error {
 		return apperr.New(apperr.KindBadRequest, "folder is required to move mail")
 	}
 
-	mails := make([]models.Mail, 0, len(body.IDs))
+	// The global inbox selects across accounts, so the mails go per account.
+	var groups []bulkGroup
+	groupOf := map[uuid.UUID]int{}
 	seen := map[uuid.UUID]bool{}
+	total := 0
 	for _, raw := range body.IDs {
 		id := uuid.MustParse(raw)
 		if seen[id] {
@@ -465,59 +467,120 @@ func (h *mailHandler) Bulk(c fiber.Ctx) error {
 		if err != nil {
 			return err
 		}
-		if len(mails) > 0 && (m.EmailAccountID != mails[0].EmailAccountID || m.Folder != mails[0].Folder) {
-			return apperr.New(apperr.KindBadRequest, "the mails must come from one account and one folder")
+		total++
+		i, ok := groupOf[m.EmailAccountID]
+		if !ok {
+			i = len(groups)
+			groupOf[m.EmailAccountID] = i
+			groups = append(groups, bulkGroup{})
 		}
-		mails = append(mails, m)
+		groups[i].mails = append(groups[i].mails, m)
 	}
-	account, err := h.account(c, mails[0])
-	if err != nil {
-		return err
-	}
-	if _, err := member(c, h.app, account.OrganizationID); err != nil {
-		if err == errOrganizationNotFound {
-			err = apperr.New(apperr.KindNotFound, "record not found in mails")
+	// Every account is checked before any mail changes: one mail of another
+	// organization refuses the whole request.
+	for i := range groups {
+		account, err := h.account(c, groups[i].mails[0])
+		if err != nil {
+			return err
 		}
-		return err
+		if _, err := member(c, h.app, account.OrganizationID); err != nil {
+			if err == errOrganizationNotFound {
+				err = apperr.New(apperr.KindNotFound, "record not found in mails")
+			}
+			return err
+		}
+		groups[i].account = account
+	}
+	// After the check above, so the answer says nothing about another's mail.
+	folder := groups[0].mails[0].Folder
+	for _, group := range groups {
+		for _, m := range group.mails {
+			if m.Folder != folder {
+				return apperr.New(apperr.KindBadRequest, "the mails must come from one folder")
+			}
+		}
 	}
 
-	folder := mails[0].Folder
 	switch body.Action {
 	case "read", "unread":
 		read := body.Action == "read"
-		for _, m := range mails {
-			if err := h.repo().Patch(c.Context(), m.ID, repositories.MailPatch{IsRead: &read}); err != nil {
-				return err
+		for _, group := range groups {
+			for _, m := range group.mails {
+				if err := h.repo().Patch(c.Context(), m.ID, repositories.MailPatch{IsRead: &read}); err != nil {
+					return err
+				}
 			}
+			// As for one mail: the app answers at once, the server follows.
+			go func() {
+				if err := h.sync.SetReadMany(context.Background(), group.account, group.mails, read); err != nil {
+					h.app.Logger.Warn("mail flags not written to the server", "account", group.account.ID, "error", err)
+				}
+			}()
 		}
-		// As for one mail: the app answers at once, the server follows.
-		go func() {
-			if err := h.sync.SetReadMany(context.Background(), account, mails, read); err != nil {
-				h.app.Logger.Warn("mail flags not written to the server", "account", account.ID, "error", err)
-			}
-		}()
-		return dtos.Message(c, fiber.StatusOK, fmt.Sprintf("%d mails marked %s", len(mails), body.Action))
+		return dtos.Message(c, fiber.StatusOK, fmt.Sprintf("%d mails marked %s", total, body.Action))
 	case "move":
 		if body.Folder == folder {
 			return apperr.New(apperr.KindBadRequest, "the mail is already in %s", folder)
 		}
-		if err := h.sync.MoveMany(c.Context(), account, mails, body.Folder); err != nil {
-			return serverError(err)
+		err := forEachAccount(groups, total, "moved", func(group bulkGroup) error {
+			return h.sync.MoveMany(c.Context(), group.account, group.mails, body.Folder)
+		})
+		if err != nil {
+			return err
 		}
-		return dtos.Message(c, fiber.StatusOK, fmt.Sprintf("%d mails moved to %s", len(mails), body.Folder))
+		return dtos.Message(c, fiber.StatusOK, fmt.Sprintf("%d mails moved to %s", total, body.Folder))
 	}
 
 	// trash: into the trash, or out of it for good.
 	if folder != constant.FolderTrash {
-		if err := h.sync.MoveMany(c.Context(), account, mails, constant.FolderTrash); err != nil {
-			return serverError(err)
+		err := forEachAccount(groups, total, "moved", func(group bulkGroup) error {
+			return h.sync.MoveMany(c.Context(), group.account, group.mails, constant.FolderTrash)
+		})
+		if err != nil {
+			return err
 		}
-		return dtos.Message(c, fiber.StatusOK, fmt.Sprintf("%d mails moved to trash", len(mails)))
+		return dtos.Message(c, fiber.StatusOK, fmt.Sprintf("%d mails moved to trash", total))
 	}
-	if err := h.sync.DeleteMany(c.Context(), account, mails); err != nil {
-		return serverError(err)
+	err := forEachAccount(groups, total, "deleted", func(group bulkGroup) error {
+		if err := h.sync.DeleteMany(c.Context(), group.account, group.mails); err != nil {
+			return err
+		}
+		recordActivity(c, h.app, group.account.OrganizationID, constant.ActivityMailDeleted,
+			fmt.Sprintf("Deleted %d mails", len(group.mails)), map[string]any{"count": len(group.mails)})
+		return nil
+	})
+	if err != nil {
+		return err
 	}
-	recordActivity(c, h.app, account.OrganizationID, constant.ActivityMailDeleted,
-		fmt.Sprintf("Deleted %d mails", len(mails)), map[string]any{"count": len(mails)})
-	return dtos.Message(c, fiber.StatusOK, fmt.Sprintf("%d mails deleted", len(mails)))
+	return dtos.Message(c, fiber.StatusOK, fmt.Sprintf("%d mails deleted", total))
+}
+
+// bulkGroup is the part of a bulk action on one account.
+type bulkGroup struct {
+	account models.EmailAccount
+	mails   []models.Mail
+}
+
+// forEachAccount runs a mail server action per account. One broken mailbox
+// doesn't hold the others back, and what's done can't be taken back, so the
+// answer says how far it got; the client refetches the list either way.
+func forEachAccount(groups []bulkGroup, total int, done string, run func(bulkGroup) error) error {
+	var first error
+	finished := 0
+	for _, group := range groups {
+		if err := run(group); err != nil {
+			if first == nil {
+				first = err
+			}
+			continue
+		}
+		finished += len(group.mails)
+	}
+	if first == nil {
+		return nil
+	}
+	if finished == 0 {
+		return serverError(first)
+	}
+	return apperr.New(apperr.KindBadGateway, "%d of %d mails %s; the mail server refused the rest: %v", finished, total, done, first)
 }

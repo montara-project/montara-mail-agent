@@ -18,6 +18,15 @@ func (dto ProfileBody) Validate(v *validator.MapValidator) {
 	v.Field("timezone").String().MaxLen(64).Regex(`^[A-Za-z][A-Za-z0-9_+/-]*$`)
 }
 
+// PreferencesBody changes the signed-in user's app preferences. A nil field
+// keeps the saved value.
+type PreferencesBody struct {
+	// SplitInbox shows one account at a time instead of the global inbox.
+	SplitInbox *bool `json:"split_inbox"`
+}
+
+func (dto PreferencesBody) Validate(v *validator.MapValidator) {}
+
 // Password bounds, the same as Authula's sign-up (see newAuth).
 const (
 	MinPasswordLen = 8

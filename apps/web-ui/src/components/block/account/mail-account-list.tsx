@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import type { Models } from '@/lib/api/models'
 
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
+import { useSplitInbox } from '@/components/layout/mail/mail-panel'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -42,6 +43,7 @@ function SyncStatus({ account }: { account: Models.EmailAccount }) {
 export default function MailAccountList() {
   const { organization } = useActiveOrganization()
   const { mask } = useHideEmails()
+  const split = useSplitInbox()
   const {
     data: accounts,
     isPending,
@@ -86,7 +88,7 @@ export default function MailAccountList() {
           <div key={account.id} className="bg-card grid gap-3 rounded-xl border p-4 text-sm">
             <Link
               to="/mail"
-              search={{ account: account.id }}
+              search={split ? { account: account.id } : {}}
               className="focus-visible:ring-ring/50 -m-1 flex items-center gap-3 rounded-lg p-1 outline-none focus-visible:ring-[3px]"
             >
               <ProviderIcon provider={account.provider} />

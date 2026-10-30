@@ -164,6 +164,19 @@ type MailListParams struct {
 func mailFilters(accountID uuid.UUID, p MailListParams) *whereBuilder {
 	w := newWhere("TRUE")
 	w.add(`email_account_id = $%d`, accountID)
+	return addMailFilters(w, p)
+}
+
+// organizationMails scopes a query to the mail of every account of an organization.
+const organizationMails = `email_account_id IN (SELECT id FROM email_accounts WHERE organization_id = $%d)`
+
+func organizationMailFilters(organizationID uuid.UUID, p MailListParams) *whereBuilder {
+	w := newWhere("TRUE")
+	w.add(organizationMails, organizationID)
+	return addMailFilters(w, p)
+}
+
+func addMailFilters(w *whereBuilder, p MailListParams) *whereBuilder {
 	w.add(`folder = $%d`, p.Folder)
 	if p.Importance != "" {
 		w.add(`importance = $%d`, p.Importance)
@@ -178,12 +191,30 @@ func mailFilters(accountID uuid.UUID, p MailListParams) *whereBuilder {
 // List returns one page of a folder's mail, newest first, with teasers
 // instead of bodies.
 func (r *MailRepository) List(ctx context.Context, accountID uuid.UUID, p MailListParams) ([]models.Mail, error) {
-	where, args, limit, offset := mailFilters(accountID, p).page(p.ListParams)
+	return r.list(ctx, mailFilters(accountID, p), p)
+}
+
+// ListByOrganization is List over every account of an organization.
+// ponytail: sorts the folder's rows of all its accounts per request, since the
+// (account, folder, received_at) index is ordered per account. Add
+// keyset pagination if a large organization's inbox gets slow.
+func (r *MailRepository) ListByOrganization(ctx context.Context, organizationID uuid.UUID, p MailListParams) ([]models.Mail, error) {
+	return r.list(ctx, organizationMailFilters(organizationID, p), p)
+}
+
+// list builds the teasers outside the page's subquery. Otherwise a query that
+// must sort computes them for every row it sorts, not just the page: 2s against
+// 8ms over 9,000 mails.
+func (r *MailRepository) list(ctx context.Context, w *whereBuilder, p MailListParams) ([]models.Mail, error) {
+	where, args, limit, offset := w.page(p.ListParams)
 	query := fmt.Sprintf(`
-		SELECT %s FROM mails
-		WHERE %s
-		ORDER BY received_at DESC, id DESC
-		LIMIT $%d OFFSET $%d`,
+		SELECT %s FROM (
+			SELECT * FROM mails
+			WHERE %s
+			ORDER BY received_at DESC, id DESC
+			LIMIT $%d OFFSET $%d
+		) page
+		ORDER BY received_at DESC, id DESC`,
 		mailListColumns, where, limit, offset)
 
 	rows, err := r.queryContext(ctx, query, args...)
@@ -198,12 +229,30 @@ func (r *MailRepository) Count(ctx context.Context, accountID uuid.UUID, p MailL
 	return r.countRows(ctx, "mails", mailFilters(accountID, p))
 }
 
+// CountByOrganization returns how many mails match the ListByOrganization filters.
+func (r *MailRepository) CountByOrganization(ctx context.Context, organizationID uuid.UUID, p MailListParams) (int64, error) {
+	return r.countRows(ctx, "mails", organizationMailFilters(organizationID, p))
+}
+
 // Unread returns how many mails of a folder are unread.
 func (r *MailRepository) Unread(ctx context.Context, accountID uuid.UUID, folder string) (int64, error) {
 	var n int64
 	err := r.queryRowContext(ctx, `
 		SELECT count(*) FROM mails WHERE email_account_id = $1 AND folder = $2 AND NOT is_read`,
 		accountID, folder,
+	).Scan(&n)
+	return n, err
+}
+
+// UnreadByOrganization returns how many mails of a folder are unread across an
+// organization's accounts.
+func (r *MailRepository) UnreadByOrganization(ctx context.Context, organizationID uuid.UUID, folder string) (int64, error) {
+	var n int64
+	err := r.queryRowContext(ctx, `
+		SELECT count(*) FROM mails
+		WHERE email_account_id IN (SELECT id FROM email_accounts WHERE organization_id = $1)
+			AND folder = $2 AND NOT is_read`,
+		organizationID, folder,
 	).Scan(&n)
 	return n, err
 }
