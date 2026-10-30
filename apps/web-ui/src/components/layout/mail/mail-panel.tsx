@@ -102,23 +102,103 @@ export function useMailAccounts() {
   return useQuery(queries.emailAccounts.list(organization?.id))
 }
 
-/** The account named by ?account=, falling back to the first one; undefined while loading or when none is connected. */
+/**
+ * Whether the user turned on Split inbox (Control Center > Mail), which shows
+ * one account at a time instead of the global inbox. Undefined until known.
+ */
+export function useSplitInbox() {
+  const { data, isPending } = useQuery(queries.auth.profile())
+  return isPending ? undefined : data?.user?.metadata?.split_inbox === true
+}
+
+/**
+ * With Split inbox on, the account named by ?account=, falling back to the
+ * first one. Undefined in the global inbox, while loading, or when none is connected.
+ */
 export function useMailAccount() {
+  const split = useSplitInbox()
   const { account } = useSearch({ strict: false })
   const { data } = useMailAccounts()
+  if (!split) return undefined
   return data?.find((item) => item.id === account) ?? data?.[0]
 }
 
-/** Shows the open account and switches to another one. */
+/**
+ * Finds the account to flag on a mail: only in the global inbox, and only with
+ * more than one account, where it tells the mails apart.
+ */
+export function useFlaggedAccount() {
+  const split = useSplitInbox()
+  const { data } = useMailAccounts()
+  const flagged = split === false && (data?.length ?? 0) > 1
+  return (mail: Models.Mail) =>
+    flagged ? data?.find((item) => item.id === mail.email_account_id) : undefined
+}
+
+/**
+ * The account a mail belongs to. The label tells two mailboxes of one provider
+ * apart, so it stays text; it is the address itself unless renamed, hence the mask.
+ */
+export function AccountFlag({
+  account,
+  className,
+}: {
+  account: Models.EmailAccount
+  className?: string
+}) {
+  const { mask } = useHideEmails()
+
+  return (
+    <span
+      title={mask(account.email)}
+      className={cn('text-muted-foreground flex min-w-0 items-center gap-1.5 text-xs', className)}
+    >
+      <ProviderIcon provider={account.provider} className="size-4 rounded-sm" />
+      <span className="truncate">{mask(account.label)}</span>
+    </span>
+  )
+}
+
+/** Shows the open account and switches to another one; the global inbox has none to switch. */
 function AccountSwitcher() {
   const { data: accounts, isPending } = useMailAccounts()
+  const split = useSplitInbox()
   const account = useMailAccount()
   const { mask } = useHideEmails()
+  const loading = isPending || split === undefined
+
+  if (split === false && accounts?.length) {
+    const only = accounts.length === 1 ? accounts[0] : undefined
+    return (
+      <Link
+        to="/account"
+        title="Manage email accounts"
+        className="hover:bg-sidebar-accent focus-visible:ring-ring/50 flex w-full items-center gap-2.5 rounded-lg border p-2 text-left text-sm outline-none focus-visible:ring-[3px]"
+      >
+        {/* Overlapping only the icons' padding, so no logo is cut. */}
+        <span className="flex shrink-0 -space-x-1.5">
+          {accounts.slice(0, 3).map((item) => (
+            <ProviderIcon
+              key={item.id}
+              provider={item.provider}
+              className="ring-sidebar size-7 rounded-md ring-2"
+            />
+          ))}
+        </span>
+        <span className="grid min-w-0 flex-1 leading-tight">
+          <span className="truncate font-medium">{only ? mask(only.label) : 'All accounts'}</span>
+          <span className="text-muted-foreground truncate text-xs">
+            {only ? mask(only.email) : `${accounts.length} connected`}
+          </span>
+        </span>
+      </Link>
+    )
+  }
 
   if (!account) {
     return (
-      <Button variant="outline" className="w-full" asChild={!isPending} disabled={isPending}>
-        {isPending ? (
+      <Button variant="outline" className="w-full" asChild={!loading} disabled={loading}>
+        {loading ? (
           <span>Loading accounts...</span>
         ) : (
           <Link to="/account">
@@ -219,7 +299,7 @@ export function MobileMailBar() {
           )
         })}
       </nav>
-      {account && (
+      {!!accounts?.length && (
         <Button
           className="fixed right-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 size-14 rounded-full shadow-lg"
           aria-label="Compose"
@@ -232,7 +312,7 @@ export function MobileMailBar() {
         open={composing}
         onOpenChange={setComposing}
         accounts={accounts}
-        defaultAccountId={account?.id}
+        defaultAccountId={account?.id ?? accounts?.[0]?.id}
       />
     </div>
   )
@@ -243,12 +323,15 @@ export default function MailPanel() {
   const account = useMailAccount()
   const { label } = useSearch({ strict: false })
   const { data: accounts } = useMailAccounts()
+  const split = useSplitInbox()
   const [composing, setComposing] = React.useState(false)
   const navigate = useNavigate()
   const { agent } = useSearch({ strict: false })
+  // The open account's counts, or in the global inbox every account's.
+  const counted = split === false ? (accounts ?? []) : account ? [account] : []
   const badges: Partial<Record<Models.MailFolder, number>> = {
-    inbox: account?.unread,
-    spam: account?.spam,
+    inbox: counted.reduce((sum, item) => sum + item.unread, 0),
+    spam: counted.reduce((sum, item) => sum + item.spam, 0),
   }
 
   return (
@@ -257,7 +340,11 @@ export default function MailPanel() {
         <OrganizationSwitcher />
         <AccountSwitcher />
         <div className="flex w-full gap-2">
-          <Button className="flex-1" onClick={() => setComposing(true)} disabled={!account}>
+          <Button
+            className="flex-1"
+            onClick={() => setComposing(true)}
+            disabled={!accounts?.length}
+          >
             <SquarePen />
             Compose
           </Button>
@@ -279,7 +366,7 @@ export default function MailPanel() {
           open={composing}
           onOpenChange={setComposing}
           accounts={accounts}
-          defaultAccountId={account?.id}
+          defaultAccountId={account?.id ?? accounts?.[0]?.id}
         />
       </SidebarHeader>
       <SidebarContent>

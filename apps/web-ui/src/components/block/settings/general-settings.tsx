@@ -143,8 +143,8 @@ function PrivacySettings() {
         <div className="grid gap-1 text-sm">
           <Label htmlFor="hide-emails">Hide email addresses</Label>
           <FieldDescription>
-            Masks your addresses in the sidebar and the mail account switcher, so they stay private
-            when you share your screen.
+            Masks your addresses in the sidebar, the account switcher and your mail list, so they
+            stay private when you share your screen.
           </FieldDescription>
         </div>
         <Switch id="hide-emails" checked={hidden} onCheckedChange={setHidden} />

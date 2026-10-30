@@ -1,4 +1,4 @@
-import { keepPreviousData, mutationOptions, queryOptions } from '@tanstack/react-query'
+import { mutationOptions, queryOptions } from '@tanstack/react-query'
 
 import { getQueryClient } from '@/lib/providers/react-query'
 
@@ -18,16 +18,25 @@ import { ORGANIZATION_QUERY_KEY } from './organization'
 
 export const MAIL_QUERY_KEY = 'mails'
 
-/** One page of an account's folder; refreshed every minute to pick up synced mail. */
-const list = (accountId: string | undefined, params: MailListParams) =>
+/** Whose mail a list holds: one account's, or every account's of an organization (the global inbox). */
+export type MailScope = { accountId: string } | { organizationId: string }
+
+/** One page of a scope's folder; refreshed every minute to pick up synced mail. */
+const list = (scope: MailScope | undefined, params: MailListParams) =>
   queryOptions({
-    queryKey: [MAIL_QUERY_KEY, 'list', accountId, params],
+    queryKey: [MAIL_QUERY_KEY, 'list', scope, params],
     queryFn: async () => {
-      const res = await services.emailAccounts.mails(accountId!, params)
+      const res =
+        'accountId' in scope!
+          ? await services.emailAccounts.mails(scope.accountId, params)
+          : await services.organizations.mails(scope!.organizationId, params)
       return res.data
     },
-    enabled: !!accountId,
-    placeholderData: keepPreviousData,
+    enabled: !!scope,
+    // The last page stays while the next loads, but never under another
+    // account or organization: it would show their mail as this one's.
+    placeholderData: (previous, previousQuery) =>
+      JSON.stringify(previousQuery?.queryKey[2]) === JSON.stringify(scope) ? previous : undefined,
     refetchInterval: 60_000,
   })
 
@@ -122,7 +131,12 @@ const bulk = () =>
       const res = await services.mails.bulk(body)
       return res.data
     },
-    onSettled: invalidateMailboxes,
+    onSettled: () => {
+      invalidateMailboxes()
+      // A moved mail gets a new id, even when another account's part failed, so
+      // an open reader learns its mail is gone and offers the way back.
+      void getQueryClient().invalidateQueries({ queryKey: [MAIL_QUERY_KEY, 'detail'] })
+    },
   })
 
 const forward = (id: string) =>

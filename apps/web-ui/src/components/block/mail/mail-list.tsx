@@ -19,16 +19,20 @@ import { AnimatePresence, MotionConfig, motion, type Variants } from 'motion/rea
 import React from 'react'
 
 import type { Models } from '@/lib/api/models'
+import type { MailScope } from '@/lib/api/queries/mail'
 import type { MailBulkAction } from '@/lib/api/services/types/mail'
 
 import Hint from '@/components/block/common/hint'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import { formatMailListDate, senderName } from '@/components/layout/mail/mail-data'
 import {
+  AccountFlag,
   MobileMailBar,
+  useFlaggedAccount,
   useMailAccount,
   useMailAccounts,
   useMailFolder,
+  useSplitInbox,
 } from '@/components/layout/mail/mail-panel'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -48,6 +52,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useActiveOrganization } from '@/hooks/use-active-organization'
 import { useDebounce } from '@/hooks/use-debounce'
 import { useHideEmails } from '@/hooks/use-hide-emails'
 import { axiosErrorMessage, toastProgress } from '@/lib/api/axios-error'
@@ -66,14 +71,33 @@ export const pageSize = (limit: unknown) =>
 const SEARCH_KEYS =
   typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K'
 
-/** The page of mail the URL points at: account, folder, label, search, page and page size. */
+/** The accounts on screen: the open one, or all of them in the global inbox. */
+function useShownAccounts() {
+  const split = useSplitInbox()
+  const account = useMailAccount()
+  const { data: accounts } = useMailAccounts()
+  if (split === undefined) return []
+  return split ? (account ? [account] : []) : (accounts ?? [])
+}
+
+/**
+ * The page of mail the URL points at: account or global inbox, folder, label,
+ * search, page and page size. It waits for the accounts and the Split inbox
+ * choice, so a split user never sees the global inbox flash by and a flag never
+ * pops in under a row.
+ */
 export function useMailPage() {
   const folder = useMailFolder()
   const account = useMailAccount()
+  const shown = useShownAccounts()
+  const { organization } = useActiveOrganization()
   const { label, q, page = 1, limit } = useSearch({ strict: false })
   const size = pageSize(limit)
+  let scope: MailScope | undefined
+  if (account) scope = { accountId: account.id }
+  else if (shown.length > 0 && organization) scope = { organizationId: organization.id }
   const query = useQuery(
-    queries.mails.list(account?.id, {
+    queries.mails.list(scope, {
       folder: folder.id,
       importance: label,
       search: q,
@@ -81,18 +105,30 @@ export function useMailPage() {
       limit: size,
     })
   )
-  return { ...query, page, size, account, folder }
+  return { ...query, page, size, account, shown, folder, scope }
 }
 
-/** What the list shows instead of mail: no account, a first sync, a failed one, or an empty folder. */
+/** What the list shows instead of mail: no account, a first sync, or an empty folder. */
 function EmptyList() {
-  const { isPending } = useMailAccounts()
-  const account = useMailAccount()
+  const { isPending, isError, error, refetch } = useMailAccounts()
+  const split = useSplitInbox()
+  const shown = useShownAccounts()
   const folder = useMailFolder()
   const { mask } = useHideEmails()
 
-  if (isPending) return null
-  if (!account) {
+  if (isError) {
+    return (
+      <div role="alert" className="grid justify-items-center gap-3 p-6 text-center text-sm">
+        <p className="text-destructive">{axiosErrorMessage(error)}</p>
+        <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <RefreshCw />
+          Try again
+        </Button>
+      </div>
+    )
+  }
+  if (isPending || split === undefined) return null
+  if (shown.length === 0) {
     return (
       <div className="grid h-full content-center justify-items-center gap-3 p-6 text-center text-sm">
         <p className="text-muted-foreground">No email account is connected to this organization.</p>
@@ -105,11 +141,16 @@ function EmptyList() {
       </div>
     )
   }
-  if (!account.synced_at && !account.sync_error) {
+  const syncing = shown.filter((account) => !account.synced_at && !account.sync_error)
+  if (syncing.length > 0) {
     return (
-      <p className="text-muted-foreground flex h-full items-center justify-center gap-2 p-6 text-sm">
-        <RefreshCw className="size-4 animate-spin motion-reduce:animate-none" />
-        Syncing {mask(account.email)}...
+      <p className="text-muted-foreground flex h-full items-center justify-center gap-2 p-6 text-center text-sm">
+        <RefreshCw className="size-4 shrink-0 animate-spin motion-reduce:animate-none" />
+        <span className="min-w-0 wrap-anywhere">
+          {syncing.length === 1
+            ? `Syncing ${mask(syncing[0].email)}...`
+            : 'Syncing your accounts...'}
+        </span>
       </p>
     )
   }
@@ -308,7 +349,11 @@ function BulkActions({
 export default function MailList({ className }: { className?: string }) {
   const navigate = useNavigate()
   const { mail: selectedId, q } = useSearch({ strict: false })
-  const { data, isPending, isError, error, refetch, page, size, account, folder } = useMailPage()
+  const { data, isPending, isError, error, refetch, page, size, account, shown, folder, scope } =
+    useMailPage()
+  const flaggedAccount = useFlaggedAccount()
+  const { mask } = useHideEmails()
+  const failed = shown.filter((item) => item.sync_error)
   const [search, setSearch] = React.useState(q ?? '')
   // A term cleared or changed elsewhere (a folder link, the back button) shows in the box.
   const [shownQ, setShownQ] = React.useState(q)
@@ -321,7 +366,7 @@ export default function MailList({ className }: { className?: string }) {
   // starts it empty.
   const { label } = useSearch({ strict: false })
   const [selected, setSelected] = React.useState<ReadonlySet<string>>(new Set())
-  const pageKey = [account?.id, folder.id, label, q, page, size].join('|')
+  const pageKey = [JSON.stringify(scope), folder.id, label, q, page, size].join('|')
   const [seenPageKey, setSeenPageKey] = React.useState(pageKey)
   if (pageKey !== seenPageKey) {
     setSeenPageKey(pageKey)
@@ -399,7 +444,7 @@ export default function MailList({ className }: { className?: string }) {
   }
 
   const content = () => {
-    if (isPending && account) {
+    if (isPending && scope) {
       return Array.from({ length: 5 }, (_, i) => (
         <div key={i} className="grid gap-2 border-b px-4 py-4">
           <Skeleton className="h-4 w-1/2" />
@@ -422,6 +467,7 @@ export default function MailList({ className }: { className?: string }) {
     if (mails.length === 0) return <EmptyList />
     return mails.map((mail) => {
       const isSelected = selected.has(mail.id)
+      const flag = flaggedAccount(mail)
       return (
         // The link stretches over the row; the checkbox sits above it.
         <div
@@ -439,7 +485,7 @@ export default function MailList({ className }: { className?: string }) {
             <Checkbox
               checked={isSelected}
               onCheckedChange={(on) => toggle(mail.id, on === true)}
-              aria-label={`Select ${senderName(mail)}: ${mail.subject || '(no subject)'}`}
+              aria-label={`Select ${mask(senderName(mail))}: ${mail.subject || '(no subject)'}`}
               className="after:absolute after:-inset-2.5 after:content-['']"
             />
           </span>
@@ -474,7 +520,7 @@ export default function MailList({ className }: { className?: string }) {
                   mail.is_read ? 'font-medium' : 'font-semibold'
                 )}
               >
-                {senderName(mail)}
+                {mask(senderName(mail))}
               </span>
               <span
                 className={cn(
@@ -490,6 +536,13 @@ export default function MailList({ className }: { className?: string }) {
             </span>
             {mail.teaser && (
               <span className="text-muted-foreground line-clamp-2">{mail.teaser}</span>
+            )}
+            {flag && (
+              <>
+                <span className="sr-only">Account:</span>
+                {/* Above the link's stretched overlay, so its tooltip shows; a click still opens the mail. */}
+                <AccountFlag account={flag} className="relative z-10 mt-0.5 w-fit max-w-full" />
+              </>
             )}
           </Link>
         </div>
@@ -583,15 +636,24 @@ export default function MailList({ className }: { className?: string }) {
         </div>
       </MotionConfig>
       <MobileMailBar />
-      {account?.sync_error && (
-        <p role="alert" className="text-destructive border-b px-4 py-2 text-xs">
-          Last sync failed: {account.sync_error}
-        </p>
+      {failed.length > 0 && (
+        // Scrolls on its own: many failing accounts must not push the mail away.
+        <div
+          role="alert"
+          className="text-destructive grid max-h-20 shrink-0 gap-1 overflow-y-auto border-b px-4 py-2 text-xs wrap-anywhere"
+        >
+          {failed.map((item) => (
+            <p key={item.id}>
+              Last sync failed{account ? '' : ` for ${mask(item.label)}`}:{' '}
+              {mask(item.sync_error ?? '')}
+            </p>
+          ))}
+        </div>
       )}
       <div
         ref={scrollRef}
         className="min-h-0 flex-1 overflow-y-auto"
-        aria-busy={isPending && !!account}
+        aria-busy={isPending && !!scope}
       >
         {content()}
       </div>

@@ -96,6 +96,41 @@ func (h *profileHandler) Update(c fiber.Ctx) error {
 	return dtos.OK(c, user)
 }
 
+// UpdatePreferences changes the user's app preferences. They ride in Authula's
+// user metadata like the timezone, so /auth/me carries them. Apart from Update
+// because that one rewrites the name and the avatar from its body.
+func (h *profileHandler) UpdatePreferences(c fiber.Ctx) error {
+	uid, err := lib.ContextGetUID(c)
+	if err != nil {
+		return apperr.ErrUnauthorized
+	}
+
+	var body dtos.PreferencesBody
+	if err := lib.ValidateRequestBody(c, &body); err != nil {
+		return err
+	}
+
+	users := h.app.Auth.CoreServices().UserService
+	user, err := users.GetByID(c.Context(), uid.String())
+	if err != nil {
+		return err
+	}
+	if user == nil {
+		return apperr.ErrUnauthorized
+	}
+
+	if body.SplitInbox != nil {
+		if user.Metadata == nil {
+			user.Metadata = map[string]any{}
+		}
+		user.Metadata["split_inbox"] = *body.SplitInbox
+	}
+	if user, err = users.Update(c.Context(), user); err != nil {
+		return err
+	}
+	return dtos.OK(c, user)
+}
+
 // ChangePassword replaces the user's password after checking the current one,
 // then ends every session, this one included: whoever knew the old password
 // is signed out, and the user signs in again with the new one.

@@ -51,6 +51,16 @@ func testAccountSettings(t *testing.T, call callFunc, cookies func() string, db 
 	if _, out := call(http.MethodPatch, "/api/v1/me", token, map[string]string{"name": "Renamed again"}); data(out)["metadata"].(map[string]any)["timezone"] != "Asia/Jakarta" {
 		t.Fatalf("a profile save without a timezone dropped it: %v", data(out))
 	}
+	// A preference leaves the avatar and the timezone alone, and a profile save leaves it.
+	if status, _ := call(http.MethodPatch, "/api/v1/me", token, map[string]string{"name": "Renamed again", "image": "https://example.com/a.png"}); status != http.StatusOK {
+		t.Fatalf("set avatar: %d", status)
+	}
+	if status, out := call(http.MethodPatch, "/api/v1/me/preferences", token, map[string]any{"split_inbox": true}); status != http.StatusOK || data(out)["metadata"].(map[string]any)["split_inbox"] != true || data(out)["metadata"].(map[string]any)["timezone"] != "Asia/Jakarta" || data(out)["image"] != "https://example.com/a.png" {
+		t.Fatalf("set split inbox: %d %v", status, out)
+	}
+	if _, out := call(http.MethodPatch, "/api/v1/me", token, map[string]string{"name": "Renamed again"}); data(out)["metadata"].(map[string]any)["split_inbox"] != true {
+		t.Fatalf("a profile save dropped split inbox: %v", data(out))
+	}
 
 	// Two-factor: enabling waits for a first code, so a botched scan locks no one out.
 	status, out = call(http.MethodPost, "/api/v1/auth/totp/enable", token, map[string]any{})

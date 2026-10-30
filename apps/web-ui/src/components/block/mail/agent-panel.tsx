@@ -12,6 +12,7 @@ import type { Models } from '@/lib/api/models'
 import Hint from '@/components/block/common/hint'
 import Markdown from '@/components/block/common/markdown'
 import { useEnabledSkills } from '@/components/block/mail/skill-menu'
+import { useMailAccounts } from '@/components/layout/mail/mail-panel'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import PromptBar from '@/components/ui/prompt-bar'
@@ -19,6 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import StreamingText from '@/components/ui/streaming-text'
 import ThinkingState from '@/components/ui/thinking-state'
 import { useActiveAgentBot } from '@/hooks/use-active-agent-bot'
+import { useHideEmails } from '@/hooks/use-hide-emails'
 import { streamAgentChat } from '@/lib/api/agent/stream'
 import { axiosErrorMessage } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
@@ -143,10 +145,10 @@ function toBlocks(messages: Models.AgentMessage[]): Block[] {
 const toolsDone = (n: number) => `Used ${n} ${n === 1 ? 'tool' : 'tools'}`
 
 /** The composer's hint: why it is locked, or what to ask. */
-function promptPlaceholder(emailAccountId?: string, about?: string) {
+function promptPlaceholder(emailAccountId?: string, about?: string, mailbox?: string) {
   if (!emailAccountId) return 'Select a mailbox first'
   if (about) return 'Ask about this email…'
-  return 'Ask the assistant…'
+  return mailbox ? `Ask about ${mailbox}…` : 'Ask the assistant…'
 }
 
 /**
@@ -156,6 +158,9 @@ function promptPlaceholder(emailAccountId?: string, about?: string) {
  */
 export default function AgentPanel({ emailAccountId, organizationId, className }: AgentPanelProps) {
   const [tab, setTab] = React.useState<'chat' | 'drafts'>('chat')
+  const { data: accounts } = useMailAccounts()
+  const mailbox = accounts?.find((item) => item.id === emailAccountId)
+  const { mask } = useHideEmails()
   const [conversationId, setConversationId] = React.useState<string>()
   const [input, setInput] = React.useState('')
   const [streaming, setStreaming] = React.useState(false)
@@ -300,6 +305,8 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
   }
 
   const stop = () => abort.current?.abort()
+  // Another mailbox remounts the panel: a turn still running here must not go on unseen.
+  React.useEffect(() => () => abort.current?.abort(), [])
 
   const ask = (prompt: string) => {
     setInput(prompt)
@@ -397,9 +404,9 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
                 <div className="flex size-10 items-center justify-center rounded-lg bg-accent-ink/10 text-accent-ink">
                   <Sparkles className="size-5" aria-hidden />
                 </div>
-                <p className="text-muted-foreground max-w-64 text-sm text-balance">
-                  Ask about this mailbox: find an email, summarize a thread, draft a reply, or have
-                  mail moved out of the way.
+                <p className="text-muted-foreground max-w-64 text-sm text-balance wrap-anywhere">
+                  Ask about {mailbox ? mask(mailbox.label) : 'this mailbox'}: find an email,
+                  summarize a thread, draft a reply, or have mail moved out of the way.
                 </p>
                 {emailAccountId && (
                   <div className="flex flex-wrap justify-center gap-1.5">
@@ -505,7 +512,7 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
               disabled={!emailAccountId}
               inputRef={inputRef}
               label="Message the assistant"
-              placeholder={promptPlaceholder(emailAccountId, about)}
+              placeholder={promptPlaceholder(emailAccountId, about, mailbox && mask(mailbox.label))}
               commands={[...skillCommands, ...(about ? EMAIL_QUICK_PROMPTS : QUICK_PROMPTS)]}
               models={personas}
               model={activeBotId}

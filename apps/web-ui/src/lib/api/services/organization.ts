@@ -11,6 +11,7 @@ const resources = (): OrganizationResources => ({
   update: (id, body) => api.put(`${path}/${id}`, body),
   delete: (id) => api.delete(`${path}/${id}`),
   stats: (id) => api.get(`${path}/${id}/stats`),
+  mails: (id, params) => api.get(`${path}/${id}/mails`, { params }),
 })
 
 export const organizationServices = resources()
