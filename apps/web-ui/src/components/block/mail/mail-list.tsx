@@ -426,6 +426,8 @@ export default function MailList({ className }: { className?: string }) {
           className={cn(
             'hover:bg-accent/50 relative grid border-b px-4 py-4 text-sm',
             ROW_COLUMNS,
+            // Unread mail is tinted, so it stands out without reading the dot.
+            !mail.is_read && 'bg-blue-500/[0.06] dark:bg-blue-400/[0.08]',
             isSelected && 'bg-accent/40',
             selectedId === mail.id && 'bg-accent hover:bg-accent'
           )}
@@ -443,7 +445,7 @@ export default function MailList({ className }: { className?: string }) {
           <span className="absolute start-0 top-4 flex h-5 w-4 items-center justify-center">
             {!mail.is_read && (
               <>
-                <span className="bg-primary size-2 rounded-full" aria-hidden />
+                <span className="size-2.5 rounded-full bg-blue-500 dark:bg-blue-400" aria-hidden />
                 <span className="sr-only">Unread,</span>
               </>
             )}
@@ -480,7 +482,9 @@ export default function MailList({ className }: { className?: string }) {
                 {formatMailListDate(mail.received_at)}
               </span>
             </div>
-            <span className="truncate font-medium">{mail.subject || '(no subject)'}</span>
+            <span className={cn('truncate', mail.is_read ? 'font-medium' : 'font-semibold')}>
+              {mail.subject || '(no subject)'}
+            </span>
             {mail.teaser && (
               <span className="text-muted-foreground line-clamp-2">{mail.teaser}</span>
             )}
