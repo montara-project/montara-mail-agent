@@ -3,6 +3,15 @@
 All notable changes to this project are documented in this file. Versions follow the git tags (`v*`); Docker images are published to ghcr.io with the same version.
 
 
+## [0.9.0](https://github.com/montara-project/montara-mail-agent/compare/v0.8.0...v0.9.0) (2026-10-30)
+
+### Features
+
+* add a global inbox with account flags and a split inbox setting ([36f6714](https://github.com/montara-project/montara-mail-agent/commit/36f67141ecc1b8df760e6965db22ce90f8ee6acf))
+* **web-ui:** flag global inbox mail with the account's email address ([2ec7262](https://github.com/montara-project/montara-mail-agent/commit/2ec7262b89af303ee1d3a4ed780cb317d78c34c2))
+* **web-ui:** mark unread mail with a blue edge and polish the mail list ([78f2b9a](https://github.com/montara-project/montara-mail-agent/commit/78f2b9aadd5fe8bf024e505c21afad0f721e2d0a))
+* **web-ui:** show the account as a colored chip on global inbox mail ([75328b3](https://github.com/montara-project/montara-mail-agent/commit/75328b345f5c3af0fe3cb813d0372fcf31c86714))
+
 ## [0.8.0](https://github.com/montara-project/montara-mail-agent/compare/v0.7.0...v0.8.0) (2026-10-30)
 
 ### Features
