@@ -1,18 +1,17 @@
-import {
-  IconArrowBackUp,
-  IconLogin,
-  IconMail,
-  IconMailForward,
-  IconPlugConnected,
-  IconPlugConnectedX,
-  IconPointFilled,
-  IconSend,
-  IconShieldLock,
-  IconTrash,
-  IconUser,
-} from '@tabler/icons-react'
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { format } from 'date-fns'
+import {
+  Dot,
+  Forward,
+  LogIn,
+  type LucideIcon,
+  Plug,
+  Send,
+  ShieldCheck,
+  Trash2,
+  Undo2,
+  Unplug,
+  User,
+} from 'lucide-react'
 
 import type { Models } from '@/lib/api/models'
 
@@ -22,6 +21,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { activityLogQueries } from '@/lib/api/queries/activity-log'
+import { clock, monthDay } from '@/lib/date'
 
 interface ActivityLogListProps {
   title: string
@@ -32,16 +32,16 @@ interface ActivityLogListProps {
 
 // The icon an entry carries, by its exact action; the area's icon covers the
 // rest.
-const ACTION_ICONS: Partial<Record<Models.ActivityAction, typeof IconMail>> = {
-  'auth.sign_in': IconLogin,
-  'profile.updated': IconUser,
-  'password.changed': IconShieldLock,
-  'email_account.connected': IconPlugConnected,
-  'email_account.disconnected': IconPlugConnectedX,
-  'mail.sent': IconSend,
-  'mail.replied': IconArrowBackUp,
-  'mail.forwarded': IconMailForward,
-  'mail.deleted': IconTrash,
+const ACTION_ICONS: Partial<Record<Models.ActivityAction, LucideIcon>> = {
+  'auth.sign_in': LogIn,
+  'profile.updated': User,
+  'password.changed': ShieldCheck,
+  'email_account.connected': Plug,
+  'email_account.disconnected': Unplug,
+  'mail.sent': Send,
+  'mail.replied': Undo2,
+  'mail.forwarded': Forward,
+  'mail.deleted': Trash2,
 }
 
 // The badge an entry carries, by its action's area (the word before the dot).
@@ -55,7 +55,7 @@ const AREA_LABELS: Record<string, string> = {
 }
 
 function ActivityRow({ entry, showActor }: { entry: Models.ActivityLog; showActor: boolean }) {
-  const Icon = ACTION_ICONS[entry.action] ?? IconPointFilled
+  const Icon = ACTION_ICONS[entry.action] ?? Dot
   const area = entry.action.split('.')[0]
   const actor = entry.actor_name || 'Unknown'
 
@@ -68,7 +68,7 @@ function ActivityRow({ entry, showActor }: { entry: Models.ActivityLog; showActo
         <p className="truncate text-sm font-medium">{entry.description}</p>
         <p className="text-muted-foreground mt-0.5 text-xs">
           {showActor ? `${actor} · ` : ''}
-          {format(new Date(entry.created_at), 'MMM d, yyyy HH:mm')}
+          {`${monthDay(new Date(entry.created_at), true)} ${clock(new Date(entry.created_at))}`}
           {entry.ip ? ` · from ${entry.ip}` : ''}
         </p>
       </div>

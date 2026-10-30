@@ -24,7 +24,7 @@ function readPick(orgId: string) {
 }
 
 /** Picks the bot the assistant speaks as in one organization; '' is the built-in one. */
-export function setActiveAgentBotId(orgId: string, id: string) {
+function setActiveAgentBotId(orgId: string, id: string) {
   picks.set(orgId, id)
   try {
     localStorage.setItem(storageKey(orgId), id)

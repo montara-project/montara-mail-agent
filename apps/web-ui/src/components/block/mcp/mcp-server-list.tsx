@@ -1,6 +1,5 @@
-import { IconPlus } from '@tabler/icons-react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { ChevronRight, LogIn, Pencil, Plug, RefreshCw, Trash2 } from 'lucide-react'
+import { ChevronRight, LogIn, Pencil, Plug, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
@@ -371,7 +370,7 @@ export default function MCPServerList({ organizationId }: { organizationId: stri
         }
         action={
           <Button className="h-8.5 rounded-lg" onClick={() => setOpenAdd(true)}>
-            <IconPlus />
+            <Plus />
             <span>Add server</span>
           </Button>
         }

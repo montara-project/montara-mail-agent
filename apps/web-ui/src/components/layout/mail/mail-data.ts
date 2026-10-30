@@ -1,6 +1,6 @@
-import { format, isToday } from 'date-fns'
-
 import type { Models } from '@/lib/api/models'
+
+import { clock, monthDay } from '@/lib/date'
 
 export function mailInitials(name: string) {
   return name
@@ -13,7 +13,7 @@ export function mailInitials(name: string) {
 /** Short date for the list: the time for today's mail, else the day. */
 export function formatMailListDate(iso: string) {
   const date = new Date(iso)
-  return isToday(date) ? format(date, 'HH.mm') : format(date, 'MMM d')
+  return date.toDateString() === new Date().toDateString() ? clock(date, '.') : monthDay(date)
 }
 
 /** The sender's name, else their address. */

@@ -1,4 +1,4 @@
-import { ChevronRight, MoreHorizontal } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { Slot as SlotPrimitive } from 'radix-ui'
 import * as React from 'react'
 
@@ -78,22 +78,8 @@ const BreadcrumbSeparator = ({ children, className, ...props }: React.ComponentP
   </li>
 )
 
-const BreadcrumbEllipsis = ({ className, ...props }: React.ComponentProps<'span'>) => (
-  <span
-    data-slot="breadcrumb-ellipsis"
-    role="presentation"
-    aria-hidden="true"
-    className={cn('flex h-9 w-9 items-center justify-center', className)}
-    {...props}
-  >
-    <MoreHorizontal className="h-4 w-4" />
-    <span className="sr-only">More</span>
-  </span>
-)
-
 export {
   Breadcrumb,
-  BreadcrumbEllipsis,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,

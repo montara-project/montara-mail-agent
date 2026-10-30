@@ -19,7 +19,7 @@ const RAINBOW = accentChain([
  * a picker for who answers (the agent bot persona), dictation
  * where the browser has speech recognition, and send — which
  * turns into stop while a turn runs. Type / to open the menu;
- * ↑↓ + Enter to pick. Variants: Rounded (card radius) · Pill.
+ * ↑↓ + Enter to pick.
  * ───────────────────────────────────────────────────────── */
 
 const EASE = 'cubic-bezier(0.23,1,0.32,1)'
@@ -27,7 +27,7 @@ const EASE = 'cubic-bezier(0.23,1,0.32,1)'
 /** A quick prompt: picking it replaces the typed /word with `prompt`. */
 export type PromptCommand = { key: string; name: string; desc: string; prompt: string }
 /** One choice in the picker, e.g. an agent bot. */
-export type PromptModel = { key: string; name: string; tag?: string }
+type PromptModel = { key: string; name: string; tag?: string }
 
 function Icon({
   children,
@@ -115,8 +115,6 @@ export default function PromptBar({
   model,
   onModelChange,
   modelLabel = 'Choose who answers',
-  variant = 'Rounded',
-  tall = false,
   inputRef: externalInputRef,
   label = 'Prompt',
   sendLabel,
@@ -136,16 +134,12 @@ export default function PromptBar({
   model?: string
   onModelChange?: (key: string) => void
   modelLabel?: string
-  variant?: 'Rounded' | 'Pill'
-  /** hero sizing: a multi-line input with controls on their own row */
-  tall?: boolean
   inputRef?: Ref<HTMLTextAreaElement>
   /** the input's accessible name */
   label?: string
   /** a worded, accent-colored send (e.g. "Write") where an arrow could pass for another send */
   sendLabel?: string
 }) {
-  const pill = variant === 'Pill'
   const draft = value
   const setDraft = onChange
   const [dismissed, setDismissed] = useState(false)
@@ -153,8 +147,7 @@ export default function PromptBar({
   const [modelOpen, setModelOpen] = useState(false)
   const [active, setActive] = useState(0)
   const [listening, setListening] = useState(false)
-  const [expanded, setExpanded] = useState(false)
-  const wide = expanded || tall
+  const [wide, setWide] = useState(false)
   const [rowBox, setRowBox] = useState<{ top: number; height: number } | null>(null)
   const [engaged, setEngaged] = useState(false)
   const [modelBox, setModelBox] = useState<{ top: number; height: number } | null>(null)
@@ -308,15 +301,15 @@ export default function PromptBar({
     const fixedControlsWidth = buttons + (modelRef.current?.offsetWidth ?? 0)
     const inlineInputWidth = controls.clientWidth - fixedControlsWidth - 4 * 4
     const needsFullWidth = draft.includes('\n') || measure.offsetWidth + 8 > inlineInputWidth
-    if (needsFullWidth !== expanded) setExpanded(needsFullWidth)
+    if (needsFullWidth !== wide) setWide(needsFullWidth)
 
-    const minHeight = tall ? 68 : 28
-    const maxHeight = tall ? 200 : 120
+    const minHeight = 28
+    const maxHeight = 120
     input.style.height = '0px'
     const contentHeight = input.scrollHeight
     input.style.height = `${Math.min(Math.max(contentHeight, minHeight), maxHeight)}px`
     input.style.overflowY = contentHeight > maxHeight ? 'auto' : 'hidden'
-  }, [draft, expanded, tall, commands.length, Speech, sendLabel])
+  }, [draft, wide, commands.length, Speech, sendLabel])
 
   /* clicking anywhere outside the composer closes the open menus */
   useEffect(() => {
@@ -360,7 +353,7 @@ export default function PromptBar({
     Speech && '28px',
     sendLabel ? 'auto' : '28px',
   ].filter((column): column is string => !!column)
-  const roundness = pill ? 'rounded-full' : 'rounded-[8px]'
+  const roundness = 'rounded-[8px]'
 
   return (
     <div data-promptbar data-ai-motion className="w-full">
@@ -466,9 +459,7 @@ export default function PromptBar({
 
         {/* ── composer ───────────────────────────────────── */}
         <div
-          className={`border-line bg-surface shadow-card focus-within:border-line-strong relative isolate flex flex-col overflow-hidden border transition-[border-color,border-radius] duration-150 ${
-            tall ? 'gap-2.5 p-2.5' : 'gap-1.5 p-1.5'
-          } ${pill ? (wide ? 'rounded-[24px]' : 'rounded-full') : tall ? 'rounded-[18px]' : 'rounded-[14px]'} ${
+          className={`border-line bg-surface shadow-card focus-within:border-line-strong relative isolate flex flex-col overflow-hidden border transition-[border-color,border-radius] duration-150 gap-1.5 rounded-[14px] p-1.5 ${
             locked && !busy ? 'opacity-60' : ''
           }`}
         >
@@ -553,7 +544,7 @@ export default function PromptBar({
               }}
               placeholder={listening ? 'Listening…' : (placeholder ?? 'Write a message…')}
               aria-label={label}
-              className={`${tall ? 'px-2 py-2 text-[14px] leading-5' : 'min-h-7 px-1 py-[5px] text-[13px] leading-[18px]'} text-ink placeholder:text-ink-3 w-full min-w-0 resize-none bg-transparent [overflow-wrap:anywhere] outline-none disabled:cursor-not-allowed ${
+              className={`min-h-7 px-1 py-[5px] text-[13px] leading-[18px] text-ink placeholder:text-ink-3 w-full min-w-0 resize-none bg-transparent [overflow-wrap:anywhere] outline-none disabled:cursor-not-allowed ${
                 wide ? 'col-span-full row-start-1' : 'row-start-1'
               }`}
             />
@@ -621,7 +612,7 @@ export default function PromptBar({
               </button>
             )}
 
-            {/* send, or stop while a turn runs — tactile square (round in the pill variant) */}
+            {/* send, or stop while a turn runs — tactile square */}
             {busy && onStop ? (
               <button
                 type="button"

@@ -1,4 +1,4 @@
-import { IconBarrierBlock } from '@tabler/icons-react'
+import { Construction, type LucideIcon } from 'lucide-react'
 
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { cn } from '@/lib/utils'
@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 interface EmptyStateProps {
   title: string
   description?: string
-  icon?: typeof IconBarrierBlock
+  icon?: LucideIcon
   /** CTA rendered under the header — e.g. a "Clear search" or "New …" button. */
   action?: React.ReactNode
   className?: string
@@ -20,7 +20,7 @@ interface EmptyStateProps {
 export default function EmptyState({
   title,
   description,
-  icon: Icon = IconBarrierBlock,
+  icon: Icon = Construction,
   action,
   className,
 }: EmptyStateProps) {

@@ -55,7 +55,7 @@ import { queries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
 
 /** The page sizes the list offers; the server caps a page at 100. */
-export const PAGE_SIZES = [10, 25, 50, 100] as const
+const PAGE_SIZES = [10, 25, 50, 100] as const
 export const DEFAULT_PAGE_SIZE = 25
 
 /** A ?limit= from the URL as a page size, the default for anything else. */

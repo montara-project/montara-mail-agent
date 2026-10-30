@@ -1,7 +1,7 @@
 import type { Variants } from 'motion/react'
 
-import { IconArrowLeft, IconKey, IconLoader2 } from '@tabler/icons-react'
 import { useMutation } from '@tanstack/react-query'
+import { ArrowLeft, KeyRound, Loader2 } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import React from 'react'
 import { toast } from 'sonner'
@@ -132,7 +132,7 @@ export default function ProviderConnectDialog({
                 >
                   <span className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-lg">
                     {oauthConnect.isPending ? (
-                      <IconLoader2 className="size-1/2 animate-spin motion-reduce:animate-none" />
+                      <Loader2 className="size-1/2 animate-spin motion-reduce:animate-none" />
                     ) : (
                       <img
                         src={connector.oauthLogo ?? connector.logo}
@@ -155,7 +155,7 @@ export default function ProviderConnectDialog({
                   className={methodButtonClass}
                 >
                   <span className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-lg">
-                    <IconKey className="size-1/2" />
+                    <KeyRound className="size-1/2" />
                   </span>
                   <span className="grid min-w-0 flex-1">
                     <span className="truncate font-semibold">App password</span>
@@ -231,7 +231,7 @@ export default function ProviderConnectDialog({
               </motion.div>
               <AlertDialogFooter className="mt-6">
                 <Button type="button" variant="ghost" onClick={() => setMethod('choose')}>
-                  <IconArrowLeft />
+                  <ArrowLeft />
                   Back
                 </Button>
                 <Button type="button" variant="outline" onClick={onClose}>
@@ -243,7 +243,7 @@ export default function ProviderConnectDialog({
                   disabled={create.isPending || !organization}
                 >
                   {create.isPending && (
-                    <IconLoader2 className="animate-spin motion-reduce:animate-none" />
+                    <Loader2 className="animate-spin motion-reduce:animate-none" />
                   )}
                   {create.isPending ? 'Connecting...' : 'Connect'}
                 </Button>

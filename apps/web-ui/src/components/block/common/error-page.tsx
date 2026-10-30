@@ -1,5 +1,5 @@
-import { IconAlertTriangle, IconArrowLeft, IconRefresh } from '@tabler/icons-react'
 import { Link } from '@tanstack/react-router'
+import { ArrowLeft, RefreshCw, TriangleAlert } from 'lucide-react'
 
 import EmptyState from '@/components/block/common/empty-state'
 import { Button } from '@/components/ui/button'
@@ -20,18 +20,18 @@ export default function ErrorPage({ error, onRetry }: ErrorPageProps) {
   return (
     <div className="flex min-h-svh items-center justify-center p-6">
       <EmptyState
-        icon={IconAlertTriangle}
+        icon={TriangleAlert}
         title="Something went wrong"
         description={description}
         action={
           <div className="flex gap-2">
             <Button onClick={onRetry}>
-              <IconRefresh />
+              <RefreshCw />
               <span>Try again</span>
             </Button>
             <Button variant="outline" asChild>
               <Link to="/dashboard">
-                <IconArrowLeft />
+                <ArrowLeft />
                 <span>Back to dashboard</span>
               </Link>
             </Button>

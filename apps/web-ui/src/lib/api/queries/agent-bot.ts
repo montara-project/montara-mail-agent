@@ -6,7 +6,7 @@ import type { AgentBotFormDto } from '../dtos/agent-bot/schema'
 
 import { services } from '../services'
 
-export const AGENT_BOT_QUERY_KEY = 'agent-bots'
+const AGENT_BOT_QUERY_KEY = 'agent-bots'
 
 const LIST_AGENT_BOT_QUERY_KEY = (orgId: string) => {
   return [AGENT_BOT_QUERY_KEY, 'list', orgId]

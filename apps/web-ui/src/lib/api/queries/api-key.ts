@@ -6,7 +6,7 @@ import type { APIKeyBody } from '../services/types/api-key'
 
 import { services } from '../services'
 
-export const API_KEY_QUERY_KEY = 'api-keys'
+const API_KEY_QUERY_KEY = 'api-keys'
 
 const invalidate = () => getQueryClient().invalidateQueries({ queryKey: [API_KEY_QUERY_KEY] })
 

@@ -1,7 +1,5 @@
-import { IconPlus } from '@tabler/icons-react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { formatDistanceToNow } from 'date-fns'
-import { RefreshCw, ShieldBan, Trash2 } from 'lucide-react'
+import { Plus, RefreshCw, ShieldBan, Trash2 } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
@@ -21,6 +19,7 @@ import { axiosErrorMessage, toastAxiosError } from '@/lib/api/axios-error'
 import { parseDto } from '@/lib/api/dtos/parse'
 import { IP_BLOCK_DURATIONS, IPBlockSchema } from '@/lib/api/dtos/settings/ip-block/schema'
 import { queries } from '@/lib/api/queries'
+import { timeAgo } from '@/lib/date'
 
 const DURATION_OPTIONS = IP_BLOCK_DURATIONS.map((hours) => ({
   value: hours,
@@ -33,7 +32,7 @@ const DURATION_OPTIONS = IP_BLOCK_DURATIONS.map((hours) => ({
   }[hours],
 }))
 
-const ago = (iso: string) => formatDistanceToNow(new Date(iso), { addSuffix: true })
+const ago = (iso: string) => timeAgo(new Date(iso))
 
 /** "Blocked 3 minutes ago by you@… · Lifts in about 1 hour". */
 function BlockMeta({ block }: { block: Models.IPBlock }) {
@@ -207,7 +206,7 @@ export default function IPBlockList() {
         }
         action={
           <Button className="h-8.5 rounded-lg" onClick={() => setBlocking(true)}>
-            <IconPlus />
+            <Plus />
             <span>Block address</span>
           </Button>
         }

@@ -1,6 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { formatDistanceToNow } from 'date-fns'
 import { RefreshCw, Unplug } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
@@ -15,6 +14,7 @@ import { useActiveOrganization } from '@/hooks/use-active-organization'
 import { useHideEmails } from '@/hooks/use-hide-emails'
 import { axiosErrorMessage, toastAxiosError } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
+import { timeAgo } from '@/lib/date'
 
 import { CONNECTORS, ProviderIcon } from './connector-list'
 
@@ -35,7 +35,7 @@ function SyncStatus({ account }: { account: Models.EmailAccount }) {
       </span>
     )
   }
-  return <span>Synced {formatDistanceToNow(new Date(account.synced_at), { addSuffix: true })}</span>
+  return <span>Synced {timeAgo(new Date(account.synced_at))}</span>
 }
 
 /** Connected mail accounts of the active organization; each card opens that account's mailbox. */

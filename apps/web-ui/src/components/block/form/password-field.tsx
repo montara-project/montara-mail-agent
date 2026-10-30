@@ -1,4 +1,4 @@
-import { IconEye, IconEyeOff } from '@tabler/icons-react'
+import { Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
 
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
@@ -41,7 +41,7 @@ export default function PasswordField({ label, placeholder, asterisk }: Password
           onClick={() => setVisible((v) => !v)}
           aria-label={visible ? 'Hide password' : 'Show password'}
         >
-          {visible ? <IconEyeOff className="size-4" /> : <IconEye className="size-4" />}
+          {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
         </button>
       </InputWrapper>
       {isInvalid && <FieldError errors={errors} />}

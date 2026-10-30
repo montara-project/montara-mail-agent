@@ -1,7 +1,6 @@
 'use client'
 
-import { IconEdit, IconEye, IconTrash } from '@tabler/icons-react'
-import { MoreHorizontal } from 'lucide-react'
+import { Eye, MoreHorizontal, SquarePen, Trash2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -31,7 +30,7 @@ export default function RowColumnAction({
     <div className="flex flex-row flex-wrap items-start gap-4">
       {onEdit && (
         <Button mode="link" underline="solid" className="dark:text-neutral-300" onClick={onEdit}>
-          <IconEdit className="text-primary size-4 dark:text-neutral-300" />
+          <SquarePen className="text-primary size-4 dark:text-neutral-300" />
           <span>Edit</span>
         </Button>
       )}
@@ -50,7 +49,7 @@ export default function RowColumnAction({
             <DropdownMenuGroup>
               {onShow && (
                 <DropdownMenuItem onClick={onShow}>
-                  <IconEye />
+                  <Eye />
                   Show
                 </DropdownMenuItem>
               )}
@@ -59,7 +58,7 @@ export default function RowColumnAction({
 
               {onDelete && (
                 <DropdownMenuItem variant="destructive" onClick={onDelete}>
-                  <IconTrash />
+                  <Trash2 />
                   Delete
                 </DropdownMenuItem>
               )}

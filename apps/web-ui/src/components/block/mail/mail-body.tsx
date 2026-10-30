@@ -24,7 +24,7 @@ const INVERT = 'filter: invert(1) hue-rotate(180deg);'
  * attributes go first in the tag; a parser keeps the first of a duplicated
  * attribute, so they win over the email's own.
  */
-export const lazyImages = (html: string) =>
+const lazyImages = (html: string) =>
   html.replace(/<img\b/gi, '<img loading="lazy" decoding="async"')
 
 /**

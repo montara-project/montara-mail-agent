@@ -5,7 +5,7 @@ import { services } from '../services'
 const ACTIVITY_LOG_QUERY_KEY = 'activity-logs'
 
 /** How many entries one page of the log holds. */
-export const ACTIVITY_LOG_PAGE_SIZE = 10
+const ACTIVITY_LOG_PAGE_SIZE = 10
 
 /** One log's activities — the user's own, or an organization's — one page at
  * a time for a "Load more" list. */

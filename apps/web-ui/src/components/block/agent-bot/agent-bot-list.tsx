@@ -1,5 +1,5 @@
-import { IconPlus } from '@tabler/icons-react'
 import { useMutation, useQuery } from '@tanstack/react-query'
+import { Plus } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
@@ -98,7 +98,7 @@ export default function AgentBotList({ organizationId }: { organizationId: strin
       description="Personas the AI assistant can speak as. Only the organization's owner can change them."
       toolbar={
         <Button className="h-8.5 rounded-lg" onClick={() => setOpenAdd(true)}>
-          <IconPlus />
+          <Plus />
           <span>Add</span>
         </Button>
       }

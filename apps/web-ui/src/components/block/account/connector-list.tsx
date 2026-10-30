@@ -1,6 +1,5 @@
-import { IconServer } from '@tabler/icons-react'
 import { useMutation } from '@tanstack/react-query'
-import { Plus } from 'lucide-react'
+import { Plus, Server } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
@@ -122,7 +121,7 @@ export function ProviderIcon({
       {logo ? (
         <img src={logo} alt="" className="size-3/5 object-contain" />
       ) : (
-        <IconServer className="size-1/2" />
+        <Server className="size-1/2" />
       )}
     </span>
   )

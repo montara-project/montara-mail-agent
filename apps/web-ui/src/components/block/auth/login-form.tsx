@@ -1,8 +1,8 @@
-import { IconBrandGoogle } from '@tabler/icons-react'
 import { useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
+import googleLogo from '@/assets/brands/google.svg'
 import { ServerURLForm } from '@/components/block/settings/server-url-form'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -218,7 +218,7 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
               disabled={googleLoading}
               onClick={() => void signInWithGoogle()}
             >
-              <IconBrandGoogle />
+              <img src={googleLogo} alt="" className="size-4" />
               {googleLoading ? 'Redirecting...' : 'Login with Google'}
             </Button>
           </form>

@@ -1,7 +1,6 @@
-import { IconPlus } from '@tabler/icons-react'
 import { useStore } from '@tanstack/react-form'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Building2, Check, Globe, Pencil, RefreshCw, Trash2 } from 'lucide-react'
+import { Building2, Check, Globe, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
@@ -515,7 +514,7 @@ export default function LLMProviderSettings() {
       description={providerStatus(organization, data)}
       toolbar={
         <Button className="h-8.5 rounded-lg" onClick={() => setOpenAdd(true)}>
-          <IconPlus />
+          <Plus />
           <span>Add provider</span>
         </Button>
       }

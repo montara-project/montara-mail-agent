@@ -6,7 +6,7 @@ import type { IPBlockBody } from '../services/types/ip-block'
 
 import { services } from '../services'
 
-export const IP_BLOCK_QUERY_KEY = 'ip-blocks'
+const IP_BLOCK_QUERY_KEY = 'ip-blocks'
 
 const invalidate = () => getQueryClient().invalidateQueries({ queryKey: [IP_BLOCK_QUERY_KEY] })
 
