@@ -17,7 +17,13 @@ import {
  * The Montara server this browser uses: the hosted one, or one the user runs
  * themselves. Switching checks the server answers, then signs out.
  */
-export function ServerURLForm({ onCancel }: { onCancel?: () => void }) {
+export function ServerURLForm({
+  onCancel,
+  autoFocus,
+}: {
+  onCancel?: () => void
+  autoFocus?: boolean
+}) {
   const [url, setUrl] = React.useState(SERVER_URL)
   const [checking, setChecking] = React.useState(false)
   const next = normalizeServerURL(url)
@@ -49,6 +55,7 @@ export function ServerURLForm({ onCancel }: { onCancel?: () => void }) {
           variant="lg"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
+          autoFocus={autoFocus}
           inputMode="url"
           autoComplete="url"
           placeholder={DEFAULT_SERVER_URL}

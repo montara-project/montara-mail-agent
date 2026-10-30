@@ -1,6 +1,7 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
 
 import LoginForm from '@/components/block/auth/login-form'
 import { completeGoogleSignIn } from '@/lib/auth/google-auth'
@@ -36,16 +37,17 @@ function RouteComponent() {
       })
       .catch(() => {
         // The consent was abandoned, or the callback's session cookie stayed
-        // on the API's origin; the email form below still works.
+        // on the API's origin; the cause isn't knowable here.
+        toast.error("Google sign-in didn't finish. Try again, or log in with your email.")
       })
       .finally(() => setExchanging(false))
   }, [via, router])
 
   return (
-    <div className="bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
+    <main className="bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
       <div className="w-full max-w-sm">
         {exchanging ? (
-          <div className="flex flex-col items-center gap-3 text-center">
+          <div role="status" className="flex flex-col items-center gap-3 text-center">
             <Loader2 className="text-muted-foreground size-6 animate-spin" />
             <p className="text-muted-foreground text-sm">Finishing Google sign-in…</p>
           </div>
@@ -53,6 +55,6 @@ function RouteComponent() {
           <LoginForm />
         )}
       </div>
-    </div>
+    </main>
   )
 }

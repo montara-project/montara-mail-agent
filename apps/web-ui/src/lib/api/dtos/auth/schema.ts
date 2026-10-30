@@ -3,7 +3,7 @@ import z from 'zod'
 import { requiredString } from '@/lib/validation'
 
 export const SignInSchema = z.object({
-  email: requiredString('email').email('email must be a valid email address'),
+  email: requiredString('email').email('The email must be a valid address.'),
   password: requiredString('password'),
 })
 

@@ -286,6 +286,7 @@ func (c openAIClient) Chat(ctx context.Context, req ChatRequest) (ChatResult, er
 		return ChatResult{}, err
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
+	setClientHeaders(httpReq.Header)
 	if c.apiKey != "" {
 		httpReq.Header.Set("Authorization", "Bearer "+c.apiKey)
 	}

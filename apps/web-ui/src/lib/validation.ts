@@ -14,7 +14,8 @@ export const requiredString = (attribute: string) =>
       error: (issue) => (issue.input === undefined ? required(attribute) : mustBeString(attribute)),
     })
     .trim()
-    .nonempty(required(attribute))
+    // abort: an empty value gets this message alone, not a format error too.
+    .nonempty({ error: required(attribute), abort: true })
 
 export const optionalNumber = (attribute: string) =>
   z

@@ -1,12 +1,11 @@
 import type { VariantProps } from 'class-variance-authority'
 import type { ChangeEvent } from 'react'
 
-import { useSelector } from '@tanstack/react-form'
 import { type LucideIcon } from 'lucide-react'
 
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input, inputVariants, InputWrapper } from '@/components/ui/input'
-import { useFieldContext } from '@/hooks/form-context'
+import { useFieldContext, useVisibleFieldErrors } from '@/hooks/form-context'
 
 type InputProps = React.ComponentProps<'input'> & VariantProps<typeof inputVariants>
 
@@ -26,7 +25,7 @@ export default function TextField({
   ...props
 }: TextFieldProps) {
   const field = useFieldContext<string | number>()
-  const errors = useSelector(field.store, (state) => state.meta.errors)
+  const errors = useVisibleFieldErrors()
 
   const isInvalid = !!errors?.length
 
@@ -40,7 +39,7 @@ export default function TextField({
           </span>
         )}
       </FieldLabel>
-      <InputWrapper className="h-10">
+      <InputWrapper className="h-10 pointer-coarse:h-11">
         {props.icon && <props.icon />}
         <Input
           id={field.name}
@@ -59,7 +58,7 @@ export default function TextField({
           {...props}
         />
       </InputWrapper>
-      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+      {isInvalid && <FieldError errors={errors} />}
     </Field>
   )
 }

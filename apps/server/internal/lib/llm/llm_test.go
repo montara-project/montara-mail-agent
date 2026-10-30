@@ -84,3 +84,43 @@ func TestListModels(t *testing.T) {
 		t.Fatal("a refused key did not fail")
 	}
 }
+
+// Every request names Montara, whichever wire format and call carries it.
+func TestClientHeaders(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		for name, want := range clientHeaders {
+			if got := r.Header.Get(name); got != want {
+				t.Errorf("%s %s: %s = %q, want %q", r.Method, r.URL.Path, name, got, want)
+			}
+		}
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/v1/messages":
+			_, _ = w.Write([]byte(`{"content":[{"type":"text","text":"hi"}],"stop_reason":"end_turn"}`))
+		case "/v1/models":
+			_, _ = w.Write([]byte(`{"data":[{"id":"m"}]}`))
+		default:
+			_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"hi"},"finish_reason":"stop"}]}`))
+		}
+	}))
+	defer server.Close()
+
+	for _, cfg := range []Config{
+		{Kind: KindOpenAI, BaseURL: server.URL + "/v1", APIKey: "k", Model: "m", HTTPClient: server.Client()},
+		{Kind: KindAnthropic, BaseURL: server.URL, APIKey: "k", Model: "m", HTTPClient: server.Client()},
+	} {
+		client, err := New(cfg)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := client.Complete(context.Background(), "sys", "hi", 10); err != nil {
+			t.Fatalf("%s Complete: %v", cfg.Kind, err)
+		}
+		if _, err := client.Chat(context.Background(), ChatRequest{System: "sys", Messages: []ChatMessage{{Role: RoleUser, Text: "hi"}}, MaxTokens: 10}); err != nil {
+			t.Fatalf("%s Chat: %v", cfg.Kind, err)
+		}
+		if _, err := ListModels(context.Background(), cfg); err != nil {
+			t.Fatalf("%s ListModels: %v", cfg.Kind, err)
+		}
+	}
+}
