@@ -1,13 +1,12 @@
-import { IconPlus } from '@tabler/icons-react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { format, formatDistanceToNow, isPast } from 'date-fns'
-import { Copy, KeyRound, RefreshCw, Trash2 } from 'lucide-react'
+import { Copy, KeyRound, Plus, Trash2 } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
 
 import EmptyState from '@/components/block/common/empty-state'
+import QueryState from '@/components/block/common/query-state'
 import SectionCard from '@/components/block/common/section-card'
 import SectionHeading from '@/components/block/common/section-heading'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
@@ -26,7 +25,7 @@ import { FieldDescription } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAppForm } from '@/hooks/form'
 import { useActiveOrganization } from '@/hooks/use-active-organization'
-import { axiosErrorMessage, toastAxiosError } from '@/lib/api/axios-error'
+import { toastAxiosError } from '@/lib/api/axios-error'
 import { parseDto } from '@/lib/api/dtos/parse'
 import {
   API_KEY_LIFETIMES,
@@ -35,6 +34,7 @@ import {
 } from '@/lib/api/dtos/settings/api-key/schema'
 import { queries } from '@/lib/api/queries'
 import { SERVER_URL } from '@/lib/api/server-url'
+import { isPast, timeAgo } from '@/lib/date'
 
 /** Where MCP clients connect: the server this browser uses. */
 const MCP_ENDPOINT = `${SERVER_URL || window.location.origin}/mcp`
@@ -66,7 +66,8 @@ const copy = (text: string, what: string) =>
     () => toast.error(`Couldn't copy the ${what.toLowerCase()}; select it instead.`)
   )
 
-const day = (iso: string) => format(new Date(iso), 'd MMM yyyy')
+const day = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 
 /** "Created 29 Oct 2026 · Expires 27 Jan 2027 · Used 3 hours ago". */
 function KeyMeta({ apiKey }: { apiKey: Models.APIKey }) {
@@ -81,9 +82,7 @@ function KeyMeta({ apiKey }: { apiKey: Models.APIKey }) {
         </span>
       )}
       {' · '}
-      {apiKey.last_used_at
-        ? `Used ${formatDistanceToNow(new Date(apiKey.last_used_at), { addSuffix: true })}`
-        : 'Never used'}
+      {apiKey.last_used_at ? `Used ${timeAgo(new Date(apiKey.last_used_at))}` : 'Never used'}
     </span>
   )
 }
@@ -342,7 +341,7 @@ export default function APIKeyList() {
         description="Let MCP clients such as Claude Desktop or Cursor search and sort your mail. What they propose to send waits for your approval in the AI assistant."
         action={
           <Button className="h-8.5 rounded-lg" onClick={() => setCreating(true)}>
-            <IconPlus />
+            <Plus />
             <span>Create key</span>
           </Button>
         }
@@ -368,28 +367,26 @@ export default function APIKeyList() {
       </SectionCard>
 
       <SectionCard>
-        {isPending ? (
-          <Loading />
-        ) : isError ? (
-          <div role="alert" className="grid justify-items-center gap-3 p-6 text-center text-sm">
-            <p className="text-destructive">{axiosErrorMessage(error)}</p>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <RefreshCw />
-              Try again
-            </Button>
-          </div>
-        ) : keys.length === 0 ? (
-          <EmptyState
-            title="No API keys yet"
-            description="Create one for each app you connect, so you can revoke it alone."
-          />
-        ) : (
+        <QueryState
+          isPending={isPending}
+          isError={isError}
+          error={error}
+          onRetry={() => refetch()}
+          isEmpty={keys.length === 0}
+          loading={<Loading />}
+          empty={
+            <EmptyState
+              title="No API keys yet"
+              description="Create one for each app you connect, so you can revoke it alone."
+            />
+          }
+        >
           <ul className="-m-4 divide-y overflow-hidden rounded-lg">
             {keys.map((apiKey) => (
               <KeyRow key={apiKey.id} apiKey={apiKey} />
             ))}
           </ul>
-        )}
+        </QueryState>
       </SectionCard>
 
       {creating && (

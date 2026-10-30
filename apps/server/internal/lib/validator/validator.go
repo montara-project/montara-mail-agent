@@ -1,5 +1,7 @@
 package validator
 
+import "maps"
+
 type MapValidator struct {
 	fvs map[string]*FieldValidator
 }
@@ -12,9 +14,9 @@ func NewMapValidator() *MapValidator {
 func (v *MapValidator) Validate(dict map[string]interface{}) (MessageRecord, bool) {
 	mr := make(MessageRecord)
 	for key, fv := range v.fvs {
-		mr = mr.Append(fv.Validate(dict[key]))
+		maps.Copy(mr, fv.Validate(dict[key]))
 	}
-	return mr, mr.Empty()
+	return mr, len(mr) == 0
 }
 
 func (v *MapValidator) Field(key string) *FieldValidator {

@@ -163,9 +163,11 @@ func (c anthropicClient) Chat(ctx context.Context, req ChatRequest) (ChatResult,
 		System:    []anthropic.TextBlockParam{{Text: req.System}},
 		Messages:  messages,
 	}
-	if tools, err := chatTools(req.Tools); err != nil {
+	tools, err := chatTools(req.Tools)
+	if err != nil {
 		return ChatResult{}, err
-	} else if len(tools) > 0 {
+	}
+	if len(tools) > 0 {
 		params.Tools = tools
 	}
 

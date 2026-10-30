@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 
 import { cn } from '@/lib/utils'
 
@@ -39,7 +39,6 @@ export default function ThinkingState({
   rows,
   active = 'Thinking',
   done = 'Done',
-  icon,
   className,
 }: {
   /** the trace is live: header shimmers, newest step spins */
@@ -50,8 +49,6 @@ export default function ThinkingState({
   active?: string
   /** header once settled */
   done?: string
-  /** override the header glyph (defaults to the sparkle) */
-  icon?: ReactNode
   className?: string
 }) {
   // null follows the work (open while working); a click pins it.
@@ -72,24 +69,15 @@ export default function ThinkingState({
         onClick={() => setManualExpanded(!expanded)}
         className="rounded-control hover:bg-hover-2 -mx-1.5 flex w-fit items-center gap-2 px-1.5 py-1 transition-colors duration-100 disabled:cursor-default disabled:hover:bg-transparent"
       >
-        {icon ? (
-          <span
-            className="flex shrink-0 transition-colors duration-200"
-            style={{ color: working ? 'var(--accent-ink)' : 'var(--ink-3)' }}
-          >
-            {icon}
-          </span>
-        ) : (
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill={working ? 'var(--accent-ink)' : 'var(--ink-3)'}
-            aria-hidden
-          >
-            <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z" />
-          </svg>
-        )}
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill={working ? 'var(--accent-ink)' : 'var(--ink-3)'}
+          aria-hidden
+        >
+          <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z" />
+        </svg>
         <span role="status" className="contents">
           {working ? (
             <span

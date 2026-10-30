@@ -12,10 +12,8 @@ import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { useAppForm } from '@/hooks/form'
-import { useActiveOrganization } from '@/hooks/use-active-organization'
 import { useHideEmails } from '@/hooks/use-hide-emails'
 import { toastAxiosError } from '@/lib/api/axios-error'
-import { OrganizationFormSchema } from '@/lib/api/dtos/organization/schema'
 import { parseDto } from '@/lib/api/dtos/parse'
 import { UpdateProfileSchema } from '@/lib/api/dtos/settings/profile/schema'
 import { queries } from '@/lib/api/queries'
@@ -112,44 +110,6 @@ function ProfileForm({ user }: { user: Models.User }) {
   )
 }
 
-function OrganizationForm({ organization }: { organization: Models.Organization }) {
-  const update = useMutation(queries.organizations.update(organization.id))
-
-  const form = useAppForm({
-    defaultValues: { name: organization.name },
-    validators: { onSubmit: OrganizationFormSchema, onChange: OrganizationFormSchema },
-    onSubmit: async ({ value }) => {
-      try {
-        await update.mutateAsync(parseDto(OrganizationFormSchema, value))
-        toast.success('Organization renamed')
-      } catch (error) {
-        toastAxiosError(error)
-      }
-    },
-  })
-
-  return (
-    <form
-      className="grid max-w-xl gap-4"
-      onSubmit={(e) => {
-        e.preventDefault()
-        form.handleSubmit()
-      }}
-    >
-      <form.AppField
-        name="name"
-        children={(field) => <field.TextField asterisk label="Organization name" />}
-      />
-      <FieldDescription>Only the organization's owner can rename it.</FieldDescription>
-      <div>
-        <form.AppForm>
-          <form.SubmitButton label="Save" />
-        </form.AppForm>
-      </div>
-    </form>
-  )
-}
-
 /** The signed-in user's name and avatar. */
 export default function GeneralSettings() {
   const { data: me, isPending } = useQuery(queries.auth.profile())
@@ -189,24 +149,6 @@ function PrivacySettings() {
         </div>
         <Switch id="hide-emails" checked={hidden} onCheckedChange={setHidden} />
       </div>
-    </SectionCard>
-  )
-}
-
-/** The active organization's name. */
-export function OrganizationSettings() {
-  const { organization } = useActiveOrganization()
-
-  return (
-    <SectionCard title="Organization" description={organization?.name}>
-      {organization ? (
-        <OrganizationForm
-          key={`${organization.id}:${organization.updated_at}`}
-          organization={organization}
-        />
-      ) : (
-        <p className="text-muted-foreground text-sm">Create an organization first.</p>
-      )}
     </SectionCard>
   )
 }

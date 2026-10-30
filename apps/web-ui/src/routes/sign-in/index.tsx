@@ -1,5 +1,5 @@
-import { IconLoader2 } from '@tabler/icons-react'
 import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { Loader2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import LoginForm from '@/components/block/auth/login-form'
@@ -46,7 +46,7 @@ function RouteComponent() {
       <div className="w-full max-w-sm">
         {exchanging ? (
           <div className="flex flex-col items-center gap-3 text-center">
-            <IconLoader2 className="text-muted-foreground size-6 animate-spin" />
+            <Loader2 className="text-muted-foreground size-6 animate-spin" />
             <p className="text-muted-foreground text-sm">Finishing Google sign-in…</p>
           </div>
         ) : (

@@ -55,7 +55,7 @@ import { queries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
 
 /** The page sizes the list offers; the server caps a page at 100. */
-export const PAGE_SIZES = [10, 25, 50, 100] as const
+const PAGE_SIZES = [10, 25, 50, 100] as const
 export const DEFAULT_PAGE_SIZE = 25
 
 /** A ?limit= from the URL as a page size, the default for anything else. */
@@ -358,6 +358,9 @@ export default function MailList({ className }: { className?: string }) {
   const selectedMails = mails.filter((mail) => selected.has(mail.id))
   const allSelected = mails.length > 0 && selectedMails.length === mails.length
   const selecting = selectedMails.length > 0
+  let selectAllState: boolean | 'indeterminate' = false
+  if (allSelected) selectAllState = true
+  else if (selecting) selectAllState = 'indeterminate'
   const toggle = (id: string, on: boolean) =>
     setSelected((prev) => {
       const next = new Set(prev)
@@ -426,6 +429,8 @@ export default function MailList({ className }: { className?: string }) {
           className={cn(
             'hover:bg-accent/50 relative grid border-b px-4 py-4 text-sm',
             ROW_COLUMNS,
+            // Unread mail is tinted, so it stands out without reading the dot.
+            !mail.is_read && 'bg-blue-500/[0.06] dark:bg-blue-400/[0.08]',
             isSelected && 'bg-accent/40',
             selectedId === mail.id && 'bg-accent hover:bg-accent'
           )}
@@ -443,7 +448,7 @@ export default function MailList({ className }: { className?: string }) {
           <span className="absolute start-0 top-4 flex h-5 w-4 items-center justify-center">
             {!mail.is_read && (
               <>
-                <span className="bg-primary size-2 rounded-full" aria-hidden />
+                <span className="size-2.5 rounded-full bg-blue-500 dark:bg-blue-400" aria-hidden />
                 <span className="sr-only">Unread,</span>
               </>
             )}
@@ -458,7 +463,9 @@ export default function MailList({ className }: { className?: string }) {
             to="/mail"
             search={(prev) => ({ ...prev, mail: mail.id })}
             aria-current={selectedId === mail.id ? 'page' : undefined}
-            className="grid min-w-0 gap-1 outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px] focus-visible:after:ring-ring/50 focus-visible:after:ring-inset"
+            // grid-cols-1 is minmax(0, 1fr): an implicit auto column would grow to
+            // a long sender's full width and push the row sideways.
+            className="grid min-w-0 grid-cols-1 gap-1 outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px] focus-visible:after:ring-ring/50 focus-visible:after:ring-inset"
           >
             <div className="flex items-center gap-1.5">
               <span
@@ -478,7 +485,9 @@ export default function MailList({ className }: { className?: string }) {
                 {formatMailListDate(mail.received_at)}
               </span>
             </div>
-            <span className="truncate font-medium">{mail.subject || '(no subject)'}</span>
+            <span className={cn('truncate', mail.is_read ? 'font-medium' : 'font-semibold')}>
+              {mail.subject || '(no subject)'}
+            </span>
             {mail.teaser && (
               <span className="text-muted-foreground line-clamp-2">{mail.teaser}</span>
             )}
@@ -494,7 +503,7 @@ export default function MailList({ className }: { className?: string }) {
         <div className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
           {mails.length > 0 && (
             <Checkbox
-              checked={allSelected ? true : selecting ? 'indeterminate' : false}
+              checked={selectAllState}
               onCheckedChange={() =>
                 setSelected(allSelected ? new Set() : new Set(mails.map((mail) => mail.id)))
               }

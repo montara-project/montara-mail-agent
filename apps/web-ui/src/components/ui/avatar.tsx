@@ -1,27 +1,9 @@
 'use client'
 
-import { cva, type VariantProps } from 'class-variance-authority'
 import { Avatar as AvatarPrimitive } from 'radix-ui'
 import * as React from 'react'
 
 import { cn } from '@/lib/utils'
-
-const avatarStatusVariants = cva(
-  'flex items-center rounded-full size-2 border-2 border-background',
-  {
-    variants: {
-      variant: {
-        online: 'bg-green-600',
-        offline: 'bg-zinc-400 dark:bg-zinc-500',
-        busy: 'bg-yellow-600',
-        away: 'bg-blue-600',
-      },
-    },
-    defaultVariants: {
-      variant: 'online',
-    },
-  }
-)
 
 function Avatar({ className, ...props }: React.ComponentProps<typeof AvatarPrimitive.Root>) {
   return (
@@ -61,28 +43,4 @@ function AvatarFallback({
   )
 }
 
-function AvatarIndicator({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      data-slot="avatar-indicator"
-      className={cn('absolute flex size-6 items-center justify-center', className)}
-      {...props}
-    />
-  )
-}
-
-function AvatarStatus({
-  className,
-  variant,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof avatarStatusVariants>) {
-  return (
-    <div
-      data-slot="avatar-status"
-      className={cn(avatarStatusVariants({ variant }), className)}
-      {...props}
-    />
-  )
-}
-
-export { Avatar, AvatarFallback, AvatarImage, AvatarIndicator, AvatarStatus, avatarStatusVariants }
+export { Avatar, AvatarFallback, AvatarImage }

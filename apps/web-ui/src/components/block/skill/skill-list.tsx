@@ -1,4 +1,3 @@
-import { IconPlus } from '@tabler/icons-react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import {
   FileText,
@@ -6,6 +5,7 @@ import {
   Languages,
   Newspaper,
   PenLine,
+  Plus,
   RefreshCw,
   Reply,
   Send,
@@ -316,7 +316,7 @@ export default function SkillList({ organizationId }: { organizationId: string }
             description="Your own instructions, run on one email at a time."
             action={
               <Button className="h-8.5 rounded-lg" onClick={() => setOpenAdd(true)}>
-                <IconPlus />
+                <Plus />
                 <span>Add</span>
               </Button>
             }

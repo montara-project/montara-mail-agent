@@ -1,6 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { format } from 'date-fns'
 import {
   Archive,
   ArrowLeft,
@@ -52,6 +51,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useActiveAgentBot } from '@/hooks/use-active-agent-bot'
 import { axiosErrorMessage, toastAxiosError, toastProgress } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
+import { clock, monthDay } from '@/lib/date'
 import { cn } from '@/lib/utils'
 
 function IconButton({ label, ...props }: React.ComponentProps<typeof Button> & { label: string }) {
@@ -371,7 +371,7 @@ export default function MailReader({ mailId }: { mailId: string }) {
             )}
           </div>
           <div className="text-muted-foreground flex shrink-0 items-center gap-0.5 text-sm @max-lg:ms-13">
-            <span className="mr-1.5">{format(new Date(mail.received_at), 'MMM d, HH.mm')}</span>
+            <span className="mr-1.5">{`${monthDay(new Date(mail.received_at))}, ${clock(new Date(mail.received_at), '.')}`}</span>
             <IconButton label="Print" onClick={() => printMail(mail)}>
               <Printer />
             </IconButton>

@@ -1,4 +1,4 @@
-import { IconLoader2 } from '@tabler/icons-react'
+import { Loader2 } from 'lucide-react'
 import React, { useMemo } from 'react'
 
 import {
@@ -80,7 +80,7 @@ export default function SimpleAlertScrollableDialogForm({
               {cancelText}
             </Button>
             <Button type="submit" variant="primary" disabled={loading || disabled}>
-              {loading && <IconLoader2 className="animate-spin" />}
+              {loading && <Loader2 className="animate-spin" />}
               {loading ? 'Loading...' : confirmText}
             </Button>
           </AlertDialogFooter>

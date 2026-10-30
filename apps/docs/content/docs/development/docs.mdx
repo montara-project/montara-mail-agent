@@ -3,7 +3,7 @@ title: Writing these docs
 description: Where the pages live, and how to preview and publish them.
 ---
 
-The docs are `apps/docs`, a Next.js app built with [Fumadocs](https://fumadocs.dev) and exported as static files.
+The docs are `apps/docs`, a [TanStack Start](https://tanstack.com/start) app built with [Fumadocs](https://fumadocs.dev). Every page is prerendered at build time, and the app runs as a Cloudflare Worker.
 
 ## Pages
 
@@ -17,11 +17,12 @@ The docs are `apps/docs`, a Next.js app built with [Fumadocs](https://fumadocs.d
 ```sh
 pnpm --filter @montara-mail/docs dev          # http://localhost:3001
 pnpm --filter @montara-mail/docs typecheck
-pnpm --filter @montara-mail/docs build        # static site in apps/docs/out
+pnpm --filter @montara-mail/docs build        # prerenders every page into apps/docs/.cloudflare/output
+pnpm --filter @montara-mail/docs start        # serves that build in the Workers runtime
 ```
 
-Search, `llms.txt` and `llms-full.txt` are generated at build time.
+Search, `llms.txt` and `llms-full.txt` are generated at build time. A link to a page that doesn't exist fails the build. The Worker renders each page's Markdown copy and Open Graph image on request.
 
 ## Publish
 
-The **Release** workflow builds the site and deploys `out/` to Cloudflare Workers as static assets (`apps/docs/wrangler.jsonc`), at `docs.montaramail.web.id`. Run the workflow by hand to publish a docs change without a release.
+The **Release** workflow builds the site and deploys it with `cf deploy` as the Worker described in `apps/docs/cloudflare.config.ts`, at `docs.montaramail.web.id`. Run the workflow by hand to publish a docs change without a release.

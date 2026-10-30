@@ -80,6 +80,14 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     // The color scheme follows the OS: globals.css swaps the token set inside
     // `prefers-color-scheme: dark`, so no theme class is set here.
     <html lang="en">
+      <head>
+        {/* Cookieless visit counts (see the Privacy Policy). */}
+        <script
+          defer
+          src="https://analytics.masb0ymas.com/script.js"
+          data-website-id="00f68333-a04a-4545-be39-495a293d3883"
+        />
+      </head>
       <body>
         <div className="flex min-h-svh flex-col overflow-x-clip">
           <a

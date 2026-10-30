@@ -1,8 +1,8 @@
 import type { VariantProps } from 'class-variance-authority'
 import type { ChangeEvent } from 'react'
 
-import { IconCheck } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-form'
+import { type LucideIcon } from 'lucide-react'
 
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input, inputVariants, InputWrapper } from '@/components/ui/input'
@@ -13,7 +13,7 @@ type InputProps = React.ComponentProps<'input'> & VariantProps<typeof inputVaria
 type TextFieldProps = InputProps & {
   label?: string
   onChange?: (value: string) => void
-  icon?: typeof IconCheck
+  icon?: LucideIcon
   asterisk?: boolean
 }
 

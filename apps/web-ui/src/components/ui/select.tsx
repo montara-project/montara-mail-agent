@@ -31,10 +31,6 @@ const Select = ({
   )
 }
 
-function SelectGroup({ ...props }: React.ComponentProps<typeof SelectPrimitive.Group>) {
-  return <SelectPrimitive.Group data-slot="select-group" {...props} />
-}
-
 function SelectValue({ ...props }: React.ComponentProps<typeof SelectPrimitive.Value>) {
   return <SelectPrimitive.Value data-slot="select-value" {...props} />
 }
@@ -63,7 +59,7 @@ const selectTriggerVariants = cva(
   }
 )
 
-export interface SelectTriggerProps
+interface SelectTriggerProps
   extends
     React.ComponentProps<typeof SelectPrimitive.Trigger>,
     VariantProps<typeof selectTriggerVariants> {}
@@ -148,16 +144,6 @@ function SelectContent({
   )
 }
 
-function SelectLabel({ className, ...props }: React.ComponentProps<typeof SelectPrimitive.Label>) {
-  return (
-    <SelectPrimitive.Label
-      data-slot="select-label"
-      className={cn('text-muted-foreground py-1.5 ps-8 pe-2 text-xs font-medium', className)}
-      {...props}
-    />
-  )
-}
-
 function SelectItem({
   className,
   children,
@@ -195,51 +181,4 @@ function SelectItem({
   )
 }
 
-function SelectIndicator({
-  children,
-  className,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.ItemIndicator>) {
-  const { indicatorPosition } = React.useContext(SelectContext)
-
-  return (
-    <span
-      data-slot="select-indicator"
-      className={cn(
-        'absolute top-1/2 flex -translate-y-1/2 items-center justify-center',
-        indicatorPosition === 'left' ? 'start-2' : 'end-2',
-        className
-      )}
-      {...props}
-    >
-      <SelectPrimitive.ItemIndicator>{children}</SelectPrimitive.ItemIndicator>
-    </span>
-  )
-}
-
-function SelectSeparator({
-  className,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Separator>) {
-  return (
-    <SelectPrimitive.Separator
-      data-slot="select-separator"
-      className={cn('bg-border -mx-1.5 my-1.5 h-px', className)}
-      {...props}
-    />
-  )
-}
-
-export {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectIndicator,
-  SelectItem,
-  SelectLabel,
-  SelectScrollDownButton,
-  SelectScrollUpButton,
-  SelectSeparator,
-  SelectTrigger,
-  SelectValue,
-}
+export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue }

@@ -29,55 +29,6 @@ const inputVariants = cva(
   }
 )
 
-const inputAddonVariants = cva(
-  'flex items-center shrink-0 justify-center bg-muted border border-input shadow-xs shadow-[rgba(0,0,0,0.05)] text-secondary-foreground [&_svg]:text-secondary-foreground/60',
-  {
-    variants: {
-      variant: {
-        xl: 'rounded-lg h-12 min-w-12 px-4 text-base [&_svg:not([class*=size-])]:size-4.5',
-        lg: 'rounded-md h-10 min-w-10 px-4 text-sm [&_svg:not([class*=size-])]:size-4.5',
-        md: 'rounded-md h-9 min-w-9 px-3 text-sm [&_svg:not([class*=size-])]:size-4.5',
-        sm: 'rounded-md h-8 min-w-7 text-xs px-2.5 [&_svg:not([class*=size-])]:size-3.5',
-      },
-      mode: {
-        default: '',
-        icon: 'px-0 justify-center',
-      },
-    },
-    defaultVariants: {
-      variant: 'md',
-      mode: 'default',
-    },
-  }
-)
-
-const inputGroupVariants = cva(
-  `
-    flex items-stretch
-    [&_[data-slot=input]]:grow
-    [&_[data-slot=input-addon]:has(+[data-slot=input])]:rounded-e-none [&_[data-slot=input-addon]:has(+[data-slot=input])]:border-e-0
-    [&_[data-slot=input-addon]:has(+[data-slot=datefield])]:rounded-e-none [&_[data-slot=input-addon]:has(+[data-slot=datefield])]:border-e-0 
-    [&_[data-slot=input]+[data-slot=input-addon]]:rounded-s-none [&_[data-slot=input]+[data-slot=input-addon]]:border-s-0
-    [&_[data-slot=input-addon]:has(+[data-slot=button])]:rounded-e-none
-    [&_[data-slot=input]+[data-slot=button]]:rounded-s-none
-    [&_[data-slot=button]+[data-slot=input]]:rounded-s-none
-    [&_[data-slot=input-addon]+[data-slot=input]]:rounded-s-none
-    [&_[data-slot=input-addon]+[data-slot=datefield]]:[&_[data-slot=input]]:rounded-s-none
-    [&_[data-slot=datefield]:has(+[data-slot=input-addon])]:[&_[data-slot=input]]:rounded-e-none
-    [&_[data-slot=input]:has(+[data-slot=button])]:rounded-e-none
-    [&_[data-slot=input]:has(+[data-slot=input-addon])]:rounded-e-none
-    [&_[data-slot=datefield]]:grow
-    [&_[data-slot=datefield]+[data-slot=input-addon]]:rounded-s-none 
-    [&_[data-slot=datefield]+[data-slot=input-addon]]:border-s-0
-    [&_[data-slot=datefield]:has(~[data-slot=input-addon])]:[&_[data-slot=input]]:rounded-e-none
-    [&_[data-slot=datefield]~[data-slot=input-addon]]:rounded-s-none
-  `,
-  {
-    variants: {},
-    defaultVariants: {},
-  }
-)
-
 const inputWrapperVariants = cva(
   `
     flex items-center gap-1.5
@@ -144,28 +95,6 @@ function Input({
   )
 }
 
-function InputAddon({
-  className,
-  variant,
-  mode,
-  ...props
-}: React.ComponentProps<'div'> & VariantProps<typeof inputAddonVariants>) {
-  return (
-    <div
-      data-slot="input-addon"
-      className={cn(inputAddonVariants({ variant, mode }), className)}
-      {...props}
-    />
-  )
-}
-
-function InputGroup({
-  className,
-  ...props
-}: React.ComponentProps<'div'> & VariantProps<typeof inputGroupVariants>) {
-  return <div data-slot="input-group" className={cn(inputGroupVariants(), className)} {...props} />
-}
-
 function InputWrapper({
   className,
   variant,
@@ -180,4 +109,4 @@ function InputWrapper({
   )
 }
 
-export { Input, InputAddon, inputAddonVariants, InputGroup, inputVariants, InputWrapper }
+export { Input, inputVariants, InputWrapper }

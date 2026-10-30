@@ -1,13 +1,12 @@
-import { IconPlus } from '@tabler/icons-react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { formatDistanceToNow } from 'date-fns'
-import { RefreshCw, ShieldBan, Trash2 } from 'lucide-react'
+import { Plus, ShieldBan, Trash2 } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
 
 import EmptyState from '@/components/block/common/empty-state'
+import QueryState from '@/components/block/common/query-state'
 import SectionCard from '@/components/block/common/section-card'
 import SectionHeading from '@/components/block/common/section-heading'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
@@ -17,10 +16,11 @@ import { Button } from '@/components/ui/button'
 import { FieldDescription } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAppForm } from '@/hooks/form'
-import { axiosErrorMessage, toastAxiosError } from '@/lib/api/axios-error'
+import { toastAxiosError } from '@/lib/api/axios-error'
 import { parseDto } from '@/lib/api/dtos/parse'
 import { IP_BLOCK_DURATIONS, IPBlockSchema } from '@/lib/api/dtos/settings/ip-block/schema'
 import { queries } from '@/lib/api/queries'
+import { timeAgo } from '@/lib/date'
 
 const DURATION_OPTIONS = IP_BLOCK_DURATIONS.map((hours) => ({
   value: hours,
@@ -33,7 +33,7 @@ const DURATION_OPTIONS = IP_BLOCK_DURATIONS.map((hours) => ({
   }[hours],
 }))
 
-const ago = (iso: string) => formatDistanceToNow(new Date(iso), { addSuffix: true })
+const ago = (iso: string) => timeAgo(new Date(iso))
 
 /** "Blocked 3 minutes ago by you@… · Lifts in about 1 hour". */
 function BlockMeta({ block }: { block: Models.IPBlock }) {
@@ -207,35 +207,33 @@ export default function IPBlockList() {
         }
         action={
           <Button className="h-8.5 rounded-lg" onClick={() => setBlocking(true)}>
-            <IconPlus />
+            <Plus />
             <span>Block address</span>
           </Button>
         }
       />
 
       <SectionCard>
-        {isPending ? (
-          <Loading />
-        ) : isError ? (
-          <div role="alert" className="grid justify-items-center gap-3 p-6 text-center text-sm">
-            <p className="text-destructive">{axiosErrorMessage(error)}</p>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <RefreshCw />
-              Try again
-            </Button>
-          </div>
-        ) : blocks.length === 0 ? (
-          <EmptyState
-            title="No blocked addresses"
-            description="Addresses you block, and the ones the server blocks on its own, show here."
-          />
-        ) : (
+        <QueryState
+          isPending={isPending}
+          isError={isError}
+          error={error}
+          onRetry={() => refetch()}
+          isEmpty={blocks.length === 0}
+          loading={<Loading />}
+          empty={
+            <EmptyState
+              title="No blocked addresses"
+              description="Addresses you block, and the ones the server blocks on its own, show here."
+            />
+          }
+        >
           <ul className="-m-4 divide-y overflow-hidden rounded-lg">
             {blocks.map((block) => (
               <BlockRow key={block.id} block={block} />
             ))}
           </ul>
-        )}
+        </QueryState>
       </SectionCard>
 
       {blocking && (

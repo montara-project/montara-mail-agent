@@ -1,6 +1,5 @@
 'use client'
 
-import { MoreHorizontal } from 'lucide-react'
 import * as React from 'react'
 
 import { cn } from '@/lib/utils'
@@ -29,16 +28,4 @@ function PaginationItem({ className, ...props }: React.ComponentProps<'li'>) {
   return <li data-slot="pagination-item" className={cn('', className)} {...props} />
 }
 
-const PaginationEllipsis = ({ className, ...props }: React.ComponentProps<'span'>) => (
-  <span
-    data-slot="pagination-ellipsis"
-    aria-hidden
-    className={cn('flex h-9 w-9 items-center justify-center', className)}
-    {...props}
-  >
-    <MoreHorizontal className="h-4 w-4" />
-    <span className="sr-only">More pages</span>
-  </span>
-)
-
-export { Pagination, PaginationContent, PaginationEllipsis, PaginationItem }
+export { Pagination, PaginationContent, PaginationItem }

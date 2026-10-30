@@ -6,7 +6,7 @@ import type { AgentSkillFormDto, BuiltinSkillDto } from '../dtos/agent-skill/sch
 
 import { services } from '../services'
 
-export const AGENT_SKILL_QUERY_KEY = 'agent-skills'
+const AGENT_SKILL_QUERY_KEY = 'agent-skills'
 
 const list = (orgId: string) =>
   queryOptions({

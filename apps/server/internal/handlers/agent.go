@@ -278,10 +278,13 @@ func (h *agentHandler) Chat(c fiber.Ctx) error {
 		}
 		s.OrganizationID = conv.OrganizationID
 		skill = &s
-		if bot, err = skillBot(c, h.app, s, body.AgentBotID); err != nil {
-			return err
-		}
-	} else if bot, err = orgBot(c, h.app, conv.OrganizationID, body.AgentBotID); err != nil {
+	}
+	if skill != nil {
+		bot, err = skillBot(c, h.app, *skill, body.AgentBotID)
+	} else {
+		bot, err = orgBot(c, h.app, conv.OrganizationID, body.AgentBotID)
+	}
+	if err != nil {
 		return err
 	}
 

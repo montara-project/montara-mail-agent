@@ -40,7 +40,7 @@ func TestRules(t *testing.T) {
 		if pass != tc.pass {
 			t.Errorf("%s: pass=%v, want %v (mr=%v)", tc.name, pass, tc.pass, mr)
 		}
-		if pass && !mr.Empty() {
+		if pass && len(mr) != 0 {
 			t.Errorf("%s: passing validation returned messages %v", tc.name, mr)
 		}
 		if !pass && len(mr["f"]) == 0 {

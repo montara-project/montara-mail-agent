@@ -77,19 +77,6 @@ function CommandGroup({
   )
 }
 
-function CommandSeparator({
-  className,
-  ...props
-}: React.ComponentProps<typeof CommandPrimitive.Separator>) {
-  return (
-    <CommandPrimitive.Separator
-      data-slot="command-separator"
-      className={cn('bg-border -mx-1.5 h-px', className)}
-      {...props}
-    />
-  )
-}
-
 function CommandItem({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.Item>) {
   return (
     <CommandPrimitive.Item
@@ -99,16 +86,6 @@ function CommandItem({ className, ...props }: React.ComponentProps<typeof Comman
         '[&_svg:not([role=img]):not([class*=text-])]:opacity-60',
         className
       )}
-      {...props}
-    />
-  )
-}
-
-const CommandShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => {
-  return (
-    <span
-      data-slot="command-shortcut"
-      className={cn('text-muted-foreground ms-auto text-xs tracking-widest', className)}
       {...props}
     />
   )
@@ -129,14 +106,4 @@ function CommandCheck({ icon: Icon = Check, className, ...props }: CommandCheckP
   )
 }
 
-export {
-  Command,
-  CommandCheck,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-  CommandShortcut,
-}
+export { Command, CommandCheck, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList }

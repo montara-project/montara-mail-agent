@@ -1,5 +1,3 @@
-import { format } from 'date-fns'
-
 import type { Models } from '@/lib/api/models'
 
 import { senderName } from '@/components/layout/mail/mail-data'
@@ -41,7 +39,7 @@ export function printMail(mail: Models.Mail) {
   <div><b>From:</b> ${sender}</div>
   ${mail.to.length ? `<div><b>To:</b> ${contacts(mail.to)}</div>` : ''}
   ${mail.cc.length ? `<div><b>Cc:</b> ${contacts(mail.cc)}</div>` : ''}
-  <div><b>Date:</b> ${escape(format(new Date(mail.received_at), 'PPpp'))}</div>
+  <div><b>Date:</b> ${escape(new Date(mail.received_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'medium' }))}</div>
 </div>
 ${body}`
 

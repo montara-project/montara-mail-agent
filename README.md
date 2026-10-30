@@ -17,7 +17,7 @@ A pnpm workspace with four apps:
 | [`apps/server`](apps/server)     | The API: auth, organizations, IMAP sync, SMTP send, AI features, activity log. Also serves the web app in production. | Go 1.27, Fiber v3, PostgreSQL 18, [Authula](https://github.com/Authula/authula), golang-migrate |
 | [`apps/web-ui`](apps/web-ui)     | The mail client (SPA).                                                                             | React, Vite, TanStack Router/Query/Form, Tailwind, Lexical  |
 | [`apps/main-web`](apps/main-web) | The marketing site: home, contact, privacy, terms.                                                 | vinext on Cloudflare Workers                                |
-| [`apps/docs`](apps/docs)         | The docs at <https://docs.montaramail.web.id>: using, self-hosting, the API, development.          | Next.js + Fumadocs, static export on Cloudflare Workers     |
+| [`apps/docs`](apps/docs)         | The docs at <https://docs.montaramail.web.id>: using, self-hosting, the API, development.          | TanStack Start + Fumadocs, prerendered, on Cloudflare Workers |
 
 [`apps/server/README.md`](apps/server/README.md) covers the API in depth:
 every environment variable, the routes, authentication, idempotent writes

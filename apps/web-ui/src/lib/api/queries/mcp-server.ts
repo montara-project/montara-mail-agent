@@ -7,7 +7,7 @@ import type { MCPServerBody } from '../services/types/mcp-server'
 
 import { services } from '../services'
 
-export const MCP_SERVER_QUERY_KEY = 'mcp-servers'
+const MCP_SERVER_QUERY_KEY = 'mcp-servers'
 
 const invalidate = () => getQueryClient().invalidateQueries({ queryKey: [MCP_SERVER_QUERY_KEY] })
 

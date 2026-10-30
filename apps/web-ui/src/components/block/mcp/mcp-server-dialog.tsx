@@ -153,11 +153,7 @@ function parseImport(text: string): Draft {
     }
   }
   const url =
-    typeof entry.url === 'string'
-      ? entry.url
-      : typeof entry.serverUrl === 'string'
-        ? entry.serverUrl
-        : ''
+    [entry.url, entry.serverUrl].find((value): value is string => typeof value === 'string') ?? ''
   if (!url) throw new Error('The server has neither a url nor a command.')
   const headers = pairs(entry.headers)
   return { ...emptyDraft(headers.length ? 'http' : 'hosted'), name: slugify(name), url, headers }
@@ -266,6 +262,10 @@ export default function MCPServerDialog({
 
   const kind = KINDS.find((k) => k.kind === draft.kind)!
   const error = draftError(draft)
+  let submitLabel = 'Add server'
+  if (saving) submitLabel = 'Saving…'
+  else if (server) submitLabel = 'Save'
+  else if (draft.kind === 'hosted') submitLabel = 'Add and sign in'
   const patch = (next: Partial<Draft>) => {
     setDraft((d) => ({ ...d, ...next }))
     test.reset()
@@ -332,15 +332,15 @@ export default function MCPServerDialog({
     }
   }
 
-  const testResult = test.isSuccess
-    ? `Connected: ${test.data.tool_count} ${test.data.tool_count === 1 ? 'tool' : 'tools'}${
-        test.data.tools?.length
-          ? ` (${test.data.tools.slice(0, 4).join(', ')}${test.data.tools.length > 4 ? ', …' : ''})`
-          : ''
-      }.`
-    : test.isError
-      ? axiosErrorMessage(test.error)
-      : undefined
+  let testResult: string | undefined
+  if (test.isSuccess) {
+    const { tool_count: count, tools = [] } = test.data
+    const more = tools.length > 4 ? ', …' : ''
+    const names = tools.length ? ` (${tools.slice(0, 4).join(', ')}${more})` : ''
+    testResult = `Connected: ${count} ${count === 1 ? 'tool' : 'tools'}${names}.`
+  } else if (test.isError) {
+    testResult = axiosErrorMessage(test.error)
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -557,13 +557,7 @@ export default function MCPServerDialog({
                       Cancel
                     </Button>
                     <Button type="submit" disabled={!!error || saving} title={error}>
-                      {saving
-                        ? 'Saving…'
-                        : server
-                          ? 'Save'
-                          : draft.kind === 'hosted'
-                            ? 'Add and sign in'
-                            : 'Add server'}
+                      {submitLabel}
                     </Button>
                   </div>
                 </div>

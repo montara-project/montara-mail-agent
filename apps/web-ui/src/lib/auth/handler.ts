@@ -1,67 +1,42 @@
 import { redirect } from '@tanstack/react-router'
 
-import type { AuthSession } from '@/types/auth'
-
 import { queries } from '../api/queries'
 import { getQueryClient } from '../providers/react-query'
 import { getStoredAccessToken, getStoredRefreshToken } from './token-storage'
 
 /**
- * Read the session issued by our own backend.
+ * Whether our own backend still knows this browser.
  *
- * Tokens live in cookies (see `token-storage.ts`). The user comes from the
- * shared profile query, so the route guard and the sidebar ask the API once.
+ * Tokens live in cookies (see `token-storage.ts`). The check loads the shared
+ * profile query, so the route guard and the sidebar ask the API once.
  */
-async function getBackendSession(): Promise<AuthSession | null> {
-  const accessToken = getStoredAccessToken()
-  const refreshToken = getStoredRefreshToken()
-
+async function hasSession(): Promise<boolean> {
   // The access-token cookie expires with the token; a refresh token alone is
   // still a session, since the axios interceptor trades it on the first 401.
-  if (!accessToken && !refreshToken) {
-    return null
-  }
+  if (!getStoredAccessToken() && !getStoredRefreshToken()) return false
 
   try {
-    // Authula answers GET /me unwrapped: { user, session }.
-    const profile = await getQueryClient().ensureQueryData(queries.auth.profile())
-    // Read again: the request above may have rotated the tokens.
-    const token = getStoredAccessToken() ?? ''
-
-    return {
-      user: profile.user,
-      session: { token },
-      data: {
-        accessToken: token,
-        refreshToken: getStoredRefreshToken() ?? undefined,
-        provider: 'custom' as const,
-      },
-    }
+    await getQueryClient().ensureQueryData(queries.auth.profile())
+    return true
   } catch {
-    return null
+    return false
   }
 }
 
 /**
  * Require authentication and redirect to sign-in if not authenticated.
  */
-export async function requireSession(): Promise<AuthSession> {
-  const session = await getBackendSession()
-
-  if (!session) {
+export async function requireSession() {
+  if (!(await hasSession())) {
     throw redirect({ to: '/sign-in', replace: true })
   }
-
-  return session
 }
 
 /**
  * Redirect to `href` if the user is already authenticated.
  */
 export async function redirectIfAuthenticated(href: string) {
-  const session = await getBackendSession()
-
-  if (session) {
+  if (await hasSession()) {
     throw redirect({ to: href })
   }
 }

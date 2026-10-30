@@ -1,5 +1,5 @@
-import { IconPlus, IconSearch } from '@tabler/icons-react'
 import { useMutation } from '@tanstack/react-query'
+import { Plus, SearchIcon } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
@@ -109,7 +109,7 @@ export default function OrganizationList() {
       toolbar={
         <div className="flex flex-row items-center gap-2">
           <InputWrapper className="w-56">
-            <IconSearch />
+            <SearchIcon />
             <Input
               placeholder="Search organizations..."
               aria-label="Search organizations"
@@ -118,7 +118,7 @@ export default function OrganizationList() {
             />
           </InputWrapper>
           <Button className="h-8.5 rounded-lg" onClick={() => setOpenAdd(true)}>
-            <IconPlus />
+            <Plus />
             <span>Add</span>
           </Button>
         </div>

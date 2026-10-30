@@ -61,30 +61,6 @@ const cardContentVariants = cva('grow p-5', {
   },
 })
 
-const cardTableVariants = cva('grid grow', {
-  variants: {
-    variant: {
-      default: '',
-      accent: 'bg-card rounded-xl',
-    },
-  },
-  defaultVariants: {
-    variant: 'default',
-  },
-})
-
-const cardFooterVariants = cva('flex items-center px-5 min-h-14', {
-  variants: {
-    variant: {
-      default: 'border-t border-border',
-      accent: 'bg-card rounded-b-xl mt-[2px]',
-    },
-  },
-  defaultVariants: {
-    variant: 'default',
-  },
-})
-
 // Card Component
 function Card({
   className,
@@ -117,30 +93,6 @@ function CardContent({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
     <div
       data-slot="card-content"
       className={cn(cardContentVariants({ variant }), className)}
-      {...props}
-    />
-  )
-}
-
-// CardTable Component
-function CardTable({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  const { variant } = useCardContext()
-  return (
-    <div
-      data-slot="card-table"
-      className={cn(cardTableVariants({ variant }), className)}
-      {...props}
-    />
-  )
-}
-
-// CardFooter Component
-function CardFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  const { variant } = useCardContext()
-  return (
-    <div
-      data-slot="card-footer"
-      className={cn(cardFooterVariants({ variant }), className)}
       {...props}
     />
   )
@@ -182,14 +134,4 @@ function CardDescription({ className, ...props }: React.HTMLAttributes<HTMLDivEl
 }
 
 // Exports
-export {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardHeading,
-  CardTable,
-  CardTitle,
-  CardToolbar,
-}
+export { Card, CardContent, CardDescription, CardHeader, CardHeading, CardTitle, CardToolbar }

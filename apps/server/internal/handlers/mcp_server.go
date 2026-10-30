@@ -152,16 +152,18 @@ func (h *mcpServerHandler) build(body dtos.MCPServerBody, saved *models.MCPServe
 			return s, sec, err
 		}
 		s.URL, s.Command, s.Args = body.URL, "", []string{}
+		sameURL := saved != nil && saved.URL == body.URL
+		if body.Kind == models.MCPKindHosted && sameURL {
+			sec.OAuth = old.OAuth
+		}
 		if body.Kind == models.MCPKindHTTP {
 			var savedHeaders map[string]string
-			if saved != nil && saved.URL == body.URL {
+			if sameURL {
 				savedHeaders = old.Headers
 			}
 			if sec.Headers, err = mergePairs("header", body.Headers, savedHeaders); err != nil {
 				return s, sec, err
 			}
-		} else if saved != nil && saved.URL == body.URL {
-			sec.OAuth = old.OAuth
 		}
 	case models.MCPKindCommand:
 		s.URL, s.Command, s.Args = "", strings.TrimSpace(body.Command), body.Args

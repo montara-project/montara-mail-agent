@@ -1,12 +1,12 @@
-import { IconPlus } from '@tabler/icons-react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { ChevronRight, LogIn, Pencil, Plug, RefreshCw, Trash2 } from 'lucide-react'
+import { ChevronRight, LogIn, Pencil, Plug, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
 
 import EmptyState from '@/components/block/common/empty-state'
+import QueryState from '@/components/block/common/query-state'
 import SectionCard from '@/components/block/common/section-card'
 import SectionHeading from '@/components/block/common/section-heading'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
-import { axiosErrorMessage, toastAxiosError } from '@/lib/api/axios-error'
+import { toastAxiosError } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
 
@@ -371,28 +371,26 @@ export default function MCPServerList({ organizationId }: { organizationId: stri
         }
         action={
           <Button className="h-8.5 rounded-lg" onClick={() => setOpenAdd(true)}>
-            <IconPlus />
+            <Plus />
             <span>Add server</span>
           </Button>
         }
       />
       <SectionCard>
-        {isPending ? (
-          <Loading />
-        ) : isError ? (
-          <div role="alert" className="grid justify-items-center gap-3 p-6 text-center text-sm">
-            <p className="text-destructive">{axiosErrorMessage(error)}</p>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <RefreshCw />
-              Try again
-            </Button>
-          </div>
-        ) : servers.length === 0 ? (
-          <EmptyState
-            title="No MCP servers yet"
-            description="Add a server to give the assistant its tools: web search, your docs, your tickets, and so on."
-          />
-        ) : (
+        <QueryState
+          isPending={isPending}
+          isError={isError}
+          error={error}
+          onRetry={() => refetch()}
+          isEmpty={servers.length === 0}
+          loading={<Loading />}
+          empty={
+            <EmptyState
+              title="No MCP servers yet"
+              description="Add a server to give the assistant its tools: web search, your docs, your tickets, and so on."
+            />
+          }
+        >
           <ul className="-m-4 divide-y overflow-hidden rounded-lg">
             {servers.map((server) => (
               <ServerRow
@@ -403,7 +401,7 @@ export default function MCPServerList({ organizationId }: { organizationId: stri
               />
             ))}
           </ul>
-        )}
+        </QueryState>
       </SectionCard>
 
       {openAdd && (

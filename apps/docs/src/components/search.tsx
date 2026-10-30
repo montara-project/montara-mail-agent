@@ -1,4 +1,3 @@
-'use client'
 import { useStaticSearch } from 'fumadocs-core/search/client'
 import {
   SearchDialog,
