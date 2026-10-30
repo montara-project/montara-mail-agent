@@ -458,7 +458,9 @@ export default function MailList({ className }: { className?: string }) {
             to="/mail"
             search={(prev) => ({ ...prev, mail: mail.id })}
             aria-current={selectedId === mail.id ? 'page' : undefined}
-            className="grid min-w-0 gap-1 outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px] focus-visible:after:ring-ring/50 focus-visible:after:ring-inset"
+            // grid-cols-1 is minmax(0, 1fr): an implicit auto column would grow to
+            // a long sender's full width and push the row sideways.
+            className="grid min-w-0 grid-cols-1 gap-1 outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px] focus-visible:after:ring-ring/50 focus-visible:after:ring-inset"
           >
             <div className="flex items-center gap-1.5">
               <span
