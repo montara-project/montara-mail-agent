@@ -135,10 +135,7 @@ export function useFlaggedAccount() {
     flagged ? data?.find((item) => item.id === mail.email_account_id) : undefined
 }
 
-/**
- * The account a mail belongs to. The label tells two mailboxes of one provider
- * apart, so it stays text; it is the address itself unless renamed, hence the mask.
- */
+/** The account a mail belongs to, by address: it tells two mailboxes of one provider apart. */
 export function AccountFlag({
   account,
   className,
@@ -154,7 +151,7 @@ export function AccountFlag({
       className={cn('text-muted-foreground flex min-w-0 items-center gap-1.5 text-xs', className)}
     >
       <ProviderIcon provider={account.provider} className="size-4 rounded-sm" />
-      <span className="truncate">{mask(account.label)}</span>
+      <span className="truncate">{mask(account.email)}</span>
     </span>
   )
 }
