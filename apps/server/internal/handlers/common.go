@@ -62,9 +62,11 @@ func member(c fiber.Ctx, app *app.Application, organizationID uuid.UUID) (string
 	if err != nil {
 		return role, err
 	}
-	if _, err := app.Repositories.Organization.Get(c.Context(), organizationID); apperr.IsNotFound(err) {
+	_, err = app.Repositories.Organization.Get(c.Context(), organizationID)
+	if apperr.IsNotFound(err) {
 		return "", errOrganizationNotFound
-	} else if err != nil {
+	}
+	if err != nil {
 		return "", err
 	}
 	return role, nil
