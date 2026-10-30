@@ -1,6 +1,6 @@
 import { useRouter } from '@tanstack/react-router'
 import { Mail } from 'lucide-react'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, domAnimation, LazyMotion, m, useReducedMotion } from 'motion/react'
 import { useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { toast } from 'sonner'
@@ -204,34 +204,35 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
             }}
           />
         )}
-        {step === 'password' && (
-          <div className="flex flex-col gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              className="pointer-coarse:h-11"
-              disabled={googleLoading}
-              onClick={() => void signInWithGoogle()}
-            >
-              <img src={googleLogo} alt="" className="size-4" />
-              {googleLoading ? 'Redirecting...' : 'Login with Google'}
-            </Button>
+        {/* Hidden rather than unmounted, so AnimatePresence outlives the email form. */}
+        <div className={step === 'password' ? 'flex flex-col gap-3' : 'hidden'}>
+          <Button
+            type="button"
+            variant="outline"
+            className="pointer-coarse:h-11"
+            disabled={googleLoading}
+            onClick={() => void signInWithGoogle()}
+          >
+            <img src={googleLogo} alt="" className="size-4" />
+            {googleLoading ? 'Redirecting...' : 'Login with Google'}
+          </Button>
 
-            <Button
-              type="button"
-              variant="outline"
-              className="pointer-coarse:h-11"
-              aria-expanded={showEmail}
-              onClick={() => setShowEmail(!showEmail)}
-            >
-              <Mail className="size-4" />
-              Login with email
-            </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="pointer-coarse:h-11"
+            aria-expanded={showEmail}
+            onClick={() => setShowEmail(!showEmail)}
+          >
+            <Mail className="size-4" />
+            Login with email
+          </Button>
 
+          <LazyMotion features={domAnimation}>
             <AnimatePresence initial={false}>
               {showEmail && (
                 // The side padding keeps overflow-hidden from clipping the focus rings.
-                <motion.div
+                <m.div
                   className="-mx-1 overflow-hidden px-1"
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
@@ -277,11 +278,11 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
                       </Button>
                     </Field>
                   </form>
-                </motion.div>
+                </m.div>
               )}
             </AnimatePresence>
-          </div>
-        )}
+          </LazyMotion>
+        </div>
       </FieldGroup>
       {!pickServer && !COMMUNITY && (
         <p className="text-muted-foreground flex flex-wrap items-center justify-center gap-x-1 text-center text-sm">
