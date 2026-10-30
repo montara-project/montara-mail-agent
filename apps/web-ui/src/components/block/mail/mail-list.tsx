@@ -541,7 +541,7 @@ export default function MailList({ className }: { className?: string }) {
               <>
                 <span className="sr-only">Account:</span>
                 {/* Above the link's stretched overlay, so its tooltip shows; a click still opens the mail. */}
-                <AccountFlag account={flag} className="relative z-10 mt-0.5 w-fit max-w-full" />
+                <AccountFlag account={flag} className="relative z-10 mt-0.5 w-fit" />
               </>
             )}
           </Link>

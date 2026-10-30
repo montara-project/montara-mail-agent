@@ -1,3 +1,4 @@
+import { Chip } from '@heroui/react/chip'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useSearch, useNavigate } from '@tanstack/react-router'
 import {
@@ -135,6 +136,13 @@ export function useFlaggedAccount() {
     flagged ? data?.find((item) => item.id === mail.email_account_id) : undefined
 }
 
+/**
+ * An account's hue, from its place among the organization's accounts: the golden
+ * ratio keeps them apart however many there are, where a hash of the address could
+ * collide. It skips 230-320, the blue of unread mail and the violet of the AI.
+ */
+const accountHue = (index: number) => (320 + ((index * 0.618034) % 1) * 270) % 360
+
 /** The account a mail belongs to, by address: it tells two mailboxes of one provider apart. */
 export function AccountFlag({
   account,
@@ -144,15 +152,19 @@ export function AccountFlag({
   className?: string
 }) {
   const { mask } = useHideEmails()
+  const { data: accounts } = useMailAccounts()
+  const index = accounts?.findIndex((item) => item.id === account.id) ?? 0
 
   return (
-    <span
+    <Chip
+      size="sm"
       title={mask(account.email)}
-      className={cn('text-muted-foreground flex min-w-0 items-center gap-1.5 text-xs', className)}
+      className={cn('chip--account', className)}
+      style={{ '--chip-hue': accountHue(index) } as React.CSSProperties}
     >
-      <ProviderIcon provider={account.provider} className="size-4 rounded-sm" />
-      <span className="truncate">{mask(account.email)}</span>
-    </span>
+      <ProviderIcon provider={account.provider} className="size-3.5 bg-transparent" />
+      <Chip.Label>{mask(account.email)}</Chip.Label>
+    </Chip>
   )
 }
 

@@ -388,7 +388,7 @@ export default function MailReader({ mailId }: { mailId: string }) {
             {flag && (
               <p className="flex min-w-0 items-center gap-1.5">
                 <span className="text-foreground shrink-0 font-medium">Received in:</span>
-                <AccountFlag account={flag} className="text-sm" />
+                <AccountFlag account={flag} />
               </p>
             )}
           </div>
