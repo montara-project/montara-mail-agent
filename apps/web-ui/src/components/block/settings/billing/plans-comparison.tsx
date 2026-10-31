@@ -87,7 +87,7 @@ export default function PlansComparison() {
   const plans = plansQuery.data ?? []
   const monthly = plans.find((p) => p.code === 'pro_monthly')
   const yearly = plans.find((p) => p.code === 'pro_yearly')
-  const [billing, setBilling] = React.useState<'month' | 'year'>('month')
+  const [billing, setBilling] = React.useState<'month' | 'year'>('year')
   const pro = billing === 'month' ? monthly : yearly
 
   const checkout = useMutation(queries.billing.checkout())

@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { ExternalLink, Sparkles } from 'lucide-react'
 import React from 'react'
 
+import { Separator } from '#/components/ui/separator'
 import QueryState from '@/components/block/common/query-state'
 import SectionCard from '@/components/block/common/section-card'
 import { Badge } from '@/components/ui/badge'
@@ -118,6 +119,8 @@ export default function PlanCard({ children }: { children: React.ReactNode }) {
             <p className="text-muted-foreground">No subscription. Pick a plan below to upgrade.</p>
           )}
         </QueryState>
+
+        <Separator />
 
         {children}
       </div>
