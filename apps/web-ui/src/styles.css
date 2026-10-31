@@ -327,3 +327,22 @@
   --sidebar-primary-foreground: 151 62% 15%;
   --sidebar-ring: 148 39% 54%;
 }
+
+/* The invoice page prints the card alone: the shell steps aside while
+   body[data-print] is set, and paper is light whatever the theme. */
+@media print {
+  body[data-print='invoice'] {
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --border: oklch(0.922 0 0);
+    --accent-ink: oklch(0.541 0.281 293.009);
+  }
+
+  body[data-print='invoice'] [data-slot='sidebar'],
+  body[data-print='invoice'] [data-slot='sidebar-gap'],
+  body[data-print='invoice'] header {
+    display: none !important;
+  }
+}

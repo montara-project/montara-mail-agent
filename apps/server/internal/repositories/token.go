@@ -162,6 +162,14 @@ func (r *TokenTopupRepository) MarkPaidAndCredit(ctx context.Context, referenceI
 	return t, true, nil
 }
 
+// ByIDForUser returns one top-up by id, only when it belongs to userID.
+func (r *TokenTopupRepository) ByIDForUser(ctx context.Context, id, userID uuid.UUID) (models.TokenTopup, error) {
+	return scanTokenTopup(r.queryRowContext(ctx, `
+		SELECT `+tokenTopupColumns+` FROM token_topups WHERE id = $1 AND user_id = $2`,
+		id, userID,
+	))
+}
+
 // ListByUser returns userID's top-ups, newest first.
 func (r *TokenTopupRepository) ListByUser(ctx context.Context, userID uuid.UUID, limit int) ([]models.TokenTopup, error) {
 	rows, err := r.queryContext(ctx, `

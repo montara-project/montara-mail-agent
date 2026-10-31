@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -121,11 +122,13 @@ func (h *quotaHandler) CreateTopup(c fiber.Ctx) error {
 // fixed package, our top-up id as the merchant reference.
 func (h *quotaHandler) createBorderPayPayment(ctx context.Context, t models.TokenTopup) (payURL, qrString, expiresAt string, err error) {
 	cfg := h.app.Config.BorderPay
+	// The customer returns to this top-up's own invoice page.
+	returnURL := strings.TrimSuffix(cfg.ReturnURL, "/") + "/invoice/" + t.ID.String()
 	body, err := json.Marshal(map[string]any{
 		"amount":       t.AmountIDR,
 		"method":       "qris",
 		"reference_id": t.ReferenceID,
-		"return_url":   cfg.ReturnURL,
+		"return_url":   returnURL,
 	})
 	if err != nil {
 		return "", "", "", err
@@ -157,6 +160,23 @@ func (h *quotaHandler) createBorderPayPayment(ctx context.Context, t models.Toke
 		return "", "", "", apperr.New(apperr.KindBadGateway, "BorderPay answered something unexpected")
 	}
 	return out.PayURL, out.QRString, out.ExpiresAt, nil
+}
+
+// GetTopup returns one of the signed-in user's top-ups, for the invoice page.
+func (h *quotaHandler) GetTopup(c fiber.Ctx) error {
+	uid, err := lib.ContextGetUID(c)
+	if err != nil {
+		return apperr.ErrUnauthorized
+	}
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return apperr.New(apperr.KindNotFound, "record not found in token_topups")
+	}
+	t, err := h.app.Repositories.TokenTopup.ByIDForUser(c.Context(), id, uid)
+	if err != nil {
+		return err
+	}
+	return dtos.OK(c, t)
 }
 
 // ListTopups returns the signed-in user's top-up history.

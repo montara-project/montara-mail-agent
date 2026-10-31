@@ -63,6 +63,7 @@ func routes(r *fiber.App, app *app.Application) {
 	// Token quota and the pay-as-you-go top-ups.
 	me.Get("/quota", h.Quota.Status)
 	me.Get("/quota/topups", h.Quota.ListTopups)
+	me.Get("/quota/topups/:id", h.Quota.GetTopup)
 	me.Post("/quota/topups", idempotent, h.Quota.CreateTopup)
 	// Not idempotent: a replay would serve the key itself from the cache. A
 	// duplicate key is cheap to revoke.

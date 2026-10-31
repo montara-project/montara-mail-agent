@@ -16,7 +16,7 @@ function RouteComponent() {
       {!isIndex && (
         <Link
           to="/settings"
-          className="text-muted-foreground hover:text-foreground flex w-fit items-center gap-1 text-sm md:hidden"
+          className="text-muted-foreground hover:text-foreground flex w-fit items-center gap-1 text-sm md:hidden print:hidden"
         >
           <ChevronLeft className="size-4" />
           Control Center

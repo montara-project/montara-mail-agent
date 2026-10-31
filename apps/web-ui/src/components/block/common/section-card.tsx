@@ -22,8 +22,10 @@ export default function SectionCard({ title, description, toolbar, children }: S
     <div className="bg-sidebar border border-sidebar-accent p-2 rounded-2xl">
       <Card className="w-full rounded-lg bg-background">
         {title && (
-          <CardHeader className={cn('flex items-center', description ? 'min-h-22' : 'min-h-15')}>
-            <CardHeading className="min-w-0 flex-1">
+          <CardHeader
+            className={cn('flex items-center py-3', description ? 'min-h-22' : 'min-h-15')}
+          >
+            <CardHeading className="min-w-0 flex-1 basis-56">
               <CardTitle className="text-xl leading-relaxed tracking-normal">{title}</CardTitle>
               <CardDescription
                 className={cn('text-sm text-muted-foreground', !description && 'sr-only')}

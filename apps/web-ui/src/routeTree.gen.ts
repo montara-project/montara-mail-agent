@@ -30,6 +30,7 @@ import { Route as appSettingsOrganizationRouteImport } from './routes/(app)/sett
 import { Route as appSettingsProfileRouteImport } from './routes/(app)/settings/profile'
 import { Route as appSettingsSecurityRouteImport } from './routes/(app)/settings/security'
 import { Route as appSettingsSkillsRouteImport } from './routes/(app)/settings/skills'
+import { Route as appSettingsBillingInvoiceIdRouteImport } from './routes/(app)/settings/billing_.invoice.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -137,6 +138,12 @@ const appSettingsSkillsRoute = appSettingsSkillsRouteImport.update({
   path: '/skills',
   getParentRoute: () => appSettingsRouteRoute,
 } as any)
+const appSettingsBillingInvoiceIdRoute =
+  appSettingsBillingInvoiceIdRouteImport.update({
+    id: '/billing_/invoice/$id',
+    path: '/billing/invoice/$id',
+    getParentRoute: () => appSettingsRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -159,6 +166,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/': typeof appDashboardIndexRoute
   '/mail/': typeof appMailIndexRoute
   '/settings/': typeof appSettingsIndexRoute
+  '/settings/billing/invoice/$id': typeof appSettingsBillingInvoiceIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -180,6 +188,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof appDashboardIndexRoute
   '/mail': typeof appMailIndexRoute
   '/settings': typeof appSettingsIndexRoute
+  '/settings/billing/invoice/$id': typeof appSettingsBillingInvoiceIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -204,6 +213,7 @@ export interface FileRoutesById {
   '/(app)/dashboard/': typeof appDashboardIndexRoute
   '/(app)/mail/': typeof appMailIndexRoute
   '/(app)/settings/': typeof appSettingsIndexRoute
+  '/(app)/settings/billing_/invoice/$id': typeof appSettingsBillingInvoiceIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -228,6 +238,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/mail/'
     | '/settings/'
+    | '/settings/billing/invoice/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -249,6 +260,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/mail'
     | '/settings'
+    | '/settings/billing/invoice/$id'
   id:
     | '__root__'
     | '/'
@@ -272,6 +284,7 @@ export interface FileRouteTypes {
     | '/(app)/dashboard/'
     | '/(app)/mail/'
     | '/(app)/settings/'
+    | '/(app)/settings/billing_/invoice/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -429,6 +442,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof appSettingsSkillsRouteImport
       parentRoute: typeof appSettingsRouteRoute
     }
+    '/(app)/settings/billing_/invoice/$id': {
+      id: '/(app)/settings/billing_/invoice/$id'
+      path: '/billing/invoice/$id'
+      fullPath: '/settings/billing/invoice/$id'
+      preLoaderRoute: typeof appSettingsBillingInvoiceIdRouteImport
+      parentRoute: typeof appSettingsRouteRoute
+    }
   }
 }
 
@@ -447,6 +467,7 @@ interface appSettingsRouteRouteChildren {
   appSettingsSecurityRoute: typeof appSettingsSecurityRoute
   appSettingsSkillsRoute: typeof appSettingsSkillsRoute
   appSettingsIndexRoute: typeof appSettingsIndexRoute
+  appSettingsBillingInvoiceIdRoute: typeof appSettingsBillingInvoiceIdRoute
 }
 
 const appSettingsRouteRouteChildren: appSettingsRouteRouteChildren = {
@@ -464,6 +485,7 @@ const appSettingsRouteRouteChildren: appSettingsRouteRouteChildren = {
   appSettingsSecurityRoute: appSettingsSecurityRoute,
   appSettingsSkillsRoute: appSettingsSkillsRoute,
   appSettingsIndexRoute: appSettingsIndexRoute,
+  appSettingsBillingInvoiceIdRoute: appSettingsBillingInvoiceIdRoute,
 }
 
 const appSettingsRouteRouteWithChildren =
