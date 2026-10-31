@@ -1,11 +1,12 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { ExternalLink, Loader2 } from 'lucide-react'
+import { Check, ExternalLink, Loader2 } from 'lucide-react'
 import React from 'react'
 
 import type { Models } from '@/lib/api/models'
 
 import QueryState from '@/components/block/common/query-state'
 import SectionCard from '@/components/block/common/section-card'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -18,13 +19,29 @@ import { cn } from '@/lib/utils'
 /** Enterprise contacts the team instead of checking out. */
 const CONTACT_EMAIL = 'hello@montaramail.web.id'
 
-/** What each tier carries; the numbers are also the plans rows' data. */
-const ROWS: Array<[string, string, string, string]> = [
-  ['Connected email accounts', '20', 'Unlimited', 'Custom'],
-  ['Organizations', '2', '10', 'Custom'],
-  ['AI tokens a week', '10M', '100M + pay-as-you-go', 'Custom'],
-  ['Support', 'Email (working hours)', 'Email 24/7', 'Dedicated'],
-]
+/** What each tier carries, in the pricing page's words (apps/main-web/lib/pricing.ts). */
+const FEATURES = {
+  free: [
+    'Up to 20 connected email accounts',
+    'Up to 2 organizations',
+    '10M AI tokens a week',
+    'Top-up token balance (pay-as-you-go)',
+    'Email support (working hours)',
+  ],
+  pro: [
+    'Unlimited connected email accounts',
+    '10 organizations',
+    '100M AI tokens a week',
+    'Top-up token balance (pay-as-you-go)',
+    'Email support 24/7',
+  ],
+  enterprise: [
+    'Unlimited connected email accounts',
+    'Unlimited organizations',
+    'Unlimited AI tokens',
+    'Dedicated support',
+  ],
+}
 
 /** The discount that is running right now, if any. */
 const effectivePrice = (plan: Models.BillingPlan) =>
@@ -33,49 +50,73 @@ const effectivePrice = (plan: Models.BillingPlan) =>
     ? plan.amount - plan.discount_amount
     : plan.amount
 
-/** One tier: its name and price, what it carries (a ROWS column), and its action. */
+/**
+ * One tier: what it costs and its action above the line, what it carries below.
+ * Two subgrid rows, so the line sits at the same height on all three.
+ */
 function Tier({
   name,
+  badge,
   price,
-  column,
-  featured,
+  unit,
   note,
+  tagline,
+  features,
+  featured,
   action,
 }: {
   name: string
-  price: React.ReactNode
-  column: 1 | 2 | 3
-  featured?: boolean
+  badge?: string
+  price?: string
+  unit?: string
   note?: React.ReactNode
+  tagline: string
+  features: string[]
+  featured?: boolean
   action?: React.ReactNode
 }) {
   return (
-    <div
-      className={cn(
-        'flex flex-col gap-3 rounded-lg border p-4',
-        featured && 'border-primary ring-primary ring-1'
-      )}
-    >
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="font-medium">{name}</span>
-        {price}
+    <div className="row-span-2 grid grid-rows-subgrid gap-0 overflow-hidden rounded-xl border">
+      <div className={cn('flex flex-col gap-4 p-5', featured && 'bg-muted/50')}>
+        <div className="flex min-h-6 items-center justify-between gap-2">
+          <h3 className="text-lg font-semibold">{name}</h3>
+          {badge && (
+            <Badge variant="secondary" appearance="light" size="sm">
+              {badge}
+            </Badge>
+          )}
+        </div>
+        <div className="grid gap-1.5">
+          <div className="flex min-h-10 flex-wrap items-center gap-x-2">
+            <span className="text-3xl font-semibold tracking-tight tabular-nums">{price}</span>
+            {unit && (
+              <span className="text-muted-foreground w-min text-xs leading-tight">{unit}</span>
+            )}
+          </div>
+          {note}
+        </div>
+        <p className="text-muted-foreground text-sm">{tagline}</p>
+        {action && <div className="mt-auto pt-1 *:w-full">{action}</div>}
       </div>
-      <ul className="text-muted-foreground grid gap-1.5 text-sm">
-        {ROWS.map((row) => (
-          <li key={row[0]} className="grid gap-0.5">
-            <span className="text-foreground text-xs font-medium">{row[0]}</span>
-            <span>{row[column]}</span>
-          </li>
-        ))}
-      </ul>
-      {note}
-      {action && <div className="mt-auto pt-1">{action}</div>}
+      <div className="grid content-start gap-3 border-t p-5">
+        <h4 className="text-xs font-semibold tracking-wide uppercase">Features</h4>
+        <ul className="grid gap-2.5 text-sm">
+          {features.map((feature) => (
+            <li key={feature} className="flex items-start gap-2.5">
+              <span className="mt-px flex size-4.5 shrink-0 items-center justify-center rounded-full bg-lime-400 text-lime-950">
+                <Check className="size-3" strokeWidth={3} aria-hidden />
+              </span>
+              <span className="text-muted-foreground">{feature}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   )
 }
 
 const currentPlanButton = (
-  <Button variant="outline" size="sm" disabled>
+  <Button variant="outline" disabled>
     Current plan
   </Button>
 )
@@ -115,19 +156,10 @@ export default function PlansComparison() {
 
   let proAction: React.ReactNode
   if (quota?.plan === 'pro') proAction = currentPlanButton
-  else if (subscription?.status === 'pending')
-    proAction = (
-      <Button size="sm" disabled>
-        Payment pending
-      </Button>
-    )
+  else if (subscription?.status === 'pending') proAction = <Button disabled>Payment pending</Button>
   else if (quota?.plan !== 'enterprise')
     proAction = (
-      <Button
-        size="sm"
-        disabled={!pro || checkout.isPending}
-        onClick={() => pro && upgrade(pro.code)}
-      >
+      <Button disabled={!pro || checkout.isPending} onClick={() => pro && upgrade(pro.code)}>
         {checkout.isPending && <Loader2 className="animate-spin" aria-hidden />}
         Upgrade to Pro
       </Button>
@@ -145,11 +177,11 @@ export default function PlansComparison() {
           error={plansQuery.error}
           onRetry={() => void plansQuery.refetch()}
           isEmpty={false}
-          loading={<Skeleton className="h-72 w-full" />}
+          loading={<Skeleton className="h-96 w-full" />}
           empty={null}
         >
           {monthly && yearly && (
-            <div className="mb-4 inline-flex rounded-md border p-0.5 text-sm">
+            <div className="bg-muted mb-5 inline-flex max-w-full gap-0.5 rounded-lg p-1 text-sm">
               {(['month', 'year'] as const).map((value) => (
                 <button
                   key={value}
@@ -157,74 +189,76 @@ export default function PlansComparison() {
                   aria-pressed={billing === value}
                   onClick={() => setBilling(value)}
                   className={cn(
-                    'focus-visible:ring-ring/50 rounded px-3 py-1 transition-colors outline-none focus-visible:ring-[3px]',
+                    'focus-visible:ring-ring/50 flex items-center gap-2 rounded-md border px-3 py-1 font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-[3px]',
                     billing === value
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-foreground'
+                      ? 'bg-background shadow-xs'
+                      : 'text-muted-foreground hover:text-foreground border-transparent'
                   )}
                 >
                   {value === 'month' ? 'Monthly' : 'Yearly'}
-                  {value === 'year' && yearlySaving > 0 && ` · save ${yearlySaving}%`}
+                  <span className="hidden sm:inline -ms-1">billing</span>
+                  {value === 'year' && yearlySaving > 0 && (
+                    <Badge variant="secondary" appearance="light" size="sm">
+                      Save {yearlySaving}%
+                    </Badge>
+                  )}
                 </button>
               ))}
             </div>
           )}
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <Tier
-              name="Free"
-              column={1}
-              price={<span className="text-muted-foreground tabular-nums">Rp0</span>}
-              action={quota?.plan === 'free' ? currentPlanButton : undefined}
-            />
-            <Tier
-              name="Pro"
-              column={2}
-              featured
-              price={
-                pro && (
-                  <span className="text-right tabular-nums">
-                    {discounted && (
-                      <span className="text-muted-foreground me-1.5 text-sm line-through">
+          {/* Measured on the card, not the viewport: the sidebar takes a varying share of it. */}
+          <div className="@container">
+            <div className="grid auto-rows-auto gap-x-4 gap-y-4 @3xl:grid-cols-3">
+              <Tier
+                name="Free"
+                price="Rp0"
+                tagline="The essentials for trying the agent."
+                features={FEATURES.free}
+                action={quota?.plan === 'free' ? currentPlanButton : undefined}
+              />
+              <Tier
+                name="Pro"
+                featured
+                badge={quota?.plan === 'pro' ? undefined : 'Recommended'}
+                price={pro && formatRupiah(effectivePrice(pro))}
+                unit={billing === 'month' ? 'per month' : 'per year'}
+                note={
+                  pro &&
+                  discounted && (
+                    <p className="text-xs">
+                      <span className="text-muted-foreground me-1.5 line-through">
                         {formatRupiah(pro.amount)}
                       </span>
-                    )}
-                    <span className="text-base font-semibold">
-                      {formatRupiah(effectivePrice(pro))}
-                    </span>
-                    <span className="text-muted-foreground text-xs">
-                      /{billing === 'month' ? 'mo' : 'yr'}
-                    </span>
-                  </span>
-                )
-              }
-              note={
-                pro &&
-                discounted && (
-                  <p className="text-xs text-green-700 dark:text-green-400">
-                    Save {formatRupiah(pro.discount_amount)}
-                    {pro.discount_ends_at
-                      ? ` until ${monthDay(new Date(pro.discount_ends_at), true)}.`
-                      : '.'}
-                  </p>
-                )
-              }
-              action={proAction}
-            />
-            <Tier
-              name="Enterprise"
-              column={3}
-              price={<span className="text-muted-foreground">Custom</span>}
-              action={
-                quota?.plan === 'enterprise' ? (
-                  currentPlanButton
-                ) : (
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={`mailto:${CONTACT_EMAIL}`}>Contact us</a>
-                  </Button>
-                )
-              }
-            />
+                      <span className="text-green-700 dark:text-green-400">
+                        Save {formatRupiah(pro.discount_amount)}
+                        {pro.discount_ends_at
+                          ? ` until ${monthDay(new Date(pro.discount_ends_at), true)}`
+                          : ''}
+                      </span>
+                    </p>
+                  )
+                }
+                tagline="For teams who live in their inbox."
+                features={FEATURES.pro}
+                action={proAction}
+              />
+              <Tier
+                name="Enterprise"
+                price="Custom"
+                tagline="Unlimited everything, billed per contract."
+                features={FEATURES.enterprise}
+                action={
+                  quota?.plan === 'enterprise' ? (
+                    currentPlanButton
+                  ) : (
+                    <Button asChild>
+                      <a href={`mailto:${CONTACT_EMAIL}`}>Contact us</a>
+                    </Button>
+                  )
+                }
+              />
+            </div>
           </div>
         </QueryState>
       </SectionCard>
