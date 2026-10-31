@@ -14,8 +14,9 @@ export default function SelfHostedPage() {
     <article className="mx-auto max-w-3xl space-y-4 px-4 py-16 [&_h2]:mt-8 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:text-muted-foreground [&_p]:text-muted-foreground [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-5">
       <h1 className="text-3xl font-bold tracking-tight">Self-host your AI email client</h1>
       <p>
-        Montara Mail is open source under GPL-3.0. Run it on your own server, and your mail, your
-        mailbox credentials, and your AI settings stay there.
+        Montara Mail is open source under GPL-3.0. Run it on your own server: your mail, your
+        mailbox credentials, and your AI settings stay there. The AI features are the exception —
+        message content goes to whichever AI provider or integration you point them at.
       </p>
 
       <h2>What you need</h2>

@@ -102,8 +102,8 @@ export default function PrivacyPage() {
         Google name, email address, and profile picture. When you connect a Gmail mailbox, we
         request the full Gmail scope (https://mail.google.com/) to sync your messages and send mail
         on your behalf over Gmail&apos;s IMAP and SMTP. The OAuth token is stored encrypted and is
-        used only to show, sort, summarize, and send your mail inside Montara Mail — never for
-        advertising and never to train AI models.
+        used only to show, sort, summarize, send, move, and delete your mail inside Montara Mail —
+        never for advertising and never to train AI models.
       </p>
       <p>
         Mail content is sent to the AI provider your organization chooses, and to the MCP servers

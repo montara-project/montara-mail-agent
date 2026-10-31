@@ -177,8 +177,8 @@ addresses and trusted proxies are never blocked automatically.
 
 ### Pointing a Community Edition web app at another server
 
-In the Community Edition, each browser picks its server under Settings > Self
-hosted (or "Change" on the sign-in page); the default is the server that serves
+In the Community Edition, each browser picks its server under Control Center >
+Organization > Self hosted (or "Change" on the sign-in page); the default is the server that serves
 the app. To use another server, serve its API over https and add the web app's
 origin to its `CORS_ALLOWED_ORIGINS`. Outside development the TOTP pending
 cookie is `SameSite=None`, so the two-factor step works across sites too. The

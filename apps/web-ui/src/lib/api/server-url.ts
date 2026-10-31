@@ -10,7 +10,15 @@ const STORAGE_KEY = 'montara.server_url'
 
 function storedServerURL() {
   try {
-    return localStorage.getItem(STORAGE_KEY)
+    const url = localStorage.getItem(STORAGE_KEY)
+    // A hosted build ignores a stored choice and cleans it up: the address and
+    // the session both belong to the server it pointed at.
+    if (url && !COMMUNITY) {
+      localStorage.removeItem(STORAGE_KEY)
+      clearAuthTokens()
+      return null
+    }
+    return url
   } catch {
     return null
   }
