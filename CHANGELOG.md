@@ -3,6 +3,13 @@
 All notable changes to this project are documented in this file. Versions follow the git tags (`v*`); Docker images are published to ghcr.io with the same version.
 
 
+## [1.1.0](https://github.com/montara-project/montara-mail-agent/compare/v1.0.0...v1.1.0) (2026-10-31)
+
+### Features
+
+* move an email account between the user's own organizations ([e2af4a5](https://github.com/montara-project/montara-mail-agent/commit/e2af4a5bf070daa8283b412a0965f07974ee4950))
+* **web-ui:** show token usage in the Mail sidebar ([956fc3a](https://github.com/montara-project/montara-mail-agent/commit/956fc3a6721358fe399b8eeaa40ff304a0f842e4))
+
 ## [1.0.0](https://github.com/montara-project/montara-mail-agent/compare/v0.9.0...v1.0.0) (2026-10-31)
 
 ### ⚠ BREAKING CHANGES
