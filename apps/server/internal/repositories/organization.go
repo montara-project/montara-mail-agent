@@ -58,6 +58,55 @@ func (r *OrganizationRepository) MemberRole(ctx context.Context, organizationID,
 	return role, translateNotFound("organization_members", err)
 }
 
+// EnsurePersonalOrganization gives userID their own organization when they
+// have none: "<name>'s Workspace", with them as its owner. The advisory lock
+// makes concurrent first logins pick one winner, and a user who already has a
+// membership is left untouched. The name comes from the users mirror table.
+func (r *OrganizationRepository) EnsurePersonalOrganization(ctx context.Context, userID uuid.UUID) error {
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// One creator wins the race of two simultaneous first logins.
+	if _, err := tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, userID.String()); err != nil {
+		return err
+	}
+
+	var memberships int
+	if err := tx.QueryRowContext(ctx, `
+		SELECT count(*) FROM organization_members WHERE user_id = $1`,
+		userID,
+	).Scan(&memberships); err != nil {
+		return err
+	}
+	if memberships > 0 {
+		return tx.Commit()
+	}
+
+	id, err := uuid.NewV7()
+	if err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO organizations (id, name)
+		SELECT $1, COALESCE(NULLIF(TRIM(name), '') || '''s Workspace', 'My Workspace')
+		FROM users WHERE id = $2`,
+		id, userID,
+	); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO organization_members (organization_id, user_id, role)
+		VALUES ($1, $2, $3)`,
+		id, userID, constant.MemberRoleOwner,
+	); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
 // organizationSortColumns whitelists the columns a `sorted` value may order by.
 var organizationSortColumns = map[string]string{
 	"name":       "name",

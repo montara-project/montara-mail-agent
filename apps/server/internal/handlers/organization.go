@@ -24,9 +24,11 @@ func (h *organizationHandler) repo() *repositories.OrganizationRepository {
 	return &h.app.Repositories.Organization
 }
 
-// List returns the signed-in user's organizations; a super user sees all.
+// List returns the signed-in user's organizations; a super user sees all,
+// unless member=1 limits the list to their own memberships. A plain user who
+// belongs to none yet gets a workspace of their own on the spot.
 func (h *organizationHandler) List(c fiber.Ctx) error {
-	var q dtos.ListQuery
+	var q dtos.OrganizationListQuery
 	if err := lib.ValidateRequestQuery(c, &q); err != nil {
 		return err
 	}
@@ -40,12 +42,13 @@ func (h *organizationHandler) List(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	memberOnly := q.Member == "1" || q.Member == "true"
 	memberID := uid
-	if super {
+	if super && !memberOnly {
 		memberID = uuid.Nil
 	}
 
-	params := listParams(q)
+	params := listParams(q.ListQuery)
 
 	organizations, err := h.repo().List(c.Context(), params, memberID)
 	if err != nil {
@@ -54,6 +57,21 @@ func (h *organizationHandler) List(c fiber.Ctx) error {
 	total, err := h.repo().Count(c.Context(), params, memberID)
 	if err != nil {
 		return err
+	}
+
+	// A user who belongs to no organization yet gets one on the spot, so the
+	// app always lands them in a workspace of their own.
+	if !super && memberID == uid && total == 0 {
+		if err := h.repo().EnsurePersonalOrganization(c.Context(), uid); err != nil {
+			return err
+		}
+		if organizations, err = h.repo().List(c.Context(), params, memberID); err != nil {
+			return err
+		}
+		total, err = h.repo().Count(c.Context(), params, memberID)
+		if err != nil {
+			return err
+		}
 	}
 
 	return dtos.List(c, organizations, dtos.ListMeta(int(total), q.Offset, q.Limit))

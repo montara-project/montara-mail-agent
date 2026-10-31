@@ -147,6 +147,26 @@ func mirrorUser(repo *repositories.UserRepository) func(*authulamodels.User) err
 	}
 }
 
+// personalOrganization returns the hook that gives a fresh user their own
+// workspace: like mirror, an Authula service hook with no context. A failure
+// only logs — the organizations list provisions one on demand as a fallback.
+func personalOrganization(repo *repositories.OrganizationRepository, logger *slog.Logger) func(*authulamodels.User) error {
+	return func(u *authulamodels.User) error {
+		id, err := uuid.Parse(u.ID)
+		if err != nil {
+			return err
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := repo.EnsurePersonalOrganization(ctx, id); err != nil {
+			logger.Warn("personal organization provisioning failed; the organizations list will retry it", "error", err)
+		}
+		return nil
+	}
+}
+
 // refuseUnverified stops a password sign-in until the email is verified. It
 // answers like a wrong password, so it does not reveal which addresses exist.
 func refuseUnverified(_ context.Context, u *authulamodels.User) error {
@@ -320,7 +340,7 @@ func (i tokenIssuer) route() authulamodels.Route {
 // through Resend. Authula migrates its own tables (users, accounts, sessions,
 // verifications) into authSchema of the app database when it starts, and
 // mirror runs after every user it creates or updates.
-func newAuth(cfg config.Config, mirror func(*authulamodels.User) error, activities *repositories.ActivityLogRepository, logger *slog.Logger) *authula.Auth {
+func newAuth(cfg config.Config, mirror, personalOrg func(*authulamodels.User) error, activities *repositories.ActivityLogRepository, logger *slog.Logger) *authula.Auth {
 	// Assigned below; the hooks that use it only run once requests arrive.
 	var auth *authula.Auth
 
@@ -335,6 +355,7 @@ func newAuth(cfg config.Config, mirror func(*authulamodels.User) error, activiti
 
 	userHooks := &authulamodels.ServiceHooks[authulamodels.User]{}
 	userHooks.RegisterAfterCreate(mirror)
+	userHooks.RegisterAfterCreate(personalOrg)
 	userHooks.RegisterAfterUpdate(mirror)
 
 	// Sign-up, magic links and Google all create users through this service,

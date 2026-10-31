@@ -13,7 +13,12 @@ import type { PaginateDto } from '../../dtos/paginate'
 import type { Models } from '../../models'
 import type { MailListParams } from './email-account'
 
-export type OrganizationListParams = PaginateDto & { search?: string; sorted?: string }
+export type OrganizationListParams = PaginateDto & {
+  search?: string
+  sorted?: string
+  /** member=1 limits the list to the caller's memberships, even for a super user. */
+  member?: string
+}
 
 export type OrganizationResources = {
   list: (params: OrganizationListParams) => Promise<AxiosListResponse<Models.Organization>>
