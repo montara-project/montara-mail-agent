@@ -17,7 +17,7 @@ Metode:
 - Review manual semua rute di `cmd/api/routes.go`, middleware, handler, `mailagent`, `mailai`, `mcpclient`, `mcptools`, `ipblock`, `netguard`, render markdown dan email di web-ui, serta workflow CI.
 - `pnpm audit --prod`: bersih.
 - `govulncheck ./...`: 0 temuan reachable.
-- `deadcode -test ./...`.
+- `deadcode ./...`.
 - Secret scan pada file yang di-track.
 
 **Status (2026-10-29, sesi yang sama):**
@@ -282,7 +282,7 @@ Cakupan baru sejak audit 2026-10-29: metering `token_usage`, kuota mingguan per 
 ### Q-15 · Low — Sidebar mengiklankan "Subscribe now" yang belum bisa dibeli — ✅ FIXED
 
 - **Where:** `apps/web-ui/src/components/layout/platform/platform-panel.tsx`
-- **Fix:** Label jadi "Open billing" menuju `/settings/billing` (kuota + top up), bukan aksi langganan yang belum ada.
+- **Fix:** Kartu tetap berjudul "Subscribe now" dengan tombol "Open billing" menuju `/settings/billing`, karena kini plan bisa dibeli. Teksnya menyebut plan Pro, bukan "on the way".
 
 ### Q-16 · Low — Migrasi kunci organization legacy bisa lintas user — ✅ FIXED
 
@@ -320,7 +320,7 @@ Cakupan baru sejak batch Q-: katalog plan, subscription + renewal dari wallet (m
 
 - **Where:** `apps/server/internal/app/application.go` (`checkQuota`), `cmd/api/server.go` (`serve`)
 - **What:** Error apa pun saat membaca role atau plan meloloskan panggilan AI. Gagal memuat katalog saat boot juga menghapus semua batas hingga sweep berikutnya, sampai 24 jam, padahal token platform berbayar.
-- **Fix:** Hanya user yang tidak ditemukan yang lolos; error lain dikembalikan. Gagal memuat katalog menghentikan boot. Katalog kosong tetap jalan tanpa batas untuk server yang belum di-seed, kini dengan log Warn.
+- **Fix:** Hanya user yang tidak ditemukan yang lolos; error lain dikembalikan. Gagal memuat katalog menghentikan boot. Sejak B-13, Cloud selalu men-seed plan saat boot, dan tier yang tidak ada di katalog ditolak.
 
 ### B-5 · Low — Checkout gagal atau ditinggalkan mengunci pembelian hingga 48 jam — ✅ FIXED
 
@@ -368,6 +368,13 @@ Cakupan baru sejak batch Q-: katalog plan, subscription + renewal dari wallet (m
 - **Where:** `apps/server/internal/handlers/quota.go` (`BorderPayWebhook`)
 - **Alasan:** Nominal dan `reference_id` dibuat server saat checkout, dan webhook diautentikasi token. Payload BorderPay yang diproses saat ini tidak memakai nominal.
 
+### B-13 · Medium — Panggilan AI bisa lolos dari kuota token — ✅ FIXED
+
+- **Where:** `apps/server/cmd/api/main.go`, `internal/app/application.go` (`checkQuota`, `usageHook`), `internal/lib/llm`, `internal/mailsync/mailsync.go`
+- **What:** Dengan `SEED_ON_BOOT=false`, tabel `plans` kosong dan semua pengguna tanpa batas. Tier yang tidak ada di katalog dianggap gratis. Insert `token_usage` yang gagal dan provider tanpa `usage` membuat token tidak terhitung. Klasifikasi saat sync hanya mengecek kuota sekali untuk 3 ronde.
+- **Fix:** Cloud selalu men-seed plan saat boot. Tier tanpa baris plan dijawab 503. Insert usage dicoba 3 kali. Usage kosong diestimasi sekitar 4 karakter per token. Kuota dicek tiap ronde klasifikasi.
+- **Sisa:** Kuota tetap berlaku untuk organisasi yang memakai provider sendiri; keputusan produk ini belum dibuat.
+
 ---
 
 ## 2. Ponytail audit (complexity — format asli skill)
@@ -403,9 +410,22 @@ shrink: QRString dan ExpireAt didecode lalu dibuang di borderPayCheckout. Replac
 `deadcode ./...`, tanpa `-test`, kini kosong. `-test` menganggap fungsi yang hanya dipakai test sebagai hidup, jadi pakai versi tanpa flag.
 net: about -95 lines, -0 deps (batch ini). — SEMUA FIXED
 
-Web-ui: komponen UI sudah lean, knip tidak menemukan file atau dependensi yang tidak dipakai. `@lexical/*` tampak tak diimpor, tetapi merupakan peer dependency `@lexkit/editor`. Sisa laporan knip adalah tipe yang dipakai lewat re-export `Models`.
+```
+Audit lanjutan 2026-10-31 (server hingga web-ui):
 
-Sengaja dipertahankan (keputusan user): kartu "Soon" untuk Billing, Members, Roles, Tools dan Plugins.
+delete: varian Button mono, dashed, foreground, inverse, ukuran lg, serta appearance, radius, autoHeight dan selected. Replacement: nothing. [apps/web-ui/src/components/ui/button.tsx] — FIXED
+yagni: appearance ghost, shape, disabled, asChild dan ukuran lg di Badge. Replacement: nothing. [apps/web-ui/src/components/ui/badge.tsx] — FIXED
+delete: GET /me/billing/wallet/transactions tanpa UI. Ledger tetap ditulis. Replacement: tambah saat ada halaman riwayat. [apps/server/internal/handlers/billing.go, repositories/billing.go, models/billing.go, apps/web-ui/src/lib/api/] — FIXED
+native: Chip dari @heroui/react. Replacement: span dengan kelas chip. [apps/web-ui/src/components/layout/mail/mail-panel.tsx] — FIXED
+shrink: subscriptionWhilePending menduplikasi subscription. Replacement: satu query dengan refetchInterval. [apps/web-ui/src/lib/api/queries/billing.ts] — FIXED
+delete: model Role dan re-export Models tanpa pemakai. Replacement: nothing. [apps/web-ui/src/lib/api/models/] — FIXED
+yagni: app.AI dibangun di main.go tapi tidak pernah dipakai di produksi. Replacement: hanya seam untuk test. [apps/server/cmd/api/main.go, internal/app/application.go] — FIXED
+shrink: useDebounce memakai objek param. Replacement: useDebounce(value, delay). [apps/web-ui/src/hooks/use-debounce.ts] — FIXED
+```
+
+Web-ui: knip tidak menemukan file atau dependensi yang tidak dipakai, tetapi knip tidak mengecek varian di dalam komponen. `@lexical/*` tampak tak diimpor, tetapi merupakan peer dependency `@lexkit/editor`. Sisa laporan knip adalah tipe yang dipakai lewat re-export `Models`.
+
+Sengaja dipertahankan (keputusan user): kartu "Soon" untuk Members, Roles, Tools dan Plugins. Juga `@heroui/react` untuk 6 kotak InputOTP, dan efek pelangi `glimm` di PromptBar.
 
 ---
 

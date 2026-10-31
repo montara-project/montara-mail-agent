@@ -122,7 +122,6 @@ func run() error {
 	}
 
 	var aiConfig *llm.Config
-	var ai llm.ChatClient
 	if cfg.AI.AnthropicAPIKey != "" {
 		aiConfig = &llm.Config{
 			Kind:       llm.KindAnthropic,
@@ -130,9 +129,7 @@ func run() error {
 			Model:      fallbackModel,
 			HTTPClient: &http.Client{Timeout: 2 * time.Minute},
 		}
-		var err error
-		ai, err = llm.New(*aiConfig)
-		if err != nil {
+		if _, err := llm.New(*aiConfig); err != nil {
 			return err
 		}
 	} else {
@@ -159,7 +156,6 @@ func run() error {
 		DB:           db,
 		Repositories: repos,
 		Auth:         auth,
-		AI:           ai,
 		AIConfig:     aiConfig,
 		Secrets:      secrets,
 		MailOAuth:    mailOAuth,

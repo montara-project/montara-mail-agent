@@ -17,7 +17,7 @@ const plans = () =>
     staleTime: 5 * 60 * 1000,
   })
 
-/** The user's live subscription, or null. */
+/** The user's live subscription, or null; polls while its checkout is pending. */
 const subscription = () =>
   queryOptions({
     queryKey: [BILLING_QUERY_KEY, 'subscription'],
@@ -25,6 +25,7 @@ const subscription = () =>
       const res = await services.billing.subscription()
       return res.data.data
     },
+    refetchInterval: (query) => (query.state.data?.status === 'pending' ? 5000 : false),
   })
 
 /** The wallet balance. */
@@ -37,17 +38,6 @@ const wallet = () =>
     },
   })
 
-/** One page of the wallet ledger; the last page stays while the next loads. */
-const walletTransactions = (params: { offset: number; limit: number }) =>
-  queryOptions({
-    queryKey: [BILLING_QUERY_KEY, 'transactions', params],
-    queryFn: async () => {
-      const res = await services.billing.walletTransactions(params)
-      return res.data
-    },
-    placeholderData: keepPreviousData,
-  })
-
 /** One page of the wallet top-up history. */
 const walletTopups = (params: { offset: number; limit: number }) =>
   queryOptions({
@@ -57,17 +47,6 @@ const walletTopups = (params: { offset: number; limit: number }) =>
       return res.data
     },
     placeholderData: keepPreviousData,
-  })
-
-/** The subscription polls while its checkout payment is pending. */
-const subscriptionWhilePending = () =>
-  queryOptions({
-    queryKey: [BILLING_QUERY_KEY, 'subscription'],
-    queryFn: async () => {
-      const res = await services.billing.subscription()
-      return res.data.data
-    },
-    refetchInterval: (query) => (query.state.data?.status === 'pending' ? 5000 : false),
   })
 
 const checkout = () => {
@@ -111,9 +90,7 @@ export const billingQueries = {
   plans,
   subscription,
   wallet,
-  walletTransactions,
   walletTopups,
-  subscriptionWhilePending,
   checkout,
   autoRenew,
   walletTopup,

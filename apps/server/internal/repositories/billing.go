@@ -378,35 +378,6 @@ func (r *WalletRepository) Balance(ctx context.Context, userID uuid.UUID) (int64
 	return b, err
 }
 
-const walletTransactionColumns = `
-	id, created_at, user_id, kind, amount_idr, reference_type, reference_id, note`
-
-func scanWalletTransaction(row rowScanner) (models.WalletTransaction, error) {
-	var t models.WalletTransaction
-	err := row.Scan(&t.ID, &t.CreatedAt, &t.UserID, &t.Kind, &t.AmountIDR,
-		&t.ReferenceType, &t.ReferenceID, &t.Note)
-	return t, translateNotFound("wallet_transactions", err)
-}
-
-// ListTransactionsByUser returns one page of the ledger, newest first; the
-// id keeps the order stable across pages.
-func (r *WalletRepository) ListTransactionsByUser(ctx context.Context, userID uuid.UUID, offset, limit int) ([]models.WalletTransaction, error) {
-	rows, err := r.queryContext(ctx, `SELECT `+walletTransactionColumns+` FROM wallet_transactions
-		WHERE user_id = $1 ORDER BY created_at DESC, id DESC OFFSET $2 LIMIT $3`,
-		userID, offset, limit)
-	if err != nil {
-		return nil, err
-	}
-	return collectRows(rows, scanWalletTransaction)
-}
-
-// CountTransactionsByUser returns how many ledger entries the user has.
-func (r *WalletRepository) CountTransactionsByUser(ctx context.Context, userID uuid.UUID) (int, error) {
-	var total int
-	err := r.queryRowContext(ctx, `SELECT count(*) FROM wallet_transactions WHERE user_id = $1`, userID).Scan(&total)
-	return total, err
-}
-
 const walletTopupColumns = `
 	id, created_at, user_id, amount_idr, status, reference_id, pay_url, paid_at`
 

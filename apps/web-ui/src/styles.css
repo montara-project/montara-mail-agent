@@ -203,7 +203,7 @@
     background-position: -100% 0;
   }
 }
-/* HeroUI Chip, from this app's tokens: HeroUI's own stylesheet would replace them globally. */
+/* The chip that names a mail's account. */
 @layer components {
   .chip {
     @apply border-border bg-muted text-muted-foreground inline-flex max-w-full min-w-0 items-center gap-1 rounded-full border text-xs;

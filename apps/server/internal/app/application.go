@@ -32,9 +32,8 @@ type Application struct {
 	// AIConfig is the fallback model's config for organizations without their own provider;
 	// nil when no Anthropic API key is configured.
 	AIConfig *llm.Config
-	// AI is the fallback model client for organizations without their own
-	// provider; nil when no Anthropic key is configured. Tests may set it
-	// directly, which skips metering for the fallback.
+	// AI is a fake model for tests, used when AIConfig is nil. It skips metering,
+	// and the server itself never sets it.
 	AI llm.ChatClient
 	// Secrets seals stored credentials (IMAP passwords, LLM API keys).
 	Secrets *lib.SecretBox

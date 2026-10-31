@@ -83,7 +83,6 @@ func routes(r *fiber.App, app *app.Application) {
 		me.Post("/billing/subscription/checkout", slow, idempotent, h.Billing.Checkout)
 		me.Post("/billing/subscription/auto-renew", idempotent, h.Billing.AutoRenew)
 		me.Get("/billing/wallet", h.Billing.Wallet)
-		me.Get("/billing/wallet/transactions", h.Billing.WalletTransactions)
 		me.Get("/billing/wallet/topups", h.Billing.WalletTopups)
 		me.Post("/billing/wallet/topup", slow, idempotent, h.Billing.WalletTopup)
 	}

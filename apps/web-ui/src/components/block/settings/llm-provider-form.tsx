@@ -88,7 +88,7 @@ function keyIsSaved(provider: Models.LLMProvider | undefined, kind: string, base
  */
 function useProviderModels(scope: LLMProviderScope, body: LLMModelsBody, ready: boolean) {
   // A string, so the debounce sees a change only when a value changes.
-  const settled = useDebounce({ value: JSON.stringify(body), delay: 600 })
+  const settled = useDebounce(JSON.stringify(body), 600)
   const current = settled === JSON.stringify(body)
   return useQuery(queries.llmProvider.models(scope, JSON.parse(settled), ready && current))
 }
