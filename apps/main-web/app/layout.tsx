@@ -9,9 +9,9 @@ import { APP_URL, DOCS_URL, GITHUB_URL, HOME_TITLE, SITE_NAME, SITE_URL } from '
 // Self-hosted variable fonts, imported here so the bundler rewrites each
 // `url()` and emits the woff2 files. Every face carries latin (+ ext) subsets
 // behind unicode-range, so a browser downloads only what the page renders.
-import '@fontsource-variable/plus-jakarta-sans'
-import '@fontsource-variable/outfit'
 import '@fontsource-variable/jetbrains-mono'
+import '@fontsource-variable/outfit'
+import '@fontsource-variable/plus-jakarta-sans'
 
 import './globals.css'
 
@@ -132,7 +132,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                   <Link href={APP_URL}>Sign in</Link>
                 </Button>
                 <Button size="md" asChild>
-                  <Link href="/contact">
+                  <Link href="https://app.montaramail.web.id">
                     Get early access
                     <IconArrowRight className="hidden sm:block" />
                   </Link>

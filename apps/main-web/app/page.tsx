@@ -1,9 +1,9 @@
 import {
   IconArrowRight,
-  IconBrandGmail,
-  IconBrandYahoo,
   IconBrain,
   IconBrandApple,
+  IconBrandGmail,
+  IconBrandYahoo,
   IconChevronDown,
   IconFeather,
   IconInbox,
@@ -47,7 +47,12 @@ const providers = [
     color: 'currentColor',
     text: 'iCloud Mail with an app-specific password.',
   },
-  { name: 'Lark', icon: IconFeather, color: '#3370FF', text: 'Lark Mail for your team workspace.' },
+  {
+    name: 'Lark',
+    icon: IconFeather,
+    color: '#3370FF',
+    text: 'Lark Mail for your team workspace.',
+  },
   {
     name: 'Zoho',
     icon: IconMailbox,
@@ -70,7 +75,13 @@ const labelStyles = {
 
 type Label = keyof typeof labelStyles
 
-const messages: { from: string; via: string; subject: string; label: Label; time: string }[] = [
+const messages: {
+  from: string
+  via: string
+  subject: string
+  label: Label
+  time: string
+}[] = [
   {
     from: 'Sarah Chen',
     via: 'Gmail',
@@ -313,7 +324,12 @@ const jsonLd = {
       email: 'hello@montaramail.web.id',
       sameAs: [GITHUB_URL],
     },
-    { '@type': 'WebSite', '@id': `${SITE_URL}/#website`, name: SITE_NAME, url: SITE_URL },
+    {
+      '@type': 'WebSite',
+      '@id': `${SITE_URL}/#website`,
+      name: SITE_NAME,
+      url: SITE_URL,
+    },
     {
       '@type': 'SoftwareApplication',
       name: SITE_NAME,
@@ -342,7 +358,9 @@ export default function Home() {
       <script
         type="application/ld+json"
         // Every value above is a literal from this file; `<` is escaped so none can close the tag.
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c'),
+        }}
       />
       {/* Hero */}
       <section className="relative isolate">
@@ -369,7 +387,7 @@ export default function Home() {
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button size="lg" asChild>
-              <Link href="/contact">
+              <Link href="https://app.montaramail.web.id">
                 Get early access
                 <IconArrowRight />
               </Link>
@@ -585,14 +603,13 @@ export default function Home() {
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button size="lg" asChild>
-              <Link href="/contact">
+              <Link href="https://app.montaramail.web.id">
                 Get early access
                 <IconArrowRight />
               </Link>
             </Button>
             <Button
               size="lg"
-
               variant="ghost"
               className="text-white hover:bg-white/10 hover:text-white"
               asChild
