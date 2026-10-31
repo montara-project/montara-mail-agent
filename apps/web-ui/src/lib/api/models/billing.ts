@@ -34,16 +34,6 @@ export interface WalletBalance {
   balance_idr: number
 }
 
-/** One wallet ledger entry: a top-up credit, a subscription charge, or an adjustment. */
-export interface WalletTransaction {
-  id: string
-  created_at: string
-  kind: 'topup' | 'subscription_charge' | 'adjustment'
-  amount_idr: number
-  reference_type: string
-  note: string
-}
-
 /** One wallet top-up paid through BorderPay's QRIS checkout. */
 export interface WalletTopup {
   id: string

@@ -103,16 +103,3 @@ type WalletTopup struct {
 	PayURL      string     `json:"pay_url"`
 	PaidAt      *time.Time `json:"paid_at"`
 }
-
-// WalletTransaction is one wallet ledger entry: a top-up credit, a
-// subscription charge, or an admin adjustment. amount_idr is signed.
-type WalletTransaction struct {
-	ID            uuid.UUID `json:"id"`
-	CreatedAt     time.Time `json:"created_at"`
-	UserID        uuid.UUID `json:"-"`
-	Kind          string    `json:"kind"`
-	AmountIDR     int64     `json:"amount_idr"`
-	ReferenceType string    `json:"reference_type"`
-	ReferenceID   uuid.UUID `json:"-"`
-	Note          string    `json:"note"`
-}

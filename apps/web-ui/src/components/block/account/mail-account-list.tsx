@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { RefreshCw, Unplug } from 'lucide-react'
+import { ArrowRightLeft, Loader2, RefreshCw, Unplug } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
@@ -10,6 +10,14 @@ import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import { useSplitInbox } from '@/components/layout/mail/mail-panel'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useActiveOrganization } from '@/hooks/use-active-organization'
 import { useHideEmails } from '@/hooks/use-hide-emails'
@@ -41,7 +49,7 @@ function SyncStatus({ account }: { account: Models.EmailAccount }) {
 
 /** Connected mail accounts of the active organization; each card opens that account's mailbox. */
 export default function MailAccountList() {
-  const { organization } = useActiveOrganization()
+  const { organization, organizations } = useActiveOrganization()
   const { mask } = useHideEmails()
   const split = useSplitInbox()
   const {
@@ -54,6 +62,12 @@ export default function MailAccountList() {
   const sync = useMutation(queries.emailAccounts.sync())
   const disconnect = useMutation(queries.emailAccounts.delete())
   const [disconnecting, setDisconnecting] = React.useState<Models.EmailAccount | null>(null)
+  const transfer = useMutation(queries.emailAccounts.transfer())
+  const [moving, setMoving] = React.useState<Models.EmailAccount | null>(null)
+  const [moveTarget, setMoveTarget] = React.useState<string>('')
+  // The member-scoped list is the user's own organizations; the account can
+  // only move within them, so it never changes hands between users.
+  const otherOrgs = organizations.filter((o) => o.id !== organization?.id)
 
   const content = () => {
     if (isPending && organization) {
@@ -129,6 +143,18 @@ export default function MailAccountList() {
                 />
                 Sync now
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={otherOrgs.length === 0}
+                onClick={() => {
+                  setMoveTarget('')
+                  setMoving(account)
+                }}
+              >
+                <ArrowRightLeft />
+                Move
+              </Button>
               <Button variant="outline" size="sm" onClick={() => setDisconnecting(account)}>
                 <Unplug />
                 Disconnect
@@ -149,6 +175,63 @@ export default function MailAccountList() {
         <p className="text-muted-foreground text-sm">Pick an account to open its mailbox.</p>
       </div>
       {content()}
+      <Dialog open={!!moving} onOpenChange={(open) => !open && setMoving(null)}>
+        <DialogContent className="gap-0 p-0 sm:max-w-md">
+          <div className="grid gap-4 p-6">
+            <div className="grid gap-1.5 pe-8">
+              <DialogTitle>Move {mask(moving?.email ?? '')}</DialogTitle>
+              <DialogDescription>
+                The account, its mail and its agent data move to another organization of yours — the
+                account never changes hands between users.
+              </DialogDescription>
+            </div>
+            {otherOrgs.length ? (
+              <Select value={moveTarget} onValueChange={setMoveTarget}>
+                <SelectTrigger aria-label="Target organization">
+                  <SelectValue placeholder="Pick a target organization" />
+                </SelectTrigger>
+                <SelectContent>
+                  {otherOrgs.map((org) => (
+                    <SelectItem key={org.id} value={org.id}>
+                      {org.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <p className="text-muted-foreground text-sm">No other organization to move it to.</p>
+            )}
+          </div>
+          <div className="flex flex-wrap justify-end gap-2 border-t p-4">
+            <Button variant="outline" onClick={() => setMoving(null)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={!moveTarget || transfer.isPending}
+              onClick={() =>
+                moving &&
+                moveTarget &&
+                transfer.mutate(
+                  { id: moving.id, organization_id: moveTarget },
+                  {
+                    onSuccess: (_account, variables) => {
+                      const target = organizations.find((o) => o.id === variables.organization_id)
+                      toast.success(
+                        `${mask(moving.email)} moved to ${target?.name ?? 'the organization'}`
+                      )
+                      setMoving(null)
+                    },
+                    onError: toastAxiosError,
+                  }
+                )
+              }
+            >
+              {transfer.isPending && <Loader2 className="animate-spin" aria-hidden />}
+              Move account
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <SimpleAlertDialog
         open={!!disconnecting}
         onOpenChange={(open) => !open && setDisconnecting(null)}

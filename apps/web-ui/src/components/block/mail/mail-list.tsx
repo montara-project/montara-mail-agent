@@ -365,7 +365,7 @@ export default function MailList({ className }: { className?: string }) {
     setShownQ(q)
     setSearch(q ?? '')
   }
-  const debounced = useDebounce({ value: search.trim(), delay: 300 })
+  const debounced = useDebounce(search.trim(), 300)
   // The selection lives on one page: another page, folder, label or search
   // starts it empty.
   const { label } = useSearch({ strict: false })

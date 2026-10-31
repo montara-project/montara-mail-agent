@@ -83,7 +83,6 @@ func routes(r *fiber.App, app *app.Application) {
 		me.Post("/billing/subscription/checkout", slow, idempotent, h.Billing.Checkout)
 		me.Post("/billing/subscription/auto-renew", idempotent, h.Billing.AutoRenew)
 		me.Get("/billing/wallet", h.Billing.Wallet)
-		me.Get("/billing/wallet/transactions", h.Billing.WalletTransactions)
 		me.Get("/billing/wallet/topups", h.Billing.WalletTopups)
 		me.Post("/billing/wallet/topup", slow, idempotent, h.Billing.WalletTopup)
 	}
@@ -140,6 +139,7 @@ func routes(r *fiber.App, app *app.Application) {
 	emailAccounts.Post("/oauth/:provider/finish", slow, h.EmailAccount.OAuthFinish)
 	emailAccounts.Get("/:id/mails", h.EmailAccount.Mails)
 	emailAccounts.Delete("/:id", idempotent, h.EmailAccount.Delete)
+	emailAccounts.Post("/:id/transfer", idempotent, h.EmailAccount.Transfer)
 	emailAccounts.Post("/:id/sync", slow, h.EmailAccount.Sync)
 	emailAccounts.Post("/:id/send", slow, idempotent, h.EmailAccount.Send)
 

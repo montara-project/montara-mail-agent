@@ -86,6 +86,17 @@ const del = () =>
     onSuccess: invalidateMailboxes,
   })
 
+/** Moves an account to another of the user's organizations; the mail and the
+ * agent data attached to it travel along. */
+const transfer = () =>
+  mutationOptions({
+    mutationFn: async ({ id, organization_id }: { id: string; organization_id: string }) => {
+      const res = await services.emailAccounts.transfer(id, { organization_id })
+      return res.data.data
+    },
+    onSettled: invalidateMailboxes,
+  })
+
 /** Sends a new mail from an account. The copy in Sent arrives with the next sync. */
 const send = () =>
   mutationOptions({
@@ -103,4 +114,5 @@ export const emailAccountQueries = {
   oauthFinish,
   send,
   delete: del,
+  transfer,
 } as const

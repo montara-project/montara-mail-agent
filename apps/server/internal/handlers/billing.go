@@ -167,28 +167,6 @@ func (h *billingHandler) Wallet(c fiber.Ctx) error {
 	return dtos.OK(c, models.WalletBalance{BalanceIDR: balance})
 }
 
-// WalletTransactions returns one page of the wallet ledger.
-func (h *billingHandler) WalletTransactions(c fiber.Ctx) error {
-	uid, err := lib.ContextGetUID(c)
-	if err != nil {
-		return apperr.ErrUnauthorized
-	}
-	var q dtos.ListQuery
-	if err := lib.ValidateRequestQuery(c, &q); err != nil {
-		return err
-	}
-	q.Clamp()
-	txns, err := h.app.Repositories.Wallet.ListTransactionsByUser(c.Context(), uid, q.Offset, q.Limit)
-	if err != nil {
-		return err
-	}
-	total, err := h.app.Repositories.Wallet.CountTransactionsByUser(c.Context(), uid)
-	if err != nil {
-		return err
-	}
-	return dtos.List(c, txns, dtos.ListMeta(total, q.Offset, q.Limit))
-}
-
 // WalletTopup starts an IDR top-up for the wallet: min Rp10.000, any amount,
 // through BorderPay's QRIS checkout; the webhook credits the wallet.
 func (h *billingHandler) WalletTopup(c fiber.Ctx) error {

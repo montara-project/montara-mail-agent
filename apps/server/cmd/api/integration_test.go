@@ -442,6 +442,7 @@ func TestIntegration(t *testing.T) {
 	testLLMProviderScope(t, call, application, userToken, superToken, userOrg)
 	testMCPServers(t, call, callStream, application, userToken, superToken, userOrg)
 	testActivityLogs(t, call, userToken, superToken, userOrg, superOrg, userEmail)
+	testEmailAccountTransfer(t, call, application, db, userToken, userOrg, superToken, superOrg)
 	testMCPEndpoint(t, call, server, application, userToken, superToken, userOrg, superOrg)
 	testIPBlocks(t, call, userToken, superToken)
 	testOAuthFinish(t, call, application, userToken, userOrg)

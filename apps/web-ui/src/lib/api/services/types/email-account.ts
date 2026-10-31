@@ -53,6 +53,10 @@ export type EmailAccountResources = {
     body: EmailAccountBody
   ) => Promise<AxiosItemResponse<Models.EmailAccount>>
   delete: (id: string) => Promise<AxiosDeleteResponse>
+  transfer: (
+    id: string,
+    body: { organization_id: string }
+  ) => Promise<AxiosItemResponse<Models.EmailAccount>>
   sync: (id: string) => Promise<AxiosItemResponse<Models.EmailAccount>>
   /** Sends a new mail from the account. */
   send: (id: string, body: MailSendBody) => Promise<AxiosDeleteResponse>

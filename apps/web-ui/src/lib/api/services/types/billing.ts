@@ -8,10 +8,6 @@ export type BillingResources = {
   checkout: (body: { plan_code: string }) => Promise<AxiosItemResponse<Models.Subscription>>
   autoRenew: (body: { enabled: boolean }) => Promise<AxiosItemResponse<unknown>>
   wallet: () => Promise<AxiosItemResponse<Models.WalletBalance>>
-  walletTransactions: (params: {
-    offset: number
-    limit: number
-  }) => Promise<AxiosListResponse<Models.WalletTransaction>>
   walletTopups: (params: {
     offset: number
     limit: number

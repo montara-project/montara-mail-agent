@@ -8,14 +8,8 @@ export namespace Models {
   export type BillingPlan = import('./billing').BillingPlan
   export type Subscription = import('./billing').Subscription
   export type WalletBalance = import('./billing').WalletBalance
-  export type WalletTransaction = import('./billing').WalletTransaction
   export type WalletTopup = import('./billing').WalletTopup
-  export type IPBlockSource = import('./ip-block').IPBlockSource
-  export type Role = import('./role').Role
   export type User = import('./user').User
-  export type MeData = import('./user').MeData
-  export type SignInData = import('./user').SignInData
-  export type TOTPRedirect = import('./user').TOTPRedirect
   export type UserSecurity = import('./user').UserSecurity
   export type TOTPSetup = import('./user').TOTPSetup
   export type Organization = import('./organization').Organization
@@ -37,7 +31,6 @@ export namespace Models {
   export type AgentAction = import('./agent').AgentAction
   export type AgentActionKind = import('./agent').AgentActionKind
   export type AgentActionStatus = import('./agent').AgentActionStatus
-  export type AgentActionPayload = import('./agent').AgentActionPayload
   export type AgentDraft = import('./agent').AgentDraft
   export type AgentBot = import('./agent-bot').AgentBot
   export type MCPServer = import('./mcp-server').MCPServer

@@ -159,6 +159,53 @@ func (h *emailAccountHandler) Delete(c fiber.Ctx) error {
 	return dtos.Message(c, fiber.StatusOK, "email account disconnected")
 }
 
+// Transfer moves a connected account to another organization of the same
+// user: the caller must be a member of the account's organization and of the
+// target one, so an account can never change hands between users. The mail,
+// agent conversations and drafts travel with it.
+func (h *emailAccountHandler) Transfer(c fiber.Ctx) error {
+	account, err := h.account(c)
+	if err != nil {
+		return err
+	}
+	var body dtos.EmailAccountMoveBody
+	if err := lib.ValidateRequestBody(c, &body); err != nil {
+		return err
+	}
+	target, err := uuid.Parse(body.OrganizationID)
+	if err != nil {
+		return apperr.New(apperr.KindBadRequest, "the target organization id is not a valid id")
+	}
+	if target == account.OrganizationID {
+		return apperr.New(apperr.KindBadRequest, "the account already belongs to this organization")
+	}
+	// The target must exist, be live (a trashed org reads as not found), and
+	// have the caller among its members — the same-user guarantee.
+	if _, err := member(c, h.app, target); err != nil {
+		return err
+	}
+	targetOrg, err := h.app.Repositories.Organization.Get(c.Context(), target)
+	if err != nil {
+		return err
+	}
+
+	moved, err := h.repo().UpdateOrganization(c.Context(), account.ID, target)
+	if err != nil {
+		return err
+	}
+	// One org id per activity entry (the source's, like Create/Delete); the
+	// metadata carries both ends.
+	recordActivity(c, h.app, account.OrganizationID, constant.ActivityEmailAccountMoved,
+		fmt.Sprintf("Moved the mailbox %s (%s) to %s", account.Email, account.Provider, targetOrg.Name),
+		map[string]any{
+			"from_organization_id": account.OrganizationID,
+			"to_organization_id":   target,
+			"provider":             account.Provider,
+			"email":                account.Email,
+		})
+	return dtos.OK(c, moved)
+}
+
 // OAuthStart answers with the provider's consent URL that connects a mailbox
 // over OAuth. The browser goes there; the callback then creates the account.
 func (h *emailAccountHandler) OAuthStart(c fiber.Ctx) error {

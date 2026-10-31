@@ -1,5 +1,4 @@
 import { cva, type VariantProps } from 'class-variance-authority'
-import { Slot as SlotPrimitive } from 'radix-ui'
 import * as React from 'react'
 
 import { cn } from '@/lib/utils'
@@ -23,20 +22,11 @@ const badgeVariants = cva(
         default: '',
         light: '',
         outline: '',
-        ghost: 'border-transparent bg-transparent',
-      },
-      disabled: {
-        true: 'opacity-50 pointer-events-none',
       },
       size: {
-        lg: 'rounded-md px-[0.5rem] h-7 min-w-7 gap-1.5 text-xs [&_svg]:size-3.5',
         md: 'rounded-md px-[0.45rem] h-6 min-w-6 gap-1.5 text-xs [&_svg]:size-3.5 ',
         sm: 'rounded-sm px-[0.325rem] h-5 min-w-5 gap-1 text-[0.6875rem] leading-[0.75rem] [&_svg]:size-3',
         xs: 'rounded-sm px-[0.25rem] h-4 min-w-4 gap-1 text-[0.625rem] leading-[0.5rem] [&_svg]:size-3',
-      },
-      shape: {
-        default: '',
-        circle: 'rounded-full',
       },
     },
     compoundVariants: [
@@ -76,73 +66,6 @@ const badgeVariants = cva(
         className:
           'text-[var(--color-destructive-accent,var(--color-red-700))] bg-[var(--color-destructive-soft,var(--color-red-50))] dark:bg-[var(--color-destructive-soft,var(--color-red-950))] dark:text-[var(--color-destructive-soft,var(--color-red-400))]',
       },
-      /* Outline */
-      {
-        variant: 'primary',
-        appearance: 'outline',
-        className:
-          'text-[var(--color-primary-accent,var(--color-blue-700))] border-[var(--color-primary-soft,var(--color-blue-100))] bg-[var(--color-primary-soft,var(--color-blue-50))] dark:bg-[var(--color-primary-soft,var(--color-blue-950))] dark:border-[var(--color-primary-soft,var(--color-blue-900))] dark:text-[var(--color-primary-soft,var(--color-blue-600))]',
-      },
-      {
-        variant: 'success',
-        appearance: 'outline',
-        className:
-          'text-[var(--color-success-accent,var(--color-green-700))] border-[var(--color-success-soft,var(--color-green-200))] bg-[var(--color-success-soft,var(--color-green-50))] dark:bg-[var(--color-success-soft,var(--color-green-950))] dark:border-[var(--color-success-soft,var(--color-green-900))] dark:text-[var(--color-success-soft,var(--color-green-600))]',
-      },
-      {
-        variant: 'warning',
-        appearance: 'outline',
-        className:
-          'text-[var(--color-warning-accent,var(--color-yellow-700))] border-[var(--color-warning-soft,var(--color-yellow-200))] bg-[var(--color-warning-soft,var(--color-yellow-50))] dark:bg-[var(--color-warning-soft,var(--color-yellow-950))] dark:border-[var(--color-warning-soft,var(--color-yellow-900))] dark:text-[var(--color-warning-soft,var(--color-yellow-600))]',
-      },
-      {
-        variant: 'info',
-        appearance: 'outline',
-        className:
-          'text-[var(--color-info-accent,var(--color-violet-700))] border-[var(--color-info-soft,var(--color-violet-100))] bg-[var(--color-info-soft,var(--color-violet-50))] dark:bg-[var(--color-info-soft,var(--color-violet-950))] dark:border-[var(--color-info-soft,var(--color-violet-900))] dark:text-[var(--color-info-soft,var(--color-violet-400))]',
-      },
-      {
-        variant: 'destructive',
-        appearance: 'outline',
-        className:
-          'text-[var(--color-destructive-accent,var(--color-red-700))] border-[var(--color-destructive-soft,var(--color-red-100))] bg-[var(--color-destructive-soft,var(--color-red-50))] dark:bg-[var(--color-destructive-soft,var(--color-red-950))] dark:border-[var(--color-destructive-soft,var(--color-red-900))] dark:text-[var(--color-destructive-soft,var(--color-red-600))]',
-      },
-      /* Ghost */
-      {
-        variant: 'primary',
-        appearance: 'ghost',
-        className: 'text-primary',
-      },
-      {
-        variant: 'secondary',
-        appearance: 'ghost',
-        className: 'text-secondary-foreground',
-      },
-      {
-        variant: 'success',
-        appearance: 'ghost',
-        className: 'text-[var(--color-success-accent,var(--color-green-500))]',
-      },
-      {
-        variant: 'warning',
-        appearance: 'ghost',
-        className: 'text-[var(--color-warning-accent,var(--color-yellow-500))]',
-      },
-      {
-        variant: 'info',
-        appearance: 'ghost',
-        className: 'text-[var(--color-info-accent,var(--color-violet-500))]',
-      },
-      {
-        variant: 'destructive',
-        appearance: 'ghost',
-        className: 'text-destructive',
-      },
-
-      { size: 'lg', appearance: 'ghost', className: 'px-0' },
-      { size: 'md', appearance: 'ghost', className: 'px-0' },
-      { size: 'sm', appearance: 'ghost', className: 'px-0' },
-      { size: 'xs', appearance: 'ghost', className: 'px-0' },
     ],
     defaultVariants: {
       variant: 'primary',
@@ -157,17 +80,12 @@ function Badge({
   variant,
   size,
   appearance,
-  shape,
-  asChild = false,
-  disabled,
   ...props
-}: React.ComponentProps<'span'> & VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
-  const Comp = asChild ? SlotPrimitive.Slot : 'span'
-
+}: React.ComponentProps<'span'> & VariantProps<typeof badgeVariants>) {
   return (
-    <Comp
+    <span
       data-slot="badge"
-      className={cn(badgeVariants({ variant, size, appearance, shape, disabled }), className)}
+      className={cn(badgeVariants({ variant, size, appearance }), className)}
       {...props}
     />
   )

@@ -37,7 +37,7 @@ function PlanBadge({ plan, unlimited }: { plan: string; unlimited: boolean }) {
  */
 export default function PlanCard({ children }: { children: React.ReactNode }) {
   const quotaQuery = useQuery(queries.quota.status())
-  const subscriptionQuery = useQuery(queries.billing.subscriptionWhilePending())
+  const subscriptionQuery = useQuery(queries.billing.subscription())
   const { data: security } = useQuery(queries.profile.security())
   const autoRenew = useMutation(queries.billing.autoRenew())
 

@@ -2,11 +2,13 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 
+	"montara-mail-agent/server/internal/lib"
 	"montara-mail-agent/server/internal/lib/constant"
 	"montara-mail-agent/server/internal/models"
 )
@@ -46,6 +48,37 @@ func (r *EmailAccountRepository) Insert(ctx context.Context, a models.EmailAccou
 func (r *EmailAccountRepository) Get(ctx context.Context, id uuid.UUID) (models.EmailAccount, error) {
 	query := fmt.Sprintf(`SELECT %s FROM email_accounts a WHERE a.id = $1`, emailAccountColumns)
 	return scanEmailAccount(r.queryRowContext(ctx, query, id))
+}
+
+// UpdateOrganization moves an account to another organization in one
+// transaction: the row itself, and the agent conversations and drafts that
+// reference it (they carry their own organization_id). Mails need nothing —
+// they hang off the account row and carry no organization of their own.
+func (r *EmailAccountRepository) UpdateOrganization(ctx context.Context, id, organizationID uuid.UUID) (models.EmailAccount, error) {
+	var moved models.EmailAccount
+	err := lib.WithTransaction(ctx, r.DB, func(tx *sql.Tx) error {
+		err := tx.QueryRowContext(ctx, `
+			UPDATE email_accounts a SET organization_id = $2, updated_at = now()
+			WHERE a.id = $1
+			RETURNING `+emailAccountColumns,
+			id, organizationID,
+		).Scan(&moved.ID, &moved.CreatedAt, &moved.UpdatedAt, &moved.OrganizationID, &moved.Provider, &moved.Label, &moved.Email,
+			&moved.IMAPHost, &moved.IMAPPort, &moved.Username, &moved.Password, &moved.OAuthAccessToken, &moved.OAuthRefreshToken,
+			&moved.OAuthTokenExpiry, &moved.SyncedAt, &moved.SyncError, &moved.SMTPHost, &moved.SMTPPort)
+		if err != nil {
+			return translateUnique(err, "this email account is already connected in that organization")
+		}
+		if _, err := tx.ExecContext(ctx,
+			`UPDATE agent_conversations SET organization_id = $2 WHERE email_account_id = $1`, id, organizationID,
+		); err != nil {
+			return err
+		}
+		_, err = tx.ExecContext(ctx,
+			`UPDATE agent_drafts SET organization_id = $2 WHERE email_account_id = $1`, id, organizationID,
+		)
+		return err
+	})
+	return moved, err
 }
 
 // ListByOrganization returns an organization's accounts, oldest first, each
