@@ -131,6 +131,12 @@ func (h *profileHandler) UpdatePreferences(c fiber.Ctx) error {
 		}
 		user.Metadata["split_inbox"] = *body.SplitInbox
 	}
+	if body.AgentPanel != nil && *body.AgentPanel != "" {
+		if user.Metadata == nil {
+			user.Metadata = map[string]any{}
+		}
+		user.Metadata["agent_panel"] = *body.AgentPanel
+	}
 	if user, err = users.Update(c.Context(), user); err != nil {
 		return err
 	}

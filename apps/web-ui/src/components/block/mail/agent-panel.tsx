@@ -115,6 +115,8 @@ interface AgentPanelProps {
   emailAccountId?: string
   /** The organization whose draft queue the automation fills. */
   organizationId?: string
+  /** Closes the panel; floating mode passes it, the embedded pane doesn't. */
+  onClose?: () => void
   className?: string
 }
 
@@ -157,7 +159,12 @@ function promptPlaceholder(emailAccountId?: string, about?: string, mailbox?: st
  * progress shown as it works and its proposed outbound mail awaiting an
  * explicit approval. Desktop only — the mail layout's third pane.
  */
-export default function AgentPanel({ emailAccountId, organizationId, className }: AgentPanelProps) {
+export default function AgentPanel({
+  emailAccountId,
+  organizationId,
+  onClose,
+  className,
+}: AgentPanelProps) {
   const [tab, setTab] = React.useState<'chat' | 'drafts'>('chat')
   const { data: accounts } = useMailAccounts()
   const mailbox = accounts?.find((item) => item.id === emailAccountId)
@@ -337,6 +344,19 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
             <Plus />
           </Button>
         </Hint>
+        {onClose && (
+          <Hint label="Close">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              aria-label="Close AI assistant"
+              onClick={onClose}
+            >
+              <X />
+            </Button>
+          </Hint>
+        )}
       </div>
 
       {/* Tabs */}

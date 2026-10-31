@@ -36,7 +36,7 @@ const updatePreferences = () => {
   const qc = getQueryClient()
 
   return mutationOptions({
-    mutationFn: async (body: { split_inbox: boolean }) => {
+    mutationFn: async (body: { split_inbox?: boolean; agent_panel?: 'beside' | 'floating' }) => {
       const res = await services.profile.updatePreferences(body)
       return res.data.data
     },

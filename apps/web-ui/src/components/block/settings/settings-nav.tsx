@@ -12,6 +12,7 @@ import {
   Plug,
   ShieldBan,
   ShieldCheck,
+  Sparkles,
   Trash2,
   User,
   Wand2,
@@ -48,6 +49,7 @@ const SETTINGS_GROUPS: { title: string; items: SettingsItem[] }[] = [
     title: 'Agent tools',
     items: [
       { title: 'Agent Bots', icon: Bot, url: '/settings/agent-bots' },
+      { title: 'AI Assistant Panel', icon: Sparkles, url: '/settings/ai-assistant-panel' },
       { title: 'Tools', icon: Wrench },
       { title: 'Skills', icon: Wand2, url: '/settings/skills' },
       { title: 'MCP', icon: Plug, url: '/settings/mcp' },

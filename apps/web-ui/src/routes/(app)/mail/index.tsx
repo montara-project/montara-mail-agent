@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import React from 'react'
 
 import MailList, { DEFAULT_PAGE_SIZE, pageSize } from '@/components/block/mail/mail-list'
 import MailReader from '@/components/block/mail/mail-reader'
 import {
   MAIL_LABELS,
+  useAgentPanelPosition,
   useMailAccount,
   useMailAccounts,
   useSplitInbox,
@@ -34,6 +35,10 @@ type MailSearch = {
 // The assistant pane is closed by default and desktop only, so its code waits until it opens.
 const AgentPanel = React.lazy(() => import('@/components/block/mail/agent-panel'))
 const AGENT_PANE = 'hidden w-80 shrink-0 border-l lg:flex xl:w-96'
+// Floating mode (Control Center > Agent tools > AI Assistant Panel) pins the
+// same panel over the page's bottom right corner instead of the third pane.
+const AGENT_FLOAT =
+  'fixed right-4 bottom-4 z-50 hidden h-[min(38rem,calc(100svh-5rem))] w-96 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border bg-card shadow-lg lg:block'
 
 const str = (value: unknown) => (typeof value === 'string' && value !== '' ? value : undefined)
 
@@ -65,6 +70,7 @@ function RouteComponent() {
   const { mail: mailId, agent, about } = Route.useSearch()
   const account = useMailAccount()
   const split = useSplitInbox()
+  const position = useAgentPanelPosition()
   const { data: accounts } = useMailAccounts()
   const aboutMail = useQuery(queries.mails.get(about))
   const aboutAccountId = aboutMail.data?.email_account_id
@@ -81,30 +87,44 @@ function RouteComponent() {
   const globalAccountId = about && !aboutMail.isError ? aboutAccountId : unattachedAccountId
   const agentAccountId = split === false ? globalAccountId : account?.id
 
+  const navigate = useNavigate()
+  const closeAgent = () => navigate({ to: '/mail', search: (s) => ({ ...s, agent: undefined }) })
+  const floating = position === 'floating'
+
+  // One panel, mounted where its preference puts it: the third pane beside the
+  // reader, or floating over the page's bottom right corner. The empty pane
+  // holds its width while the code loads, so the reader doesn't jump.
+  const panel = agent ? (
+    <React.Suspense fallback={<div className={floating ? 'h-full w-full' : AGENT_PANE} />}>
+      {/* Another mailbox starts another conversation. */}
+      <AgentPanel
+        key={agentAccountId}
+        emailAccountId={agentAccountId}
+        organizationId={organization?.id}
+        onClose={floating ? closeAgent : undefined}
+        className={floating ? 'h-full w-full' : AGENT_PANE}
+      />
+    </React.Suspense>
+  ) : null
+
   return (
-    // Viewport height minus the 4rem page header and 2rem of padding, so each column scrolls on its own.
-    <div className="bg-card flex h-[calc(100svh-6rem)] overflow-hidden rounded-xl border">
-      {/* On phones the list and the reader take turns. */}
-      <MailList className={cn('w-full md:w-80 md:border-r lg:w-96', mailId && 'hidden md:flex')} />
-      {mailId ? (
-        <MailReader key={mailId} mailId={mailId} />
-      ) : (
-        <div className="text-muted-foreground hidden flex-1 items-center justify-center p-6 text-center text-sm md:flex">
-          Select an email to read it.
-        </div>
-      )}
-      {agent && (
-        // The empty pane holds its width while the code loads, so the reader doesn't jump.
-        <React.Suspense fallback={<div className={AGENT_PANE} />}>
-          {/* Another mailbox starts another conversation. */}
-          <AgentPanel
-            key={agentAccountId}
-            emailAccountId={agentAccountId}
-            organizationId={organization?.id}
-            className={AGENT_PANE}
-          />
-        </React.Suspense>
-      )}
-    </div>
+    <>
+      {/* Viewport height minus the 4rem page header and 2rem of padding, so each column scrolls on its own. */}
+      <div className="bg-card flex h-[calc(100svh-6rem)] overflow-hidden rounded-xl border">
+        {/* On phones the list and the reader take turns. */}
+        <MailList
+          className={cn('w-full md:w-80 md:border-r lg:w-96', mailId && 'hidden md:flex')}
+        />
+        {mailId ? (
+          <MailReader key={mailId} mailId={mailId} />
+        ) : (
+          <div className="text-muted-foreground hidden flex-1 items-center justify-center p-6 text-center text-sm md:flex">
+            Select an email to read it.
+          </div>
+        )}
+        {!floating && panel}
+      </div>
+      {floating && panel && <div className={AGENT_FLOAT}>{panel}</div>}
+    </>
   )
 }

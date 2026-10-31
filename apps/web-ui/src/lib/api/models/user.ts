@@ -10,7 +10,11 @@ export interface User {
   created_at: ISO8601DateString
   updated_at: ISO8601DateString
   /** Authula's free-form metadata; the app keeps the user's timezone and preferences here. */
-  metadata?: { timezone?: string; split_inbox?: boolean } | null
+  metadata?: {
+    timezone?: string
+    split_inbox?: boolean
+    agent_panel?: 'beside' | 'floating'
+  } | null
 }
 
 /** GET /api/v1/auth/me. Authula answers unwrapped, without the {data} envelope. */

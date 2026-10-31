@@ -113,6 +113,16 @@ export function useSplitInbox() {
 }
 
 /**
+ * Where the AI assistant lives (Control Center > Agent tools > AI Assistant
+ * Panel): 'floating' over the mail page's bottom right corner, or 'beside',
+ * the default, the pane next to the email.
+ */
+export function useAgentPanelPosition(): 'beside' | 'floating' {
+  const { data } = useQuery(queries.auth.profile())
+  return data?.user?.metadata?.agent_panel === 'floating' ? 'floating' : 'beside'
+}
+
+/**
  * With Split inbox on, the account named by ?account=, falling back to the
  * first one. Undefined in the global inbox, while loading, or when none is connected.
  */
