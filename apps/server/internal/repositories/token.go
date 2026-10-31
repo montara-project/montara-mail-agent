@@ -19,9 +19,9 @@ type TokenUsageRepository struct{ BaseRepository }
 // disconnecting mid-call must not cancel the accounting.
 func (r *TokenUsageRepository) Insert(ctx context.Context, u models.TokenUsage) error {
 	_, err := r.execContext(ctx, `
-		INSERT INTO token_usage (user_id, organization_id, provider, model, purpose, input_tokens, output_tokens)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-		u.UserID, u.OrganizationID, u.Provider, u.Model, u.Purpose, u.InputTokens, u.OutputTokens)
+		INSERT INTO token_usage (user_id, organization_id, provider, model, purpose, input_tokens, output_tokens, weekly_limit)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+		u.UserID, u.OrganizationID, u.Provider, u.Model, u.Purpose, u.InputTokens, u.OutputTokens, u.WeeklyLimit)
 	return err
 }
 
@@ -41,9 +41,14 @@ type TokenBalanceRepository struct{ BaseRepository }
 
 // Balance returns userID's remaining pay-as-you-go tokens: everything the
 // top-ups bought, less what already covered weekly overflows, clamped at
-// zero. weeklyLimit is the tier's plans row allowance; nil (or <= 0) means
-// no overflow can exist, so the stored balance stands. Only sql.ErrNoRows
-// means an empty balance; anything else is a real failure.
+// zero. A week is measured against the allowance its usage rows recorded, so
+// a plan change doesn't rewrite past weeks; weeklyLimit, the tier's plans row
+// allowance, covers rows without one. nil (or <= 0) means no overflow can
+// exist, so the stored balance stands. Only sql.ErrNoRows means an empty
+// balance; anything else is a real failure.
+//
+// ponytail: unlimited-tier and pre-0019 rows carry no allowance and read as the
+// current tier's, and a week with a plan change counts its highest allowance.
 func (r *TokenBalanceRepository) Balance(ctx context.Context, userID uuid.UUID, weeklyLimit *int64) (int64, error) {
 	var stored int64
 	err := r.queryRowContext(ctx, `
@@ -61,8 +66,8 @@ func (r *TokenBalanceRepository) Balance(ctx context.Context, userID uuid.UUID, 
 	}
 	var overflow int64
 	err = r.queryRowContext(ctx, `
-		SELECT COALESCE(SUM(GREATEST(w.used - $2, 0)), 0) FROM (
-			SELECT SUM(input_tokens + output_tokens) AS used
+		SELECT COALESCE(SUM(GREATEST(w.used - COALESCE(w.lim, $2), 0)), 0) FROM (
+			SELECT SUM(input_tokens + output_tokens) AS used, MAX(weekly_limit) AS lim
 			FROM token_usage
 			WHERE user_id = $1
 			GROUP BY date_trunc('week', created_at AT TIME ZONE 'UTC')
@@ -72,25 +77,7 @@ func (r *TokenBalanceRepository) Balance(ctx context.Context, userID uuid.UUID, 
 	if err != nil {
 		return 0, err
 	}
-	return max64(stored - overflow), nil
-}
-
-// max64 clamps v at zero.
-func max64(v int64) int64 {
-	if v < 0 {
-		return 0
-	}
-	return v
-}
-
-// AddTokens credits userID's pay-as-you-go balance by delta (top-ups only).
-func (r *TokenBalanceRepository) AddTokens(ctx context.Context, userID uuid.UUID, delta int64) error {
-	_, err := r.execContext(ctx, `
-		INSERT INTO token_balances (user_id, balance_tokens) VALUES ($1, $2)
-		ON CONFLICT (user_id) DO UPDATE
-		SET balance_tokens = token_balances.balance_tokens + $2, updated_at = now()`,
-		userID, delta)
-	return err
+	return max(stored-overflow, 0), nil
 }
 
 // TokenTopupRepository tracks the pay-as-you-go purchases.
@@ -195,8 +182,9 @@ func (r *TokenTopupRepository) CountByUser(ctx context.Context, userID uuid.UUID
 // those usage rows, so the effective pay-as-you-go balance stays unchanged. It
 // returns the rows deleted. One transaction holds both steps: a fold whose rows
 // survived would be charged again by the next sweep. The lock makes a concurrent
-// sweep wait, then find nothing left to fold. Limits come from the plans
-// catalog; a nil limit means the tier is unlimited and carries no overflow.
+// sweep wait, then find nothing left to fold. A week's limit is the one its rows
+// recorded (see Balance), else the plans catalog's; a nil limit means the tier
+// is unlimited and carries no overflow.
 func (r *TokenBalanceRepository) FoldAndDeleteOldUsage(ctx context.Context, cutoff time.Time, free, pro, enterprise *int64) (int64, error) {
 	var deleted int64
 	err := lib.WithTransaction(ctx, r.DB, func(tx *sql.Tx) error {
@@ -210,17 +198,17 @@ func (r *TokenBalanceRepository) FoldAndDeleteOldUsage(ctx context.Context, cuto
 					ELSE GREATEST(w.used - l.lim, 0) END) AS over
 				FROM (
 					SELECT user_id, date_trunc('week', created_at AT TIME ZONE 'UTC') AS wk,
-						SUM(input_tokens + output_tokens) AS used
+						SUM(input_tokens + output_tokens) AS used, MAX(weekly_limit) AS recorded
 					FROM token_usage
 					WHERE date_trunc('week', created_at AT TIME ZONE 'UTC') < date_trunc('week', $1::timestamptz AT TIME ZONE 'UTC')
 					GROUP BY 1, 2
 				) w
 				JOIN users u ON u.id = w.user_id
 				CROSS JOIN LATERAL (
-					SELECT CASE u.plan
+					SELECT COALESCE(w.recorded, CASE u.plan
 						WHEN 'pro' THEN $3::bigint
 						WHEN 'enterprise' THEN $4::bigint
-						ELSE $2::bigint END AS lim
+						ELSE $2::bigint END) AS lim
 				) l
 				GROUP BY w.user_id
 			) x

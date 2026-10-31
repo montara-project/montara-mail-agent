@@ -18,20 +18,9 @@ type TokenUsage struct {
 	Purpose        string
 	InputTokens    int
 	OutputTokens   int
-}
-
-// The purpose a usage row carries.
-const (
-	TokenPurposeChat     = "chat"
-	TokenPurposeComplete = "complete"
-)
-
-// TokenBalance is a user's pay-as-you-go token balance: bought with top-ups,
-// spent only once the weekly allowance runs out, and never expiring.
-type TokenBalance struct {
-	UserID        uuid.UUID
-	BalanceTokens int64
-	UpdatedAt     time.Time
+	// WeeklyLimit is the allowance the user's plan had at the call; nil when
+	// their tier is unlimited.
+	WeeklyLimit *int64
 }
 
 // A token top-up's lifecycle: created pending, BorderPay's webhook flips it

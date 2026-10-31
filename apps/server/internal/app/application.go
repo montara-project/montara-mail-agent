@@ -79,7 +79,8 @@ var ErrQuotaExhausted = apperr.New(apperr.KindPaymentRequired, "Weekly AI quota 
 // Complete the stateless tasks use and the Chat with tool calling the agent
 // loop needs.
 func (a *Application) LLMFor(ctx context.Context, organizationID, userID uuid.UUID) (llm.ChatClient, error) {
-	if err := a.checkQuota(ctx, userID); err != nil {
+	limit, err := a.checkQuota(ctx, userID)
+	if err != nil {
 		return nil, err
 	}
 
@@ -87,7 +88,7 @@ func (a *Application) LLMFor(ctx context.Context, organizationID, userID uuid.UU
 	if apperr.IsNotFound(err) {
 		if a.AIConfig != nil {
 			cfg := *a.AIConfig
-			cfg.OnUsage = a.usageHook(userID, nil, cfg.Kind, cfg.Model)
+			cfg.OnUsage = a.usageHook(userID, nil, limit, cfg.Kind, cfg.Model)
 			return llm.New(cfg)
 		}
 		if a.AI != nil {
@@ -108,14 +109,14 @@ func (a *Application) LLMFor(ctx context.Context, organizationID, userID uuid.UU
 	}
 	return llm.New(llm.Config{
 		Kind: p.Kind, BaseURL: p.BaseURL, APIKey: key, Model: p.Model, HTTPClient: a.HTTPClient,
-		OnUsage: a.usageHook(userID, p.OrganizationID, p.Kind, p.Model),
+		OnUsage: a.usageHook(userID, p.OrganizationID, limit, p.Kind, p.Model),
 	})
 }
 
 // usageHook returns the metering callback: an async insert with its own
 // deadline, so a client disconnecting mid-call cannot cancel the accounting
 // for work the model already did (tera-router's meter pattern).
-func (a *Application) usageHook(userID uuid.UUID, organizationID *uuid.UUID, provider, model string) func(string, llm.Usage) {
+func (a *Application) usageHook(userID uuid.UUID, organizationID *uuid.UUID, weeklyLimit *int64, provider, model string) func(string, llm.Usage) {
 	return func(purpose string, usage llm.Usage) {
 		go func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -123,7 +124,7 @@ func (a *Application) usageHook(userID uuid.UUID, organizationID *uuid.UUID, pro
 			row := models.TokenUsage{
 				UserID: userID, OrganizationID: organizationID,
 				Provider: provider, Model: model, Purpose: purpose,
-				InputTokens: usage.Input, OutputTokens: usage.Output,
+				InputTokens: usage.Input, OutputTokens: usage.Output, WeeklyLimit: weeklyLimit,
 			}
 			if err := a.Repositories.TokenUsage.Insert(ctx, row); err != nil {
 				a.Logger.Warn("token usage not recorded", "error", err)
@@ -134,43 +135,50 @@ func (a *Application) usageHook(userID uuid.UUID, organizationID *uuid.UUID, pro
 
 // checkQuota refuses an AI call when the week's usage and the pay-as-you-go
 // balance are both spent. The weekly allowance is the plan's; the balance is
-// the overflow a top-up bought, spent only once the allowance runs out.
-func (a *Application) checkQuota(ctx context.Context, userID uuid.UUID) error {
+// the overflow a top-up bought, spent only once the allowance runs out. It
+// returns the allowance it enforced for the call's usage row, nil when none.
+func (a *Application) checkQuota(ctx context.Context, userID uuid.UUID) (*int64, error) {
 	// The Community Edition has nothing to buy, so nothing to run out of.
 	if config.Community() {
-		return nil
+		return nil, nil
 	}
 	role, err := a.Repositories.User.Role(ctx, userID)
+	if apperr.IsNotFound(err) {
+		return nil, nil // an unknown user has no quota to check; the AI call fails on its own merits
+	}
 	if err != nil {
-		return nil // an unknown user has no quota to check; the AI call fails on its own merits
+		return nil, err
 	}
 	if role == constant.RoleSuperUser {
-		return nil
+		return nil, nil
 	}
 	plan, err := a.Repositories.User.Plan(ctx, userID)
+	if apperr.IsNotFound(err) {
+		return nil, nil
+	}
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	// The allowance is the tier's plans row; an unknown or unseeded tier, or
 	// a NULL weekly_tokens, enforces nothing (fail open: self-hosted servers
 	// without the seed bill nobody).
 	limit := a.WeeklyTokenLimit(plan)
 	if limit == nil || *limit <= 0 {
-		return nil
+		return nil, nil
 	}
 	used, err := a.Repositories.TokenUsage.SumSince(ctx, userID, period.WeekStart(time.Now()))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if used < *limit {
-		return nil
+		return limit, nil
 	}
 	balance, err := a.Repositories.TokenBalance.Balance(ctx, userID, limit)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if balance > 0 {
-		return nil
+		return limit, nil
 	}
-	return ErrQuotaExhausted
+	return nil, ErrQuotaExhausted
 }

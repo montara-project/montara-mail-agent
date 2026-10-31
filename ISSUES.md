@@ -2,7 +2,7 @@
 
 Diperbarui: 2026-10-31 · Branch `dev` · Scope: `apps/server` (Go/Fiber/Authula), `apps/web-ui` (React/Vite), `apps/main-web`, `apps/docs`, `.github/workflows`
 
-Audit sebelumnya (2026-10-25, S-1 s.d. S-8) diringkas di bagian 4. Sejak itu masuk: agent chat + tools + approval, agent bots, skills, MCP server eksternal (termasuk OAuth hosted), endpoint `/mcp` + API key, IP block, scope LLM provider global, dan situs docs. Audit ini mencakup semuanya.
+Audit sebelumnya (2026-10-25, S-1 s.d. S-8) diringkas di bagian 4. Sejak itu masuk: agent chat + tools + approval, agent bots, skills, MCP server eksternal (termasuk OAuth hosted), endpoint `/mcp` + API key, IP block, scope LLM provider platform, situs docs, plan, subscription, dan wallet. Audit ini mencakup semuanya.
 
 Isi:
 
@@ -268,9 +268,10 @@ Cakupan baru sejak audit 2026-10-29: metering `token_usage`, kuota mingguan per 
 
 - **Fix:** Sweep harian yang sama menandai top up `pending` berumur > 24 jam sebagai `expired` (BorderPay meng-expire QRIS 60 menit, jadi ini tak pernah terbayar).
 
-### Q-13 · Low — `users.plan` hanya bisa diubah via SQL — ⏸ DEFERRED
+### Q-13 · Low — `users.plan` hanya bisa diubah via SQL — ✅ FIXED
 
-- **What:** Belum ada admin UI untuk memindahkan user free → subscribed; enforcement 100M/"Unlimited" sudah aktif menunggu jalur pembelian.
+- **What:** Belum ada jalur membeli plan; enforcement sudah aktif.
+- **Fix:** Checkout subscription (`POST /me/billing/subscription/checkout`) memindahkan user ke `pro` saat webhook paid. Plan `enterprise` tetap diatur manual lewat SQL.
 
 ### Q-14 · Low — List top up salah envelope JSON — ✅ FIXED
 
@@ -287,6 +288,85 @@ Cakupan baru sejak audit 2026-10-29: metering `token_usage`, kuota mingguan per 
 
 - **Where:** `apps/web-ui/src/hooks/use-active-organization.ts`
 - **Fix:** Nilai legacy `activeOrganizationId` dimigrasi ke kunci per-user hanya bila id-nya termasuk member list user tsb, lalu kunci bersama dihapus apa pun hasilnya.
+
+---
+
+### Batch 2026-10-31 (B-) — plan, subscription, wallet, scope provider platform
+
+Cakupan baru sejak batch Q-: katalog plan, subscription + renewal dari wallet (migrasi 0018), top up wallet, label mailbox OAuth, scope provider platform, dan halaman pricing main-web. Urut level.
+
+**Verifikasi:** test integrasi Go lulus dengan `-race` di PostgreSQL 18 sementara, termasuk test baru untuk B-1, B-2, B-3, B-5, B-8 dan B-9. `deadcode`, `staticcheck` dan `pnpm audit --prod` bersih; `govulncheck` tidak menemukan celah yang terpanggil. Typecheck web-ui dan build main-web lulus.
+
+### B-1 · Medium — Sweep paralel bisa menagih wallet dua kali — ✅ FIXED
+
+- **Where:** `apps/server/internal/repositories/billing.go` (`renewOne`)
+- **What:** Komentar menyebut "row lock", tetapi `SELECT count(*)` tidak mengunci apa pun. Dua instance yang sweep bersamaan, misalnya saat rolling deploy, sama-sama lolos cek. Keduanya memotong saldo dan menulis ledger, sedangkan periode hanya diperpanjang sekali.
+- **Fix:** `SELECT auto_renew ... FOR UPDATE`. Sweep kedua menunggu, lalu tidak menemukan baris yang jatuh tempo. Status `auto_renew` juga dibaca di bawah kunci, bukan dari daftar lama.
+
+### B-2 · Medium — Plan tanpa promo membuat Pro tidak pernah berakhir — ✅ FIXED
+
+- **Where:** `apps/server/internal/repositories/billing.go` (`DueForRenewal`, `RenewDue`)
+- **What:** `discount_amount` boleh NULL, tetapi di-scan ke `int64`. Saat promo seed dihapus, misalnya lewat edit SQL, seluruh sweep gagal dengan log Warn saja. Tidak ada subscription yang diperpanjang atau kedaluwarsa, sehingga pengguna tetap Pro tanpa membayar. Satu baris gagal juga menghentikan sisanya.
+- **Fix:** `COALESCE(p.discount_amount, 0)`. `RenewDue` kini lanjut ke subscription berikutnya dan mengembalikan semua error lewat `errors.Join`.
+
+### B-3 · Medium — Perubahan plan mengubah saldo PAYG yang sudah dibayar — ✅ FIXED (PARSIAL)
+
+- **Where:** `apps/server/internal/repositories/token.go` (`Balance`, `FoldAndDeleteOldUsage`), `internal/app/application.go`
+- **What:** Overflow semua minggu dihitung ulang memakai jatah plan saat ini. Turun dari Pro ke Free membuat pemakaian Pro lama terbaca sebagai overflow, sehingga top up yang sudah dibayar terkuras. Naik dari Free ke Pro mengembalikan token yang sudah terpakai.
+- **Fix:** Migrasi 0019 menambah `token_usage.weekly_limit`, yaitu jatah saat panggilan dibuat. `Balance` dan sweep mengukur tiap minggu dengan jatah itu.
+- **Sisa:** Baris dari tier unlimited dan baris sebelum 0019 tetap memakai jatah tier saat ini. Minggu dengan perubahan plan memakai jatah tertinggi, sehingga pengguna yang turun plan di tengah minggu bisa memakai PAYG tanpa terpotong sampai minggu itu berakhir.
+
+### B-4 · Low — Kuota terbuka saat database bermasalah — ✅ FIXED
+
+- **Where:** `apps/server/internal/app/application.go` (`checkQuota`), `cmd/api/server.go` (`serve`)
+- **What:** Error apa pun saat membaca role atau plan meloloskan panggilan AI. Gagal memuat katalog saat boot juga menghapus semua batas hingga sweep berikutnya, sampai 24 jam, padahal token platform berbayar.
+- **Fix:** Hanya user yang tidak ditemukan yang lolos; error lain dikembalikan. Gagal memuat katalog menghentikan boot. Katalog kosong tetap jalan tanpa batas untuk server yang belum di-seed, kini dengan log Warn.
+
+### B-5 · Low — Checkout gagal atau ditinggalkan mengunci pembelian hingga 48 jam — ✅ FIXED
+
+- **Where:** `apps/server/internal/handlers/billing.go` (`Checkout`), `internal/repositories/billing.go`
+- **What:** Satu user hanya boleh punya satu subscription `pending` atau `active`, tanpa cara membatalkan. BorderPay yang gagal, atau QRIS yang kedaluwarsa setelah 60 menit, membuat user menunggu sweep harian untuk baris berumur lebih dari 24 jam.
+- **Fix:** `ExpirePending`: checkout gagal langsung diakhiri, dan checkout baru menggantikan `pending` yang berumur lebih dari 2 jam.
+
+### B-6 · Low — Endpoint pembelian tanpa budget ketat — ✅ FIXED
+
+- **Where:** `apps/server/cmd/api/routes.go`
+- **What:** Top up token, top up wallet dan checkout memanggil API BorderPay dan menulis baris baru, tetapi memakai budget umum 120 per menit.
+- **Fix:** Ketiganya memakai budget `slow` (10 per menit).
+
+### B-7 · Low — Top up wallet terlalu besar menghasilkan error 500 — ✅ FIXED
+
+- **Where:** `apps/server/internal/handlers/billing.go` (`WalletTopup`)
+- **What:** Nominal `int64` masuk ke kolom `INTEGER` tanpa batas atas.
+- **Fix:** Nominal di atas `math.MaxInt32` dijawab 400. Batas per transaksi dari BorderPay belum diterapkan di server.
+
+### B-8 · Low — `canceled_at` tidak pernah terisi — ✅ FIXED
+
+- **Where:** `apps/server/internal/repositories/billing.go` (`SetAutoRenew`)
+- **What:** Query selalu menulis NULL, sehingga tidak ada catatan kapan user mematikan perpanjangan.
+- **Fix:** Mematikan `auto_renew` mengisi waktu saat itu; menyalakannya mengosongkan kolom.
+
+### B-9 · Low — Base URL provider platform terlihat oleh semua user — ✅ FIXED
+
+- **Where:** `apps/server/internal/handlers/llm_provider.go` (`List`)
+- **What:** `GET /llm-providers` mengirim `base_url` provider platform ke user biasa, padahal bisa berisi host internal. API key tidak bocor.
+- **Fix:** `base_url` provider platform dikosongkan kecuali untuk super user.
+
+### B-10 · Info — `pay_url` kosong dari BorderPay diterima — ✅ FIXED
+
+- **Where:** `apps/server/internal/handlers/billing.go` (`borderPayCheckout`)
+- **Fix:** Jawaban tanpa `pay_url` dijawab 502, bukan checkout tanpa tautan bayar.
+
+### B-11 · Info — main-web tanpa header keamanan selain HSTS — ✅ FIXED (PARSIAL)
+
+- **Where:** `apps/main-web/public/_headers`
+- **Fix:** `X-Content-Type-Options`, `Referrer-Policy` dan `X-Frame-Options`. File ikut ke output build, tetapi header belum dicek di domain produksi.
+- **Sisa:** CSP belum ada, dan respons yang dirender Worker tidak memakai file ini.
+
+### B-12 · Info — Webhook tidak membandingkan nominal yang dibayar — ⏸ ACCEPTED
+
+- **Where:** `apps/server/internal/handlers/quota.go` (`BorderPayWebhook`)
+- **Alasan:** Nominal dan `reference_id` dibuat server saat checkout, dan webhook diautentikasi token. Payload BorderPay yang diproses saat ini tidak memakai nominal.
 
 ---
 
@@ -307,12 +387,23 @@ delete: createTopupBody, struct kosong yang tidak pernah di-bind handler. Replac
 stdlib: max64, clamping yang Go sediakan sebagai builtin. Replacement: max(0, v). [apps/server/internal/repositories/token.go] — FIXED
 yagni: TokenUsage.EmailAccountID + kolomnya, selalu NULL karena usageHook tidak pernah mengisinya. Replacement: dijatuhkan via migrasi 0016. [apps/server/internal/models/token.go, migrations/0015_token_quota.up.sql] — FIXED
 yagni: quotaStatus.WeekStart, TopupCheckout.QRString dan ExpiresAt — terkirim ke UI, tidak pernah dibaca. Replacement: buang field, atau tampilkan. [apps/server/internal/handlers/quota.go, apps/web-ui/src/lib/api/models/quota.ts] — FIXED
+
+Batch 2026-10-31 (kode baru: plan, subscription, wallet):
+
+delete: WalletRepository.Credit, DeductIfAvailable, AddTransaction, ByIDForUser, tanpa pemanggil. Replacement: nothing. [apps/server/internal/repositories/billing.go] — FIXED
+delete: TokenBalanceRepository.AddTokens, tercatat FIXED di atas tetapi masih ada di kode. Replacement: nothing. [apps/server/internal/repositories/token.go] — FIXED
+delete: models.TokenBalance, TokenPurposeChat, TokenPurposeComplete, SubscriptionStatusCanceled, WalletKindAdjustment, tanpa pemakai. Replacement: nothing. [apps/server/internal/models/token.go, billing.go] — FIXED
+delete: APIKeyDto dan IPBlockDto, tipe tanpa pemakai. Replacement: nothing. [apps/web-ui/src/lib/api/dtos/settings/] — FIXED
+stdlib: max64, tercatat FIXED di atas tetapi masih ada di kode. Replacement: max(stored-overflow, 0). [apps/server/internal/repositories/token.go] — FIXED
+shrink: Scan 17 kolom ditulis ulang di MarkPaidAndActivate. Replacement: scanSubscription. [apps/server/internal/repositories/billing.go] — FIXED
+shrink: parameter now di RenewDue tidak dipakai. Replacement: buang. [apps/server/internal/repositories/billing.go] — FIXED
+shrink: QRString dan ExpireAt didecode lalu dibuang di borderPayCheckout. Replacement: hanya PayURL. [apps/server/internal/handlers/billing.go] — FIXED
 ```
 
-`deadcode -test ./...` pada pohon baru: hanya temuan di atas; sisanya bersih.
-net: about -30 lines, -0 deps (batch ini). — SEMUA FIXED
+`deadcode ./...`, tanpa `-test`, kini kosong. `-test` menganggap fungsi yang hanya dipakai test sebagai hidup, jadi pakai versi tanpa flag.
+net: about -95 lines, -0 deps (batch ini). — SEMUA FIXED
 
-`deadcode -test ./...` kini kosong. Web-ui: tidak ada modul atau method service yang tidak dipakai.
+Web-ui: komponen UI sudah lean, knip tidak menemukan file atau dependensi yang tidak dipakai. `@lexical/*` tampak tak diimpor, tetapi merupakan peer dependency `@lexkit/editor`. Sisa laporan knip adalah tipe yang dipakai lewat re-export `Models`.
 
 Sengaja dipertahankan (keputusan user): kartu "Soon" untuk Billing, Members, Roles, Tools dan Plugins.
 
@@ -326,7 +417,7 @@ Semua rute `/api/v1` kecuali yang tercantum di dua tabel di bawah. Ini termasuk:
 
 - organizations, email-accounts, mails, AI per-mail;
 - llm-providers, agent-bots, skills, mcp-servers, agent (chat SSE, conversations, actions, drafts);
-- `me` (profile, security, password, activity-logs, api-keys), ip-blocks;
+- `me` (profile, security, password, activity-logs, api-keys, quota, billing), ip-blocks;
 - rute Authula: `me`, `sign-out`, `email-password/sign-in`, `token`, `token/refresh`, `totp/*`, `oauth2/authorize/google`;
 - `GET /health` (pemilih server di halaman sign-in).
 
@@ -340,6 +431,7 @@ Semua rute `/api/v1` kecuali yang tercantum di dua tabel di bawah. Ini termasuk:
 | `GET /api/v1/mcp-servers/oauth/callback` | Redirect dari MCP server hosted |
 | `GET /api/v1/auth/oauth2/callback/google` | Redirect sign-in Google |
 | `GET /api/v1/auth/email-password/verify-email` | Link di email verifikasi |
+| `POST /api/v1/webhooks/borderpay` | Webhook pembayaran BorderPay, diautentikasi token |
 
 ### Ada di API, belum ada UI
 
@@ -384,6 +476,10 @@ Semua rute `/api/v1` kecuali yang tercantum di dua tabel di bawah. Ini termasuk:
 - **OAuth discovery MCP:**
   - Lewat transport yang di-guard, tanpa proxy dari environment.
   - Menolak skema `javascript:`/`data:`, endpoint non-https, dan downgrade redirect.
+- **Billing:**
+  - Webhook idempoten per status; status dan kredit satu transaksi.
+  - Top up, ledger dan subscription selalu difilter `user_id`.
+  - Satu subscription hidup per user dijaga unique index.
 - **Secrets:** semua kolom rahasia `json:"-"` dan disegel `SecretBox`. LLM key terikat ke base URL-nya. Header MCP terikat ke URL-nya (M-2).
 - **X-Forwarded-For:** Fiber v3.5 mem-parsing dari kanan melewati trusted proxy dengan validasi IP.
 - **Web-ui:**

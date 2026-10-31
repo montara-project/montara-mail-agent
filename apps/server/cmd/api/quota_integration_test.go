@@ -58,12 +58,10 @@ func testTokenQuota(t *testing.T, call callFunc, application *app.Application, d
 	}
 
 	// The webhook verifies its shared token first.
-	pending := models.TokenTopup{ReferenceID: "topup-test-1", Tokens: 500, Status: models.TopupStatusPending}
 	if _, err := db.Exec(`INSERT INTO token_topups (user_id, amount_idr, tokens, status, reference_id)
 		VALUES ($1, 10000, 500, 'pending', 'topup-test-1')`, userID); err != nil {
 		t.Fatal(err)
 	}
-	_ = pending
 
 	// The history pages: 12 top-ups, newest first, 10 to a page by default.
 	if _, err := db.Exec(`INSERT INTO token_topups (user_id, amount_idr, tokens, status, reference_id)
@@ -164,5 +162,55 @@ func testTokenQuota(t *testing.T, call callFunc, application *app.Application, d
 	}
 	if deleted := sweep(); deleted != 0 || storedBalance() != before-50 {
 		t.Fatalf("second sweep: deleted %d, stored %d, want 0 and %d", deleted, storedBalance(), before-50)
+	}
+
+	// A week spent under a bigger allowance keeps it: the same 5000 tokens drain
+	// the balance only when measured against the current 1000.
+	paygBalance := func() float64 {
+		t.Helper()
+		status, out := call(http.MethodGet, "/api/v1/me/quota", userToken, nil)
+		if status != http.StatusOK {
+			t.Fatalf("quota: %d %v", status, out)
+		}
+		return data(out)["payg_balance_tokens"].(float64)
+	}
+	balance := paygBalance()
+	if _, err := db.Exec(`INSERT INTO token_usage (user_id, provider, model, purpose, input_tokens, output_tokens, weekly_limit, created_at)
+		VALUES ($1, 'p', 'm', 'test', 2500, 2500, 100000, now() - interval '14 days')`, userID); err != nil {
+		t.Fatal(err)
+	}
+	if got := paygBalance(); got != balance {
+		t.Fatalf("balance after a week under a bigger allowance: %v, want %v", got, balance)
+	}
+	if deleted := sweep(); deleted != 1 || storedBalance() != before-50 {
+		t.Fatalf("sweep of a week under a bigger allowance: deleted %d, stored %d, want 1 and %d", deleted, storedBalance(), before-50)
+	}
+
+	// Only a super user sees where the platform's model runs.
+	if status, out := call(http.MethodPut, "/api/v1/llm-providers/platform", superToken, map[string]any{"kind": "openai", "model": "m", "api_key": "sk-x", "base_url": "https://llm.example.com/v1"}); status != http.StatusOK {
+		t.Fatalf("platform provider: %d %v", status, out)
+	}
+	platformBaseURL := func(token string) any {
+		t.Helper()
+		status, out := call(http.MethodGet, "/api/v1/llm-providers", token, nil)
+		if status != http.StatusOK {
+			t.Fatalf("providers: %d %v", status, out)
+		}
+		for _, row := range out["data"].([]any) {
+			if p := row.(map[string]any); p["organization_id"] == nil {
+				return p["base_url"]
+			}
+		}
+		t.Fatal("providers list misses the platform one")
+		return nil
+	}
+	if got := platformBaseURL(superToken); got != "https://llm.example.com/v1" {
+		t.Fatalf("platform base URL for a super user: %v", got)
+	}
+	if got := platformBaseURL(userToken); got != "" {
+		t.Fatalf("platform base URL for a plain user: %v, want it hidden", got)
+	}
+	if status, _ := call(http.MethodDelete, "/api/v1/llm-providers/platform", superToken, nil); status != http.StatusOK {
+		t.Fatalf("platform provider delete: %d, want 200", status)
 	}
 }

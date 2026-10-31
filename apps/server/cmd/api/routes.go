@@ -67,17 +67,18 @@ func routes(r *fiber.App, app *app.Application) {
 		me.Get("/quota", h.Quota.Status)
 		me.Get("/quota/topups", h.Quota.ListTopups)
 		me.Get("/quota/topups/:id", h.Quota.GetTopup)
-		me.Post("/quota/topups", idempotent, h.Quota.CreateTopup)
+		// Each purchase below calls BorderPay, so they share the slow budget.
+		me.Post("/quota/topups", slow, idempotent, h.Quota.CreateTopup)
 		// Pricing plans, the subscription that renews from the IDR wallet, and
 		// the wallet's ledger and top-ups.
 		me.Get("/billing/plans", h.Billing.Plans)
 		me.Get("/billing/subscription", h.Billing.Subscription)
-		me.Post("/billing/subscription/checkout", idempotent, h.Billing.Checkout)
+		me.Post("/billing/subscription/checkout", slow, idempotent, h.Billing.Checkout)
 		me.Post("/billing/subscription/auto-renew", idempotent, h.Billing.AutoRenew)
 		me.Get("/billing/wallet", h.Billing.Wallet)
 		me.Get("/billing/wallet/transactions", h.Billing.WalletTransactions)
 		me.Get("/billing/wallet/topups", h.Billing.WalletTopups)
-		me.Post("/billing/wallet/topup", idempotent, h.Billing.WalletTopup)
+		me.Post("/billing/wallet/topup", slow, idempotent, h.Billing.WalletTopup)
 	}
 	// Not idempotent: a replay would serve the key itself from the cache. A
 	// duplicate key is cheap to revoke.

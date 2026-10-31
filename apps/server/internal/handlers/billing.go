@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"math"
 	"net/http"
 	"strings"
 	"time"
@@ -20,6 +21,10 @@ import (
 )
 
 type billingHandler struct{ app *app.Application }
+
+// abandonedCheckoutAge is when a new checkout replaces a pending one: an hour
+// past the QRIS's own expiry, so a payment in flight still lands.
+const abandonedCheckoutAge = 2 * time.Hour
 
 // borderPayCheckout calls BorderPay's create-payment API: a QRIS payment for
 // amount rupiah under referenceID, returning the user to returnURL. Shared by
@@ -54,11 +59,9 @@ func borderPayCheckout(ctx context.Context, a *app.Application, amount int64, re
 		return "", apperr.New(apperr.KindBadGateway, "BorderPay refused the payment: try again")
 	}
 	var out struct {
-		PayURL   string `json:"pay_url"`
-		QRString string `json:"qr_string"`
-		ExpireAt string `json:"expires_at"`
+		PayURL string `json:"pay_url"`
 	}
-	if err := json.Unmarshal(raw, &out); err != nil {
+	if err := json.Unmarshal(raw, &out); err != nil || out.PayURL == "" {
 		return "", apperr.New(apperr.KindBadGateway, "BorderPay answered something unexpected")
 	}
 	return out.PayURL, nil
@@ -111,6 +114,10 @@ func (h *billingHandler) Checkout(c fiber.Ctx) error {
 	if !plan.Active || plan.BillingInterval == nil {
 		return apperr.New(apperr.KindBadRequest, "This plan cannot be purchased")
 	}
+	// BorderPay's QRIS lasts an hour, so an older checkout can't be paid anymore.
+	if err := h.app.Repositories.Subscription.ExpirePending(c.Context(), uid, abandonedCheckoutAge); err != nil {
+		return err
+	}
 	_, liveErr := h.app.Repositories.Subscription.LiveByUser(c.Context(), uid)
 	if liveErr == nil {
 		return apperr.New(apperr.KindConflict, "You already have a subscription in progress")
@@ -134,6 +141,10 @@ func (h *billingHandler) Checkout(c fiber.Ctx) error {
 	returnURL := strings.TrimSuffix(h.app.Config.BorderPay.ReturnURL, "/")
 	payURL, err := borderPayCheckout(c.Context(), h.app, amount, sub.ReferenceID, returnURL)
 	if err != nil {
+		// Nothing to pay at: free the user's one live subscription for a retry.
+		if expireErr := h.app.Repositories.Subscription.ExpirePending(c.Context(), uid, 0); expireErr != nil {
+			h.app.Logger.Warn("expire failed checkout", "subscription", id, "error", expireErr)
+		}
 		return err
 	}
 	sub.PayURL = payURL
@@ -194,6 +205,10 @@ func (h *billingHandler) WalletTopup(c fiber.Ctx) error {
 	}
 	if body.AmountIDR < 10_000 {
 		return apperr.New(apperr.KindBadRequest, "The smallest top-up is Rp10.000")
+	}
+	// wallet_topups.amount_idr is an INTEGER.
+	if body.AmountIDR > math.MaxInt32 {
+		return apperr.New(apperr.KindBadRequest, "This top-up is too large")
 	}
 	id, err := uuid.NewV7()
 	if err != nil {

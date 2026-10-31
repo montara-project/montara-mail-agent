@@ -76,6 +76,10 @@ func (h *llmProviderHandler) List(c fiber.Ctx) error {
 	}
 	views := make([]llmProviderListView, len(rows))
 	for i, row := range rows {
+		// Where the platform's model runs is the operator's business.
+		if !super && row.OrganizationID == nil {
+			row.BaseURL = ""
+		}
 		views[i] = llmProviderListView{row, len(row.APIKey) > 0}
 	}
 	meta := dtos.Metadata{"super_user": super, "fallback": h.app.AIConfig != nil || h.app.AI != nil, "private_hosts": h.app.Config.App.AllowPrivateHosts}

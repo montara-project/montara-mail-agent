@@ -14,19 +14,17 @@ const (
 
 // A subscription's lifecycle: created pending at checkout, active once
 // BorderPay's webhook confirms the payment, then renewed from the wallet
-// until it expires (no balance or auto-renew off) or is canceled early.
+// until it expires (no balance or auto-renew off).
 const (
-	SubscriptionStatusPending  = "pending"
-	SubscriptionStatusActive   = "active"
-	SubscriptionStatusExpired  = "expired"
-	SubscriptionStatusCanceled = "canceled"
+	SubscriptionStatusPending = "pending"
+	SubscriptionStatusActive  = "active"
+	SubscriptionStatusExpired = "expired"
 )
 
 // The wallet ledger's movement kinds (wallet_transactions.kind).
 const (
 	WalletKindTopup              = "topup"
 	WalletKindSubscriptionCharge = "subscription_charge"
-	WalletKindAdjustment         = "adjustment"
 )
 
 // Plan is one row of the pricing catalog: what a tier costs and what it

@@ -50,14 +50,18 @@ func serve(app *app.Application) error {
 	defer stop()
 
 	// Warm the plan catalog before the first request; the daily billing
-	// sweep refreshes it. A failure warns rather than stops: the catalog
-	// fails open (unenforced) while it cannot read. The Community Edition
-	// never loads it, so no plan limit applies there.
+	// sweep refreshes it. A failure stops the boot: an empty catalog enforces
+	// no limit, so a passing database error would lift every quota until the
+	// next sweep. A database without the seeded rows starts, unenforced. The
+	// Community Edition never loads it, so no plan limit applies there.
 	if !config.Community() {
 		loadCtx, cancelLoad := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancelLoad()
 		if err := app.ReloadPlans(loadCtx); err != nil {
-			app.Logger.Warn("plan catalog load failed", "error", err)
+			return fmt.Errorf("load plan catalog: %w", err)
+		}
+		if _, seeded := app.PlanForTier(constant.PlanFree); !seeded {
+			app.Logger.Warn("plan catalog is empty, so no plan limit is enforced: run the server once with SEED_ON_BOOT=true")
 		}
 		go sweepBilling(ctx, app)
 	}
@@ -209,7 +213,7 @@ func sweepBillingOnce(ctx context.Context, app *app.Application) {
 	if err := app.ReloadPlans(ctx); err != nil {
 		app.Logger.Warn("plan catalog reload failed", "error", err)
 	}
-	renewed, expired, err := app.Repositories.Subscription.RenewDue(ctx, time.Now())
+	renewed, expired, err := app.Repositories.Subscription.RenewDue(ctx)
 	if err != nil {
 		app.Logger.Warn("subscription renewal sweep failed", "error", err)
 	} else if renewed > 0 || expired > 0 {

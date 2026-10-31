@@ -6,6 +6,7 @@ import (
 	"errors"
 	"time"
 
+	"montara-mail-agent/server/internal/lib/apperr"
 	"montara-mail-agent/server/internal/lib/constant"
 	"montara-mail-agent/server/internal/models"
 
@@ -116,8 +117,7 @@ func (r *SubscriptionRepository) MarkPaidAndActivate(ctx context.Context, refere
 	}
 	defer tx.Rollback()
 
-	var s models.Subscription
-	err = tx.QueryRowContext(ctx, `
+	s, err := scanSubscription(tx.QueryRowContext(ctx, `
 		UPDATE subscriptions s
 		SET status = $2,
 			current_period_start = now(),
@@ -128,13 +128,8 @@ func (r *SubscriptionRepository) MarkPaidAndActivate(ctx context.Context, refere
 		WHERE s.plan_id = p.id AND s.reference_id = $1 AND s.status = $3
 		RETURNING `+subscriptionColumns,
 		referenceID, models.SubscriptionStatusActive, models.SubscriptionStatusPending,
-	).Scan(
-		&s.ID, &s.CreatedAt, &s.UpdatedAt, &s.UserID, &s.PlanID,
-		&s.PlanCode, &s.PlanName, &s.BillingInterval,
-		&s.Status, &s.CurrentPeriodStart, &s.CurrentPeriodEnd, &s.Amount, &s.Currency,
-		&s.ReferenceID, &s.PayURL, &s.AutoRenew, &s.CanceledAt,
-	)
-	if errors.Is(err, sql.ErrNoRows) {
+	))
+	if apperr.IsNotFound(err) {
 		return models.Subscription{}, false, nil
 	}
 	if err != nil {
@@ -154,16 +149,17 @@ func (r *SubscriptionRepository) MarkPaidAndActivate(ctx context.Context, refere
 	return s, true, nil
 }
 
-// DueForRenewal lists the active subscriptions whose period has ended, with
-// the plan's pricing columns for the effective-price computation.
+// dueRow is a subscription whose period has ended, with its plan's pricing.
 type dueRow struct {
 	sub  models.Subscription
 	plan models.Plan
 }
 
+// DueForRenewal lists the active subscriptions whose period has ended, with
+// the plan's pricing columns for the effective-price computation.
 func (r *SubscriptionRepository) DueForRenewal(ctx context.Context) ([]dueRow, error) {
 	rows, err := r.queryContext(ctx, `SELECT `+subscriptionColumns+
-		`, p.amount, p.discount_amount, p.discount_ends_at`+subscriptionJoins+
+		`, p.amount, COALESCE(p.discount_amount, 0), p.discount_ends_at`+subscriptionJoins+
 		` WHERE s.status = $1 AND s.current_period_end <= now()
 		ORDER BY s.current_period_end`,
 		models.SubscriptionStatusActive,
@@ -187,16 +183,19 @@ func (r *SubscriptionRepository) DueForRenewal(ctx context.Context) ([]dueRow, e
 // RenewDue renews or expires every subscription whose period has ended. One
 // transaction per subscription: it re-locks the row, so two replicas running
 // the sweep renew a subscription exactly once, and the wallet deduction, the
-// period extension and the ledger entry commit or roll back together.
-func (r *SubscriptionRepository) RenewDue(ctx context.Context, now time.Time) (renewed, expired int, err error) {
+// period extension and the ledger entry commit or roll back together. One
+// failing subscription doesn't hold up the rest.
+func (r *SubscriptionRepository) RenewDue(ctx context.Context) (renewed, expired int, err error) {
 	due, err := r.DueForRenewal(ctx)
 	if err != nil {
 		return 0, 0, err
 	}
+	var failures []error
 	for _, d := range due {
 		outcome, err := r.renewOne(ctx, d)
 		if err != nil {
-			return renewed, expired, err
+			failures = append(failures, err)
+			continue
 		}
 		switch outcome {
 		case "renewed":
@@ -205,7 +204,7 @@ func (r *SubscriptionRepository) RenewDue(ctx context.Context, now time.Time) (r
 			expired++
 		}
 	}
-	return renewed, expired, nil
+	return renewed, expired, errors.Join(failures...)
 }
 
 // renewOne carries one due subscription through the daily sweep: it re-locks
@@ -218,23 +217,26 @@ func (r *SubscriptionRepository) renewOne(ctx context.Context, d dueRow) (string
 	}
 	defer tx.Rollback()
 
-	// Re-read under the row lock: a concurrent sweep may have renewed it.
-	var live int
+	// Re-read under the row lock: a concurrent sweep waits here, then finds the
+	// period already extended, or the row already expired. The switch is read
+	// here too, since the user may have flipped it since the list was taken.
+	var autoRenew bool
 	err = tx.QueryRowContext(ctx, `
-		SELECT count(*) FROM subscriptions
-		WHERE id = $1 AND status = $2 AND current_period_end <= now()`,
+		SELECT auto_renew FROM subscriptions
+		WHERE id = $1 AND status = $2 AND current_period_end <= now()
+		FOR UPDATE`,
 		d.sub.ID, models.SubscriptionStatusActive,
-	).Scan(&live)
+	).Scan(&autoRenew)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "skipped", nil
+	}
 	if err != nil {
 		return "", err
-	}
-	if live == 0 {
-		return "skipped", nil
 	}
 
 	// Switched off, or the wallet cannot cover the next period: the period
 	// simply ends, and the plan downgrades with it. Both paths commit below.
-	if !d.sub.AutoRenew {
+	if !autoRenew {
 		if err := r.expireOne(ctx, tx, d.sub.ID, d.sub.UserID); err != nil {
 			return "", err
 		}
@@ -317,16 +319,14 @@ func (r *SubscriptionRepository) expireOne(ctx context.Context, tx *sql.Tx, id, 
 	return err
 }
 
-// ExpireStalePending marks pending subscriptions older than a day expired;
-// BorderPay expires its QRIS in an hour, so these were never paid. The plan
-// was never activated, so nothing else moves.
 // SetAutoRenew flips the user's live subscription's renewal switch: off
 // stamps canceled_at (the switch-off moment), on clears it.
 func (r *SubscriptionRepository) SetAutoRenew(ctx context.Context, userID uuid.UUID, enabled bool) error {
 	res, err := r.execContext(ctx, `
-		UPDATE subscriptions SET auto_renew = $2, canceled_at = $3, updated_at = now()
-		WHERE user_id = $1 AND status = $4`,
-		userID, enabled, nil, models.SubscriptionStatusActive,
+		UPDATE subscriptions
+		SET auto_renew = $2, canceled_at = CASE WHEN $2 THEN NULL ELSE now() END, updated_at = now()
+		WHERE user_id = $1 AND status = $3`,
+		userID, enabled, models.SubscriptionStatusActive,
 	)
 	if err != nil {
 		return err
@@ -334,6 +334,20 @@ func (r *SubscriptionRepository) SetAutoRenew(ctx context.Context, userID uuid.U
 	return requireAffected(res, "subscriptions")
 }
 
+// ExpirePending ends the user's pending checkout once it is older than age, so
+// a QRIS that can no longer be paid doesn't hold their one live subscription.
+func (r *SubscriptionRepository) ExpirePending(ctx context.Context, userID uuid.UUID, age time.Duration) error {
+	_, err := r.execContext(ctx, `
+		UPDATE subscriptions SET status = $2, updated_at = now()
+		WHERE user_id = $1 AND status = $3 AND created_at < now() - make_interval(secs => $4)`,
+		userID, models.SubscriptionStatusExpired, models.SubscriptionStatusPending, age.Seconds(),
+	)
+	return err
+}
+
+// ExpireStalePending marks pending subscriptions older than a day expired;
+// BorderPay expires its QRIS in an hour, so these were never paid. The plan
+// was never activated, so nothing else moves.
 func (r *SubscriptionRepository) ExpireStalePending(ctx context.Context) (int64, error) {
 	res, err := r.execContext(ctx, `
 		UPDATE subscriptions SET status = $1, updated_at = now()
@@ -359,33 +373,6 @@ func (r *WalletRepository) Balance(ctx context.Context, userID uuid.UUID) (int64
 	return b, err
 }
 
-// Credit adds delta rupiah to the wallet (top-ups and adjustments only; the
-// subscription charge takes the guarded DeductIfAvailable path).
-func (r *WalletRepository) Credit(ctx context.Context, userID uuid.UUID, delta int64) error {
-	_, err := r.execContext(ctx, `
-		INSERT INTO wallet_balances (user_id, balance_idr) VALUES ($1, $2)
-		ON CONFLICT (user_id) DO UPDATE
-		SET balance_idr = wallet_balances.balance_idr + $2, updated_at = now()`,
-		userID, delta)
-	return err
-}
-
-// DeductIfAvailable moves amount out of the wallet only when the balance
-// covers it, atomically: no row means the money was not there.
-func (r *WalletRepository) DeductIfAvailable(ctx context.Context, userID uuid.UUID, amount int64) (bool, error) {
-	var ok bool
-	err := r.queryRowContext(ctx, `
-		UPDATE wallet_balances SET balance_idr = balance_idr - $2, updated_at = now()
-		WHERE user_id = $1 AND balance_idr >= $2
-		RETURNING true`,
-		userID, amount,
-	).Scan(&ok)
-	if errors.Is(err, sql.ErrNoRows) {
-		return false, nil
-	}
-	return ok, err
-}
-
 const walletTransactionColumns = `
 	id, created_at, user_id, kind, amount_idr, reference_type, reference_id, note`
 
@@ -394,16 +381,6 @@ func scanWalletTransaction(row rowScanner) (models.WalletTransaction, error) {
 	err := row.Scan(&t.ID, &t.CreatedAt, &t.UserID, &t.Kind, &t.AmountIDR,
 		&t.ReferenceType, &t.ReferenceID, &t.Note)
 	return t, translateNotFound("wallet_transactions", err)
-}
-
-// AddTransaction appends one ledger row; callers inside an open transaction
-// write their own INSERT instead, so ledger and movement commit together.
-func (r *WalletRepository) AddTransaction(ctx context.Context, t models.WalletTransaction) error {
-	_, err := r.execContext(ctx, `
-		INSERT INTO wallet_transactions (user_id, kind, amount_idr, reference_type, reference_id, note)
-		VALUES ($1, $2, $3, $4, $5, $6)`,
-		t.UserID, t.Kind, t.AmountIDR, t.ReferenceType, t.ReferenceID, t.Note)
-	return err
 }
 
 // ListTransactionsByUser returns one page of the ledger, newest first; the
@@ -494,12 +471,6 @@ func (r *WalletRepository) MarkTopupPaidAndCredit(ctx context.Context, reference
 		return models.WalletTopup{}, false, err
 	}
 	return t, true, nil
-}
-
-// ByIDForUser returns one top-up by id, only when it belongs to userID.
-func (r *WalletRepository) ByIDForUser(ctx context.Context, id, userID uuid.UUID) (models.WalletTopup, error) {
-	return scanWalletTopup(r.queryRowContext(ctx, `SELECT `+walletTopupColumns+
-		` FROM wallet_topups WHERE id = $1 AND user_id = $2`, id, userID))
 }
 
 // ListTopupsByUser returns one page of userID's wallet top-ups, newest first.

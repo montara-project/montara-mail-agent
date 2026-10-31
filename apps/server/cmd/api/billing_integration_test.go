@@ -4,8 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
 
 	"montara-mail-agent/server/internal/app"
 	"montara-mail-agent/server/internal/lib/constant"
@@ -128,7 +131,7 @@ func testBilling(t *testing.T, call callFunc, application *app.Application, db *
 		ON CONFLICT (user_id) DO UPDATE SET balance_idr = 30000`, userID); err != nil {
 		t.Fatal(err)
 	}
-	renewed, expired, err := application.Repositories.Subscription.RenewDue(ctx, time.Now())
+	renewed, expired, err := application.Repositories.Subscription.RenewDue(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -171,7 +174,7 @@ func testBilling(t *testing.T, call callFunc, application *app.Application, db *
 		FROM plans p WHERE p.code = 'pro_monthly'`, otherUser); err != nil {
 		t.Fatal(err)
 	}
-	renewed, expired, err = application.Repositories.Subscription.RenewDue(ctx, time.Now())
+	renewed, expired, err = application.Repositories.Subscription.RenewDue(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -184,6 +187,85 @@ func testBilling(t *testing.T, call callFunc, application *app.Application, db *
 	}
 	if downgraded != constant.PlanFree {
 		t.Fatalf("empty-wallet user plan: %s, want free", downgraded)
+	}
+
+	// A plan without a promo still renews: its discount reads NULL. Sweeps racing
+	// over it, like replicas in a rolling deploy, charge the wallet only once.
+	if _, err := db.Exec(`UPDATE plans SET discount_amount = NULL WHERE code = 'pro_monthly'`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO wallet_balances (user_id, balance_idr) VALUES ($1, 500000)`, otherUser); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO subscriptions (user_id, plan_id, status, amount, reference_id,
+		current_period_start, current_period_end, auto_renew)
+		SELECT $1, p.id, 'active', 50000, 'sub-renew-3',
+			now() - interval '2 months', now() - interval '1 hour', true
+		FROM plans p WHERE p.code = 'pro_monthly'`, otherUser); err != nil {
+		t.Fatal(err)
+	}
+	var sweeps sync.WaitGroup
+	for range 4 {
+		sweeps.Go(func() {
+			if _, _, err := application.Repositories.Subscription.RenewDue(ctx); err != nil {
+				t.Error(err)
+			}
+		})
+	}
+	sweeps.Wait()
+	var afterRace int64
+	if err := db.QueryRow(`SELECT balance_idr FROM wallet_balances WHERE user_id = $1`, otherUser).Scan(&afterRace); err != nil || afterRace != 450_000 {
+		t.Fatalf("wallet after racing sweeps: %d %v, want 450000", afterRace, err)
+	}
+	if _, err := db.Exec(`UPDATE plans SET discount_amount = 20000 WHERE code = 'pro_monthly'`); err != nil {
+		t.Fatal(err)
+	}
+
+	// The renewal switch stamps when it went off, and clears it when back on.
+	autoRenewOff := func(enabled, wantStamped bool) {
+		t.Helper()
+		if err := application.Repositories.Subscription.SetAutoRenew(ctx, uuid.MustParse(otherUser), enabled); err != nil {
+			t.Fatal(err)
+		}
+		var canceled sql.NullTime
+		if err := db.QueryRow(`SELECT canceled_at FROM subscriptions WHERE reference_id = 'sub-renew-3'`).Scan(&canceled); err != nil {
+			t.Fatal(err)
+		}
+		if canceled.Valid != wantStamped {
+			t.Fatalf("auto-renew %v: canceled_at %v, want stamped=%v", enabled, canceled, wantStamped)
+		}
+	}
+	autoRenewOff(false, true)
+	autoRenewOff(true, false)
+
+	// A checkout past its QRIS gives way to a new one; a recent one stays.
+	var abandonedOwner string
+	if err := db.QueryRow(`INSERT INTO users (id, name, email, role, plan)
+		VALUES (uuidv7(), 'Checkout User', 'checkout-user@example.com', 'user', 'free')
+		RETURNING id`).Scan(&abandonedOwner); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO subscriptions (user_id, plan_id, status, amount, reference_id, created_at)
+		SELECT $1, p.id, 'pending', 30000, 'sub-abandoned', now() - interval '3 hours'
+		FROM plans p WHERE p.code = 'pro_monthly'`, abandonedOwner); err != nil {
+		t.Fatal(err)
+	}
+	abandonedStatus := func(age time.Duration) string {
+		t.Helper()
+		if err := application.Repositories.Subscription.ExpirePending(ctx, uuid.MustParse(abandonedOwner), age); err != nil {
+			t.Fatal(err)
+		}
+		var status string
+		if err := db.QueryRow(`SELECT status FROM subscriptions WHERE reference_id = 'sub-abandoned'`).Scan(&status); err != nil {
+			t.Fatal(err)
+		}
+		return status
+	}
+	if got := abandonedStatus(4 * time.Hour); got != models.SubscriptionStatusPending {
+		t.Fatalf("recent checkout: %s, want pending", got)
+	}
+	if got := abandonedStatus(2 * time.Hour); got != models.SubscriptionStatusExpired {
+		t.Fatalf("abandoned checkout: %s, want expired", got)
 	}
 
 	// Caps: back on free, the next organization is refused once the user
