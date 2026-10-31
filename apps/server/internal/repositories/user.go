@@ -73,3 +73,10 @@ func (r *UserRepository) TOTPEnabled(ctx context.Context, id uuid.UUID) (bool, e
 	err := r.queryRowContext(ctx, `SELECT EXISTS (SELECT 1 FROM authula.totp WHERE user_id = $1 AND enabled)`, id).Scan(&enabled)
 	return enabled, err
 }
+
+// Plan returns a user's billing plan: free or subscribed.
+func (r *UserRepository) Plan(ctx context.Context, id uuid.UUID) (string, error) {
+	var plan string
+	err := r.queryRowContext(ctx, `SELECT plan FROM users WHERE id = $1`, id).Scan(&plan)
+	return plan, translateNotFound("users", err)
+}

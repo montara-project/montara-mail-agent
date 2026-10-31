@@ -5,6 +5,7 @@ import { getQueryClient } from '@/lib/providers/react-query'
 
 import type { OrganizationFormDto } from '../dtos/organization/schema'
 import type { PaginateDto } from '../dtos/paginate'
+import type { OrganizationListParams } from '../services/types/organization'
 
 import { services } from '../services'
 
@@ -18,7 +19,7 @@ const GET_ORGANIZATION_QUERY_KEY = (id: string) => {
   return [ORGANIZATION_QUERY_KEY, 'detail', id]
 }
 
-const list = (params?: PaginateDto & { search?: string; sorted?: string }) =>
+const list = (params?: OrganizationListParams) =>
   queryOptions({
     queryKey: LIST_ORGANIZATION_QUERY_KEY(params),
     queryFn: async () => {

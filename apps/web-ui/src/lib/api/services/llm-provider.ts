@@ -3,7 +3,7 @@ import type { LLMProviderResources, LLMProviderScope } from './types/llm-provide
 import { api } from '../client-fetch'
 
 const path = (scope: LLMProviderScope) =>
-  scope ? `/api/v1/organizations/${scope}/llm-provider` : '/api/v1/llm-providers/global'
+  scope ? `/api/v1/organizations/${scope}/llm-provider` : '/api/v1/llm-providers/platform'
 
 const resources = (): LLMProviderResources => ({
   list: () => api.get('/api/v1/llm-providers'),

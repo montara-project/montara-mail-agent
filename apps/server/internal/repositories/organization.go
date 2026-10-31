@@ -58,6 +58,55 @@ func (r *OrganizationRepository) MemberRole(ctx context.Context, organizationID,
 	return role, translateNotFound("organization_members", err)
 }
 
+// EnsurePersonalOrganization gives userID their own organization when they
+// have none: "<name>'s Workspace", with them as its owner. The advisory lock
+// makes concurrent first logins pick one winner, and a user who already has a
+// membership is left untouched. The name comes from the users mirror table.
+func (r *OrganizationRepository) EnsurePersonalOrganization(ctx context.Context, userID uuid.UUID) error {
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// One creator wins the race of two simultaneous first logins.
+	if _, err := tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, userID.String()); err != nil {
+		return err
+	}
+
+	var memberships int
+	if err := tx.QueryRowContext(ctx, `
+		SELECT count(*) FROM organization_members WHERE user_id = $1`,
+		userID,
+	).Scan(&memberships); err != nil {
+		return err
+	}
+	if memberships > 0 {
+		return tx.Commit()
+	}
+
+	id, err := uuid.NewV7()
+	if err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO organizations (id, name)
+		SELECT $1, COALESCE(NULLIF(TRIM(name), '') || '''s Workspace', 'My Workspace')
+		FROM users WHERE id = $2`,
+		id, userID,
+	); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO organization_members (organization_id, user_id, role)
+		VALUES ($1, $2, $3)`,
+		id, userID, constant.MemberRoleOwner,
+	); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
 // organizationSortColumns whitelists the columns a `sorted` value may order by.
 var organizationSortColumns = map[string]string{
 	"name":       "name",
@@ -113,6 +162,19 @@ func (r *OrganizationRepository) LiveIDs(ctx context.Context) ([]uuid.UUID, erro
 
 // Count returns how many live organizations match the List filters, for the
 // response meta block.
+
+// CountOwned returns how many live organizations the user owns (role owner
+// in organization_members); the organization cap counts these.
+func (r *OrganizationRepository) CountOwned(ctx context.Context, userID uuid.UUID) (int, error) {
+	var n int
+	err := r.queryRowContext(ctx, `
+		SELECT count(*) FROM organization_members m
+		JOIN organizations o ON o.id = m.organization_id AND o.deleted_at IS NULL
+		WHERE m.user_id = $1 AND m.role = $2`,
+		userID, constant.MemberRoleOwner,
+	).Scan(&n)
+	return n, translateNotFound("organization_members", err)
+}
 func (r *OrganizationRepository) Count(ctx context.Context, p ListParams, memberID uuid.UUID) (int64, error) {
 	return r.countRows(ctx, "organizations", organizationFilters(p, memberID))
 }
@@ -175,4 +237,17 @@ func (r *OrganizationRepository) ForceDelete(ctx context.Context, id uuid.UUID) 
 		return translateForeignKey(err, "organization is still referenced by other records")
 	}
 	return requireAffected(res, "organization")
+}
+
+// FirstOwnerID returns the first owner member of the organization, for
+// attributing background AI usage (classify, auto-draft) to a user's quota.
+func (r *OrganizationRepository) FirstOwnerID(ctx context.Context, organizationID uuid.UUID) (uuid.UUID, error) {
+	var id uuid.UUID
+	err := r.queryRowContext(ctx, `
+		SELECT user_id FROM organization_members
+		WHERE organization_id = $1 AND role = $2
+		ORDER BY created_at LIMIT 1`,
+		organizationID, constant.MemberRoleOwner,
+	).Scan(&id)
+	return id, translateNotFound("organizations", err)
 }

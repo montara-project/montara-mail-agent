@@ -48,6 +48,16 @@ type Config struct {
 	Sentry    ConfigSentry
 	AI        ConfigAI
 	MailOAuth ConfigMailOAuth
+	BorderPay ConfigBorderPay
+}
+
+// ConfigBorderPay configures the pay-as-you-go top-ups; an empty API key
+// keeps the top-up endpoints answering that they are unavailable.
+type ConfigBorderPay struct {
+	APIKey       string
+	WebhookToken string
+	BaseURL      string
+	ReturnURL    string
 }
 
 // ConfigAI configures the Claude-backed AI features; an empty key disables them.
@@ -112,6 +122,10 @@ type ConfigApp struct {
 	// AgentAutoDraftDailyCap bounds how many drafts the automation may queue
 	// per organization per day, so a chatty inbox cannot run up the bill.
 	AgentAutoDraftDailyCap int
+	// TokenUsageRetention is how long token usage rows are kept before the
+	// daily sweep folds their overflow into pay-as-you-go balances and
+	// deletes them. 0 keeps the usage forever.
+	TokenUsageRetention time.Duration
 }
 
 type ConfigDB struct {

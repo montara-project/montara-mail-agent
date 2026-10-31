@@ -28,7 +28,7 @@ type llmProviderView struct {
 }
 
 // scope is the provider a route works on: the organization in the path, or
-// nil, the global one, on the /llm-providers/global routes.
+// nil, the platform one, on the /llm-providers/platform routes.
 func scope(c fiber.Ctx) (*uuid.UUID, error) {
 	if c.Params("id") == "" {
 		return nil, nil
@@ -38,7 +38,7 @@ func scope(c fiber.Ctx) (*uuid.UUID, error) {
 }
 
 // manage checks that the signed-in user may change the provider of a scope:
-// the organization's owner, or a super user for the global one.
+// the organization's owner, or a super user for the platform one.
 func (h *llmProviderHandler) manage(c fiber.Ctx, scope *uuid.UUID) error {
 	if scope != nil {
 		return owner(c, h.app, *scope)
@@ -52,14 +52,14 @@ func (h *llmProviderHandler) manage(c fiber.Ctx, scope *uuid.UUID) error {
 		return err
 	}
 	if !super {
-		return apperr.New(apperr.KindForbidden, "only a super user can change the global provider")
+		return apperr.New(apperr.KindForbidden, "only a super user can change the platform provider")
 	}
 	return nil
 }
 
-// List returns the providers the user can see: the global one and those of
+// List returns the providers the user can see: the platform one and those of
 // their organizations, or all of them for a super user. The metadata says
-// whether the user may manage the global one and whether the server's
+// whether the user may manage the platform one and whether the server's
 // fallback model covers an organization with neither.
 func (h *llmProviderHandler) List(c fiber.Ctx) error {
 	uid, err := lib.ContextGetUID(c)
@@ -76,9 +76,13 @@ func (h *llmProviderHandler) List(c fiber.Ctx) error {
 	}
 	views := make([]llmProviderListView, len(rows))
 	for i, row := range rows {
+		// Where the platform's model runs is the operator's business.
+		if !super && row.OrganizationID == nil {
+			row.BaseURL = ""
+		}
 		views[i] = llmProviderListView{row, len(row.APIKey) > 0}
 	}
-	meta := dtos.Metadata{"super_user": super, "fallback": h.app.AI != nil, "private_hosts": h.app.Config.App.AllowPrivateHosts}
+	meta := dtos.Metadata{"super_user": super, "fallback": h.app.AIConfig != nil || h.app.AI != nil, "private_hosts": h.app.Config.App.AllowPrivateHosts}
 	return dtos.Response(c, fiber.StatusOK, views, meta, "")
 }
 
@@ -88,7 +92,7 @@ type llmProviderListView struct {
 	HasAPIKey bool `json:"has_api_key"`
 }
 
-// SetScope moves a provider to an organization, or to global with an empty
+// SetScope moves a provider to an organization, or to platform with an empty
 // organization_id. The user must be able to manage both scopes.
 func (h *llmProviderHandler) SetScope(c fiber.Ctx) error {
 	id, err := pathID(c, "LLM provider")
@@ -138,7 +142,7 @@ func (h *llmProviderHandler) Get(c fiber.Ctx) error {
 
 	// private_hosts tells the self-hosted form whether a model on localhost
 	// or the LAN is reachable at all (see lib.GuardedDialer).
-	meta := dtos.Metadata{"fallback": h.app.AI != nil, "private_hosts": h.app.Config.App.AllowPrivateHosts}
+	meta := dtos.Metadata{"fallback": h.app.AIConfig != nil || h.app.AI != nil, "private_hosts": h.app.Config.App.AllowPrivateHosts}
 	p, err := h.app.Repositories.LLMProvider.Get(c.Context(), &organizationID)
 	if apperr.IsNotFound(err) {
 		return dtos.Response(c, fiber.StatusOK, nil, meta, "")
@@ -150,7 +154,7 @@ func (h *llmProviderHandler) Get(c fiber.Ctx) error {
 }
 
 // Put creates or replaces the provider of the route's scope; owner (or super
-// user for the global one) only, since it holds a paid API key.
+// user for the platform one) only, since it holds a paid API key.
 func (h *llmProviderHandler) Put(c fiber.Ctx) error {
 	scope, err := scope(c)
 	if err != nil {
@@ -254,7 +258,7 @@ func (h *llmProviderHandler) apiKey(c fiber.Ctx, scope *uuid.UUID, kind, baseURL
 }
 
 // Delete removes the provider of the route's scope: an organization then
-// falls back to the global provider, and that to the server's model.
+// falls back to the platform provider, and that to the server's model.
 func (h *llmProviderHandler) Delete(c fiber.Ctx) error {
 	scope, err := scope(c)
 	if err != nil {

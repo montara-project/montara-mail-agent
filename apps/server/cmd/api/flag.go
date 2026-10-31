@@ -72,6 +72,7 @@ func parseFlag(cfg *config.Config) {
 
 	// Activity log
 	flag.DurationVar(&cfg.App.ActivityLogRetention, "activity-log-retention", envParse("ACTIVITY_LOG_RETENTION", 365*24*time.Hour, time.ParseDuration), "How long activity log entries are kept before the daily sweep deletes them (0 keeps them forever)")
+	flag.DurationVar(&cfg.App.TokenUsageRetention, "token-usage-retention", envParse("TOKEN_USAGE_RETENTION", 180*24*time.Hour, time.ParseDuration), "How long token usage rows are kept before the daily sweep folds their overflow into balances and deletes them (0 keeps them forever)")
 
 	// Agent
 	flag.DurationVar(&cfg.App.AgentAutoDraftInterval, "agent-autodraft-interval", envParse("AGENT_AUTO_DRAFT_INTERVAL", time.Hour, time.ParseDuration), "How often the agent drafts replies for important mail (0 disables the automation)")
@@ -97,6 +98,12 @@ func parseFlag(cfg *config.Config) {
 
 	// AI
 	flag.StringVar(&cfg.AI.AnthropicAPIKey, "anthropic-api-key", envString("ANTHROPIC_API_KEY", ""), "Fallback Anthropic API key for organizations without their own LLM provider (empty: none)")
+	// BorderPay: the pay-as-you-go top-ups. An empty key keeps them off, and the
+	// Community Edition ignores it: it takes no payments.
+	flag.StringVar(&cfg.BorderPay.APIKey, "borderpay-api-key", envString("BORDERPAY_API_KEY", ""), "BorderPay secret key for token top-ups (empty: top-ups unavailable)")
+	flag.StringVar(&cfg.BorderPay.WebhookToken, "borderpay-webhook-token", envString("BORDERPAY_WEBHOOK_TOKEN", ""), "BorderPay webhook verification token (bpt_...)")
+	flag.StringVar(&cfg.BorderPay.BaseURL, "borderpay-base-url", envString("BORDERPAY_BASE_URL", "https://borderpay.id"), "BorderPay API base URL")
+	flag.StringVar(&cfg.BorderPay.ReturnURL, "borderpay-return-url", envString("BORDERPAY_RETURN_URL", ""), "Where a finished top-up payment sends the user back to")
 
 	// Mail OAuth. Each pair enables that provider's OAuth mailbox sign-in;
 	// the callback URL <auth-base-url>/api/v1/email-accounts/oauth/<provider>/callback
@@ -212,6 +219,20 @@ func validateFlag(cfg *config.Config) {
 	} {
 		if (p.id == "") != (p.secret == "") {
 			log.Fatalf("flags %s-client-id and %s-client-secret must be provided together", p.name, p.name)
+		}
+	}
+
+	// With top-ups on, a missing webhook token refuses every payment BorderPay
+	// reports, and the app's invoice route hangs off the return URL, so both
+	// would fail only after a customer has paid.
+	if cfg.BorderPay.APIKey != "" && !config.Community() {
+		if cfg.BorderPay.WebhookToken == "" {
+			log.Fatal("flag borderpay-webhook-token must be provided with borderpay-api-key")
+		}
+		u, err := url.Parse(cfg.BorderPay.ReturnURL)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" ||
+			!strings.HasSuffix(strings.TrimSuffix(u.Path, "/"), "/settings/billing") {
+			log.Fatalf("flag borderpay-return-url: %q must be an absolute URL like https://app.example.com/settings/billing", cfg.BorderPay.ReturnURL)
 		}
 	}
 

@@ -113,6 +113,16 @@ export function useSplitInbox() {
 }
 
 /**
+ * Where the AI assistant lives (Control Center > Agent tools > AI Assistant
+ * Panel): 'floating' over the mail page's bottom right corner, or 'beside',
+ * the default, the pane next to the email.
+ */
+export function useAgentPanelPosition(): 'beside' | 'floating' {
+  const { data } = useQuery(queries.auth.profile())
+  return data?.user?.metadata?.agent_panel === 'floating' ? 'floating' : 'beside'
+}
+
+/**
  * With Split inbox on, the account named by ?account=, falling back to the
  * first one. Undefined in the global inbox, while loading, or when none is connected.
  */
@@ -178,21 +188,32 @@ function AccountSwitcher() {
 
   if (split === false && accounts?.length) {
     const only = accounts.length === 1 ? accounts[0] : undefined
+    // One tile per provider, so three Gmail accounts read as Gmail, not as three
+    // of the same logo. A fourth provider turns the third tile into a count.
+    const providers = [...new Set(accounts.map((item) => item.provider))]
+    const shown = providers.length > 3 ? providers.slice(0, 2) : providers
+    const stacked = 'ring-sidebar group-hover:ring-sidebar-accent size-8 rounded-md ring-2'
     return (
       <Link
         to="/account"
         title="Manage email accounts"
-        className="hover:bg-sidebar-accent focus-visible:ring-ring/50 flex w-full items-center gap-2.5 rounded-lg border p-2 text-left text-sm outline-none focus-visible:ring-[3px]"
+        className="group hover:bg-sidebar-accent focus-visible:ring-ring/50 flex w-full items-center gap-2.5 rounded-lg border p-2 text-left text-sm outline-none focus-visible:ring-[3px]"
       >
-        {/* Overlapping only the icons' padding, so no logo is cut. */}
-        <span className="flex shrink-0 -space-x-1.5">
-          {accounts.slice(0, 3).map((item) => (
-            <ProviderIcon
-              key={item.id}
-              provider={item.provider}
-              className="ring-sidebar size-7 rounded-md ring-2"
-            />
+        {/* Overlap plus ring stay inside a tile's padding, so no logo is cut. */}
+        <span className="flex shrink-0 -space-x-1">
+          {shown.map((provider) => (
+            <ProviderIcon key={provider} provider={provider} className={stacked} />
           ))}
+          {shown.length < providers.length && (
+            <span
+              className={cn(
+                stacked,
+                'bg-muted text-muted-foreground flex items-center justify-center text-xs font-medium tabular-nums'
+              )}
+            >
+              +{providers.length - shown.length}
+            </span>
+          )}
         </span>
         <span className="grid min-w-0 flex-1 leading-tight">
           <span className="truncate font-medium">{only ? mask(only.label) : 'All accounts'}</span>
@@ -336,6 +357,7 @@ export default function MailPanel() {
   const [composing, setComposing] = React.useState(false)
   const navigate = useNavigate()
   const { agent } = useSearch({ strict: false })
+  const position = useAgentPanelPosition()
   // The open account's counts, or in the global inbox every account's.
   const counted = split === false ? (accounts ?? []) : account ? [account] : []
   const badges: Partial<Record<Models.MailFolder, number>> = {
@@ -357,19 +379,22 @@ export default function MailPanel() {
             <SquarePen />
             Compose
           </Button>
-          <Button
-            variant={agent ? 'secondary' : 'outline'}
-            aria-label="Toggle AI assistant"
-            title="AI assistant"
-            onClick={() =>
-              navigate({
-                to: '/mail',
-                search: (prev: Record<string, unknown>) => ({ ...prev, agent: !agent }),
-              })
-            }
-          >
-            <Sparkles />
-          </Button>
+          {/* Floating mode has its own button in the page's corner. */}
+          {position !== 'floating' && (
+            <Button
+              variant={agent ? 'secondary' : 'outline'}
+              aria-label="Toggle AI assistant"
+              title="AI assistant"
+              onClick={() =>
+                navigate({
+                  to: '/mail',
+                  search: (prev: Record<string, unknown>) => ({ ...prev, agent: !agent }),
+                })
+              }
+            >
+              <Sparkles />
+            </Button>
+          )}
         </div>
         <ComposeSheet
           open={composing}

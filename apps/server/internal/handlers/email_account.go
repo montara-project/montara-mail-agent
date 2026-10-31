@@ -82,6 +82,9 @@ func (h *emailAccountHandler) Create(c fiber.Ctx) error {
 	if _, err := member(c, h.app, organizationID); err != nil {
 		return err
 	}
+	if err := h.checkMailboxCap(c, organizationID); err != nil {
+		return err
+	}
 
 	var body dtos.EmailAccountBody
 	if err := lib.ValidateRequestBody(c, &body); err != nil {
@@ -289,11 +292,15 @@ func (h *emailAccountHandler) OAuthFinish(c fiber.Ctx) error {
 	if err != nil {
 		return apperr.New(apperr.KindBadGateway, "%s", err.Error())
 	}
+	label := mailoauth.MailboxName(idToken(token))
+	if label == "" {
+		label = email
+	}
 	account := models.EmailAccount{
 		OrganizationID: organizationID,
 		Provider:       provider,
 		Email:          email,
-		Label:          email,
+		Label:          label,
 		Username:       email,
 	}
 	if servers, ok := constant.ProviderServers[provider]; ok {
@@ -517,4 +524,38 @@ func (h *emailAccountHandler) Send(c fiber.Ctx) error {
 	recordActivity(c, h.app, account.OrganizationID, constant.ActivityMailSent,
 		mailSentence("Sent", body.Subject, body.To), map[string]any{"subject": body.Subject, "to": body.To})
 	return dtos.Message(c, fiber.StatusOK, "mail sent")
+}
+
+// checkMailboxCap refuses the connection when the user already carries the
+// plan's mailbox cap (plans.max_email_accounts); pro and enterprise are
+// unlimited. Mailboxes count across every organization the user belongs to.
+func (h *emailAccountHandler) checkMailboxCap(c fiber.Ctx, organizationID uuid.UUID) error {
+	uid, err := lib.ContextGetUID(c)
+	if err != nil {
+		return apperr.ErrUnauthorized
+	}
+	role, err := h.app.Repositories.User.Role(c.Context(), uid)
+	if err != nil {
+		return err
+	}
+	if role != constant.RoleUser {
+		return nil
+	}
+	plan, err := h.app.Repositories.User.Plan(c.Context(), uid)
+	if err != nil {
+		return err
+	}
+	p, ok := h.app.PlanForTier(plan)
+	if !ok || p.MaxEmailAccounts == nil || *p.MaxEmailAccounts <= 0 {
+		return nil
+	}
+	count, err := h.app.Repositories.EmailAccount.CountByUser(c.Context(), uid)
+	if err != nil {
+		return err
+	}
+	if count >= *p.MaxEmailAccounts {
+		return apperr.New(apperr.KindForbidden,
+			"Free accounts connect up to %d mailboxes. Upgrade to Pro for unlimited.", *p.MaxEmailAccounts)
+	}
+	return nil
 }

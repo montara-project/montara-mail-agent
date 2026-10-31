@@ -14,8 +14,8 @@ import {
 } from '@/lib/api/server-url'
 
 /**
- * The Montara server this browser uses: the hosted one, or one the user runs
- * themselves. Switching checks the server answers, then signs out.
+ * The Montara server this Community Edition browser uses: the one serving this
+ * app, or another one. Switching checks the server answers, then signs out.
  */
 export function ServerURLForm({
   onCancel,
@@ -90,8 +90,8 @@ export default function ServerSettings() {
       title="Self hosted"
       description={
         SERVER_URL === DEFAULT_SERVER_URL
-          ? `This browser uses the hosted server, ${SERVER_URL}.`
-          : `This browser uses your own server, ${SERVER_URL}.`
+          ? `This browser uses the server that serves this app, ${SERVER_URL}.`
+          : `This browser uses another server, ${SERVER_URL}.`
       }
     >
       <ServerURLForm />

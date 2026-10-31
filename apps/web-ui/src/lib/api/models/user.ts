@@ -10,7 +10,11 @@ export interface User {
   created_at: ISO8601DateString
   updated_at: ISO8601DateString
   /** Authula's free-form metadata; the app keeps the user's timezone and preferences here. */
-  metadata?: { timezone?: string; split_inbox?: boolean } | null
+  metadata?: {
+    timezone?: string
+    split_inbox?: boolean
+    agent_panel?: 'beside' | 'floating'
+  } | null
 }
 
 /** GET /api/v1/auth/me. Authula answers unwrapped, without the {data} envelope. */
@@ -61,6 +65,8 @@ export interface TOTPRedirect {
 export interface UserSecurity {
   /** False for a user who only signs in with Google or a magic link. */
   has_password: boolean
+  /** The account is linked to Google sign-in. */
+  has_google: boolean
   totp_enabled: boolean
   /** Sees the Platform pages, such as IP Block. */
   super_user: boolean

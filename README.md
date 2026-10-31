@@ -51,7 +51,7 @@ The edition is chosen at build time (`EDITION` build arg, which sets
 | Edition           | For                    | Notes                                                                                     |
 | ----------------- | ---------------------- | ----------------------------------------------------------------------------------------- |
 | `cloud` (default) | The hosted service     | Open sign-up. Needs Resend (`FROM_ADDRESS`, `RESEND_API_KEY`) for verification emails.     |
-| `community`       | A single self-hosted user | No sign-up. The only account is `SUPER_USER`, so it needs `SEED_ON_BOOT=true`. The web app talks to its own origin. |
+| `community`       | A single self-hosted user | No sign-up. The only account is `SUPER_USER`, so it needs `SEED_ON_BOOT=true`. The web app talks to its own origin until you pick another server under Self hosted, which only this edition has. No plans, billing, purchases or AI quota. |
 
 ## Development
 
@@ -127,9 +127,10 @@ public URL (email links and OAuth callbacks use it) and `TRUSTED_PROXIES` when
 the API sits behind a reverse proxy. Rotating `APP_SECRET` means reconnecting
 every mailbox and saving the LLM providers again.
 
-To use the hosted web app with your own server, serve the API over HTTPS, add
-`https://app.montaramail.web.id` to `CORS_ALLOWED_ORIGINS` and pick the
-server under Control Center > Organization > Self hosted.
+To point a Community Edition web app at another server, serve that API over
+HTTPS, add the web app's origin to its `CORS_ALLOWED_ORIGINS` and pick the
+server under Control Center > Organization > Self hosted. The hosted web app
+always uses the hosted server.
 
 ## Releases
 

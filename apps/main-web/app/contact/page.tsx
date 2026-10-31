@@ -1,6 +1,6 @@
 import { pageMetadata } from '@/lib/seo'
 
-const email = 'support@montaramail.web.id'
+const email = 'hello@montaramail.web.id'
 
 export const metadata = pageMetadata({
   path: '/contact',

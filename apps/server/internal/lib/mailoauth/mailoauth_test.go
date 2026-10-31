@@ -1,6 +1,7 @@
 package mailoauth
 
 import (
+	"encoding/base64"
 	"strings"
 	"testing"
 
@@ -23,5 +24,22 @@ func TestConsentURLEncodesScopeSpaces(t *testing.T) {
 	}
 	if !strings.Contains(url, "state=signed-state") {
 		t.Fatalf("state is missing: %s", url)
+	}
+}
+
+func TestMailboxName(t *testing.T) {
+	jwt := func(claims string) string {
+		return "h." + base64.RawURLEncoding.EncodeToString([]byte(claims)) + ".s"
+	}
+	for _, c := range []struct{ token, want string }{
+		{jwt(`{"email":"a@b.c","name":" Aji Ajjha "}`), "Aji Ajjha"},
+		{jwt(`{"email":"a@b.c"}`), ""},
+		{jwt(`{"name":42}`), ""},
+		{"not-a-jwt", ""},
+		{"", ""},
+	} {
+		if got := MailboxName(c.token); got != c.want {
+			t.Errorf("MailboxName(%q) = %q, want %q", c.token, got, c.want)
+		}
 	}
 }

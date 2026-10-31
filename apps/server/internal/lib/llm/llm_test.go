@@ -124,3 +124,27 @@ func TestClientHeaders(t *testing.T) {
 		}
 	}
 }
+
+// A server that leaves usage out is still metered, or the quota never runs out.
+func TestUsageEstimatedWhenServerReportsNone(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"twelve chars"},"finish_reason":"stop"}]}`))
+	}))
+	defer server.Close()
+
+	var got Usage
+	client, err := New(Config{Kind: KindSelfHosted, BaseURL: server.URL, Model: "m", HTTPClient: server.Client(), OnUsage: func(_ string, u Usage) { got = u }})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.Complete(context.Background(), "system", "prompt", 16); err != nil {
+		t.Fatal(err)
+	}
+	if got.Input <= 0 || got.Output != 3 {
+		t.Fatalf("usage = %+v, want an input estimate and 3 output tokens", got)
+	}
+
+	if reported := (Usage{Input: 7, Output: 0}); usageOrEstimate(reported, 400, 400) != reported {
+		t.Fatal("a reported usage must not be replaced by an estimate")
+	}
+}

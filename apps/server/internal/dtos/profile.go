@@ -23,9 +23,15 @@ func (dto ProfileBody) Validate(v *validator.MapValidator) {
 type PreferencesBody struct {
 	// SplitInbox shows one account at a time instead of the global inbox.
 	SplitInbox *bool `json:"split_inbox"`
+	// AgentPanel is where the AI assistant lives in Mail: beside (the
+	// default), the pane next to the email, or floating, over the page's
+	// bottom right corner.
+	AgentPanel *string `json:"agent_panel"`
 }
 
-func (dto PreferencesBody) Validate(v *validator.MapValidator) {}
+func (dto PreferencesBody) Validate(v *validator.MapValidator) {
+	v.Field("agent_panel").String().MaxLen(16).Regex(`^(beside|floating)?$`)
+}
 
 // Password bounds, the same as Authula's sign-up (see newAuth).
 const (

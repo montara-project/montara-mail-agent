@@ -189,8 +189,25 @@ func (c anthropicClient) Chat(ctx context.Context, req ChatRequest) (ChatResult,
 		}
 	}
 	out.Text = strings.TrimSpace(out.Text)
-	out.Usage = Usage{Input: int(resp.Usage.InputTokens), Output: int(resp.Usage.OutputTokens)}
+	input, err := json.Marshal(params)
+	if err != nil {
+		return ChatResult{}, err
+	}
+	out.Usage = usageOrEstimate(
+		Usage{Input: int(resp.Usage.InputTokens), Output: int(resp.Usage.OutputTokens)},
+		len(input), chatOutputChars(out),
+	)
+	c.onUsageReport("chat", out.Usage)
 	return out, nil
+}
+
+// chatOutputChars measures a turn's output, its tool calls included.
+func chatOutputChars(result ChatResult) int {
+	n := len(result.Text)
+	for _, call := range result.ToolCalls {
+		n += len(call.Name) + len(call.Args)
+	}
+	return n
 }
 
 // openaiChatCall is the subset of the chat-completions answer the agent loop
@@ -333,6 +350,10 @@ func (c openAIClient) Chat(ctx context.Context, req ChatRequest) (ChatResult, er
 			Args: json.RawMessage(call.Function.Arguments),
 		})
 	}
-	result.Usage = Usage{Input: out.Usage.PromptTokens, Output: out.Usage.CompletionTokens}
+	result.Usage = usageOrEstimate(
+		Usage{Input: out.Usage.PromptTokens, Output: out.Usage.CompletionTokens},
+		len(raw), chatOutputChars(result),
+	)
+	c.onUsageReport("chat", result.Usage)
 	return result, nil
 }

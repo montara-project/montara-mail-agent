@@ -5,6 +5,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 
 	"montara-mail-agent/server/internal/app"
+	"montara-mail-agent/server/internal/config"
 	"montara-mail-agent/server/internal/handlers"
 	"montara-mail-agent/server/internal/middlewares"
 )
@@ -34,6 +35,13 @@ func routes(r *fiber.App, app *app.Application) {
 		fiberadapter.New(fiberadapter.Config{Handler: app.Auth.Handler()}),
 	)
 
+	// BorderPay pushes payment states here without a session; the shared
+	// webhook token authenticates it. Registered before the /api/v1 group, whose
+	// limiter mounts on the shared prefix: a 429 must not cost a paid top-up.
+	if !config.Community() {
+		r.Post("/api/v1/webhooks/borderpay", h.Quota.BorderPayWebhook)
+	}
+
 	// ponytail: the limiters count in memory, so each replica has its own
 	// budget; give them shared storage once there is more than one instance.
 	v1 := r.Group("/api/v1", middlewares.RateLimit(apiRateLimit, exempt))
@@ -60,6 +68,25 @@ func routes(r *fiber.App, app *app.Application) {
 	me.Put("/password", slow, idempotent, h.Profile.ChangePassword)
 	// The keys MCP clients sign in to /mcp with.
 	me.Get("/api-keys", h.APIKey.List)
+	// The Community Edition has no plans, quota or purchases: the routes don't exist.
+	if !config.Community() {
+		// Token quota and the pay-as-you-go top-ups.
+		me.Get("/quota", h.Quota.Status)
+		me.Get("/quota/topups", h.Quota.ListTopups)
+		me.Get("/quota/topups/:id", h.Quota.GetTopup)
+		// Each purchase below calls BorderPay, so they share the slow budget.
+		me.Post("/quota/topups", slow, idempotent, h.Quota.CreateTopup)
+		// Pricing plans, the subscription that renews from the IDR wallet, and
+		// the wallet's ledger and top-ups.
+		me.Get("/billing/plans", h.Billing.Plans)
+		me.Get("/billing/subscription", h.Billing.Subscription)
+		me.Post("/billing/subscription/checkout", slow, idempotent, h.Billing.Checkout)
+		me.Post("/billing/subscription/auto-renew", idempotent, h.Billing.AutoRenew)
+		me.Get("/billing/wallet", h.Billing.Wallet)
+		me.Get("/billing/wallet/transactions", h.Billing.WalletTransactions)
+		me.Get("/billing/wallet/topups", h.Billing.WalletTopups)
+		me.Post("/billing/wallet/topup", slow, idempotent, h.Billing.WalletTopup)
+	}
 	// Not idempotent: a replay would serve the key itself from the cache. A
 	// duplicate key is cheap to revoke.
 	me.Post("/api-keys", h.APIKey.Create)
@@ -84,13 +111,13 @@ func routes(r *fiber.App, app *app.Application) {
 	organizations.Delete("/:id/llm-provider", idempotent, h.LLMProvider.Delete)
 	organizations.Post("/:id/llm-provider/models", slow, h.LLMProvider.Models)
 
-	// Every provider the user can see, the global one (super user only to
-	// change) and moving a provider between organizations and global.
+	// Every provider the user can see, the platform one (super user only to
+	// change) and moving a provider between organizations and the platform.
 	llmProviders := v1.Group("/llm-providers", m.Authorization)
 	llmProviders.Get("/", h.LLMProvider.List)
-	llmProviders.Put("/global", idempotent, h.LLMProvider.Put)
-	llmProviders.Delete("/global", idempotent, h.LLMProvider.Delete)
-	llmProviders.Post("/global/models", slow, h.LLMProvider.Models)
+	llmProviders.Put("/platform", idempotent, h.LLMProvider.Put)
+	llmProviders.Delete("/platform", idempotent, h.LLMProvider.Delete)
+	llmProviders.Post("/platform/models", slow, h.LLMProvider.Models)
 	llmProviders.Put("/:id/scope", idempotent, h.LLMProvider.SetScope)
 	organizations.Get("/:id/mcp-servers", h.MCPServer.List)
 	organizations.Post("/:id/mcp-servers", slow, idempotent, h.MCPServer.Create)
@@ -107,7 +134,6 @@ func routes(r *fiber.App, app *app.Application) {
 	// email-accounts group below: that group's authorization middleware
 	// mounts on the shared prefix and would otherwise run for it too.
 	v1.Get("/email-accounts/oauth/:provider/callback", h.EmailAccount.OAuthCallback)
-
 	emailAccounts := v1.Group("/email-accounts", m.Authorization)
 	// The web app finishes an OAuth connection here, signed in as whoever
 	// started it (see OAuthCallback).

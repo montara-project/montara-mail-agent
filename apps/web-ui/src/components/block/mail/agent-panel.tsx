@@ -12,6 +12,7 @@ import type { Models } from '@/lib/api/models'
 import Hint from '@/components/block/common/hint'
 import Markdown from '@/components/block/common/markdown'
 import { useEnabledSkills } from '@/components/block/mail/skill-menu'
+import NoOrganization from '@/components/block/settings/no-organization'
 import { useMailAccounts } from '@/components/layout/mail/mail-panel'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -67,7 +68,12 @@ const EMAIL_STARTERS = ['Summarize this email', 'Draft a reply to it', 'List wha
 
 /** The composer's / menu: each fills in a prompt to finish and send. The skills join it. */
 const QUICK_PROMPTS: PromptCommand[] = [
-  { key: 'find', name: '/find', desc: 'Find an email', prompt: 'Find the emails about ' },
+  {
+    key: 'find',
+    name: '/find',
+    desc: 'Find an email',
+    prompt: 'Find the emails about ',
+  },
   {
     key: 'unread',
     name: '/unread',
@@ -114,11 +120,18 @@ interface AgentPanelProps {
   emailAccountId?: string
   /** The organization whose draft queue the automation fills. */
   organizationId?: string
+  /** Closes the panel; floating mode passes it, the embedded pane doesn't. */
+  onClose?: () => void
   className?: string
 }
 
 /** One streamed step the chat shows between prompt and answer. */
-type LiveRow = { kind: 'tool' | 'action'; name?: string; text?: string; payload?: unknown }
+type LiveRow = {
+  kind: 'tool' | 'action'
+  name?: string
+  text?: string
+  payload?: unknown
+}
 
 /** The history as the chat shows it: messages, and each run of tool calls as one trace. */
 type Block =
@@ -156,7 +169,12 @@ function promptPlaceholder(emailAccountId?: string, about?: string, mailbox?: st
  * progress shown as it works and its proposed outbound mail awaiting an
  * explicit approval. Desktop only — the mail layout's third pane.
  */
-export default function AgentPanel({ emailAccountId, organizationId, className }: AgentPanelProps) {
+export default function AgentPanel({
+  emailAccountId,
+  organizationId,
+  onClose,
+  className,
+}: AgentPanelProps) {
   const [tab, setTab] = React.useState<'chat' | 'drafts'>('chat')
   const { data: accounts } = useMailAccounts()
   const mailbox = accounts?.find((item) => item.id === emailAccountId)
@@ -336,6 +354,19 @@ export default function AgentPanel({ emailAccountId, organizationId, className }
             <Plus />
           </Button>
         </Hint>
+        {onClose && (
+          <Hint label="Close">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              aria-label="Close AI assistant"
+              onClick={onClose}
+            >
+              <X />
+            </Button>
+          </Hint>
+        )}
       </div>
 
       {/* Tabs */}
@@ -553,7 +584,7 @@ function DraftsQueue({ organizationId }: { organizationId?: string }) {
 
   if (!organizationId) {
     return (
-      <p className="text-muted-foreground p-4 text-center text-sm">No organization selected.</p>
+      <NoOrganization description="Create or switch to an organization to review its drafts." />
     )
   }
   if (drafts.isPending) {

@@ -72,7 +72,7 @@ func run() error {
 	mirror := mirrorUser(&repos.User)
 
 	// Creating the instance runs Authula's own migrations.
-	auth := newAuth(cfg, mirror, &repos.ActivityLog, logger)
+	auth := newAuth(cfg, mirror, personalOrganization(&repos.Organization, logger), &repos.ActivityLog, logger)
 	defer auth.CloseSystems()
 	defer auth.ClosePlugins()
 
@@ -113,16 +113,25 @@ func run() error {
 		if err := seedAll(db, superUser, logger); err != nil {
 			return err
 		}
+	} else if !config.Community() {
+		// Quota and plan limits read these rows, so the Cloud Edition always
+		// needs them, whatever SEED_ON_BOOT says. Existing rows stay untouched.
+		if err := (seeders.PlanSeeder{DB: db}).Seed(); err != nil {
+			return fmt.Errorf("plans seeder: %w", err)
+		}
 	}
 
+	var aiConfig *llm.Config
 	var ai llm.ChatClient
 	if cfg.AI.AnthropicAPIKey != "" {
-		ai, err = llm.New(llm.Config{
+		aiConfig = &llm.Config{
 			Kind:       llm.KindAnthropic,
 			APIKey:     cfg.AI.AnthropicAPIKey,
 			Model:      fallbackModel,
 			HTTPClient: &http.Client{Timeout: 2 * time.Minute},
-		})
+		}
+		var err error
+		ai, err = llm.New(*aiConfig)
 		if err != nil {
 			return err
 		}
@@ -151,6 +160,7 @@ func run() error {
 		Repositories: repos,
 		Auth:         auth,
 		AI:           ai,
+		AIConfig:     aiConfig,
 		Secrets:      secrets,
 		MailOAuth:    mailOAuth,
 		HTTPClient:   outboundClient(cfg.App.AllowPrivateHosts),

@@ -1,11 +1,14 @@
 import {
   IconArrowRight,
+  IconBrain,
+  IconBrandApple,
   IconBrandGmail,
   IconBrandYahoo,
   IconChevronDown,
   IconFeather,
   IconInbox,
   IconMail,
+  IconMailbox,
   IconPlug,
   IconServer,
   IconSparkles,
@@ -15,7 +18,7 @@ import {
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
-import { pageMetadata, SITE_NAME, SITE_URL } from '@/lib/seo'
+import { GITHUB_URL, pageMetadata, SITE_NAME, SITE_URL } from '@/lib/seo'
 import { cn } from '@/lib/utils'
 
 // Brand tints only; no third-party logos are bundled.
@@ -38,7 +41,24 @@ const providers = [
     color: '#7B3FE4',
     text: 'Yahoo Mail accounts, alongside the rest.',
   },
-  { name: 'Lark', icon: IconFeather, color: '#3370FF', text: 'Lark Mail for your team workspace.' },
+  {
+    name: 'iCloud',
+    icon: IconBrandApple,
+    color: 'currentColor',
+    text: 'iCloud Mail with an app-specific password.',
+  },
+  {
+    name: 'Lark',
+    icon: IconFeather,
+    color: '#3370FF',
+    text: 'Lark Mail for your team workspace.',
+  },
+  {
+    name: 'Zoho',
+    icon: IconMailbox,
+    color: '#E42527',
+    text: 'Zoho Mail accounts, alongside the rest.',
+  },
   {
     name: 'Other IMAP',
     icon: IconServer,
@@ -48,41 +68,46 @@ const providers = [
 ]
 
 const labelStyles = {
-  'Needs reply': 'bg-info-bg text-info',
-  Invoice: 'bg-warning-bg text-warning',
-  Meeting: 'bg-success-bg text-success',
-  Newsletter: 'bg-muted text-muted-foreground',
+  Important: 'bg-info-bg text-info',
+  Broadcast: 'bg-warning-bg text-warning',
+  'Low priority': 'bg-muted text-muted-foreground',
 }
 
 type Label = keyof typeof labelStyles
 
-const messages: { from: string; via: string; subject: string; label: Label; time: string }[] = [
+const messages: {
+  from: string
+  via: string
+  subject: string
+  label: Label
+  time: string
+}[] = [
   {
     from: 'Sarah Chen',
     via: 'Gmail',
     subject: 'Q4 partnership proposal',
-    label: 'Needs reply',
+    label: 'Important',
     time: '9:42',
   },
   {
     from: 'Finance Team',
     via: 'Outlook',
     subject: 'Invoice #2048 is due Friday',
-    label: 'Invoice',
+    label: 'Important',
     time: '9:15',
   },
   {
     from: 'Daniel Park',
     via: 'Lark',
     subject: 'Sync on launch timeline?',
-    label: 'Meeting',
+    label: 'Important',
     time: '8:57',
   },
   {
     from: 'Product Weekly',
     via: 'Yahoo',
     subject: 'This week in product design',
-    label: 'Newsletter',
+    label: 'Broadcast',
     time: '7:30',
   },
 ]
@@ -90,15 +115,15 @@ const messages: { from: string; via: string; subject: string; label: Label; time
 const steps = [
   {
     title: 'Connect your inboxes',
-    text: 'Add Gmail, Outlook, Yahoo, Lark, or any IMAP account. Every mailbox syncs into one view.',
+    text: 'Add Gmail, Outlook, Yahoo, iCloud, Lark, Zoho, or any IMAP account. Every mailbox syncs into one view.',
   },
   {
     title: 'The agent sorts and summarizes',
-    text: 'New mail is labeled by priority and topic, and long threads are condensed into a few lines.',
+    text: 'New mail is labeled important, broadcast, or low priority, and long emails are condensed into a few lines.',
   },
   {
     title: 'Review the draft and send',
-    text: 'The agent writes replies in your tone. You read them, edit if you like, and choose what goes out.',
+    text: 'The agent suggests and drafts replies. You read them, edit if you like, and choose what goes out.',
   },
 ]
 
@@ -106,7 +131,7 @@ const steps = [
 const faqs: { q: string; a: React.ReactNode; text?: string }[] = [
   {
     q: 'Which email providers can I connect?',
-    a: 'Gmail, Outlook, Yahoo, and Lark, plus any other provider that supports IMAP.',
+    a: 'Gmail, Outlook, Yahoo, iCloud, Lark, and Zoho, plus any other provider that supports IMAP.',
   },
   {
     q: 'Can I connect more than one account?',
@@ -128,6 +153,31 @@ const faqs: { q: string; a: React.ReactNode; text?: string }[] = [
       </>
     ),
     text: 'We use it only to provide the service and never sell it. Read the Privacy Policy for details.',
+  },
+  {
+    q: 'Is Montara Mail open source?',
+    a: (
+      <>
+        Yes. It is licensed under GPL-3.0, and you can{' '}
+        <Link href="/self-hosted" className="underline">
+          run it on your own server
+        </Link>{' '}
+        with Docker and PostgreSQL.
+      </>
+    ),
+    text: 'Yes. It is licensed under GPL-3.0, and you can run it on your own server with Docker and PostgreSQL.',
+  },
+  {
+    q: 'Can my team share mailboxes?',
+    a: 'Yes. Members of an organization share its mailboxes and work from the same place.',
+  },
+  {
+    q: 'Which AI model does it use?',
+    a: 'Any OpenAI- or Anthropic-compatible endpoint, or a self-hosted model such as Ollama.',
+  },
+  {
+    q: 'Does it cost anything?',
+    a: 'The hosted service is free during early access. Self-hosting is free under the GPL-3.0 license.',
   },
   {
     q: 'How do I get started?',
@@ -189,7 +239,7 @@ function InboxPreview() {
         <span className="size-2.5 rounded-full bg-border" />
         <span className="ml-3 font-mono text-xs text-muted-foreground">Unified inbox</span>
         <span className="ml-auto rounded-full bg-success-bg px-2 py-0.5 text-[11px] font-medium text-success">
-          5 inboxes synced
+          7 inboxes synced
         </span>
       </div>
 
@@ -257,7 +307,7 @@ function InboxPreview() {
 }
 
 const description =
-  'Connect Gmail, Outlook, Yahoo, Lark, or any IMAP inbox and let an AI agent sort, summarize, and draft your email.'
+  'Connect Gmail, Outlook, Yahoo, or any IMAP inbox. An AI agent sorts, summarizes, and drafts replies you approve. Open source and self-hostable.'
 
 export const metadata = pageMetadata({ path: '/', description })
 
@@ -271,9 +321,15 @@ const jsonLd = {
       name: SITE_NAME,
       url: SITE_URL,
       logo: `${SITE_URL}/favicon/android-chrome-512x512.png`,
-      email: 'support@montaramail.web.id',
+      email: 'hello@montaramail.web.id',
+      sameAs: [GITHUB_URL],
     },
-    { '@type': 'WebSite', '@id': `${SITE_URL}/#website`, name: SITE_NAME, url: SITE_URL },
+    {
+      '@type': 'WebSite',
+      '@id': `${SITE_URL}/#website`,
+      name: SITE_NAME,
+      url: SITE_URL,
+    },
     {
       '@type': 'SoftwareApplication',
       name: SITE_NAME,
@@ -281,6 +337,8 @@ const jsonLd = {
       description,
       applicationCategory: 'BusinessApplication',
       operatingSystem: 'Web',
+      license: 'https://www.gnu.org/licenses/gpl-3.0.html',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
       publisher: { '@id': `${SITE_URL}/#organization` },
     },
     {
@@ -300,7 +358,9 @@ export default function Home() {
       <script
         type="application/ld+json"
         // Every value above is a literal from this file; `<` is escaped so none can close the tag.
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c'),
+        }}
       />
       {/* Hero */}
       <section className="relative isolate">
@@ -321,13 +381,13 @@ export default function Home() {
             Email management, handled by an AI agent.
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-pretty text-muted-foreground">
-            Montara Mail brings Gmail, Outlook, Yahoo, Lark, and any IMAP account into one inbox.
-            Its AI agent sorts every message, summarizes long threads, and drafts replies for you to
-            approve.
+            Montara Mail brings Gmail, Outlook, Yahoo, iCloud, Lark, Zoho, and any IMAP account into
+            one inbox. Its AI agent sorts every message, summarizes long emails, and drafts replies
+            for you to approve. Open source, and yours to self-host.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button size="lg" asChild>
-              <Link href="/contact">
+              <Link href="https://app.montaramail.web.id">
                 Get early access
                 <IconArrowRight />
               </Link>
@@ -360,7 +420,7 @@ export default function Home() {
           title="Every inbox you own, one agent."
           text="Connect personal and work accounts side by side. The agent reads across all of them, so nothing slips through between apps."
         />
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {providers.map((p) => (
             <Tile key={p.name} className="flex flex-col gap-3">
               <div className="flex items-center gap-2.5">
@@ -404,8 +464,8 @@ export default function Home() {
               <IconWriting className="size-5 text-primary dark:text-info" />
               <h3 className="mt-4 font-display text-xl font-semibold">Replies drafted for you</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                The agent writes context-aware replies in your tone. Review, tweak, and send in
-                seconds.
+                The agent suggests quick replies and writes full drafts from the email&apos;s
+                context. Review, tweak, and send in seconds.
               </p>
               <p className="mt-6 rounded-lg border bg-muted/60 p-3 font-mono text-xs leading-relaxed text-pretty text-muted-foreground">
                 Hi Daniel, Wednesday morning works. I&apos;ll send a calendar invite for 10:00.
@@ -414,16 +474,16 @@ export default function Home() {
 
             <Tile>
               <IconSparkles className="size-5 text-primary dark:text-info" />
-              <h3 className="mt-4 font-display text-xl font-semibold">Thread summaries</h3>
+              <h3 className="mt-4 font-display text-xl font-semibold">Email summaries</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Catch up on a 30-message thread in three lines: what was decided, what is open, and
-                who is waiting.
+                Catch up on a long email in a few lines, with the key names, dates, amounts, and
+                deadlines in bold.
               </p>
               <ul className="mt-6 space-y-2 text-sm">
                 {[
                   'Budget approved at the revised amount',
-                  'Design review still open',
-                  'Finance is waiting on you',
+                  'Design review on Thursday',
+                  'Finance needs your answer by Friday',
                 ].map((s) => (
                   <li key={s} className="flex items-center gap-2">
                     <span className="size-1.5 rounded-full bg-primary dark:bg-info" />
@@ -451,6 +511,30 @@ export default function Home() {
                   </span>
                 ))}
               </div>
+            </Tile>
+
+            <Tile>
+              <IconBrain className="size-5 text-primary dark:text-info" />
+              <h3 className="mt-4 font-display text-xl font-semibold">Your choice of model</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Works with any OpenAI- or Anthropic-compatible endpoint, or a self-hosted model such
+                as Ollama.
+              </p>
+            </Tile>
+
+            <Tile>
+              <IconServer className="size-5 text-primary dark:text-info" />
+              <h3 className="mt-4 font-display text-xl font-semibold">
+                Open source and self-hostable
+              </h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Licensed under GPL-3.0. Run the API and web app from one Docker image, so your mail
+                stays on{' '}
+                <Link href="/self-hosted" className="underline">
+                  your own server
+                </Link>
+                .
+              </p>
             </Tile>
           </div>
         </div>
@@ -519,14 +603,13 @@ export default function Home() {
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button size="lg" asChild>
-              <Link href="/contact">
+              <Link href="https://app.montaramail.web.id">
                 Get early access
                 <IconArrowRight />
               </Link>
             </Button>
             <Button
               size="lg"
-
               variant="ghost"
               className="text-white hover:bg-white/10 hover:text-white"
               asChild

@@ -8,4 +8,5 @@ type User struct {
 	Email string  `db:"email" json:"email"`
 	Image *string `db:"image" json:"image"`
 	Role  string  `db:"role" json:"role"`
+	Plan  string  `db:"plan" json:"plan"`
 }

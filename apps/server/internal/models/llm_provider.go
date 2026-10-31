@@ -7,11 +7,11 @@ import (
 )
 
 // LLMProvider is the model AI features call (see migrations 000007 and
-// 0012): an organization's own, or the global one every organization
+// 0012): an organization's own, or the platform one every organization
 // without its own uses.
 type LLMProvider struct {
 	ID uuid.UUID `db:"id" json:"id"`
-	// OrganizationID is nil for the global provider.
+	// OrganizationID is nil for the platform provider.
 	OrganizationID *uuid.UUID `db:"organization_id" json:"organization_id"`
 	CreatedAt      time.Time  `db:"created_at" json:"created_at"`
 	UpdatedAt      time.Time  `db:"updated_at" json:"updated_at"`

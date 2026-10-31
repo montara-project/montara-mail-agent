@@ -32,12 +32,6 @@ export function SecuritySettings() {
       <PasswordSettings />
       <TOTPSettings />
       <ActivityLogList title="Activity log" description="Sign-ins and changes to your account." />
-      <SoonCard
-        title="Session management"
-        description="See where you're signed in and sign out other devices."
-      />
-      <SoonCard title="API keys" description="Keys that let your scripts call the Montara API." />
-      <SoonCard title="Connected apps" description="Apps you've given access to your account." />
     </div>
   )
 }
@@ -48,15 +42,16 @@ export function OrganizationPageSettings() {
   return (
     <div className="grid gap-4">
       <OrganizationList />
-      {/* The Community Edition has one user and is its own server. */}
-      {!COMMUNITY && (
+      {/* The Community Edition has one user; only it can choose its server. */}
+      {COMMUNITY ? (
+        <ServerSettings />
+      ) : (
         <>
           <SoonCard
             title="Members"
             description="Invite people and manage who's in the organization."
           />
           <SoonCard title="Roles & permissions" description="What each member is allowed to do." />
-          <ServerSettings />
         </>
       )}
       {organization && (
@@ -66,19 +61,6 @@ export function OrganizationPageSettings() {
           organizationId={organization.id}
         />
       )}
-    </div>
-  )
-}
-
-export function BillingSettings() {
-  return (
-    <div className="grid gap-4">
-      <SoonCard title="Billing" description="Who pays for the organization and how." />
-      <SoonCard title="Plan & usage" description="Your plan and how much of it is used." />
-      <SoonCard title="Payment methods" description="Cards and accounts you pay with." />
-      <SoonCard title="Invoices" description="Download the invoices for each payment." />
-      <SoonCard title="Usage reports" description="What was used in each billing period." />
-      <SoonCard title="Billing history" description="Every charge and refund." />
     </div>
   )
 }

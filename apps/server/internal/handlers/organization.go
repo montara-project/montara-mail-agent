@@ -24,9 +24,11 @@ func (h *organizationHandler) repo() *repositories.OrganizationRepository {
 	return &h.app.Repositories.Organization
 }
 
-// List returns the signed-in user's organizations; a super user sees all.
+// List returns the signed-in user's organizations; a super user sees all,
+// unless member=1 limits the list to their own memberships. A plain user who
+// belongs to none yet gets a workspace of their own on the spot.
 func (h *organizationHandler) List(c fiber.Ctx) error {
-	var q dtos.ListQuery
+	var q dtos.OrganizationListQuery
 	if err := lib.ValidateRequestQuery(c, &q); err != nil {
 		return err
 	}
@@ -40,12 +42,13 @@ func (h *organizationHandler) List(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	memberOnly := q.Member == "1" || q.Member == "true"
 	memberID := uid
-	if super {
+	if super && !memberOnly {
 		memberID = uuid.Nil
 	}
 
-	params := listParams(q)
+	params := listParams(q.ListQuery)
 
 	organizations, err := h.repo().List(c.Context(), params, memberID)
 	if err != nil {
@@ -54,6 +57,21 @@ func (h *organizationHandler) List(c fiber.Ctx) error {
 	total, err := h.repo().Count(c.Context(), params, memberID)
 	if err != nil {
 		return err
+	}
+
+	// A user who belongs to no organization yet gets one on the spot, so the
+	// app always lands them in a workspace of their own.
+	if !super && q.Search == "" && total == 0 {
+		if err := h.repo().EnsurePersonalOrganization(c.Context(), uid); err != nil {
+			return err
+		}
+		if organizations, err = h.repo().List(c.Context(), params, memberID); err != nil {
+			return err
+		}
+		total, err = h.repo().Count(c.Context(), params, memberID)
+		if err != nil {
+			return err
+		}
 	}
 
 	return dtos.List(c, organizations, dtos.ListMeta(int(total), q.Offset, q.Limit))
@@ -85,6 +103,10 @@ func (h *organizationHandler) Create(c fiber.Ctx) error {
 	uid, err := lib.ContextGetUID(c)
 	if err != nil {
 		return apperr.ErrUnauthorized
+	}
+
+	if err := h.checkOrganizationCap(c, uid); err != nil {
+		return err
 	}
 
 	organization := models.Organization{Name: body.Name}
@@ -196,4 +218,35 @@ func (h *organizationHandler) Stats(c fiber.Ctx) error {
 		return err
 	}
 	return dtos.Get(c, stats)
+}
+
+// checkOrganizationCap refuses a new organization when the user already owns
+// the plan's cap (plans.max_organizations): free carries 2 — the personal
+// workspace counts — and pro carries 10; enterprise and unknown tiers are
+// unlimited (fail open, like limit <= 0).
+func (h *organizationHandler) checkOrganizationCap(c fiber.Ctx, uid uuid.UUID) error {
+	super, err := isSuperUser(c.Context(), h.app, uid)
+	if err != nil {
+		return err
+	}
+	if super {
+		return nil
+	}
+	plan, err := h.app.Repositories.User.Plan(c.Context(), uid)
+	if err != nil {
+		return err
+	}
+	p, ok := h.app.PlanForTier(plan)
+	if !ok || p.MaxOrganizations == nil || *p.MaxOrganizations <= 0 {
+		return nil
+	}
+	owned, err := h.repo().CountOwned(c.Context(), uid)
+	if err != nil {
+		return err
+	}
+	if owned >= *p.MaxOrganizations {
+		return apperr.New(apperr.KindForbidden,
+			"You already own %d organizations, your plan's limit. Upgrade to Pro for 10.", *p.MaxOrganizations)
+	}
+	return nil
 }

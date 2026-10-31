@@ -404,30 +404,34 @@ export default function MCPServerDialog({
 
           <div className="flex min-h-0 flex-col overflow-y-auto">
             {importing ? (
-              <div className="grid flex-1 content-start gap-4 p-6">
-                <div className="grid gap-1 pe-8">
-                  <h3 className="font-semibold">Import JSON</h3>
-                  <DialogDescription>
-                    Paste a server&apos;s config, such as an entry of a client&apos;s
-                    &quot;mcpServers&quot;. The first server fills in the form.
-                  </DialogDescription>
+              <>
+                <div className="grid flex-1 content-start gap-5 p-6">
+                  <div className="grid gap-1 pe-8">
+                    <h3 className="font-semibold">Import JSON</h3>
+                    <DialogDescription>
+                      Paste a server&apos;s config, such as an entry of a client&apos;s
+                      &quot;mcpServers&quot;. The first server fills in the form.
+                    </DialogDescription>
+                  </div>
+                  <Textarea
+                    aria-label="Server config JSON"
+                    rows={10}
+                    className="font-mono text-xs"
+                    placeholder={
+                      '{\n  "mcpServers": {\n    "exa": { "url": "https://mcp.exa.ai/mcp" }\n  }\n}'
+                    }
+                    value={importText}
+                    onChange={(e) => setImportText(e.target.value)}
+                  />
+                  {importError && (
+                    <p role="alert" className="text-destructive text-sm">
+                      {importError}
+                    </p>
+                  )}
                 </div>
-                <Textarea
-                  aria-label="Server config JSON"
-                  rows={10}
-                  className="font-mono text-xs"
-                  placeholder={
-                    '{\n  "mcpServers": {\n    "exa": { "url": "https://mcp.exa.ai/mcp" }\n  }\n}'
-                  }
-                  value={importText}
-                  onChange={(e) => setImportText(e.target.value)}
-                />
-                {importError && (
-                  <p role="alert" className="text-destructive text-sm">
-                    {importError}
-                  </p>
-                )}
-                <div className="flex justify-end gap-2">
+
+                {/* The same footer as the kinds', so the buttons don't move between views. */}
+                <div className="flex flex-wrap items-center justify-end gap-2 border-t p-4">
                   <Button type="button" variant="outline" onClick={() => setImporting(false)}>
                     Back
                   </Button>
@@ -435,7 +439,7 @@ export default function MCPServerDialog({
                     Fill in the form
                   </Button>
                 </div>
-              </div>
+              </>
             ) : (
               <>
                 <div className="grid flex-1 content-start gap-5 p-6">

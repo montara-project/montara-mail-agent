@@ -4,6 +4,7 @@ import { agentBotQueries } from './agent-bot'
 import { agentSkillQueries } from './agent-skill'
 import { apiKeyQueries } from './api-key'
 import { authQueries } from './auth'
+import { billingQueries } from './billing'
 import { emailAccountQueries } from './email-account'
 import { ipBlockQueries } from './ip-block'
 import { llmProviderQueries } from './llm-provider'
@@ -11,6 +12,7 @@ import { mailQueries } from './mail'
 import { mcpServerQueries } from './mcp-server'
 import { organizationQueries } from './organization'
 import { profileQueries } from './profile'
+import { quotaQueries } from './quota'
 
 export const queries = {
   auth: authQueries,
@@ -26,4 +28,6 @@ export const queries = {
   mcpServers: mcpServerQueries,
   apiKeys: apiKeyQueries,
   ipBlocks: ipBlockQueries,
+  billing: billingQueries,
+  quota: quotaQueries,
 } as const

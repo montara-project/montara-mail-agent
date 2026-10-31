@@ -8,9 +8,7 @@ import SectionCard from '@/components/block/common/section-card'
 import { mailInitials } from '@/components/layout/mail/mail-data'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { FieldDescription } from '@/components/ui/field'
-import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Switch } from '@/components/ui/switch'
 import { useAppForm } from '@/hooks/form'
 import { useHideEmails } from '@/hooks/use-hide-emails'
 import { toastAxiosError } from '@/lib/api/axios-error'
@@ -115,40 +113,17 @@ export default function GeneralSettings() {
   const { data: me, isPending } = useQuery(queries.auth.profile())
 
   return (
-    <div className="grid gap-4">
-      <SectionCard title="Profile" description="How you appear in Montara.">
-        {isPending || !me?.user ? (
-          <div className="grid max-w-xl gap-4">
-            <Skeleton className="h-14 w-60" />
-            <Skeleton className="h-10" />
-            <Skeleton className="h-10" />
-          </div>
-        ) : (
-          // Remounted when the saved profile changes, so the fields start from it.
-          <ProfileForm key={me.user.updated_at} user={me.user} />
-        )}
-      </SectionCard>
-      <PrivacySettings />
-    </div>
-  )
-}
-
-/** Per browser: masks email addresses on screen, for screen sharing and demos. */
-function PrivacySettings() {
-  const { hidden, setHidden } = useHideEmails()
-
-  return (
-    <SectionCard title="Privacy" description="What this browser shows on screen.">
-      <div className="flex items-center justify-between gap-4">
-        <div className="grid gap-1 text-sm">
-          <Label htmlFor="hide-emails">Hide email addresses</Label>
-          <FieldDescription>
-            Masks your addresses in the sidebar, the account switcher and your mail list, so they
-            stay private when you share your screen.
-          </FieldDescription>
+    <SectionCard title="Profile" description="How you appear in Montara.">
+      {isPending || !me?.user ? (
+        <div className="grid max-w-xl gap-4">
+          <Skeleton className="h-14 w-60" />
+          <Skeleton className="h-10" />
+          <Skeleton className="h-10" />
         </div>
-        <Switch id="hide-emails" checked={hidden} onCheckedChange={setHidden} />
-      </div>
+      ) : (
+        // Remounted when the saved profile changes, so the fields start from it.
+        <ProfileForm key={me.user.updated_at} user={me.user} />
+      )}
     </SectionCard>
   )
 }

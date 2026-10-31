@@ -1,6 +1,5 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, lazyRouteComponent, redirect } from '@tanstack/react-router'
 
-import { BillingSettings } from '@/components/block/settings/settings-pages'
 import { COMMUNITY } from '@/lib/constants/edition'
 
 export const Route = createFileRoute('/(app)/settings/billing')({
@@ -8,5 +7,9 @@ export const Route = createFileRoute('/(app)/settings/billing')({
   beforeLoad: () => {
     if (COMMUNITY) throw redirect({ to: '/settings/profile', replace: true })
   },
-  component: BillingSettings,
+  // A dynamic import behind the build-time constant, so the Community Edition's
+  // bundle holds no billing code.
+  component: COMMUNITY
+    ? () => null
+    : lazyRouteComponent(() => import('@/components/block/settings/quota-settings')),
 })

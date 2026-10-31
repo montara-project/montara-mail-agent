@@ -3,8 +3,8 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import React from 'react'
 import { toast } from 'sonner'
 
-import EmptyState from '@/components/block/common/empty-state'
 import MCPServerList from '@/components/block/mcp/mcp-server-list'
+import NoOrganization, { OrganizationsError } from '@/components/block/settings/no-organization'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useActiveOrganization } from '@/hooks/use-active-organization'
 import { axiosErrorMessage } from '@/lib/api/axios-error'
@@ -52,15 +52,15 @@ function OAuthOutcome() {
 }
 
 function RouteComponent() {
-  const { organization, isPending } = useActiveOrganization()
+  const { organization, isPending, isError } = useActiveOrganization()
 
   if (isPending) return <Skeleton className="h-40" />
+  if (isError) {
+    return <OrganizationsError />
+  }
   if (!organization) {
     return (
-      <EmptyState
-        title="No organization selected"
-        description="Create or switch to an organization to manage its MCP servers."
-      />
+      <NoOrganization description="Create or switch to an organization to manage its MCP servers." />
     )
   }
   return (

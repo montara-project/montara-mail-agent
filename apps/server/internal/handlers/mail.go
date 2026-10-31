@@ -229,13 +229,18 @@ func (h *mailHandler) Reply(c fiber.Ctx) error {
 	return dtos.Message(c, fiber.StatusOK, "reply sent")
 }
 
-// llmFor returns the model of the mail's organization.
+// llmFor returns the model of the mail's organization, metered to the
+// signed-in user's quota.
 func (h *mailHandler) llmFor(c fiber.Ctx, m models.Mail) (llm.Client, error) {
 	account, err := h.account(c, m)
 	if err != nil {
 		return nil, err
 	}
-	return h.app.LLMFor(c.Context(), account.OrganizationID)
+	uid, err := lib.ContextGetUID(c)
+	if err != nil {
+		return nil, err
+	}
+	return h.app.LLMFor(c.Context(), account.OrganizationID, uid)
 }
 
 // aiError maps a failed model call onto the answer, logging the cause.

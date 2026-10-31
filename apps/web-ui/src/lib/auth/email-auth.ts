@@ -1,3 +1,5 @@
+import { clearActiveOrganization } from '@/hooks/use-active-organization'
+
 import type { SignInData, TokenPairData, TOTPRedirect } from '../api/models/user'
 import type { TOTPVerifyBody } from '../api/services/types/auth'
 
@@ -76,5 +78,7 @@ export async function signOut() {
     // Ignore: there is no session left to end.
   } finally {
     clearAuthTokens()
+    // The pick was per user; the shared pre-per-user key goes with the sign-out.
+    clearActiveOrganization()
   }
 }

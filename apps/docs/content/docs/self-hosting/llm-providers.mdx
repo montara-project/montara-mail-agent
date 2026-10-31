@@ -7,8 +7,8 @@ description: Which model each organization uses, and how to run your own.
 
 For an organization, the API uses the first of:
 
-1. **The organization's own provider**, set by its owner under **Control Center › AI Providers**.
-2. **The global provider**, which a super user sets for every organization without one.
+1. **The organization's own provider**, set by a super user under **Control Center › AI Providers**, or by its owner through the API.
+2. **The platform provider**, which a super user sets under **Control Center › AI Providers** for every user, in every organization without one.
 3. **The fallback**, `ANTHROPIC_API_KEY` in the server's environment.
 
 With none of them, the organization's AI features are off: mail still syncs, it just isn't sorted or summarized.
@@ -23,7 +23,7 @@ With none of them, the organization's AI features are off: mail still syncs, it 
 
 The form lists the models the endpoint offers. A saved key is only reused for the same kind and base URL, so pointing a provider elsewhere asks for the key again. Keys are encrypted with `APP_SECRET`.
 
-A super user can move a provider between an organization and global.
+A super user can move a provider between an organization and the platform.
 
 ## A local model
 

@@ -4,7 +4,7 @@ import { IconArrowLeft, IconError404 } from '@tabler/icons-react'
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia } from '@/components/ui/empty'
 
 /** Full-page 404 for routes that do not exist. */
 export default function NotFoundPage() {
@@ -15,7 +15,7 @@ export default function NotFoundPage() {
           <EmptyMedia variant="icon" className="size-12 rounded-full">
             <IconError404 />
           </EmptyMedia>
-          <EmptyTitle>Page not found</EmptyTitle>
+          <h1 className="font-heading text-lg font-medium tracking-tight">Page not found</h1>
           <EmptyDescription>
             The page you are looking for does not exist or has been moved.
           </EmptyDescription>

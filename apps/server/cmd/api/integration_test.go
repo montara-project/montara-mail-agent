@@ -62,7 +62,11 @@ func TestIntegration(t *testing.T) {
 			BaseURL:      "http://localhost:8080",
 			EmailFrom:    "noreply@example.com",
 			ResendAPIKey: "re_test",
+			// Turns the OAuth2 routes on; no test finishes a real Google sign-in.
+			GoogleClientID:     "test-client",
+			GoogleClientSecret: "test-secret",
 		},
+		BorderPay: config.ConfigBorderPay{WebhookToken: "bpt_test"},
 	}
 
 	// Start from nothing; this also runs every down migration.
@@ -93,7 +97,8 @@ func TestIntegration(t *testing.T) {
 
 	repos := repositories.New(db)
 	mirror := mirrorUser(&repos.User)
-	auth := newAuth(cfg, mirror, &repos.ActivityLog, logger)
+	auth := newAuth(cfg, mirror, personalOrganization(&repos.Organization, logger), &repos.ActivityLog, logger)
+	auth.RegisterRoute(fakeOAuthCallback(auth))
 	defer auth.CloseSystems()
 	defer auth.ClosePlugins()
 
@@ -110,6 +115,18 @@ func TestIntegration(t *testing.T) {
 	for range 2 {
 		if err := seedAll(db, superUser, logger); err != nil {
 			t.Fatalf("seed: %v", err)
+		}
+	}
+
+	// The quota tests spend past a small allowance: shrink the seeded plans'
+	// weekly_tokens to test-sized numbers before the application loads the
+	// catalog.
+	for _, p := range []struct {
+		code   string
+		tokens int64
+	}{{"free", 1000}, {"pro_monthly", 10_000}, {"pro_yearly", 10_000}} {
+		if _, err := db.Exec(`UPDATE plans SET weekly_tokens = $2 WHERE code = $1`, p.code, p.tokens); err != nil {
+			t.Fatalf("shrink plan limits: %v", err)
 		}
 	}
 
@@ -163,6 +180,20 @@ func TestIntegration(t *testing.T) {
 	if err := db.QueryRow(`SELECT role FROM public.users WHERE email = $1`, userEmail).Scan(&role); err != nil || role != constant.RoleUser {
 		t.Fatalf("plain user after reconcile: %q err=%v", role, err)
 	}
+	// The mirror-row drill above cascades the user's memberships away (the
+	// FK is ON DELETE CASCADE); the drill is not the subject, so the deleted
+	// membership is put back the way real data would carry it.
+	if _, err := db.Exec(`
+		INSERT INTO organization_members (organization_id, user_id, role)
+		SELECT o.id, u.id, $2
+		FROM organizations o JOIN public.users u ON u.email = $1
+		WHERE o.name = $3 AND NOT EXISTS (
+			SELECT 1 FROM organization_members m
+			WHERE m.organization_id = o.id AND m.user_id = u.id)`,
+		userEmail, constant.MemberRoleOwner, "Plain User's Workspace",
+	); err != nil {
+		t.Fatalf("restore the workspace membership: %v", err)
+	}
 
 	// Changing SUPER_USER's password resets the account on the next seed.
 	superUser.Password = superPass
@@ -176,6 +207,9 @@ func TestIntegration(t *testing.T) {
 	}
 	// No fallback model at first: AI requests answer 503 until one is set.
 	application := &app.Application{Config: cfg, Logger: logger, DB: db, Repositories: repos, Auth: auth, Secrets: secrets, HTTPClient: outboundClient(false)}
+	if err := application.ReloadPlans(context.Background()); err != nil {
+		t.Fatalf("reload plans: %v", err)
+	}
 	server, err := newServer(application)
 	if err != nil {
 		t.Fatal(err)
@@ -328,12 +362,24 @@ func TestIntegration(t *testing.T) {
 	}
 	superOrg := out["data"].(map[string]any)["id"].(string)
 
-	if status, out := call(http.MethodGet, "/api/v1/organizations", userToken, nil); status != http.StatusOK || len(out["data"].([]any)) != 1 {
-		t.Fatalf("plain user lists only their organization: %d %v", status, out)
+	// Every user signs up into a workspace of their own, so the plain user's
+	// list carries the workspace and User Org, and never the super user's.
+	status, out = call(http.MethodGet, "/api/v1/organizations", userToken, nil)
+	if status != http.StatusOK || len(out["data"].([]any)) != 2 {
+		t.Fatalf("plain user lists only their organizations: %d %v", status, out)
 	}
-	// The super user sees every organization, the seeded one included.
-	if status, out := call(http.MethodGet, "/api/v1/organizations", superToken, nil); status != http.StatusOK || len(out["data"].([]any)) != 3 {
+	for _, item := range out["data"].([]any) {
+		if item.(map[string]any)["id"] == superOrg {
+			t.Fatal("a plain user's list leaked another user's organization")
+		}
+	}
+	// The super user sees every organization; member=1 limits even the super
+	// user to their own memberships.
+	if status, out := call(http.MethodGet, "/api/v1/organizations", superToken, nil); status != http.StatusOK || len(out["data"].([]any)) != 5 {
 		t.Fatalf("super user lists all: %d %v", status, out)
+	}
+	if status, out := call(http.MethodGet, "/api/v1/organizations?member=1", superToken, nil); status != http.StatusOK || len(out["data"].([]any)) != 2 {
+		t.Fatalf("member=1 lists only memberships: %d %v", status, out)
 	}
 	if status, out := call(http.MethodGet, "/api/v1/organizations?search=Integration", superToken, nil); status != http.StatusOK || len(out["data"].([]any)) != 1 {
 		t.Fatalf("list: %d %v", status, out)
@@ -344,6 +390,12 @@ func TestIntegration(t *testing.T) {
 		{http.MethodGet, "/api/v1/organizations/" + superOrg + "/stats"},
 		{http.MethodGet, "/api/v1/organizations/" + superOrg + "/email-accounts"},
 		{http.MethodGet, "/api/v1/organizations/" + superOrg + "/llm-provider"},
+		{http.MethodGet, "/api/v1/organizations/" + superOrg + "/activity-logs"},
+		{http.MethodGet, "/api/v1/organizations/" + superOrg + "/mcp-servers"},
+		{http.MethodGet, "/api/v1/organizations/" + superOrg + "/agent-bots"},
+		{http.MethodGet, "/api/v1/organizations/" + superOrg + "/skills"},
+		{http.MethodPut, "/api/v1/organizations/" + superOrg + "/restore"},
+		{http.MethodDelete, "/api/v1/organizations/" + superOrg + "/force"},
 	} {
 		if status, _ := call(req.method, req.path, userToken, organization); status != http.StatusNotFound {
 			t.Fatalf("%s %s by a non-member: %d, want 404", req.method, req.path, status)
@@ -382,6 +434,8 @@ func TestIntegration(t *testing.T) {
 	}
 
 	testMailFlow(t, call, application, userToken, userOrg, superOrg)
+	testTokenQuota(t, call, application, db, userToken, superToken, userOrg)
+	testBilling(t, call, application, db, userToken, userOrg)
 	testIMAPSync(t, application, userOrg)
 	testAgentFlow(t, call, callStream, application, userToken, userOrg)
 	testAgentDrafts(t, call, application, userToken, userOrg)

@@ -82,9 +82,14 @@ var authRouteMappings = []authulamodels.RouteMapping{
 		Paths: []string{
 			"POST:/email-password/sign-in",
 			"/magic-link/*",
-			"/oauth2/*",
 		},
 		Plugins: []string{sessionAuthOptional, totpIntercept},
+	},
+	// No session lookup: with a session cookie in the browser, the callback
+	// answers that session as JSON instead of signing in and redirecting.
+	{
+		Paths:   []string{"/oauth2/*"},
+		Plugins: []string{totpIntercept},
 	},
 	{
 		Paths: []string{
@@ -139,6 +144,26 @@ func mirrorUser(repo *repositories.UserRepository) func(*authulamodels.User) err
 			Email: u.Email,
 			Image: u.Image,
 		})
+	}
+}
+
+// personalOrganization returns the hook that gives a fresh user their own
+// workspace: like mirror, an Authula service hook with no context. A failure
+// only logs — the organizations list provisions one on demand as a fallback.
+func personalOrganization(repo *repositories.OrganizationRepository, logger *slog.Logger) func(*authulamodels.User) error {
+	return func(u *authulamodels.User) error {
+		id, err := uuid.Parse(u.ID)
+		if err != nil {
+			return err
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := repo.EnsurePersonalOrganization(ctx, id); err != nil {
+			logger.Warn("personal organization provisioning failed; the organizations list will retry it", "error", err)
+		}
+		return nil
 	}
 }
 
@@ -277,6 +302,22 @@ func (i tokenIssuer) issue(reqCtx *authulamodels.RequestContext) error {
 	return nil
 }
 
+// redirectToTOTPStep keeps a sign-in stopped by totp.intercept a redirect, and
+// marks it with totp=1 for the web app, which can't read the HttpOnly pending
+// cookie: it then asks for the code instead of trading a session at /token.
+func redirectToTOTPStep(reqCtx *authulamodels.RequestContext) error {
+	target, err := url.Parse(reqCtx.RedirectURL)
+	if err != nil {
+		return err
+	}
+	query := target.Query()
+	query.Set("totp", "1")
+	target.RawQuery = query.Encode()
+	reqCtx.RedirectURL = target.String()
+	reqCtx.ResponseStatus = http.StatusFound
+	return nil
+}
+
 // route is POST /token: a token pair for the caller's current session.
 func (i tokenIssuer) route() authulamodels.Route {
 	return authulamodels.Route{
@@ -299,7 +340,7 @@ func (i tokenIssuer) route() authulamodels.Route {
 // through Resend. Authula migrates its own tables (users, accounts, sessions,
 // verifications) into authSchema of the app database when it starts, and
 // mirror runs after every user it creates or updates.
-func newAuth(cfg config.Config, mirror func(*authulamodels.User) error, activities *repositories.ActivityLogRepository, logger *slog.Logger) *authula.Auth {
+func newAuth(cfg config.Config, mirror, personalOrg func(*authulamodels.User) error, activities *repositories.ActivityLogRepository, logger *slog.Logger) *authula.Auth {
 	// Assigned below; the hooks that use it only run once requests arrive.
 	var auth *authula.Auth
 
@@ -314,6 +355,7 @@ func newAuth(cfg config.Config, mirror func(*authulamodels.User) error, activiti
 
 	userHooks := &authulamodels.ServiceHooks[authulamodels.User]{}
 	userHooks.RegisterAfterCreate(mirror)
+	userHooks.RegisterAfterCreate(personalOrg)
 	userHooks.RegisterAfterUpdate(mirror)
 
 	// Sign-up, magic links and Google all create users through this service,
@@ -475,6 +517,35 @@ func newAuth(cfg config.Config, mirror func(*authulamodels.User) error, activiti
 		panic(err)
 	}
 	auth.RegisterRoute(issuer.route())
+
+	// The OAuth2 callback marks its redirect as handled before the after hooks,
+	// and the router stops at the first hook of a handled request. That is
+	// totp.intercept (order 5), so the session cookie (order 10) never came.
+	// Clearing the mark runs them all; the router still redirects afterwards,
+	// and totp.intercept still stops the cookie for a two-factor user.
+	auth.RegisterHook(authulamodels.Hook{
+		Stage: authulamodels.HookAfter,
+		Matcher: func(reqCtx *authulamodels.RequestContext) bool {
+			success, _ := reqCtx.Values[authulamodels.ContextAuthSuccess.String()].(bool)
+			return success && reqCtx.Handled && reqCtx.RedirectURL != ""
+		},
+		Handler: func(reqCtx *authulamodels.RequestContext) error {
+			reqCtx.Handled = false
+			return nil
+		},
+		Order: -1,
+	})
+
+	// totp.intercept answers 200, which would turn that redirect into a blank
+	// page on the API.
+	auth.RegisterHook(authulamodels.Hook{
+		Stage: authulamodels.HookAfter,
+		Matcher: func(reqCtx *authulamodels.RequestContext) bool {
+			return reqCtx.RedirectURL != "" && reqCtx.ResponseStatus == http.StatusOK
+		},
+		Handler: redirectToTOTPStep,
+		Order:   6,
+	})
 
 	// A sign-in repeated while a session is active answers from that session
 	// and the jwt plugin skips minting for it, so mint here instead.

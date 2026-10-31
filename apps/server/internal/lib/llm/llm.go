@@ -73,6 +73,9 @@ type Config struct {
 	BaseURL string
 	APIKey  string
 	Model   string
+	// OnUsage reports every call's token usage ("chat" or "complete"); the
+	// metering hook the token quota records through. May be nil.
+	OnUsage func(purpose string, usage Usage)
 	// HTTPClient carries the guarded dialer (see lib.GuardedDialer).
 	HTTPClient *http.Client
 }
@@ -82,9 +85,9 @@ type Config struct {
 func New(cfg Config) (ChatClient, error) {
 	switch cfg.Kind {
 	case KindAnthropic:
-		return anthropicClient{client: anthropic.NewClient(anthropicOptions(cfg)...), model: cfg.Model, native: cfg.BaseURL == ""}, nil
+		return anthropicClient{client: anthropic.NewClient(anthropicOptions(cfg)...), model: cfg.Model, native: cfg.BaseURL == "", onUsage: cfg.OnUsage}, nil
 	case KindOpenAI, KindSelfHosted:
-		return openAIClient{http: cfg.HTTPClient, baseURL: openAIBaseURL(cfg), apiKey: cfg.APIKey, model: cfg.Model}, nil
+		return openAIClient{http: cfg.HTTPClient, baseURL: openAIBaseURL(cfg), apiKey: cfg.APIKey, model: cfg.Model, onUsage: cfg.OnUsage}, nil
 	}
 	return nil, fmt.Errorf("unknown LLM provider kind %q", cfg.Kind)
 }
@@ -158,7 +161,8 @@ type anthropicClient struct {
 	model  string
 	// native is true against Anthropic's own API, where low effort keeps
 	// these short tasks fast and cheap; compatible servers may reject it.
-	native bool
+	native  bool
+	onUsage func(purpose string, usage Usage)
 }
 
 func (c anthropicClient) Complete(ctx context.Context, system, prompt string, maxTokens int64) (string, error) {
@@ -186,7 +190,29 @@ func (c anthropicClient) Complete(ctx context.Context, system, prompt string, ma
 			text.WriteString(b.Text)
 		}
 	}
+	c.onUsageReport("complete", usageOrEstimate(
+		Usage{Input: int(resp.Usage.InputTokens), Output: int(resp.Usage.OutputTokens)},
+		len(system)+len(prompt), text.Len(),
+	))
 	return strings.TrimSpace(text.String()), nil
+}
+
+// usageOrEstimate returns what the server reported, or an estimate of about
+// four characters a token when it reported nothing: some compatible and
+// self-hosted servers leave usage out, and a call metered at zero would never
+// spend the quota.
+func usageOrEstimate(reported Usage, inputChars, outputChars int) Usage {
+	if reported.Input > 0 || reported.Output > 0 {
+		return reported
+	}
+	return Usage{Input: inputChars/4 + 1, Output: outputChars / 4}
+}
+
+// onUsageReport invokes the config's metering hook when one is set.
+func (c anthropicClient) onUsageReport(purpose string, usage Usage) {
+	if c.onUsage != nil {
+		c.onUsage(purpose, usage)
+	}
 }
 
 type openAIClient struct {
@@ -194,6 +220,14 @@ type openAIClient struct {
 	baseURL string
 	apiKey  string
 	model   string
+	onUsage func(purpose string, usage Usage)
+}
+
+// onUsageReport invokes the config's metering hook when one is set.
+func (c openAIClient) onUsageReport(purpose string, usage Usage) {
+	if c.onUsage != nil {
+		c.onUsage(purpose, usage)
+	}
 }
 
 func (c openAIClient) Complete(ctx context.Context, system, prompt string, maxTokens int64) (string, error) {
@@ -240,6 +274,10 @@ func (c openAIClient) Complete(ctx context.Context, system, prompt string, maxTo
 			} `json:"message"`
 			FinishReason string `json:"finish_reason"`
 		} `json:"choices"`
+		Usage struct {
+			PromptTokens     int `json:"prompt_tokens"`
+			CompletionTokens int `json:"completion_tokens"`
+		} `json:"usage"`
 	}
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&out); err != nil {
 		return "", fmt.Errorf("chat completions: %w", err)
@@ -250,5 +288,9 @@ func (c openAIClient) Complete(ctx context.Context, system, prompt string, maxTo
 	if out.Choices[0].FinishReason == "content_filter" {
 		return "", ErrRefused
 	}
+	c.onUsageReport("complete", usageOrEstimate(
+		Usage{Input: out.Usage.PromptTokens, Output: out.Usage.CompletionTokens},
+		len(body), len(out.Choices[0].Message.Content),
+	))
 	return strings.TrimSpace(out.Choices[0].Message.Content), nil
 }

@@ -3,14 +3,22 @@ import { COMMUNITY } from '@/lib/constants/edition'
 
 import { clearAuthTokens } from '../auth/token-storage'
 
-/** The hosted Montara server, used until this browser picks another one. */
+/** The server this browser uses until the Community Edition picks another one. */
 export const DEFAULT_SERVER_URL = env.VITE_API_URL
 
 const STORAGE_KEY = 'montara.server_url'
 
 function storedServerURL() {
   try {
-    return localStorage.getItem(STORAGE_KEY)
+    const url = localStorage.getItem(STORAGE_KEY)
+    // A hosted build ignores a stored choice and cleans it up: the address and
+    // the session both belong to the server it pointed at.
+    if (url && !COMMUNITY) {
+      localStorage.removeItem(STORAGE_KEY)
+      clearAuthTokens()
+      return null
+    }
+    return url
   } catch {
     return null
   }
@@ -18,9 +26,10 @@ function storedServerURL() {
 
 /**
  * The server this browser talks to; read once, since switching reloads the
- * app. The Community Edition always uses its own server.
+ * app. Only the Community Edition can pick one; any other edition ignores a
+ * stored choice.
  */
-export const SERVER_URL = (!COMMUNITY && storedServerURL()) || DEFAULT_SERVER_URL
+export const SERVER_URL = (COMMUNITY && storedServerURL()) || DEFAULT_SERVER_URL
 
 /** `https://mail.example.com/` → `https://mail.example.com`. */
 export function normalizeServerURL(url: string) {

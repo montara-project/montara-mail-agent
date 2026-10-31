@@ -10,5 +10,3 @@ export const IPBlockSchema = z.object({
   reason: z.string().max(300, 'The reason must be at most 300 characters.'),
   expires_in_hours: z.enum(IP_BLOCK_DURATIONS),
 })
-
-export type IPBlockDto = z.infer<typeof IPBlockSchema>

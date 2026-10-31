@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input'
 import { OTPCodeInput } from '@/components/ui/input-otp'
 import { useAppForm } from '@/hooks/form'
 import { SignInSchema } from '@/lib/api/dtos/auth/schema'
-import { DEFAULT_SERVER_URL, SERVER_URL } from '@/lib/api/server-url'
+import { SERVER_URL } from '@/lib/api/server-url'
 import { signInWithEmail, verifyTOTP } from '@/lib/auth/email-auth'
 import { startGoogleSignIn } from '@/lib/auth/google-auth'
 import { COMMUNITY } from '@/lib/constants/edition'
@@ -119,11 +119,18 @@ function loginStep(pickServer: boolean, needsCode: boolean): keyof typeof STEP_D
   return 'password'
 }
 
-export default function LoginForm({ className, ...props }: React.ComponentProps<'div'>) {
+export default function LoginForm({
+  className,
+  codeFirst = false,
+  ...props
+}: React.ComponentProps<'div'> & {
+  /** Start at the code step: Google already vouched for the user. */
+  codeFirst?: boolean
+}) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   // Set once the password was right but the account asks for a code too.
-  const [needsCode, setNeedsCode] = useState(false)
+  const [needsCode, setNeedsCode] = useState(codeFirst)
   // Choosing a server here, since an account on a self-hosted one can't reach settings first.
   const [pickServer, setPickServer] = useState(false)
   // Stays set on success: the browser leaves for Google's consent screen.
@@ -284,10 +291,9 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
           </LazyMotion>
         </div>
       </FieldGroup>
-      {!pickServer && !COMMUNITY && (
+      {!pickServer && COMMUNITY && (
         <p className="text-muted-foreground flex flex-wrap items-center justify-center gap-x-1 text-center text-sm">
           Server: <span className="text-foreground">{new URL(SERVER_URL).host}</span>
-          {SERVER_URL === DEFAULT_SERVER_URL ? '' : ' (self hosted)'}
           <Button
             ref={changeServer}
             mode="link"

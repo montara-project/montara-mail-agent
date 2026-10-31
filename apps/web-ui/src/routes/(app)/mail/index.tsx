@@ -1,15 +1,19 @@
 import { useQuery } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Sparkles } from 'lucide-react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import React from 'react'
 
 import MailList, { DEFAULT_PAGE_SIZE, pageSize } from '@/components/block/mail/mail-list'
 import MailReader from '@/components/block/mail/mail-reader'
 import {
   MAIL_LABELS,
+  useAgentPanelPosition,
   useMailAccount,
   useMailAccounts,
   useSplitInbox,
 } from '@/components/layout/mail/mail-panel'
+import { Button } from '@/components/ui/button'
 import { useActiveOrganization } from '@/hooks/use-active-organization'
 import { queries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
@@ -34,6 +38,10 @@ type MailSearch = {
 // The assistant pane is closed by default and desktop only, so its code waits until it opens.
 const AgentPanel = React.lazy(() => import('@/components/block/mail/agent-panel'))
 const AGENT_PANE = 'hidden w-80 shrink-0 border-l lg:flex xl:w-96'
+// Floating mode (Control Center > Agent tools > AI Assistant Panel) pins the
+// same panel over the page's bottom right corner instead of the third pane.
+const AGENT_FLOAT =
+  'fixed right-7 bottom-7 z-50 hidden h-[min(38rem,calc(100svh-6rem))] w-96 max-w-[calc(100vw-3.5rem)] overflow-hidden rounded-xl border bg-card shadow-lg lg:block'
 
 const str = (value: unknown) => (typeof value === 'string' && value !== '' ? value : undefined)
 
@@ -65,6 +73,7 @@ function RouteComponent() {
   const { mail: mailId, agent, about } = Route.useSearch()
   const account = useMailAccount()
   const split = useSplitInbox()
+  const position = useAgentPanelPosition()
   const { data: accounts } = useMailAccounts()
   const aboutMail = useQuery(queries.mails.get(about))
   const aboutAccountId = aboutMail.data?.email_account_id
@@ -81,30 +90,97 @@ function RouteComponent() {
   const globalAccountId = about && !aboutMail.isError ? aboutAccountId : unattachedAccountId
   const agentAccountId = split === false ? globalAccountId : account?.id
 
+  const navigate = useNavigate()
+  const floatingButton = React.useRef<HTMLButtonElement>(null)
+  const closeAgent = async () => {
+    await navigate({
+      to: '/mail',
+      search: (s) => ({ ...s, agent: undefined }),
+    })
+    floatingButton.current?.focus()
+  }
+  const floating = position === 'floating'
+  const reduceMotion = useReducedMotion()
+  const floatTransition = {
+    duration: reduceMotion ? 0 : 0.25,
+    ease: [0.2, 0, 0, 1] as const,
+  }
+
+  // One panel, mounted where its preference puts it: the third pane beside the
+  // reader, or floating over the page's bottom right corner. The empty pane
+  // holds its width while the code loads, so the reader doesn't jump.
+  const panel = agent ? (
+    <React.Suspense fallback={<div className={floating ? 'h-full w-full' : AGENT_PANE} />}>
+      {/* Another mailbox starts another conversation. */}
+      <AgentPanel
+        key={agentAccountId}
+        emailAccountId={agentAccountId}
+        organizationId={organization?.id}
+        onClose={floating ? closeAgent : undefined}
+        className={floating ? 'h-full w-full' : AGENT_PANE}
+      />
+    </React.Suspense>
+  ) : null
+
   return (
-    // Viewport height minus the 4rem page header and 2rem of padding, so each column scrolls on its own.
-    <div className="bg-card flex h-[calc(100svh-6rem)] overflow-hidden rounded-xl border">
-      {/* On phones the list and the reader take turns. */}
-      <MailList className={cn('w-full md:w-80 md:border-r lg:w-96', mailId && 'hidden md:flex')} />
-      {mailId ? (
-        <MailReader key={mailId} mailId={mailId} />
-      ) : (
-        <div className="text-muted-foreground hidden flex-1 items-center justify-center p-6 text-center text-sm md:flex">
-          Select an email to read it.
-        </div>
+    <>
+      {/* Viewport height minus the 4rem page header and 2rem of padding, so each column scrolls on its own. */}
+      <div className="bg-card flex h-[calc(100svh-6rem)] overflow-hidden rounded-xl border">
+        {/* On phones the list and the reader take turns. */}
+        <MailList
+          className={cn('w-full md:w-80 md:border-r lg:w-96', mailId && 'hidden md:flex')}
+        />
+        {mailId ? (
+          <MailReader key={mailId} mailId={mailId} />
+        ) : (
+          <div className="text-muted-foreground hidden flex-1 items-center justify-center p-6 text-center text-sm md:flex">
+            Select an email to read it.
+          </div>
+        )}
+        {!floating && panel}
+      </div>
+      {floating && (
+        <>
+          {/* Stays mounted under the panel, so closing can return the focus to it. */}
+          <motion.div
+            className="fixed right-7 bottom-7 z-40 hidden lg:block"
+            initial={false}
+            animate={agent ? { opacity: 0, scale: 0.6 } : { opacity: 1, scale: 1 }}
+            transition={floatTransition}
+            inert={agent}
+          >
+            <Button
+              ref={floatingButton}
+              className="size-14 rounded-full shadow-lg"
+              aria-label="Open AI assistant"
+              title="AI assistant"
+              onClick={() =>
+                navigate({
+                  to: '/mail',
+                  search: (s) => ({ ...s, agent: true }),
+                })
+              }
+            >
+              <Sparkles className="size-5" />
+            </Button>
+          </motion.div>
+          <AnimatePresence initial={false}>
+            {panel && (
+              <motion.div
+                key="agent"
+                className={AGENT_FLOAT}
+                style={{ transformOrigin: 'bottom right' }}
+                initial={{ opacity: 0, scale: 0.6 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.6 }}
+                transition={floatTransition}
+              >
+                {panel}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </>
       )}
-      {agent && (
-        // The empty pane holds its width while the code loads, so the reader doesn't jump.
-        <React.Suspense fallback={<div className={AGENT_PANE} />}>
-          {/* Another mailbox starts another conversation. */}
-          <AgentPanel
-            key={agentAccountId}
-            emailAccountId={agentAccountId}
-            organizationId={organization?.id}
-            className={AGENT_PANE}
-          />
-        </React.Suspense>
-      )}
-    </div>
+    </>
   )
 }

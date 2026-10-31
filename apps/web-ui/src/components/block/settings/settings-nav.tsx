@@ -12,6 +12,7 @@ import {
   Plug,
   ShieldBan,
   ShieldCheck,
+  Sparkles,
   Trash2,
   User,
   Wand2,
@@ -47,8 +48,8 @@ const SETTINGS_GROUPS: { title: string; items: SettingsItem[] }[] = [
   {
     title: 'Agent tools',
     items: [
-      { title: 'AI Providers', icon: BrainCircuit, url: '/settings/ai-providers' },
       { title: 'Agent Bots', icon: Bot, url: '/settings/agent-bots' },
+      { title: 'AI Assistant Panel', icon: Sparkles, url: '/settings/ai-assistant-panel' },
       { title: 'Tools', icon: Wrench },
       { title: 'Skills', icon: Wand2, url: '/settings/skills' },
       { title: 'MCP', icon: Plug, url: '/settings/mcp' },
@@ -64,7 +65,10 @@ const SETTINGS_GROUPS: { title: string; items: SettingsItem[] }[] = [
 /** Server-wide settings, shown to a super user only, before the danger zone. */
 const PLATFORM_GROUP: { title: string; items: SettingsItem[] } = {
   title: 'Platform',
-  items: [{ title: 'IP Block', icon: ShieldBan, url: '/settings/ip-blocks' }],
+  items: [
+    { title: 'AI Providers', icon: BrainCircuit, url: '/settings/ai-providers' },
+    { title: 'IP Block', icon: ShieldBan, url: '/settings/ip-blocks' },
+  ],
 }
 
 /** The settings index: each group a SectionCard of rows that open their page. */

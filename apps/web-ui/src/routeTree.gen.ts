@@ -18,6 +18,7 @@ import { Route as appDashboardIndexRouteImport } from './routes/(app)/dashboard/
 import { Route as appMailIndexRouteImport } from './routes/(app)/mail/index'
 import { Route as appSettingsIndexRouteImport } from './routes/(app)/settings/index'
 import { Route as appSettingsAgentBotsRouteImport } from './routes/(app)/settings/agent-bots'
+import { Route as appSettingsAiAssistantPanelRouteImport } from './routes/(app)/settings/ai-assistant-panel'
 import { Route as appSettingsAiProvidersRouteImport } from './routes/(app)/settings/ai-providers'
 import { Route as appSettingsApiKeysRouteImport } from './routes/(app)/settings/api-keys'
 import { Route as appSettingsBillingRouteImport } from './routes/(app)/settings/billing'
@@ -29,6 +30,7 @@ import { Route as appSettingsOrganizationRouteImport } from './routes/(app)/sett
 import { Route as appSettingsProfileRouteImport } from './routes/(app)/settings/profile'
 import { Route as appSettingsSecurityRouteImport } from './routes/(app)/settings/security'
 import { Route as appSettingsSkillsRouteImport } from './routes/(app)/settings/skills'
+import { Route as appSettingsBillingInvoiceIdRouteImport } from './routes/(app)/settings/billing_.invoice.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -74,6 +76,12 @@ const appSettingsAgentBotsRoute = appSettingsAgentBotsRouteImport.update({
   path: '/agent-bots',
   getParentRoute: () => appSettingsRouteRoute,
 } as any)
+const appSettingsAiAssistantPanelRoute =
+  appSettingsAiAssistantPanelRouteImport.update({
+    id: '/ai-assistant-panel',
+    path: '/ai-assistant-panel',
+    getParentRoute: () => appSettingsRouteRoute,
+  } as any)
 const appSettingsAiProvidersRoute = appSettingsAiProvidersRouteImport.update({
   id: '/ai-providers',
   path: '/ai-providers',
@@ -130,12 +138,19 @@ const appSettingsSkillsRoute = appSettingsSkillsRouteImport.update({
   path: '/skills',
   getParentRoute: () => appSettingsRouteRoute,
 } as any)
+const appSettingsBillingInvoiceIdRoute =
+  appSettingsBillingInvoiceIdRouteImport.update({
+    id: '/billing_/invoice/$id',
+    path: '/billing/invoice/$id',
+    getParentRoute: () => appSettingsRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/settings': typeof appSettingsRouteRouteWithChildren
   '/sign-in/': typeof SignInIndexRoute
   '/settings/agent-bots': typeof appSettingsAgentBotsRoute
+  '/settings/ai-assistant-panel': typeof appSettingsAiAssistantPanelRoute
   '/settings/ai-providers': typeof appSettingsAiProvidersRoute
   '/settings/api-keys': typeof appSettingsApiKeysRoute
   '/settings/billing': typeof appSettingsBillingRoute
@@ -151,11 +166,13 @@ export interface FileRoutesByFullPath {
   '/dashboard/': typeof appDashboardIndexRoute
   '/mail/': typeof appMailIndexRoute
   '/settings/': typeof appSettingsIndexRoute
+  '/settings/billing/invoice/$id': typeof appSettingsBillingInvoiceIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/sign-in': typeof SignInIndexRoute
   '/settings/agent-bots': typeof appSettingsAgentBotsRoute
+  '/settings/ai-assistant-panel': typeof appSettingsAiAssistantPanelRoute
   '/settings/ai-providers': typeof appSettingsAiProvidersRoute
   '/settings/api-keys': typeof appSettingsApiKeysRoute
   '/settings/billing': typeof appSettingsBillingRoute
@@ -171,6 +188,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof appDashboardIndexRoute
   '/mail': typeof appMailIndexRoute
   '/settings': typeof appSettingsIndexRoute
+  '/settings/billing/invoice/$id': typeof appSettingsBillingInvoiceIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -179,6 +197,7 @@ export interface FileRoutesById {
   '/(app)/settings': typeof appSettingsRouteRouteWithChildren
   '/sign-in/': typeof SignInIndexRoute
   '/(app)/settings/agent-bots': typeof appSettingsAgentBotsRoute
+  '/(app)/settings/ai-assistant-panel': typeof appSettingsAiAssistantPanelRoute
   '/(app)/settings/ai-providers': typeof appSettingsAiProvidersRoute
   '/(app)/settings/api-keys': typeof appSettingsApiKeysRoute
   '/(app)/settings/billing': typeof appSettingsBillingRoute
@@ -194,6 +213,7 @@ export interface FileRoutesById {
   '/(app)/dashboard/': typeof appDashboardIndexRoute
   '/(app)/mail/': typeof appMailIndexRoute
   '/(app)/settings/': typeof appSettingsIndexRoute
+  '/(app)/settings/billing_/invoice/$id': typeof appSettingsBillingInvoiceIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -202,6 +222,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/sign-in/'
     | '/settings/agent-bots'
+    | '/settings/ai-assistant-panel'
     | '/settings/ai-providers'
     | '/settings/api-keys'
     | '/settings/billing'
@@ -217,11 +238,13 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/mail/'
     | '/settings/'
+    | '/settings/billing/invoice/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/sign-in'
     | '/settings/agent-bots'
+    | '/settings/ai-assistant-panel'
     | '/settings/ai-providers'
     | '/settings/api-keys'
     | '/settings/billing'
@@ -237,6 +260,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/mail'
     | '/settings'
+    | '/settings/billing/invoice/$id'
   id:
     | '__root__'
     | '/'
@@ -244,6 +268,7 @@ export interface FileRouteTypes {
     | '/(app)/settings'
     | '/sign-in/'
     | '/(app)/settings/agent-bots'
+    | '/(app)/settings/ai-assistant-panel'
     | '/(app)/settings/ai-providers'
     | '/(app)/settings/api-keys'
     | '/(app)/settings/billing'
@@ -259,6 +284,7 @@ export interface FileRouteTypes {
     | '/(app)/dashboard/'
     | '/(app)/mail/'
     | '/(app)/settings/'
+    | '/(app)/settings/billing_/invoice/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -330,6 +356,13 @@ declare module '@tanstack/react-router' {
       path: '/agent-bots'
       fullPath: '/settings/agent-bots'
       preLoaderRoute: typeof appSettingsAgentBotsRouteImport
+      parentRoute: typeof appSettingsRouteRoute
+    }
+    '/(app)/settings/ai-assistant-panel': {
+      id: '/(app)/settings/ai-assistant-panel'
+      path: '/ai-assistant-panel'
+      fullPath: '/settings/ai-assistant-panel'
+      preLoaderRoute: typeof appSettingsAiAssistantPanelRouteImport
       parentRoute: typeof appSettingsRouteRoute
     }
     '/(app)/settings/ai-providers': {
@@ -409,11 +442,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof appSettingsSkillsRouteImport
       parentRoute: typeof appSettingsRouteRoute
     }
+    '/(app)/settings/billing_/invoice/$id': {
+      id: '/(app)/settings/billing_/invoice/$id'
+      path: '/billing/invoice/$id'
+      fullPath: '/settings/billing/invoice/$id'
+      preLoaderRoute: typeof appSettingsBillingInvoiceIdRouteImport
+      parentRoute: typeof appSettingsRouteRoute
+    }
   }
 }
 
 interface appSettingsRouteRouteChildren {
   appSettingsAgentBotsRoute: typeof appSettingsAgentBotsRoute
+  appSettingsAiAssistantPanelRoute: typeof appSettingsAiAssistantPanelRoute
   appSettingsAiProvidersRoute: typeof appSettingsAiProvidersRoute
   appSettingsApiKeysRoute: typeof appSettingsApiKeysRoute
   appSettingsBillingRoute: typeof appSettingsBillingRoute
@@ -426,10 +467,12 @@ interface appSettingsRouteRouteChildren {
   appSettingsSecurityRoute: typeof appSettingsSecurityRoute
   appSettingsSkillsRoute: typeof appSettingsSkillsRoute
   appSettingsIndexRoute: typeof appSettingsIndexRoute
+  appSettingsBillingInvoiceIdRoute: typeof appSettingsBillingInvoiceIdRoute
 }
 
 const appSettingsRouteRouteChildren: appSettingsRouteRouteChildren = {
   appSettingsAgentBotsRoute: appSettingsAgentBotsRoute,
+  appSettingsAiAssistantPanelRoute: appSettingsAiAssistantPanelRoute,
   appSettingsAiProvidersRoute: appSettingsAiProvidersRoute,
   appSettingsApiKeysRoute: appSettingsApiKeysRoute,
   appSettingsBillingRoute: appSettingsBillingRoute,
@@ -442,6 +485,7 @@ const appSettingsRouteRouteChildren: appSettingsRouteRouteChildren = {
   appSettingsSecurityRoute: appSettingsSecurityRoute,
   appSettingsSkillsRoute: appSettingsSkillsRoute,
   appSettingsIndexRoute: appSettingsIndexRoute,
+  appSettingsBillingInvoiceIdRoute: appSettingsBillingInvoiceIdRoute,
 }
 
 const appSettingsRouteRouteWithChildren =

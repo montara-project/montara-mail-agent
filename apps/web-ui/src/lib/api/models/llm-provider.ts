@@ -8,7 +8,7 @@ export type LLMProviderKind = 'openai' | 'anthropic' | 'self_hosted'
 
 export interface LLMProvider {
   id: string
-  /** null for the global provider, which every organization without its own uses. */
+  /** Null for the platform provider, which every user falls back to. */
   organization_id: string | null
   created_at: ISO8601DateString
   updated_at: ISO8601DateString
@@ -20,7 +20,7 @@ export interface LLMProvider {
   has_api_key: boolean
 }
 
-/** A listed provider, with its organization's name ('' for the global one). */
+/** A listed provider, with its organization's name ('' for the platform one). */
 export interface LLMProviderListed extends LLMProvider {
   organization_name: string
 }

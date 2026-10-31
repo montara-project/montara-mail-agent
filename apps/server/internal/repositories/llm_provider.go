@@ -9,7 +9,8 @@ import (
 )
 
 // LLMProviderRepository manages the LLM providers: one per organization at
-// most, and one global. A scope is an organization id, or nil for global.
+// most, and one platform provider. A scope is an organization id, or nil for
+// the platform one.
 type LLMProviderRepository struct {
 	BaseRepository
 }
@@ -37,7 +38,7 @@ func (r *LLMProviderRepository) GetByID(ctx context.Context, id uuid.UUID) (mode
 }
 
 // ForOrganization returns the provider an organization's AI features call:
-// its own, else the global one, else a not-found error.
+// its own, else the platform one, else a not-found error.
 func (r *LLMProviderRepository) ForOrganization(ctx context.Context, organizationID uuid.UUID) (models.LLMProvider, error) {
 	return scanLLMProvider(r.queryRowContext(ctx, `
 		SELECT `+llmProviderColumns+` FROM llm_providers
@@ -48,14 +49,14 @@ func (r *LLMProviderRepository) ForOrganization(ctx context.Context, organizatio
 }
 
 // LLMProviderListed is a provider with the name of the organization it
-// belongs to ("" for the global one).
+// belongs to ("" for the platform one).
 type LLMProviderListed struct {
 	models.LLMProvider
 	OrganizationName string `json:"organization_name"`
 }
 
-// List returns the global provider and those of the user's organizations,
-// or every provider for a super user; the global one first.
+// List returns the platform provider and those of the user's organizations,
+// or every provider for a super user; the platform one first.
 func (r *LLMProviderRepository) List(ctx context.Context, userID uuid.UUID, all bool) ([]LLMProviderListed, error) {
 	rows, err := r.queryContext(ctx, `
 		SELECT p.id, p.organization_id, p.created_at, p.updated_at, p.name, p.kind, p.base_url, p.model, p.api_key,
@@ -102,7 +103,7 @@ func (r *LLMProviderRepository) SetScope(ctx context.Context, id uuid.UUID, scop
 	if err != nil {
 		message := "that organization already has a provider: remove it first"
 		if scope == nil {
-			message = "there is already a global provider: remove it first"
+			message = "there is already a platform provider: remove it first"
 		}
 		return translateUnique(err, message)
 	}

@@ -137,3 +137,16 @@ func (r *EmailAccountRepository) Stats(ctx context.Context, organizationID uuid.
 	).Scan(&s.Unread, &s.Spam, &s.Accounts)
 	return s, err
 }
+
+// CountByUser counts the mailboxes connected across every organization the
+// user belongs to: the free plan caps this per user, not per organization.
+func (r *EmailAccountRepository) CountByUser(ctx context.Context, userID uuid.UUID) (int, error) {
+	var n int
+	err := r.queryRowContext(ctx, `
+		SELECT count(DISTINCT ea.id) FROM email_accounts ea
+		JOIN organization_members m ON m.organization_id = ea.organization_id
+		WHERE m.user_id = $1`,
+		userID,
+	).Scan(&n)
+	return n, err
+}
