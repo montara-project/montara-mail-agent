@@ -1,13 +1,16 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { ChevronLeft, ChevronRight, ExternalLink, Loader2, Sparkles } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ExternalLink, Loader2 } from 'lucide-react'
 import React from 'react'
 
-import type { TopupCheckout, TokenTopup } from '@/lib/api/models/quota'
+import type { TokenTopup, TopupCheckout } from '@/lib/api/models/quota'
 
 import QueryState from '@/components/block/common/query-state'
 import SectionCard from '@/components/block/common/section-card'
-import { Badge } from '@/components/ui/badge'
+import PlanCard from '@/components/block/settings/billing/plan-card'
+import PlansComparison from '@/components/block/settings/billing/plans-comparison'
+import TopupStatusBadge from '@/components/block/settings/billing/topup-status-badge'
+import WalletCard from '@/components/block/settings/billing/wallet-card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Pagination, PaginationContent, PaginationItem } from '@/components/ui/pagination'
@@ -28,26 +31,13 @@ import { cn } from '@/lib/utils'
 /** The page sizes the top-up history offers; the first is the default. */
 const TOPUP_PAGE_SIZES = [10, 25, 50] as const
 
-const statusVariant: Record<TokenTopup['status'], 'success' | 'secondary' | 'destructive'> = {
-  paid: 'success',
-  pending: 'secondary',
-  expired: 'secondary',
-  failed: 'destructive',
-}
-
-/** A top-up's status, the same on the billing page and its invoice. */
-export function TopupStatusBadge({ status }: { status: TokenTopup['status'] }) {
-  return (
-    <Badge variant={statusVariant[status]} appearance="light" size="sm" className="capitalize">
-      {status}
-    </Badge>
-  )
-}
-
 /** Control Center > Billing: the plan, the weekly AI usage against the plan's
  * allowance, and the pay-as-you-go balance a top-up fills. */
 export default function QuotaSettings() {
   const quotaQuery = useQuery(queries.quota.status())
+  const securityQuery = useQuery(queries.profile.security())
+  // A super user has no limit to buy past. Hidden until known, so it never flashes.
+  const showPurchases = !securityQuery.isPending && !securityQuery.data?.super_user
   const [page, setPage] = React.useState(1)
   const [pageSize, setPageSize] = React.useState<number>(TOPUP_PAGE_SIZES[0])
   const first = (page - 1) * pageSize
@@ -62,11 +52,11 @@ export default function QuotaSettings() {
 
   const create = useMutation(queries.quota.createTopup())
 
-  const subscribed = quota?.plan === 'subscribed'
+  const isPro = quota?.plan === 'pro'
   const used = quota?.used_tokens ?? 0
   const limit = quota?.limit_tokens ?? null
   const percent = limit ? Math.min(100, Math.round((used / limit) * 100)) : 0
-  // A null limit is a subscribed plan or a super user: neither has a meter.
+  // A null limit is an enterprise plan or a super user: neither has a meter.
   const unlimited = quota?.limit_tokens === null
 
   const startTopup = () =>
@@ -89,22 +79,7 @@ export default function QuotaSettings() {
 
   return (
     <div className="grid gap-4">
-      <SectionCard
-        title="Plan & usage"
-        description="The weekly AI allowance your plan carries, and what it has spent."
-        toolbar={
-          !quota ? undefined : unlimited ? (
-            <Badge variant="success" appearance="light">
-              <Sparkles aria-hidden />
-              Unlimited
-            </Badge>
-          ) : (
-            <Badge variant="secondary" appearance="light">
-              Free
-            </Badge>
-          )
-        }
-      >
+      <PlanCard>
         <QueryState
           isPending={isPending}
           isError={quotaQuery.isError && !quota}
@@ -122,7 +97,7 @@ export default function QuotaSettings() {
                 {limit !== null && ` / ${formatTokens(limit)}`} tokens
               </span>
             </div>
-            {subscribed && (
+            {isPro && (
               <p className="text-muted-foreground text-sm">
                 100M tokens a week, and the pay-as-you-go balance on top.
               </p>
@@ -145,7 +120,14 @@ export default function QuotaSettings() {
             )}
           </div>
         </QueryState>
-      </SectionCard>
+      </PlanCard>
+
+      {showPurchases && (
+        <>
+          <PlansComparison />
+          <WalletCard />
+        </>
+      )}
 
       <SectionCard
         title="Pay as you go"

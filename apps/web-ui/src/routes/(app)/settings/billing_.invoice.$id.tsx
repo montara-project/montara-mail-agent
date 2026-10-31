@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { isAxiosError } from 'axios'
 import { ChevronLeft, ExternalLink, Printer } from 'lucide-react'
 import React from 'react'
@@ -7,10 +7,11 @@ import React from 'react'
 import type { TokenTopup } from '@/lib/api/models/quota'
 
 import QueryState from '@/components/block/common/query-state'
-import { TopupStatusBadge } from '@/components/block/settings/quota-settings'
+import TopupStatusBadge from '@/components/block/settings/billing/topup-status-badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { queries } from '@/lib/api/queries'
+import { COMMUNITY } from '@/lib/constants/edition'
 import { formatRupiah, formatTokens } from '@/lib/string'
 import { cn } from '@/lib/utils'
 
@@ -187,5 +188,9 @@ function InvoicePage() {
 }
 
 export const Route = createFileRoute('/(app)/settings/billing_/invoice/$id')({
-  component: InvoicePage,
+  // The Community Edition takes no payments, so it has no invoices.
+  beforeLoad: () => {
+    if (COMMUNITY) throw redirect({ to: '/settings/profile', replace: true })
+  },
+  component: COMMUNITY ? () => null : InvoicePage,
 })

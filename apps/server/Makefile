@@ -3,6 +3,12 @@
 # argument: process arguments are visible to other users of the machine.
 export
 
+# The edition is fixed at build time, like the Docker image's EDITION build arg:
+# cloud, or community (set it in .env or as `make run EDITION=community`).
+# The web app reads its own VITE_EDITION.
+EDITION ?= cloud
+GO_EDITION := -ldflags "-X montara-mail-agent/server/internal/config.Edition=$(EDITION)"
+
 # ==================================================================================== #
 # HELPERS
 # ==================================================================================== #
@@ -20,7 +26,7 @@ help:
 ## run: run the application (configuration comes from .env)
 .PHONY: run
 run:
-	go run ./cmd/api
+	go run $(GO_EDITION) ./cmd/api
 
 # ==================================================================================== #
 # MIGRATIONS
@@ -40,32 +46,32 @@ db/migrations/new:
 ## db/migrations/up: apply all up database migrations
 .PHONY: db/migrations/up
 db/migrations/up:
-	@go run ./cmd/migrate up
+	@go run $(GO_EDITION) ./cmd/migrate up
 
 ## db/migrations/up/seed: apply all up database migrations and run seeders
 .PHONY: db/migrations/up/seed
 db/migrations/up/seed:
-	@go run ./cmd/migrate --seed up
+	@go run $(GO_EDITION) ./cmd/migrate --seed up
 
 ## db/migrations/force version=$1: set the schema version after a failed migration (-1 for none)
 .PHONY: db/migrations/force
 db/migrations/force:
-	@go run ./cmd/migrate force $(version)
+	@go run $(GO_EDITION) ./cmd/migrate force $(version)
 
 ## db/migrations/down: roll back every migration, deleting all data (localhost only)
 .PHONY: db/migrations/down
 db/migrations/down:
-	@go run ./cmd/migrate down
+	@go run $(GO_EDITION) ./cmd/migrate down
 
 ## db/migrations/refresh: roll back and reapply every migration, deleting all data (localhost only)
 .PHONY: db/migrations/refresh
 db/migrations/refresh:
-	@go run ./cmd/migrate refresh
+	@go run $(GO_EDITION) ./cmd/migrate refresh
 
 ## db/migrations/refresh/seed: refresh, then run seeders
 .PHONY: db/migrations/refresh/seed
 db/migrations/refresh/seed:
-	@go run ./cmd/migrate --seed refresh
+	@go run $(GO_EDITION) ./cmd/migrate --seed refresh
 
 # ==================================================================================== #
 # BUILD

@@ -2,7 +2,6 @@ import SectionCard from '@/components/block/common/section-card'
 import ActivityLogList from '@/components/block/settings/activity-log'
 import OrganizationList from '@/components/block/settings/organization-list'
 import PasswordSettings from '@/components/block/settings/password-form'
-import QuotaSettings from '@/components/block/settings/quota-settings'
 import ServerSettings from '@/components/block/settings/server-url-form'
 import TOTPSettings from '@/components/block/settings/totp-settings'
 import { Badge } from '@/components/ui/badge'
@@ -64,10 +63,6 @@ export function OrganizationPageSettings() {
       )}
     </div>
   )
-}
-
-export function BillingSettings() {
-  return <QuotaSettings />
 }
 
 export function DeleteAccountSettings() {

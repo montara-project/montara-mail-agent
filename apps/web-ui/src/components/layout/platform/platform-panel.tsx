@@ -14,6 +14,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
+import { COMMUNITY } from '@/lib/constants/edition'
 
 const PLATFORM_ITEMS = [
   { title: 'Dashboard', icon: LayoutDashboard, url: '/dashboard' },
@@ -48,20 +49,22 @@ export default function PlatformPanel() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4">
-        <div className="grid gap-2 rounded-lg border p-3 text-sm">
-          <div className="flex items-center gap-2 font-medium">
-            <Sparkles className="text-accent-ink size-4" aria-hidden />
-            Subscribe now
+      {!COMMUNITY && (
+        <SidebarFooter className="p-4">
+          <div className="grid gap-2 rounded-lg border p-3 text-sm">
+            <div className="flex items-center gap-2 font-medium">
+              <Sparkles className="text-accent-ink size-4" aria-hidden />
+              Subscribe now
+            </div>
+            <p className="text-muted-foreground text-xs">
+              Plans for teams and heavier use are on the way.
+            </p>
+            <Button size="sm" asChild>
+              <Link to="/settings/billing">Open billing</Link>
+            </Button>
           </div>
-          <p className="text-muted-foreground text-xs">
-            Plans for teams and heavier use are on the way.
-          </p>
-          <Button size="sm" asChild>
-            <Link to="/settings/billing">Open billing</Link>
-          </Button>
-        </div>
-      </SidebarFooter>
+        </SidebarFooter>
+      )}
     </Sidebar>
   )
 }

@@ -47,6 +47,10 @@ type Application struct {
 	// HTTPClient calls user-supplied hosts, such as an LLM base URL, through
 	// lib.GuardedDialer.
 	HTTPClient *http.Client
+
+	// plans caches the pricing catalog for the enforcement hot paths (see
+	// plan_catalog.go); its zero value works, filled by ReloadPlans at boot.
+	plans planCatalog
 }
 
 // APIKeyService is the name the api-key plugin's API is registered under in
@@ -132,6 +136,10 @@ func (a *Application) usageHook(userID uuid.UUID, organizationID *uuid.UUID, pro
 // balance are both spent. The weekly allowance is the plan's; the balance is
 // the overflow a top-up bought, spent only once the allowance runs out.
 func (a *Application) checkQuota(ctx context.Context, userID uuid.UUID) error {
+	// The Community Edition has nothing to buy, so nothing to run out of.
+	if config.Community() {
+		return nil
+	}
 	role, err := a.Repositories.User.Role(ctx, userID)
 	if err != nil {
 		return nil // an unknown user has no quota to check; the AI call fails on its own merits
@@ -143,19 +151,18 @@ func (a *Application) checkQuota(ctx context.Context, userID uuid.UUID) error {
 	if err != nil {
 		return nil
 	}
-	limit := a.Config.Quota.FreeWeeklyTokens
-	if plan == constant.PlanSubscribed {
-		limit = a.Config.Quota.SubscribedWeeklyTokens
-	}
-	// An unset limit enforces nothing: self-hosted servers bill nobody.
-	if limit <= 0 {
+	// The allowance is the tier's plans row; an unknown or unseeded tier, or
+	// a NULL weekly_tokens, enforces nothing (fail open: self-hosted servers
+	// without the seed bill nobody).
+	limit := a.WeeklyTokenLimit(plan)
+	if limit == nil || *limit <= 0 {
 		return nil
 	}
 	used, err := a.Repositories.TokenUsage.SumSince(ctx, userID, period.WeekStart(time.Now()))
 	if err != nil {
 		return err
 	}
-	if used < limit {
+	if used < *limit {
 		return nil
 	}
 	balance, err := a.Repositories.TokenBalance.Balance(ctx, userID, limit)

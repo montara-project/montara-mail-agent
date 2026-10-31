@@ -30,6 +30,7 @@ import (
 	"montara-mail-agent/server/internal/handlers"
 	"montara-mail-agent/server/internal/ipblock"
 	"montara-mail-agent/server/internal/lib"
+	"montara-mail-agent/server/internal/lib/constant"
 	"montara-mail-agent/server/internal/mailagent"
 	"montara-mail-agent/server/internal/mailsync"
 	"montara-mail-agent/server/internal/middlewares"
@@ -47,6 +48,19 @@ func serve(app *app.Application) error {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	// Warm the plan catalog before the first request; the daily billing
+	// sweep refreshes it. A failure warns rather than stops: the catalog
+	// fails open (unenforced) while it cannot read. The Community Edition
+	// never loads it, so no plan limit applies there.
+	if !config.Community() {
+		loadCtx, cancelLoad := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancelLoad()
+		if err := app.ReloadPlans(loadCtx); err != nil {
+			app.Logger.Warn("plan catalog load failed", "error", err)
+		}
+		go sweepBilling(ctx, app)
+	}
 
 	if every := app.Config.App.MailSyncInterval; every > 0 {
 		go mailsync.New(app).Run(ctx, every)
@@ -76,11 +90,33 @@ func serve(app *app.Application) error {
 	})
 }
 
-// sweepTokenUsage runs once a day: it expires top-ups that never got paid,
-// and with a retention configured it folds old weeks' overflow into
-// pay-as-you-go balances before deleting those usage rows, so a user's
-// effective balance never moves when the meter is trimmed.
+// sweepTokenUsage runs the token sweep once at boot and then once a day, until
+// ctx is canceled.
 func sweepTokenUsage(ctx context.Context, app *app.Application) {
+	sweep := func() {
+		sweepCtx, cancel := context.WithTimeout(ctx, time.Minute)
+		defer cancel()
+		sweepTokenUsageOnce(sweepCtx, app)
+	}
+
+	sweep()
+	ticker := time.NewTicker(24 * time.Hour)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			sweep()
+		}
+	}
+}
+
+// sweepTokenUsageOnce expires top-ups that never got paid, and with a retention
+// configured folds old weeks' overflow into pay-as-you-go balances while
+// deleting those usage rows, so a user's effective balance never moves when the
+// meter is trimmed.
+func sweepTokenUsageOnce(ctx context.Context, app *app.Application) {
 	expired, err := app.Repositories.TokenTopup.ExpireStaleTopups(ctx)
 	if err != nil {
 		app.Logger.Warn("top-up expiry sweep failed", "error", err)
@@ -92,13 +128,11 @@ func sweepTokenUsage(ctx context.Context, app *app.Application) {
 	if retention <= 0 {
 		return
 	}
-	cutoff := time.Now().Add(-retention)
-	if err := app.Repositories.TokenBalance.FoldOldOverflow(ctx, cutoff,
-		app.Config.Quota.FreeWeeklyTokens, app.Config.Quota.SubscribedWeeklyTokens); err != nil {
-		app.Logger.Warn("token usage fold failed", "error", err)
-		return
-	}
-	deleted, err := app.Repositories.TokenUsage.DeleteUsageOlderThan(ctx, cutoff)
+	free := app.WeeklyTokenLimit(constant.PlanFree)
+	pro := app.WeeklyTokenLimit(constant.PlanPro)
+	enterprise := app.WeeklyTokenLimit(constant.PlanEnterprise)
+	deleted, err := app.Repositories.TokenBalance.FoldAndDeleteOldUsage(ctx, time.Now().Add(-retention),
+		free, pro, enterprise)
 	if err != nil {
 		app.Logger.Warn("token usage retention sweep failed", "error", err)
 		return
@@ -141,6 +175,57 @@ func sweepActivityLogs(ctx context.Context, app *app.Application) {
 		case <-ticker.C:
 			sweep()
 		}
+	}
+}
+
+// sweepBilling renews due subscriptions, expires stale pending checkouts
+// and wallet top-ups, and refreshes the plan catalog. It runs once at boot
+// and then once a day, until ctx is canceled — the renewal policy is
+// charge-at-expiry: a subscription whose balance cannot cover the next
+// period expires (and downgrades to free) the day its period ends.
+func sweepBilling(ctx context.Context, app *app.Application) {
+	sweep := func() {
+		sweepCtx, cancel := context.WithTimeout(ctx, time.Minute)
+		defer cancel()
+		sweepBillingOnce(sweepCtx, app)
+	}
+
+	sweep()
+	ticker := time.NewTicker(24 * time.Hour)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			sweep()
+		}
+	}
+}
+
+// sweepBillingOnce carries one pass: catalog refresh, renewals/expiries, and
+// the stale-pending sweeps for unpaid checkouts and wallet top-ups.
+func sweepBillingOnce(ctx context.Context, app *app.Application) {
+	if err := app.ReloadPlans(ctx); err != nil {
+		app.Logger.Warn("plan catalog reload failed", "error", err)
+	}
+	renewed, expired, err := app.Repositories.Subscription.RenewDue(ctx, time.Now())
+	if err != nil {
+		app.Logger.Warn("subscription renewal sweep failed", "error", err)
+	} else if renewed > 0 || expired > 0 {
+		app.Logger.Info("subscription renewal sweep", "renewed", renewed, "expired", expired)
+	}
+	staleSubs, err := app.Repositories.Subscription.ExpireStalePending(ctx)
+	if err != nil {
+		app.Logger.Warn("subscription stale-pending sweep failed", "error", err)
+	} else if staleSubs > 0 {
+		app.Logger.Info("subscription stale-pending sweep", "expired", staleSubs)
+	}
+	staleTopups, err := app.Repositories.Wallet.ExpireStaleTopups(ctx)
+	if err != nil {
+		app.Logger.Warn("wallet top-up expiry sweep failed", "error", err)
+	} else if staleTopups > 0 {
+		app.Logger.Info("wallet top-up expiry sweep", "expired", staleTopups)
 	}
 }
 

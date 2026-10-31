@@ -41,10 +41,10 @@ type TokenBalanceRepository struct{ BaseRepository }
 
 // Balance returns userID's remaining pay-as-you-go tokens: everything the
 // top-ups bought, less what already covered weekly overflows, clamped at
-// zero. weeklyLimit is the user's plan allowance; with none (0 or less) no
-// overflow can exist, so the stored balance stands. Only sql.ErrNoRows means
-// an empty balance; anything else is a real failure.
-func (r *TokenBalanceRepository) Balance(ctx context.Context, userID uuid.UUID, weeklyLimit int64) (int64, error) {
+// zero. weeklyLimit is the tier's plans row allowance; nil (or <= 0) means
+// no overflow can exist, so the stored balance stands. Only sql.ErrNoRows
+// means an empty balance; anything else is a real failure.
+func (r *TokenBalanceRepository) Balance(ctx context.Context, userID uuid.UUID, weeklyLimit *int64) (int64, error) {
 	var stored int64
 	err := r.queryRowContext(ctx, `
 		SELECT balance_tokens FROM token_balances WHERE user_id = $1`,
@@ -56,7 +56,7 @@ func (r *TokenBalanceRepository) Balance(ctx context.Context, userID uuid.UUID, 
 	if err != nil {
 		return 0, err
 	}
-	if weeklyLimit <= 0 {
+	if weeklyLimit == nil || *weeklyLimit <= 0 {
 		return stored, nil
 	}
 	var overflow int64
@@ -190,16 +190,24 @@ func (r *TokenTopupRepository) CountByUser(ctx context.Context, userID uuid.UUID
 	return total, err
 }
 
-// FoldOldOverflow moves the overflow each fully-elapsed week carried past the
-// user's allowance into the stored balance, so deleting those usage rows
-// leaves the effective pay-as-you-go balance unchanged. The retention sweep
-// calls it before deleting old rows.
-func (r *TokenBalanceRepository) FoldOldOverflow(ctx context.Context, cutoff time.Time, freeLimit, subscribedLimit int64) error {
-	return lib.WithTransaction(ctx, r.DB, func(tx *sql.Tx) error {
-		_, err := tx.ExecContext(ctx, `
+// FoldAndDeleteOldUsage moves the overflow each fully-elapsed week before the
+// cutoff carried past the user's allowance into the stored balance, and deletes
+// those usage rows, so the effective pay-as-you-go balance stays unchanged. It
+// returns the rows deleted. One transaction holds both steps: a fold whose rows
+// survived would be charged again by the next sweep. The lock makes a concurrent
+// sweep wait, then find nothing left to fold. Limits come from the plans
+// catalog; a nil limit means the tier is unlimited and carries no overflow.
+func (r *TokenBalanceRepository) FoldAndDeleteOldUsage(ctx context.Context, cutoff time.Time, free, pro, enterprise *int64) (int64, error) {
+	var deleted int64
+	err := lib.WithTransaction(ctx, r.DB, func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock(hashtext('montara-mail-agent:token-sweep'))`); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `
 			UPDATE token_balances b SET balance_tokens = GREATEST(b.balance_tokens - x.over, 0), updated_at = now()
 			FROM (
-				SELECT w.user_id, SUM(GREATEST(w.used - l.lim, 0)) AS over
+				SELECT w.user_id, SUM(CASE WHEN l.lim IS NULL THEN 0
+					ELSE GREATEST(w.used - l.lim, 0) END) AS over
 				FROM (
 					SELECT user_id, date_trunc('week', created_at AT TIME ZONE 'UTC') AS wk,
 						SUM(input_tokens + output_tokens) AS used
@@ -209,29 +217,30 @@ func (r *TokenBalanceRepository) FoldOldOverflow(ctx context.Context, cutoff tim
 				) w
 				JOIN users u ON u.id = w.user_id
 				CROSS JOIN LATERAL (
-					SELECT CASE WHEN u.plan = 'subscribed' THEN $3::bigint ELSE $2::bigint END AS lim
+					SELECT CASE u.plan
+						WHEN 'pro' THEN $3::bigint
+						WHEN 'enterprise' THEN $4::bigint
+						ELSE $2::bigint END AS lim
 				) l
 				GROUP BY w.user_id
 			) x
 			WHERE b.user_id = x.user_id`,
-			cutoff, freeLimit, subscribedLimit,
+			cutoff, free, pro, enterprise,
+		); err != nil {
+			return err
+		}
+		res, err := tx.ExecContext(ctx, `
+			DELETE FROM token_usage
+			WHERE date_trunc('week', created_at AT TIME ZONE 'UTC') < date_trunc('week', $1::timestamptz AT TIME ZONE 'UTC')`,
+			cutoff,
 		)
+		if err != nil {
+			return err
+		}
+		deleted, err = res.RowsAffected()
 		return err
 	})
-}
-
-// DeleteUsageOlderThan removes usage rows from fully-elapsed weeks before the
-// cutoff; the retention sweep folds their overflow first (see FoldOldOverflow).
-func (r *TokenUsageRepository) DeleteUsageOlderThan(ctx context.Context, cutoff time.Time) (int64, error) {
-	res, err := r.execContext(ctx, `
-		DELETE FROM token_usage
-		WHERE date_trunc('week', created_at AT TIME ZONE 'UTC') < date_trunc('week', $1::timestamptz AT TIME ZONE 'UTC')`,
-		cutoff,
-	)
-	if err != nil {
-		return 0, err
-	}
-	return res.RowsAffected()
+	return deleted, err
 }
 
 // ExpireStaleTopups marks pending top-ups older than a day as expired;

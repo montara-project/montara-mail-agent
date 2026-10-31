@@ -526,12 +526,9 @@ func (h *emailAccountHandler) Send(c fiber.Ctx) error {
 	return dtos.Message(c, fiber.StatusOK, "mail sent")
 }
 
-// freeMailboxCap is how many mailboxes a free account may connect, counted
-// across every organization the user belongs to.
-const freeMailboxCap = 20
-
-// checkMailboxCap refuses the connection when a free user already carries the
-// plan's mailbox cap; subscribed users and super users are unlimited.
+// checkMailboxCap refuses the connection when the user already carries the
+// plan's mailbox cap (plans.max_email_accounts); pro and enterprise are
+// unlimited. Mailboxes count across every organization the user belongs to.
 func (h *emailAccountHandler) checkMailboxCap(c fiber.Ctx, organizationID uuid.UUID) error {
 	uid, err := lib.ContextGetUID(c)
 	if err != nil {
@@ -548,15 +545,17 @@ func (h *emailAccountHandler) checkMailboxCap(c fiber.Ctx, organizationID uuid.U
 	if err != nil {
 		return err
 	}
-	if plan == constant.PlanSubscribed {
+	p, ok := h.app.PlanForTier(plan)
+	if !ok || p.MaxEmailAccounts == nil || *p.MaxEmailAccounts <= 0 {
 		return nil
 	}
 	count, err := h.app.Repositories.EmailAccount.CountByUser(c.Context(), uid)
 	if err != nil {
 		return err
 	}
-	if count >= freeMailboxCap {
-		return apperr.New(apperr.KindForbidden, "Free accounts connect up to 20 mailboxes. Subscribe for more.")
+	if count >= *p.MaxEmailAccounts {
+		return apperr.New(apperr.KindForbidden,
+			"Free accounts connect up to %d mailboxes. Upgrade to Pro for unlimited.", *p.MaxEmailAccounts)
 	}
 	return nil
 }

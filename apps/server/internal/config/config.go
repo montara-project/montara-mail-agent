@@ -48,16 +48,7 @@ type Config struct {
 	Sentry    ConfigSentry
 	AI        ConfigAI
 	MailOAuth ConfigMailOAuth
-	Quota     ConfigQuota
 	BorderPay ConfigBorderPay
-}
-
-// ConfigQuota sets the weekly token allowances: free users carry the smaller
-// one, subscribed users the larger one the app shows as Unlimited. Both are
-// overrideable for tests.
-type ConfigQuota struct {
-	FreeWeeklyTokens       int64
-	SubscribedWeeklyTokens int64
 }
 
 // ConfigBorderPay configures the pay-as-you-go top-ups; an empty API key

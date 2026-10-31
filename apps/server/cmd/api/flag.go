@@ -98,10 +98,8 @@ func parseFlag(cfg *config.Config) {
 
 	// AI
 	flag.StringVar(&cfg.AI.AnthropicAPIKey, "anthropic-api-key", envString("ANTHROPIC_API_KEY", ""), "Fallback Anthropic API key for organizations without their own LLM provider (empty: none)")
-	// Quota: the weekly token allowances per plan.
-	flag.Int64Var(&cfg.Quota.FreeWeeklyTokens, "free-weekly-tokens", envParse("FREE_WEEKLY_TOKENS", int64(10_000_000), func(v string) (int64, error) { return strconv.ParseInt(v, 10, 64) }), "Weekly token allowance for free users")
-	flag.Int64Var(&cfg.Quota.SubscribedWeeklyTokens, "subscribed-weekly-tokens", envParse("SUBSCRIBED_WEEKLY_TOKENS", int64(100_000_000), func(v string) (int64, error) { return strconv.ParseInt(v, 10, 64) }), "Weekly token allowance for subscribed users")
-	// BorderPay: the pay-as-you-go top-ups. An empty key keeps them off.
+	// BorderPay: the pay-as-you-go top-ups. An empty key keeps them off, and the
+	// Community Edition ignores it: it takes no payments.
 	flag.StringVar(&cfg.BorderPay.APIKey, "borderpay-api-key", envString("BORDERPAY_API_KEY", ""), "BorderPay secret key for token top-ups (empty: top-ups unavailable)")
 	flag.StringVar(&cfg.BorderPay.WebhookToken, "borderpay-webhook-token", envString("BORDERPAY_WEBHOOK_TOKEN", ""), "BorderPay webhook verification token (bpt_...)")
 	flag.StringVar(&cfg.BorderPay.BaseURL, "borderpay-base-url", envString("BORDERPAY_BASE_URL", "https://borderpay.id"), "BorderPay API base URL")
@@ -221,6 +219,20 @@ func validateFlag(cfg *config.Config) {
 	} {
 		if (p.id == "") != (p.secret == "") {
 			log.Fatalf("flags %s-client-id and %s-client-secret must be provided together", p.name, p.name)
+		}
+	}
+
+	// With top-ups on, a missing webhook token refuses every payment BorderPay
+	// reports, and the app's invoice route hangs off the return URL, so both
+	// would fail only after a customer has paid.
+	if cfg.BorderPay.APIKey != "" && !config.Community() {
+		if cfg.BorderPay.WebhookToken == "" {
+			log.Fatal("flag borderpay-webhook-token must be provided with borderpay-api-key")
+		}
+		u, err := url.Parse(cfg.BorderPay.ReturnURL)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" ||
+			!strings.HasSuffix(strings.TrimSuffix(u.Path, "/"), "/settings/billing") {
+			log.Fatalf("flag borderpay-return-url: %q must be an absolute URL like https://app.example.com/settings/billing", cfg.BorderPay.ReturnURL)
 		}
 	}
 

@@ -3,6 +3,7 @@ package seeders
 import (
 	"context"
 	"database/sql"
+	"montara-mail-agent/server/internal/config"
 	"montara-mail-agent/server/internal/lib"
 	"time"
 )
@@ -11,7 +12,11 @@ import (
 // first. The super user needs a
 // running Authula instance, so the API appends SuperUserSeeder itself.
 func All(db *sql.DB) []Seeder {
-	return []Seeder{}
+	// The plans are for sale on the Cloud Edition only.
+	if config.Community() {
+		return nil
+	}
+	return []Seeder{PlanSeeder{DB: db}}
 }
 
 // runSeed executes fn in one transaction, so a seeder either applies

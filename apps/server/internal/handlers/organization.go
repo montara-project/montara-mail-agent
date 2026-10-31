@@ -105,6 +105,10 @@ func (h *organizationHandler) Create(c fiber.Ctx) error {
 		return apperr.ErrUnauthorized
 	}
 
+	if err := h.checkOrganizationCap(c, uid); err != nil {
+		return err
+	}
+
 	organization := models.Organization{Name: body.Name}
 	if organization.ID, err = uuid.NewV7(); err != nil {
 		return err
@@ -214,4 +218,35 @@ func (h *organizationHandler) Stats(c fiber.Ctx) error {
 		return err
 	}
 	return dtos.Get(c, stats)
+}
+
+// checkOrganizationCap refuses a new organization when the user already owns
+// the plan's cap (plans.max_organizations): free carries 2 — the personal
+// workspace counts — and pro carries 10; enterprise and unknown tiers are
+// unlimited (fail open, like limit <= 0).
+func (h *organizationHandler) checkOrganizationCap(c fiber.Ctx, uid uuid.UUID) error {
+	super, err := isSuperUser(c.Context(), h.app, uid)
+	if err != nil {
+		return err
+	}
+	if super {
+		return nil
+	}
+	plan, err := h.app.Repositories.User.Plan(c.Context(), uid)
+	if err != nil {
+		return err
+	}
+	p, ok := h.app.PlanForTier(plan)
+	if !ok || p.MaxOrganizations == nil || *p.MaxOrganizations <= 0 {
+		return nil
+	}
+	owned, err := h.repo().CountOwned(c.Context(), uid)
+	if err != nil {
+		return err
+	}
+	if owned >= *p.MaxOrganizations {
+		return apperr.New(apperr.KindForbidden,
+			"You already own %d organizations, your plan's limit. Upgrade to Pro for 10.", *p.MaxOrganizations)
+	}
+	return nil
 }

@@ -5,6 +5,11 @@ export namespace Models {
   export type QuotaStatus = import('./quota').QuotaStatus
   export type TokenTopup = import('./quota').TokenTopup
   export type TopupCheckout = import('./quota').TopupCheckout
+  export type BillingPlan = import('./billing').BillingPlan
+  export type Subscription = import('./billing').Subscription
+  export type WalletBalance = import('./billing').WalletBalance
+  export type WalletTransaction = import('./billing').WalletTransaction
+  export type WalletTopup = import('./billing').WalletTopup
   export type IPBlockSource = import('./ip-block').IPBlockSource
   export type Role = import('./role').Role
   export type User = import('./user').User

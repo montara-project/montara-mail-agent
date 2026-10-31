@@ -5,6 +5,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 
 	"montara-mail-agent/server/internal/app"
+	"montara-mail-agent/server/internal/config"
 	"montara-mail-agent/server/internal/handlers"
 	"montara-mail-agent/server/internal/middlewares"
 )
@@ -60,11 +61,24 @@ func routes(r *fiber.App, app *app.Application) {
 	me.Put("/password", slow, idempotent, h.Profile.ChangePassword)
 	// The keys MCP clients sign in to /mcp with.
 	me.Get("/api-keys", h.APIKey.List)
-	// Token quota and the pay-as-you-go top-ups.
-	me.Get("/quota", h.Quota.Status)
-	me.Get("/quota/topups", h.Quota.ListTopups)
-	me.Get("/quota/topups/:id", h.Quota.GetTopup)
-	me.Post("/quota/topups", idempotent, h.Quota.CreateTopup)
+	// The Community Edition has no plans, quota or purchases: the routes don't exist.
+	if !config.Community() {
+		// Token quota and the pay-as-you-go top-ups.
+		me.Get("/quota", h.Quota.Status)
+		me.Get("/quota/topups", h.Quota.ListTopups)
+		me.Get("/quota/topups/:id", h.Quota.GetTopup)
+		me.Post("/quota/topups", idempotent, h.Quota.CreateTopup)
+		// Pricing plans, the subscription that renews from the IDR wallet, and
+		// the wallet's ledger and top-ups.
+		me.Get("/billing/plans", h.Billing.Plans)
+		me.Get("/billing/subscription", h.Billing.Subscription)
+		me.Post("/billing/subscription/checkout", idempotent, h.Billing.Checkout)
+		me.Post("/billing/subscription/auto-renew", idempotent, h.Billing.AutoRenew)
+		me.Get("/billing/wallet", h.Billing.Wallet)
+		me.Get("/billing/wallet/transactions", h.Billing.WalletTransactions)
+		me.Get("/billing/wallet/topups", h.Billing.WalletTopups)
+		me.Post("/billing/wallet/topup", idempotent, h.Billing.WalletTopup)
+	}
 	// Not idempotent: a replay would serve the key itself from the cache. A
 	// duplicate key is cheap to revoke.
 	me.Post("/api-keys", h.APIKey.Create)
@@ -114,7 +128,9 @@ func routes(r *fiber.App, app *app.Application) {
 	v1.Get("/email-accounts/oauth/:provider/callback", h.EmailAccount.OAuthCallback)
 	// BorderPay pushes payment states here without a session; the shared
 	// webhook token authenticates it.
-	v1.Post("/webhooks/borderpay", h.Quota.BorderPayWebhook)
+	if !config.Community() {
+		v1.Post("/webhooks/borderpay", h.Quota.BorderPayWebhook)
+	}
 
 	emailAccounts := v1.Group("/email-accounts", m.Authorization)
 	// The web app finishes an OAuth connection here, signed in as whoever

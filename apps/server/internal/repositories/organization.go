@@ -162,6 +162,19 @@ func (r *OrganizationRepository) LiveIDs(ctx context.Context) ([]uuid.UUID, erro
 
 // Count returns how many live organizations match the List filters, for the
 // response meta block.
+
+// CountOwned returns how many live organizations the user owns (role owner
+// in organization_members); the organization cap counts these.
+func (r *OrganizationRepository) CountOwned(ctx context.Context, userID uuid.UUID) (int, error) {
+	var n int
+	err := r.queryRowContext(ctx, `
+		SELECT count(*) FROM organization_members m
+		JOIN organizations o ON o.id = m.organization_id AND o.deleted_at IS NULL
+		WHERE m.user_id = $1 AND m.role = $2`,
+		userID, constant.MemberRoleOwner,
+	).Scan(&n)
+	return n, translateNotFound("organization_members", err)
+}
 func (r *OrganizationRepository) Count(ctx context.Context, p ListParams, memberID uuid.UUID) (int64, error) {
 	return r.countRows(ctx, "organizations", organizationFilters(p, memberID))
 }

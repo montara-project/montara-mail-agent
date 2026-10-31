@@ -1,8 +1,8 @@
 /** GET /me/quota: the plan, the week's usage and the pay-as-you-go balance. */
 export interface QuotaStatus {
-  plan: 'free' | 'subscribed'
+  plan: 'free' | 'pro' | 'enterprise'
   used_tokens: number
-  /** Null when the plan is subscribed: the app shows that as Unlimited. */
+  /** Null when the tier is unlimited (enterprise, or a super user). */
   limit_tokens: number | null
   payg_balance_tokens: number
 }

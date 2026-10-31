@@ -12,7 +12,7 @@ The edition is fixed when the image is built.
 | Edition | For | Notes |
 | --- | --- | --- |
 | `cloud` | A shared server, like the hosted app | Open sign-up. Needs [Resend](https://resend.com) (`FROM_ADDRESS`, `RESEND_API_KEY`) for verification emails. |
-| `community` | One person on their own server | No sign-up: the only account is `SUPER_USER`, so `SEED_ON_BOOT=true` is required. No members and no billing screens. The web app talks to its own server until you [pick another](/self-hosting/reverse-proxy#using-another-server), which only this edition can do. |
+| `community` | One person on their own server | No sign-up: the only account is `SUPER_USER`, so `SEED_ON_BOOT=true` is required. No members, and no plans, billing, purchases or AI quota: those are Cloud only, and any `BORDERPAY_*` setting is ignored. The web app talks to its own server until you [pick another](/self-hosting/reverse-proxy#using-another-server), which only this edition can do. |
 
 Published images:
 

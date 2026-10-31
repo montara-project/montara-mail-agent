@@ -22,6 +22,7 @@ type Handlers struct {
 	MCP          *mcpEndpointHandler
 	IPBlock      *ipBlockHandler
 	Quota        *quotaHandler
+	Billing      *billingHandler
 }
 
 func New(app *app.Application) *Handlers {
@@ -42,5 +43,6 @@ func New(app *app.Application) *Handlers {
 		MCP:          &mcpEndpointHandler{mcp: mailagent.NewMCPHandler(app, sync)},
 		IPBlock:      &ipBlockHandler{app: app},
 		Quota:        &quotaHandler{app: app},
+		Billing:      &billingHandler{app: app},
 	}
 }

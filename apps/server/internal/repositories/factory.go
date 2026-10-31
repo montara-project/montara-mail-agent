@@ -17,6 +17,9 @@ type Repositories struct {
 	TokenUsage   TokenUsageRepository
 	TokenBalance TokenBalanceRepository
 	TokenTopup   TokenTopupRepository
+	Plan         PlanRepository
+	Subscription SubscriptionRepository
+	Wallet       WalletRepository
 }
 
 // New builds every repository over db.
@@ -38,5 +41,8 @@ func New(db *sql.DB) Repositories {
 		TokenUsage:   TokenUsageRepository{base},
 		TokenBalance: TokenBalanceRepository{base},
 		TokenTopup:   TokenTopupRepository{base},
+		Plan:         PlanRepository{base},
+		Subscription: SubscriptionRepository{base},
+		Wallet:       WalletRepository{base},
 	}
 }

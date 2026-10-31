@@ -6,10 +6,11 @@ const (
 	RoleSuperUser = "super_user"
 )
 
-// The billing plan a user is on (users.plan): free or subscribed. A
-// subscribed user carries the larger weekly token allowance and no mailbox
-// cap, and the app shows their allowance as Unlimited.
+// The billing plan a user is on (users.plan): free, or one of the paid
+// tiers the plans table prices. A pro user carries the larger weekly token
+// allowance and no mailbox cap; enterprise is configured per contract.
 const (
 	PlanFree       = "free"
-	PlanSubscribed = "subscribed"
+	PlanPro        = "pro"
+	PlanEnterprise = "enterprise"
 )

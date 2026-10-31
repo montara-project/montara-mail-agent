@@ -66,8 +66,6 @@ func TestIntegration(t *testing.T) {
 			GoogleClientID:     "test-client",
 			GoogleClientSecret: "test-secret",
 		},
-		// The quota tests spend past a small limit and credit a top-up.
-		Quota:     config.ConfigQuota{FreeWeeklyTokens: 1000, SubscribedWeeklyTokens: 10_000},
 		BorderPay: config.ConfigBorderPay{WebhookToken: "bpt_test"},
 	}
 
@@ -117,6 +115,18 @@ func TestIntegration(t *testing.T) {
 	for range 2 {
 		if err := seedAll(db, superUser, logger); err != nil {
 			t.Fatalf("seed: %v", err)
+		}
+	}
+
+	// The quota tests spend past a small allowance: shrink the seeded plans'
+	// weekly_tokens to test-sized numbers before the application loads the
+	// catalog.
+	for _, p := range []struct {
+		code   string
+		tokens int64
+	}{{"free", 1000}, {"pro_monthly", 10_000}, {"pro_yearly", 10_000}} {
+		if _, err := db.Exec(`UPDATE plans SET weekly_tokens = $2 WHERE code = $1`, p.code, p.tokens); err != nil {
+			t.Fatalf("shrink plan limits: %v", err)
 		}
 	}
 
@@ -197,6 +207,9 @@ func TestIntegration(t *testing.T) {
 	}
 	// No fallback model at first: AI requests answer 503 until one is set.
 	application := &app.Application{Config: cfg, Logger: logger, DB: db, Repositories: repos, Auth: auth, Secrets: secrets, HTTPClient: outboundClient(false)}
+	if err := application.ReloadPlans(context.Background()); err != nil {
+		t.Fatalf("reload plans: %v", err)
+	}
 	server, err := newServer(application)
 	if err != nil {
 		t.Fatal(err)
@@ -422,6 +435,7 @@ func TestIntegration(t *testing.T) {
 
 	testMailFlow(t, call, application, userToken, userOrg, superOrg)
 	testTokenQuota(t, call, application, db, userToken, superToken, userOrg)
+	testBilling(t, call, application, db, userToken, userOrg)
 	testIMAPSync(t, application, userOrg)
 	testAgentFlow(t, call, callStream, application, userToken, userOrg)
 	testAgentDrafts(t, call, application, userToken, userOrg)

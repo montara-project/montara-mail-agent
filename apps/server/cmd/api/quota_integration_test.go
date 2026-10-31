@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"net/http"
 	"testing"
@@ -133,5 +134,35 @@ func testTokenQuota(t *testing.T, call callFunc, application *app.Application, d
 	}); status != http.StatusForbidden {
 		t.Fatalf("the 21st mailbox: %d, want 403", status)
 	}
-	_ = time.Now()
+
+	// The sweep folds an old week's overflow once and deletes its rows, so a
+	// second sweep finds nothing to charge again.
+	if _, err := db.Exec(`INSERT INTO token_usage (user_id, provider, model, purpose, input_tokens, output_tokens, created_at)
+		VALUES ($1, 'p', 'm', 'test', 100, 50, now() - interval '28 days')`, userID); err != nil {
+		t.Fatal(err)
+	}
+	storedBalance := func() int64 {
+		t.Helper()
+		var stored int64
+		if err := db.QueryRow(`SELECT balance_tokens FROM token_balances WHERE user_id = $1`, userID).Scan(&stored); err != nil {
+			t.Fatal(err)
+		}
+		return stored
+	}
+	before := storedBalance()
+	sweep := func() int64 {
+		t.Helper()
+		limit := int64(100)
+		deleted, err := application.Repositories.TokenBalance.FoldAndDeleteOldUsage(context.Background(), time.Now(), &limit, &limit, &limit)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return deleted
+	}
+	if deleted := sweep(); deleted != 1 || storedBalance() != before-50 {
+		t.Fatalf("first sweep: deleted %d, stored %d, want 1 and %d", deleted, storedBalance(), before-50)
+	}
+	if deleted := sweep(); deleted != 0 || storedBalance() != before-50 {
+		t.Fatalf("second sweep: deleted %d, stored %d, want 0 and %d", deleted, storedBalance(), before-50)
+	}
 }
