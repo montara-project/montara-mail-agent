@@ -175,14 +175,14 @@ addresses and trusted proxies are never blocked automatically.
 | `GET, POST /api/v1/ip-blocks`  | The blocks in force, or block an `address` with a `reason` and `expires_in_hours` (0: until removed). |
 | `DELETE /api/v1/ip-blocks/:id` | Lift a block and reset that address's failure count.                                                  |
 
-### Self-hosting behind the hosted web app
+### Pointing a Community Edition web app at another server
 
-Each browser picks its server under Settings > Self hosted (or "Change" on the
-sign-in page); the default is `https://app.montaramail.web.id`. To use the
-hosted web app with your own server, serve the API over https and add
-`https://app.montaramail.web.id` to `CORS_ALLOWED_ORIGINS`. Outside
-development the TOTP pending cookie is `SameSite=None`, so the two-factor step
-works across sites too.
+In the Community Edition, each browser picks its server under Settings > Self
+hosted (or "Change" on the sign-in page); the default is the server that serves
+the app. To use another server, serve its API over https and add the web app's
+origin to its `CORS_ALLOWED_ORIGINS`. Outside development the TOTP pending
+cookie is `SameSite=None`, so the two-factor step works across sites too. The
+hosted web app always uses the hosted server.
 
 ## Authentication
 

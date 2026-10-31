@@ -3,7 +3,7 @@ import { COMMUNITY } from '@/lib/constants/edition'
 
 import { clearAuthTokens } from '../auth/token-storage'
 
-/** The hosted Montara server, used until this browser picks another one. */
+/** The server this browser uses until the Community Edition picks another one. */
 export const DEFAULT_SERVER_URL = env.VITE_API_URL
 
 const STORAGE_KEY = 'montara.server_url'
@@ -18,9 +18,10 @@ function storedServerURL() {
 
 /**
  * The server this browser talks to; read once, since switching reloads the
- * app. The Community Edition always uses its own server.
+ * app. Only the Community Edition can pick one; any other edition ignores a
+ * stored choice.
  */
-export const SERVER_URL = (!COMMUNITY && storedServerURL()) || DEFAULT_SERVER_URL
+export const SERVER_URL = (COMMUNITY && storedServerURL()) || DEFAULT_SERVER_URL
 
 /** `https://mail.example.com/` → `https://mail.example.com`. */
 export function normalizeServerURL(url: string) {

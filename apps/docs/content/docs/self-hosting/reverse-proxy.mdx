@@ -25,12 +25,12 @@ mail.example.com {
 
 Per client IP and minute: 30 requests to sign-in routes, 120 to the rest of the API, and 10 for model calls and mailbox syncs. Repeated failures block an address for an hour: see [IP blocks](/self-hosting/ip-blocks).
 
-## Using the hosted web app
+## Using another server
 
-You can keep the web app at `app.montaramail.web.id` and point it at your own server:
+The Community Edition's web app uses its own server by default. You can point it at another one:
 
-1. Serve your API over HTTPS.
-2. Add `https://app.montaramail.web.id` to `CORS_ALLOWED_ORIGINS`.
-3. In the web app, open **Control Center › Organization › Self hosted** (or **Change** on the sign-in page) and enter your server's URL.
+1. Serve that server's API over HTTPS.
+2. Add the web app's origin to that server's `CORS_ALLOWED_ORIGINS`.
+3. In the web app, open **Control Center › Organization › Self hosted** (or **Change** on the sign-in page) and enter the server's URL.
 
-Outside development the two-factor pending cookie is `SameSite=None`, so the two-factor step works across sites too. The Community Edition's web app always uses its own server.
+Outside development the two-factor pending cookie is `SameSite=None`, so the two-factor step works across sites too. The hosted web app at `app.montaramail.web.id` always uses the hosted server.

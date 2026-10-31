@@ -48,15 +48,16 @@ export function OrganizationPageSettings() {
   return (
     <div className="grid gap-4">
       <OrganizationList />
-      {/* The Community Edition has one user and is its own server. */}
-      {!COMMUNITY && (
+      {/* The Community Edition has one user; only it can choose its server. */}
+      {COMMUNITY ? (
+        <ServerSettings />
+      ) : (
         <>
           <SoonCard
             title="Members"
             description="Invite people and manage who's in the organization."
           />
           <SoonCard title="Roles & permissions" description="What each member is allowed to do." />
-          <ServerSettings />
         </>
       )}
       {organization && (

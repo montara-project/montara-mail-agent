@@ -14,8 +14,8 @@ const parsed = z
     VITE_APP_NAME: import.meta.env.VITE_APP_NAME || undefined,
   })
 
-// The server a browser uses until it picks its own (see server-url.ts). Empty
-// means the hosted Montara server, or in development and in the Community
+// The server a browser uses, unless the Community Edition picks another (see
+// server-url.ts). Empty means the hosted Montara server, or in development and in the Community
 // Edition this origin: dev proxies /api to the local API, and the Community
 // server serves this app itself.
 export const env = {
