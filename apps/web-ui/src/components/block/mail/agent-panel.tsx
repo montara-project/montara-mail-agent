@@ -12,6 +12,7 @@ import type { Models } from '@/lib/api/models'
 import Hint from '@/components/block/common/hint'
 import Markdown from '@/components/block/common/markdown'
 import { useEnabledSkills } from '@/components/block/mail/skill-menu'
+import NoOrganization from '@/components/block/settings/no-organization'
 import { useMailAccounts } from '@/components/layout/mail/mail-panel'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -553,7 +554,7 @@ function DraftsQueue({ organizationId }: { organizationId?: string }) {
 
   if (!organizationId) {
     return (
-      <p className="text-muted-foreground p-4 text-center text-sm">No organization selected.</p>
+      <NoOrganization description="Create or switch to an organization to review its drafts." />
     )
   }
   if (drafts.isPending) {
