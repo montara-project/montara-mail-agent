@@ -43,6 +43,7 @@ const nav = [
   { href: '/#how-it-works', label: 'How it works' },
   { href: '/#faq', label: 'FAQ' },
   { href: DOCS_URL, label: 'Docs' },
+  { href: '/pricing', label: 'Pricing' },
 ]
 
 const footerLinks = [
