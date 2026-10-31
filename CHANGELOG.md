@@ -3,6 +3,59 @@
 All notable changes to this project are documented in this file. Versions follow the git tags (`v*`); Docker images are published to ghcr.io with the same version.
 
 
+## [1.0.0](https://github.com/montara-project/montara-mail-agent/compare/v0.9.0...v1.0.0) (2026-10-31)
+
+### ⚠ BREAKING CHANGES
+
+* replace the global LLM provider scope with the platform one
+
+### Features
+
+* add an AI Assistant Panel position preference ([a9d7aa5](https://github.com/montara-project/montara-mail-agent/commit/a9d7aa5ddbfe29461b3f1794269b10efade317bd))
+* add plans, subscriptions and a wallet to the Cloud Edition ([b9030f3](https://github.com/montara-project/montara-mail-agent/commit/b9030f318f3957b9291c169f13ab7bfc872c76bb))
+* **main-web:** add the pricing page ([396c9c3](https://github.com/montara-project/montara-mail-agent/commit/396c9c3fb2f7a09fb21d279d2da9330496d648f9))
+* **main-web:** improve SEO and match the home page to the product ([0fa7226](https://github.com/montara-project/montara-mail-agent/commit/0fa7226da7f8fa8242288a0bbbc1b41bb337073a))
+* **main-web:** prerender the site and redirect HTTP to HTTPS ([9092641](https://github.com/montara-project/montara-mail-agent/commit/90926419d05b5d2259ad62febd9a1a03b8a452ad))
+* page the top-up history and polish the checkout dialog ([49f6af9](https://github.com/montara-project/montara-mail-agent/commit/49f6af917a9409bec82c25ab3df53b3405dad797))
+* scope organization selection to the user's own organizations ([aa61d81](https://github.com/montara-project/montara-mail-agent/commit/aa61d8142df2b7b1c6bf855cf76a1b3a86bb117e))
+* **server:** label OAuth mailboxes with the owner's display name ([b5dc556](https://github.com/montara-project/montara-mail-agent/commit/b5dc55698be4c3f46250540f7c4825add2449791))
+* show the sign-in method and hide Change password without a password ([5cc46ff](https://github.com/montara-project/montara-mail-agent/commit/5cc46ff41a39a6fa01f9143469c9d1ee036ee393))
+* token quotas with BorderPay top-ups and a platform provider scope ([62952a7](https://github.com/montara-project/montara-mail-agent/commit/62952a7ba6d337e4a673afcc75531c5e85d4c42c))
+* **web-ui:** add an organization from the no organization empty state ([19e79c3](https://github.com/montara-project/montara-mail-agent/commit/19e79c3464f21dcb3db64610e2caebce05033979))
+* **web-ui:** add top-up invoices and polish the billing page ([3e06798](https://github.com/montara-project/montara-mail-agent/commit/3e067986f61c6d3de67902955cf4c8654c1b069a))
+* **web-ui:** limit the AI Providers page to super users ([06bfeb9](https://github.com/montara-project/montara-mail-agent/commit/06bfeb9a4d52546c2d35a41d1aacf4030ea9e947))
+* **web-ui:** make the self hosted server choice Community only ([ca8abb1](https://github.com/montara-project/montara-mail-agent/commit/ca8abb171608e9b5eac44d46dc98efad694dfdf1))
+* **web-ui:** open the floating AI assistant from a corner button ([3c20a91](https://github.com/montara-project/montara-mail-agent/commit/3c20a91153e9f72f3fd15c0449f9d052fb892b8f))
+* **web-ui:** show token usage in the Platform sidebar ([f9187d2](https://github.com/montara-project/montara-mail-agent/commit/f9187d2d918dfc56060e3b464a52e500c34a8866))
+
+### Bug Fixes
+
+* a review pass over disclosures, docs, and organization state ([c7ae01c](https://github.com/montara-project/montara-mail-agent/commit/c7ae01cb19f1eb4e420a3547a7ad751cef6541e1))
+* ask for the two-factor code after Google sign-in ([437a314](https://github.com/montara-project/montara-mail-agent/commit/437a3141c1c4754808f990195048ab4b5295205d))
+* **deps:** update follow-redirects to 1.16.2 for GHSA-mrwp-f3q8-3g9p ([2788c9d](https://github.com/montara-project/montara-mail-agent/commit/2788c9df7173376dab73608c58fb0898175e4133))
+* harden the token quota and pay-as-you-go flow ([491a691](https://github.com/montara-project/montara-mail-agent/commit/491a69130ff6870d027b6e6c0fa9fa185a2ab211))
+* keep billing webhooks and abandoned checkouts from getting stuck ([687cde0](https://github.com/montara-project/montara-mail-agent/commit/687cde03c4197bfa1b5572e9dbbf4adbb6bac542))
+* **main-web:** add nosniff, frame and referrer headers ([52e533c](https://github.com/montara-project/montara-mail-agent/commit/52e533ceeb4d6e6aae2a989df4fa4e6556245c1c))
+* **main-web:** show Enterprise as Custom and end the promo on time ([b4307d5](https://github.com/montara-project/montara-mail-agent/commit/b4307d520353e18548266e6e2f6c880ed68f078b))
+* **server:** close the ways AI calls could skip the token quota ([687e632](https://github.com/montara-project/montara-mail-agent/commit/687e63277c35b0d5258783cbaa0efef06526b35b))
+* **server:** harden subscription renewal and the token balance ([6d08d27](https://github.com/montara-project/montara-mail-agent/commit/6d08d2727d3d9190e62fd9c7878a15fa87d6cda1))
+* **server:** issue the session cookie on the Google sign-in redirect ([b1303a7](https://github.com/montara-project/montara-mail-agent/commit/b1303a7ef450182eed56f8fbfd90654ab2c5895f))
+* **server:** repair the two token sweeps that failed on every boot ([654dee6](https://github.com/montara-project/montara-mail-agent/commit/654dee6f8a795d54afabb0c4177df62156cc356b))
+* update agent panel ([6b85fdc](https://github.com/montara-project/montara-mail-agent/commit/6b85fdc90a63467bb8706c475af078f953266765))
+* update email on main-web ([e0d13a9](https://github.com/montara-project/montara-mail-agent/commit/e0d13a97b9693bbfc518f031ac5c47ec65ef438a))
+* update github runner ([3a96ce5](https://github.com/montara-project/montara-mail-agent/commit/3a96ce53e6d7d44f599cbbfc234439d9a92ff94c))
+* update link get early access ([f96d6da](https://github.com/montara-project/montara-mail-agent/commit/f96d6daa0a253ed463012c9eb186d470e47e646b))
+* update linter ([b3351e1](https://github.com/montara-project/montara-mail-agent/commit/b3351e170aef49a5aa4b2e5267a2193ad8f5f6ae))
+* update order billing card ([747cf8a](https://github.com/montara-project/montara-mail-agent/commit/747cf8a217ca8ac25a146e3fe2eccc4649881364))
+* update plans ([1ab4e85](https://github.com/montara-project/montara-mail-agent/commit/1ab4e85dd45cb33cad7a75c745946e7522180c5f))
+* update runner ([cd8733b](https://github.com/montara-project/montara-mail-agent/commit/cd8733bbf6f4d722030e2674eea14b2cf82ac139))
+* update settings security ([4c92697](https://github.com/montara-project/montara-mail-agent/commit/4c92697ab1c1a37bfe00cbeb57c85341f69eda4c))
+* **web-ui:** redirect everyone but a super user away from IP blocks ([5ee6d25](https://github.com/montara-project/montara-mail-agent/commit/5ee6d253a6c2f76de8a4b54605460b8dfa983b9d))
+
+### Code Refactoring
+
+* replace the global LLM provider scope with the platform one ([93f8b87](https://github.com/montara-project/montara-mail-agent/commit/93f8b8713f25d7641ea628a0531ec0b599cbe317))
+
 ## [0.9.0](https://github.com/montara-project/montara-mail-agent/compare/v0.8.0...v0.9.0) (2026-10-30)
 
 ### Features
