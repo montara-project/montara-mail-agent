@@ -14,5 +14,3 @@ export const APIKeySchema = z.object({
   scope: requiredString('access'),
   permission: z.enum(['read', 'act']),
 })
-
-export type APIKeyDto = z.infer<typeof APIKeySchema>
