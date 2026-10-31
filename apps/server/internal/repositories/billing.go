@@ -276,7 +276,7 @@ func (r *SubscriptionRepository) renewOne(ctx context.Context, d dueRow) (string
 	if d.sub.BillingInterval != nil && *d.sub.BillingInterval == models.BillingYear {
 		interval = models.BillingYear
 	}
-	if _, err := tx.ExecContext(ctx, `
+	res, err := tx.ExecContext(ctx, `
 		UPDATE subscriptions
 		SET current_period_start = current_period_end,
 			current_period_end = current_period_end + CASE WHEN $3 = 'year'
@@ -284,7 +284,12 @@ func (r *SubscriptionRepository) renewOne(ctx context.Context, d dueRow) (string
 			amount = $2, updated_at = now()
 		WHERE id = $1 AND status = $4 AND current_period_end <= now()`,
 		d.sub.ID, price, interval, models.SubscriptionStatusActive,
-	); err != nil {
+	)
+	if err != nil {
+		return "", err
+	}
+	// A charge with no period to show for it must not commit.
+	if err := requireAffected(res, "subscriptions"); err != nil {
 		return "", err
 	}
 	if _, err := tx.ExecContext(ctx, `

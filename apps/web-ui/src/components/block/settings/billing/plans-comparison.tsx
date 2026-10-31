@@ -19,6 +19,9 @@ import { cn } from '@/lib/utils'
 /** Enterprise contacts the team instead of checking out. */
 const CONTACT_EMAIL = 'hello@montaramail.web.id'
 
+/** When a new checkout replaces a pending one; the server's abandonedCheckoutAge. */
+const ABANDONED_CHECKOUT_MS = 2 * 60 * 60 * 1000
+
 /** What each tier carries, in the pricing page's words (apps/main-web/lib/pricing.ts). */
 const FEATURES = {
   free: [
@@ -49,6 +52,11 @@ const effectivePrice = (plan: Models.BillingPlan) =>
   (!plan.discount_ends_at || new Date(plan.discount_ends_at) > new Date())
     ? plan.amount - plan.discount_amount
     : plan.amount
+
+/** A pending checkout still blocks a new one; an abandoned one gets replaced. */
+const checkoutInProgress = (subscription: Models.Subscription) =>
+  subscription.status === 'pending' &&
+  Date.now() - new Date(subscription.created_at).getTime() < ABANDONED_CHECKOUT_MS
 
 /**
  * One tier: what it costs and its action above the line, what it carries below.
@@ -156,7 +164,8 @@ export default function PlansComparison() {
 
   let proAction: React.ReactNode
   if (quota?.plan === 'pro') proAction = currentPlanButton
-  else if (subscription?.status === 'pending') proAction = <Button disabled>Payment pending</Button>
+  else if (subscription && checkoutInProgress(subscription))
+    proAction = <Button disabled>Payment pending</Button>
   else if (quota?.plan !== 'enterprise')
     proAction = (
       <Button disabled={!pro || checkout.isPending} onClick={() => pro && upgrade(pro.code)}>

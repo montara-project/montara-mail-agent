@@ -7,7 +7,8 @@ export
 # cloud, or community (set it in .env or as `make run EDITION=community`).
 # The web app reads its own VITE_EDITION.
 EDITION ?= cloud
-GO_EDITION := -ldflags "-X montara-mail-agent/server/internal/config.Edition=$(EDITION)"
+LINK_EDITION := -X montara-mail-agent/server/internal/config.Edition=$(EDITION)
+GO_EDITION := -ldflags "$(LINK_EDITION)"
 
 # ==================================================================================== #
 # HELPERS
@@ -81,12 +82,12 @@ db/migrations/refresh/seed:
 .PHONY: build/api
 build/api:
 	@echo 'Building cmd/api...'
-	go build -ldflags="-s" -o=./bin/api ./cmd/api
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s" -o=./bin/linux_amd64/api ./cmd/api
+	go build -ldflags="-s $(LINK_EDITION)" -o=./bin/api ./cmd/api
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s $(LINK_EDITION)" -o=./bin/linux_amd64/api ./cmd/api
 
 ## build/migrate: build the cmd/migrate application
 .PHONY: build/migrate
 build/migrate:
 	@echo 'Building cmd/migrate...'
-	go build -ldflags="-s" -o=./bin/migrate ./cmd/migrate
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s" -o=./bin/linux_amd64/migrate ./cmd/migrate
+	go build -ldflags="-s $(LINK_EDITION)" -o=./bin/migrate ./cmd/migrate
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s $(LINK_EDITION)" -o=./bin/linux_amd64/migrate ./cmd/migrate

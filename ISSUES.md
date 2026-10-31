@@ -478,7 +478,8 @@ Semua rute `/api/v1` kecuali yang tercantum di dua tabel di bawah. Ini termasuk:
   - Menolak skema `javascript:`/`data:`, endpoint non-https, dan downgrade redirect.
 - **Billing:**
   - Webhook idempoten per status; status dan kredit satu transaksi.
-  - Top up, ledger dan subscription selalu difilter `user_id`.
+  - Query repository untuk pengguna atas top up, ledger dan subscription difilter `user_id`.
+  - Transisi lewat webhook pembayaran tidak memakai filter `user_id`: dijaga token webhook dan `reference_id` buatan server.
   - Satu subscription hidup per user dijaga unique index.
 - **Secrets:** semua kolom rahasia `json:"-"` dan disegel `SecretBox`. LLM key terikat ke base URL-nya. Header MCP terikat ke URL-nya (M-2).
 - **X-Forwarded-For:** Fiber v3.5 mem-parsing dari kanan melewati trusted proxy dengan validasi IP.

@@ -35,6 +35,13 @@ func routes(r *fiber.App, app *app.Application) {
 		fiberadapter.New(fiberadapter.Config{Handler: app.Auth.Handler()}),
 	)
 
+	// BorderPay pushes payment states here without a session; the shared
+	// webhook token authenticates it. Registered before the /api/v1 group, whose
+	// limiter mounts on the shared prefix: a 429 must not cost a paid top-up.
+	if !config.Community() {
+		r.Post("/api/v1/webhooks/borderpay", h.Quota.BorderPayWebhook)
+	}
+
 	// ponytail: the limiters count in memory, so each replica has its own
 	// budget; give them shared storage once there is more than one instance.
 	v1 := r.Group("/api/v1", middlewares.RateLimit(apiRateLimit, exempt))
@@ -127,12 +134,6 @@ func routes(r *fiber.App, app *app.Application) {
 	// email-accounts group below: that group's authorization middleware
 	// mounts on the shared prefix and would otherwise run for it too.
 	v1.Get("/email-accounts/oauth/:provider/callback", h.EmailAccount.OAuthCallback)
-	// BorderPay pushes payment states here without a session; the shared
-	// webhook token authenticates it.
-	if !config.Community() {
-		v1.Post("/webhooks/borderpay", h.Quota.BorderPayWebhook)
-	}
-
 	emailAccounts := v1.Group("/email-accounts", m.Authorization)
 	// The web app finishes an OAuth connection here, signed in as whoever
 	// started it (see OAuthCallback).

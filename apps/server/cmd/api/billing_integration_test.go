@@ -125,8 +125,12 @@ func testBilling(t *testing.T, call callFunc, application *app.Application, db *
 		t.Fatal(err)
 	}
 
-	// Enough balance: 30000 on the wallet; the charge is 30000 (promo still
-	// running at test time).
+	// Enough balance: 30000 on the wallet; the charge is 30000, with the promo
+	// pinned to run past the test whatever the seeded end date is.
+	if _, err := db.Exec(`UPDATE plans SET discount_amount = 20000, discount_ends_at = now() + interval '1 day'
+		WHERE code = 'pro_monthly'`); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := db.Exec(`INSERT INTO wallet_balances (user_id, balance_idr) VALUES ($1, 30000)
 		ON CONFLICT (user_id) DO UPDATE SET balance_idr = 30000`, userID); err != nil {
 		t.Fatal(err)
@@ -286,7 +290,7 @@ func testBilling(t *testing.T, call callFunc, application *app.Application, db *
 	}
 	for ownedCount() < 2 {
 		if status, _ := call(http.MethodPost, "/api/v1/organizations", userToken,
-			map[string]any{"name": "Cap Org"}, "X-Idempotency-Key", "11111111-1111-4111-8111-111111111111"); status != http.StatusCreated {
+			map[string]any{"name": "Cap Org"}, "X-Idempotency-Key", uuid.NewString()); status != http.StatusCreated {
 			t.Fatalf("org below the cap: %d", status)
 		}
 	}
