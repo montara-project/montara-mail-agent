@@ -10,6 +10,7 @@ import SectionCard from '@/components/block/common/section-card'
 import PlanCard from '@/components/block/settings/billing/plan-card'
 import PlansComparison from '@/components/block/settings/billing/plans-comparison'
 import TopupStatusBadge from '@/components/block/settings/billing/topup-status-badge'
+import UsageBar from '@/components/block/settings/billing/usage-bar'
 import WalletCard from '@/components/block/settings/billing/wallet-card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
@@ -79,6 +80,8 @@ export default function QuotaSettings() {
 
   return (
     <div className="grid gap-4">
+      <WalletCard />
+
       <PlanCard>
         <QueryState
           isPending={isPending}
@@ -102,17 +105,7 @@ export default function QuotaSettings() {
                 100M tokens a week, and the pay-as-you-go balance on top.
               </p>
             )}
-            {!unlimited && (
-              <div aria-hidden="true" className="bg-muted h-2 overflow-hidden rounded-full">
-                <div
-                  className={cn(
-                    'h-full rounded-full',
-                    percent >= 100 ? 'bg-destructive' : 'bg-primary'
-                  )}
-                  style={{ width: `${percent}%` }}
-                />
-              </div>
-            )}
+            {limit !== null && <UsageBar used={used} limit={limit} />}
             {!unlimited && percent >= 100 && (
               <p className="text-destructive text-xs">
                 The weekly allowance is spent; new AI calls draw from the pay-as-you-go balance.
@@ -122,12 +115,7 @@ export default function QuotaSettings() {
         </QueryState>
       </PlanCard>
 
-      {showPurchases && (
-        <>
-          <PlansComparison />
-          <WalletCard />
-        </>
-      )}
+      {showPurchases && <PlansComparison />}
 
       <SectionCard
         title="Pay as you go"
