@@ -4,7 +4,7 @@ import { IconArrowRight } from '@tabler/icons-react'
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
-import { SITE_NAME, SITE_URL } from '@/lib/seo'
+import { APP_URL, DOCS_URL, GITHUB_URL, HOME_TITLE, SITE_NAME, SITE_URL } from '@/lib/seo'
 
 // Self-hosted variable fonts, imported here so the bundler rewrites each
 // `url()` and emits the woff2 files. Every face carries latin (+ ext) subsets
@@ -20,7 +20,7 @@ import './globals.css'
 // duplicate of it.
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: `${SITE_NAME}: AI email management`, template: `%s · ${SITE_NAME}` },
+  title: { default: HOME_TITLE, template: `%s · ${SITE_NAME}` },
   // X falls back to each page's og:title, og:description and og:image.
   twitter: { card: 'summary_large_image' },
   icons: {
@@ -42,11 +42,28 @@ const nav = [
   { href: '/#features', label: 'Features' },
   { href: '/#how-it-works', label: 'How it works' },
   { href: '/#faq', label: 'FAQ' },
+  { href: DOCS_URL, label: 'Docs' },
 ]
 
 const footerLinks = [
-  { title: 'Product', links: nav },
-  { title: 'Company', links: [{ href: '/contact', label: 'Contact' }] },
+  {
+    title: 'Product',
+    links: [
+      ...nav.filter((item) => item.href !== DOCS_URL),
+      { href: '/integrations', label: 'Integrations' },
+      { href: '/self-hosted', label: 'Self-hosted' },
+      { href: '/changelog', label: 'Changelog' },
+    ],
+  },
+  {
+    title: 'Resources',
+    links: [
+      { href: DOCS_URL, label: 'Docs' },
+      { href: GITHUB_URL, label: 'GitHub' },
+      { href: APP_URL, label: 'Sign in' },
+      { href: '/contact', label: 'Contact' },
+    ],
+  },
   {
     title: 'Legal',
     links: [
@@ -60,7 +77,7 @@ function Logo() {
   return (
     <Link
       href="/"
-      className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight"
+      className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight whitespace-nowrap"
     >
       {/* 192px export of public/images/mail-agent-logo.png (400KB); its white tile is rounded like an app icon. */}
       <img
@@ -110,12 +127,17 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                   </Link>
                 ))}
               </nav>
-              <Button size="md" className="shrink-0" asChild>
-                <Link href="/contact">
-                  Get early access
-                  <IconArrowRight />
-                </Link>
-              </Button>
+              <div className="flex shrink-0 items-center gap-2">
+                <Button size="md" variant="ghost" className="hidden sm:inline-flex" asChild>
+                  <Link href={APP_URL}>Sign in</Link>
+                </Button>
+                <Button size="md" asChild>
+                  <Link href="/contact">
+                    Get early access
+                    <IconArrowRight className="hidden sm:block" />
+                  </Link>
+                </Button>
+              </div>
             </div>
 
             {/* Small screens: the same destinations as a scrollable strip instead

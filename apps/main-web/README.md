@@ -1,6 +1,6 @@
 # Main Web
 
-Marketing site for Montara Mail: home, contact, privacy, and terms. Generated from [masb0ymas/vine](https://github.com/masb0ymas/vine) (`vinext-cf`).
+Marketing site for Montara Mail: home, integrations, self-hosted, contact, privacy, and terms. Generated from [masb0ymas/vine](https://github.com/masb0ymas/vine) (`vinext-cf`).
 
 ## Scripts
 

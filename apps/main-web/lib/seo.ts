@@ -2,6 +2,10 @@ import type { Metadata } from 'next'
 
 export const SITE_URL = 'https://montaramail.web.id'
 export const SITE_NAME = 'Montara Mail'
+export const HOME_TITLE = `AI Email Assistant for Gmail, Outlook & IMAP | ${SITE_NAME}`
+export const APP_URL = 'https://app.montaramail.web.id'
+export const DOCS_URL = 'https://docs.montaramail.web.id'
+export const GITHUB_URL = 'https://github.com/montara-project/montara-mail-agent'
 
 /**
  * A page's own canonical and social card. A page's `openGraph` replaces the
@@ -18,7 +22,7 @@ export function pageMetadata({
   title?: string
   description: string
 }): Metadata {
-  const fullTitle = title ? `${title} · ${SITE_NAME}` : `${SITE_NAME}: AI email management`
+  const fullTitle = title ? `${title} · ${SITE_NAME}` : HOME_TITLE
   return {
     ...(title && { title }),
     description,
