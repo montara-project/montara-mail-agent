@@ -14,6 +14,9 @@ type Repositories struct {
 	AgentSkill   AgentSkillRepository
 	MCPServer    MCPServerRepository
 	IPBlock      IPBlockRepository
+	TokenUsage   TokenUsageRepository
+	TokenBalance TokenBalanceRepository
+	TokenTopup   TokenTopupRepository
 }
 
 // New builds every repository over db.
@@ -32,5 +35,8 @@ func New(db *sql.DB) Repositories {
 		AgentSkill:   AgentSkillRepository{base},
 		MCPServer:    MCPServerRepository{base},
 		IPBlock:      IPBlockRepository{base},
+		TokenUsage:   TokenUsageRepository{base},
+		TokenBalance: TokenBalanceRepository{base},
+		TokenTopup:   TokenTopupRepository{base},
 	}
 }

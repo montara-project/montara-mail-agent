@@ -225,3 +225,16 @@ func (r *OrganizationRepository) ForceDelete(ctx context.Context, id uuid.UUID) 
 	}
 	return requireAffected(res, "organization")
 }
+
+// FirstOwnerID returns the first owner member of the organization, for
+// attributing background AI usage (classify, auto-draft) to a user's quota.
+func (r *OrganizationRepository) FirstOwnerID(ctx context.Context, organizationID uuid.UUID) (uuid.UUID, error) {
+	var id uuid.UUID
+	err := r.queryRowContext(ctx, `
+		SELECT user_id FROM organization_members
+		WHERE organization_id = $1 AND role = $2
+		ORDER BY created_at LIMIT 1`,
+		organizationID, constant.MemberRoleOwner,
+	).Scan(&id)
+	return id, translateNotFound("organizations", err)
+}

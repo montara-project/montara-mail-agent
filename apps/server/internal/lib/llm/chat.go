@@ -190,6 +190,7 @@ func (c anthropicClient) Chat(ctx context.Context, req ChatRequest) (ChatResult,
 	}
 	out.Text = strings.TrimSpace(out.Text)
 	out.Usage = Usage{Input: int(resp.Usage.InputTokens), Output: int(resp.Usage.OutputTokens)}
+	c.onUsageReport("chat", out.Usage)
 	return out, nil
 }
 
@@ -334,5 +335,6 @@ func (c openAIClient) Chat(ctx context.Context, req ChatRequest) (ChatResult, er
 		})
 	}
 	result.Usage = Usage{Input: out.Usage.PromptTokens, Output: out.Usage.CompletionTokens}
+	c.onUsageReport("chat", result.Usage)
 	return result, nil
 }

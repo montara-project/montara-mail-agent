@@ -15,7 +15,8 @@ const (
 	KindForbidden       Kind = http.StatusForbidden
 	KindNotFound        Kind = http.StatusNotFound
 	KindConflict        Kind = http.StatusConflict
-	KindTooManyRequests Kind = http.StatusTooManyRequests
+	KindPaymentRequired Kind = http.StatusPaymentRequired
+ KindTooManyRequests Kind = http.StatusTooManyRequests
 	KindInternal        Kind = http.StatusInternalServerError
 	KindBadGateway      Kind = http.StatusBadGateway
 	KindUnavailable     Kind = http.StatusServiceUnavailable

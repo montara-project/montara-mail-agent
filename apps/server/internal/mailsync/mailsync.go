@@ -337,7 +337,12 @@ func newUIDs(found []imap.UID, last uint32, initial bool) []imap.UID {
 
 // classify labels the account's unclassified inbox mail, a batch per LLM call.
 func (s *Syncer) classify(ctx context.Context, account models.EmailAccount) {
-	client, err := s.app.LLMFor(ctx, account.OrganizationID)
+	// Background work draws from the organization owner's quota.
+	ownerID, err := s.app.Repositories.Organization.FirstOwnerID(ctx, account.OrganizationID)
+	if err != nil {
+		return
+	}
+	client, err := s.app.LLMFor(ctx, account.OrganizationID, ownerID)
 	if err != nil {
 		// No provider configured: the mail stays unclassified until one is.
 		return

@@ -11,6 +11,7 @@ import { mailQueries } from './mail'
 import { mcpServerQueries } from './mcp-server'
 import { organizationQueries } from './organization'
 import { profileQueries } from './profile'
+import { quotaQueries } from './quota'
 
 export const queries = {
   auth: authQueries,
@@ -26,4 +27,5 @@ export const queries = {
   mcpServers: mcpServerQueries,
   apiKeys: apiKeyQueries,
   ipBlocks: ipBlockQueries,
+  quota: quotaQueries,
 } as const

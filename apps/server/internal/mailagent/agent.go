@@ -101,7 +101,7 @@ func Run(ctx context.Context, app *app.Application, sync *mailsync.Syncer, s Ses
 	}
 
 	for step := 0; ; step++ {
-		client, err := app.LLMFor(ctx, s.Conversation.OrganizationID)
+		client, err := app.LLMFor(ctx, s.Conversation.OrganizationID, s.Conversation.UserID)
 		if err != nil {
 			return written, err
 		}

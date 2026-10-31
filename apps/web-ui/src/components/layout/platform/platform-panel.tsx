@@ -1,6 +1,5 @@
 import { Link, useLocation } from '@tanstack/react-router'
 import { LayoutDashboard, Settings, Sparkles, UserRound } from 'lucide-react'
-import { toast } from 'sonner'
 
 import OrganizationSwitcher from '@/components/layout/organization/organization-switcher'
 import { Button } from '@/components/ui/button'
@@ -58,8 +57,8 @@ export default function PlatformPanel() {
           <p className="text-muted-foreground text-xs">
             Plans for teams and heavier use are on the way.
           </p>
-          <Button size="sm" onClick={() => toast.info('Coming Soon')}>
-            Subscribe now
+          <Button size="sm" asChild>
+            <Link to="/settings/billing">Subscribe now</Link>
           </Button>
         </div>
       </SidebarFooter>

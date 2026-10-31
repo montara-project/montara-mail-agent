@@ -82,6 +82,9 @@ func (h *emailAccountHandler) Create(c fiber.Ctx) error {
 	if _, err := member(c, h.app, organizationID); err != nil {
 		return err
 	}
+	if err := h.checkMailboxCap(c, organizationID); err != nil {
+		return err
+	}
 
 	var body dtos.EmailAccountBody
 	if err := lib.ValidateRequestBody(c, &body); err != nil {
@@ -517,4 +520,39 @@ func (h *emailAccountHandler) Send(c fiber.Ctx) error {
 	recordActivity(c, h.app, account.OrganizationID, constant.ActivityMailSent,
 		mailSentence("Sent", body.Subject, body.To), map[string]any{"subject": body.Subject, "to": body.To})
 	return dtos.Message(c, fiber.StatusOK, "mail sent")
+}
+
+// freeMailboxCap is how many mailboxes a free account may connect, counted
+// across every organization the user belongs to.
+const freeMailboxCap = 20
+
+// checkMailboxCap refuses the connection when a free user already carries the
+// plan's mailbox cap; subscribed users and super users are unlimited.
+func (h *emailAccountHandler) checkMailboxCap(c fiber.Ctx, organizationID uuid.UUID) error {
+	uid, err := lib.ContextGetUID(c)
+	if err != nil {
+		return apperr.ErrUnauthorized
+	}
+	role, err := h.app.Repositories.User.Role(c.Context(), uid)
+	if err != nil {
+		return err
+	}
+	if role != constant.RoleUser {
+		return nil
+	}
+	plan, err := h.app.Repositories.User.Plan(c.Context(), uid)
+	if err != nil {
+		return err
+	}
+	if plan == constant.PlanSubscribed {
+		return nil
+	}
+	count, err := h.app.Repositories.EmailAccount.CountByUser(c.Context(), uid)
+	if err != nil {
+		return err
+	}
+	if count >= freeMailboxCap {
+		return apperr.New(apperr.KindForbidden, "Free accounts connect up to 20 mailboxes. Subscribe for more.")
+	}
+	return nil
 }

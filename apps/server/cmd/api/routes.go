@@ -60,6 +60,10 @@ func routes(r *fiber.App, app *app.Application) {
 	me.Put("/password", slow, idempotent, h.Profile.ChangePassword)
 	// The keys MCP clients sign in to /mcp with.
 	me.Get("/api-keys", h.APIKey.List)
+	// Token quota and the pay-as-you-go top-ups.
+	me.Get("/quota", h.Quota.Status)
+	me.Get("/quota/topups", h.Quota.ListTopups)
+	me.Post("/quota/topups", idempotent, h.Quota.CreateTopup)
 	// Not idempotent: a replay would serve the key itself from the cache. A
 	// duplicate key is cheap to revoke.
 	me.Post("/api-keys", h.APIKey.Create)
@@ -92,6 +96,12 @@ func routes(r *fiber.App, app *app.Application) {
 	llmProviders.Delete("/global", idempotent, h.LLMProvider.Delete)
 	llmProviders.Post("/global/models", slow, h.LLMProvider.Models)
 	llmProviders.Put("/:id/scope", idempotent, h.LLMProvider.SetScope)
+	// The platform-user scope: the provider every plain user falls back to
+	// ahead of the global one. A super user manages it.
+	llmProviders.Get("/platform-user", h.LLMProvider.GetPlatform)
+	llmProviders.Put("/platform-user", idempotent, h.LLMProvider.PutPlatform)
+	llmProviders.Delete("/platform-user", idempotent, h.LLMProvider.DeletePlatform)
+	llmProviders.Post("/platform-user/models", slow, h.LLMProvider.ModelsPlatform)
 	organizations.Get("/:id/mcp-servers", h.MCPServer.List)
 	organizations.Post("/:id/mcp-servers", slow, idempotent, h.MCPServer.Create)
 	organizations.Post("/:id/mcp-servers/test", slow, h.MCPServer.TestDraft)
@@ -107,6 +117,9 @@ func routes(r *fiber.App, app *app.Application) {
 	// email-accounts group below: that group's authorization middleware
 	// mounts on the shared prefix and would otherwise run for it too.
 	v1.Get("/email-accounts/oauth/:provider/callback", h.EmailAccount.OAuthCallback)
+	// BorderPay pushes payment states here without a session; the shared
+	// webhook token authenticates it.
+	v1.Post("/webhooks/borderpay", h.Quota.BorderPayWebhook)
 
 	emailAccounts := v1.Group("/email-accounts", m.Authorization)
 	// The web app finishes an OAuth connection here, signed in as whoever

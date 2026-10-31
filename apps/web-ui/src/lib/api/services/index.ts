@@ -11,6 +11,7 @@ import { mailServices } from './mail'
 import { mcpServerServices } from './mcp-server'
 import { organizationServices } from './organization'
 import { profileServices } from './profile'
+import { quotaServices } from './quota'
 
 export const services = {
   auth: authServices,
@@ -26,4 +27,5 @@ export const services = {
   mcpServers: mcpServerServices,
   apiKeys: apiKeyServices,
   ipBlocks: ipBlockServices,
+  quota: quotaServices,
 } as const

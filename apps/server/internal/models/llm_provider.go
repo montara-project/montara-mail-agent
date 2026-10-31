@@ -19,6 +19,9 @@ type LLMProvider struct {
 	Kind           string     `db:"kind" json:"kind"`
 	BaseURL        string     `db:"base_url" json:"base_url"`
 	Model          string     `db:"model" json:"model"`
+	// PlatformUser marks the platform-user scope: the provider every plain
+	// user falls back to ahead of the global one.
+	PlatformUser bool `db:"platform_user" json:"platform_user"`
 	// APIKey is sealed (see lib.SecretBox) and never serialized.
 	APIKey []byte `db:"api_key" json:"-"`
 }

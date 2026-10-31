@@ -2,6 +2,7 @@ import SectionCard from '@/components/block/common/section-card'
 import ActivityLogList from '@/components/block/settings/activity-log'
 import OrganizationList from '@/components/block/settings/organization-list'
 import PasswordSettings from '@/components/block/settings/password-form'
+import QuotaSettings from '@/components/block/settings/quota-settings'
 import ServerSettings from '@/components/block/settings/server-url-form'
 import TOTPSettings from '@/components/block/settings/totp-settings'
 import { Badge } from '@/components/ui/badge'
@@ -72,16 +73,7 @@ export function OrganizationPageSettings() {
 }
 
 export function BillingSettings() {
-  return (
-    <div className="grid gap-4">
-      <SoonCard title="Billing" description="Who pays for the organization and how." />
-      <SoonCard title="Plan & usage" description="Your plan and how much of it is used." />
-      <SoonCard title="Payment methods" description="Cards and accounts you pay with." />
-      <SoonCard title="Invoices" description="Download the invoices for each payment." />
-      <SoonCard title="Usage reports" description="What was used in each billing period." />
-      <SoonCard title="Billing history" description="Every charge and refund." />
-    </div>
-  )
+  return <QuotaSettings />
 }
 
 export function DeleteAccountSettings() {

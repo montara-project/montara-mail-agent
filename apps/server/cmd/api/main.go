@@ -115,14 +115,17 @@ func run() error {
 		}
 	}
 
+	var aiConfig *llm.Config
 	var ai llm.ChatClient
 	if cfg.AI.AnthropicAPIKey != "" {
-		ai, err = llm.New(llm.Config{
+		aiConfig = &llm.Config{
 			Kind:       llm.KindAnthropic,
 			APIKey:     cfg.AI.AnthropicAPIKey,
 			Model:      fallbackModel,
 			HTTPClient: &http.Client{Timeout: 2 * time.Minute},
-		})
+		}
+		var err error
+		ai, err = llm.New(*aiConfig)
 		if err != nil {
 			return err
 		}
@@ -151,6 +154,7 @@ func run() error {
 		Repositories: repos,
 		Auth:         auth,
 		AI:           ai,
+		AIConfig:     aiConfig,
 		Secrets:      secrets,
 		MailOAuth:    mailOAuth,
 		HTTPClient:   outboundClient(cfg.App.AllowPrivateHosts),

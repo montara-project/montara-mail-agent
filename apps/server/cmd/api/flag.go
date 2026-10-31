@@ -97,6 +97,14 @@ func parseFlag(cfg *config.Config) {
 
 	// AI
 	flag.StringVar(&cfg.AI.AnthropicAPIKey, "anthropic-api-key", envString("ANTHROPIC_API_KEY", ""), "Fallback Anthropic API key for organizations without their own LLM provider (empty: none)")
+	// Quota: the weekly token allowances per plan.
+	flag.Int64Var(&cfg.Quota.FreeWeeklyTokens, "free-weekly-tokens", envParse("FREE_WEEKLY_TOKENS", int64(10_000_000), func(v string) (int64, error) { return strconv.ParseInt(v, 10, 64) }), "Weekly token allowance for free users")
+	flag.Int64Var(&cfg.Quota.SubscribedWeeklyTokens, "subscribed-weekly-tokens", envParse("SUBSCRIBED_WEEKLY_TOKENS", int64(100_000_000), func(v string) (int64, error) { return strconv.ParseInt(v, 10, 64) }), "Weekly token allowance for subscribed users")
+	// BorderPay: the pay-as-you-go top-ups. An empty key keeps them off.
+	flag.StringVar(&cfg.BorderPay.APIKey, "borderpay-api-key", envString("BORDERPAY_API_KEY", ""), "BorderPay secret key for token top-ups (empty: top-ups unavailable)")
+	flag.StringVar(&cfg.BorderPay.WebhookToken, "borderpay-webhook-token", envString("BORDERPAY_WEBHOOK_TOKEN", ""), "BorderPay webhook verification token (bpt_...)")
+	flag.StringVar(&cfg.BorderPay.BaseURL, "borderpay-base-url", envString("BORDERPAY_BASE_URL", "https://borderpay.id"), "BorderPay API base URL")
+	flag.StringVar(&cfg.BorderPay.ReturnURL, "borderpay-return-url", envString("BORDERPAY_RETURN_URL", ""), "Where a finished top-up payment sends the user back to")
 
 	// Mail OAuth. Each pair enables that provider's OAuth mailbox sign-in;
 	// the callback URL <auth-base-url>/api/v1/email-accounts/oauth/<provider>/callback

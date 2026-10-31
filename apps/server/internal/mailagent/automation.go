@@ -68,7 +68,11 @@ func AutoDraftOnce(ctx context.Context, app *app.Application, dailyCap int) {
 	for _, orgID := range orgIDs {
 		// Organizations without AI simply have no automation; that is the
 		// per-organization setting doing its job.
-		if _, err := app.LLMFor(ctx, orgID); err != nil {
+		ownerID, err := app.Repositories.Organization.FirstOwnerID(ctx, orgID)
+		if err != nil {
+			continue
+		}
+		if _, err := app.LLMFor(ctx, orgID, ownerID); err != nil {
 			continue
 		}
 		// The persona the drafts speak as: the
@@ -93,7 +97,7 @@ func AutoDraftOnce(ctx context.Context, app *app.Application, dailyCap int) {
 				if queued >= int64(dailyCap) {
 					return
 				}
-				text, err := draftReply(ctx, app, orgID, mail, persona)
+				text, err := draftReply(ctx, app, orgID, ownerID, mail, persona)
 				if err != nil {
 					app.Logger.Warn("agent auto-draft failed for one mail", "mail", mail.ID, "error", err)
 					continue
@@ -141,8 +145,8 @@ func importantMail(ctx context.Context, app *app.Application, account models.Ema
 }
 
 // draftReply asks the model for one reply body.
-func draftReply(ctx context.Context, app *app.Application, orgID uuid.UUID, mail models.Mail, persona *models.AgentBot) (string, error) {
-	client, err := app.LLMFor(ctx, orgID)
+func draftReply(ctx context.Context, app *app.Application, orgID, ownerID uuid.UUID, mail models.Mail, persona *models.AgentBot) (string, error) {
+	client, err := app.LLMFor(ctx, orgID, ownerID)
 	if err != nil {
 		return "", err
 	}

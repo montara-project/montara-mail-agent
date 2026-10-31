@@ -1,6 +1,6 @@
 import { useStore } from '@tanstack/react-form'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Building2, Check, Globe, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react'
+import { Building2, Check, Globe, Pencil, Plus, RefreshCw, Trash2, Users } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
@@ -42,6 +42,7 @@ import { axiosErrorMessage, toastAxiosError } from '@/lib/api/axios-error'
 import { parseDto } from '@/lib/api/dtos/parse'
 import { LLMProviderFormSchema } from '@/lib/api/dtos/settings/llm-provider/schema'
 import { queries } from '@/lib/api/queries'
+import { PLATFORM_SCOPE } from '@/lib/api/services/llm-provider'
 
 const KIND_OPTIONS: { value: Models.LLMProviderKind; label: string }[] = [
   { value: 'openai', label: 'OpenAI compatible' },
@@ -155,7 +156,11 @@ function ProviderDialog({
   const [picked, setPicked] = React.useState(
     () => scopeOptions.find((option) => !option.disabled)?.value ?? ''
   )
-  const scopeValue = provider ? (provider.organization_id ?? GLOBAL) : picked
+  const scopeValue = provider
+    ? provider.platform_user
+      ? PLATFORM_SCOPE
+      : (provider.organization_id ?? GLOBAL)
+    : picked
   const scope = toScope(scopeValue)
   const save = useMutation(queries.llmProvider.save(scope))
   // A self-hosted model's fields don't fit this form; editing it starts empty.
@@ -309,7 +314,7 @@ function ProviderRow({
   const [openDelete, setOpenDelete] = React.useState(false)
   const remove = useMutation(queries.llmProvider.delete())
   const move = useMutation(queries.llmProvider.setScope())
-  const current = provider.organization_id ?? GLOBAL
+  const current = provider.platform_user ? PLATFORM_SCOPE : (provider.organization_id ?? GLOBAL)
 
   const moveTo = (option: ScopeOption) =>
     move.mutate(
@@ -329,7 +334,11 @@ function ProviderRow({
       <td className="text-muted-foreground py-3 pr-4">{provider.model}</td>
       <td className="py-3 pr-4">
         <Badge variant="secondary" appearance="light">
-          {provider.organization_id ? provider.organization_name : 'Global'}
+          {provider.organization_id
+            ? provider.organization_name
+            : provider.platform_user
+              ? 'Platform (users)'
+              : 'Global'}
         </Badge>
       </td>
       <td className="py-3">
@@ -355,7 +364,13 @@ function ProviderRow({
                   aria-label="Where it runs"
                   disabled={move.isPending}
                 >
-                  {provider.organization_id ? <Building2 /> : <Globe />}
+                  {provider.organization_id ? (
+                    <Building2 />
+                  ) : provider.platform_user ? (
+                    <Users />
+                  ) : (
+                    <Globe />
+                  )}
                 </Button>
               </DropdownMenuTrigger>
             </Hint>
@@ -370,7 +385,13 @@ function ProviderRow({
                     disabled={option.value === current || option.disabled}
                     onSelect={() => moveTo(option)}
                   >
-                    {option.value === GLOBAL ? <Globe /> : <Building2 />}
+                    {option.value === GLOBAL ? (
+                      <Globe />
+                    ) : option.value === PLATFORM_SCOPE ? (
+                      <Users />
+                    ) : (
+                      <Building2 />
+                    )}
                     <span className="flex-1 truncate">{option.label}</span>
                     {option.value === current && <Check />}
                   </DropdownMenuItem>
@@ -452,18 +473,29 @@ export default function LLMProviderSettings() {
 
   // Where a provider can run: global for a super user, and each organization;
   // a scope that already has a provider is taken.
-  const taken = new Set(providers.map((p) => p.organization_id ?? GLOBAL))
+  const taken = new Set(
+    providers.map((p) =>
+      p.organization_id ? p.organization_id : p.platform_user ? PLATFORM_SCOPE : GLOBAL
+    )
+  )
   const scopeOptions: ScopeOption[] = [
     {
       value: GLOBAL,
       label: 'Global (all organizations)',
       disabled: !data?.metadata.super_user || taken.has(GLOBAL),
     },
-    ...organizations.map((org) => ({
-      value: org.id,
-      label: org.name,
-      disabled: taken.has(org.id),
-    })),
+    {
+      value: PLATFORM_SCOPE,
+      label: 'Platform (all user accounts)',
+      disabled: !data?.metadata.super_user || taken.has(PLATFORM_SCOPE),
+    },
+    ...organizations.map((org) => {
+      return {
+        value: org.id,
+        label: org.name,
+        disabled: taken.has(org.id),
+      }
+    }),
   ]
 
   const content = () => {

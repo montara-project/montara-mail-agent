@@ -66,6 +66,9 @@ func TestIntegration(t *testing.T) {
 			GoogleClientID:     "test-client",
 			GoogleClientSecret: "test-secret",
 		},
+		// The quota tests spend past a small limit and credit a top-up.
+		Quota:     config.ConfigQuota{FreeWeeklyTokens: 1000, SubscribedWeeklyTokens: 10_000},
+		BorderPay: config.ConfigBorderPay{WebhookToken: "bpt_test"},
 	}
 
 	// Start from nothing; this also runs every down migration.
@@ -357,9 +360,9 @@ func TestIntegration(t *testing.T) {
 			t.Fatal("a plain user's list leaked another user's organization")
 		}
 	}
-	// The super user sees every organization, the seeded one included; member=1
-	// limits even the super user to their own memberships.
-	if status, out := call(http.MethodGet, "/api/v1/organizations", superToken, nil); status != http.StatusOK || len(out["data"].([]any)) != 6 {
+	// The super user sees every organization; member=1 limits even the super
+	// user to their own memberships.
+	if status, out := call(http.MethodGet, "/api/v1/organizations", superToken, nil); status != http.StatusOK || len(out["data"].([]any)) != 5 {
 		t.Fatalf("super user lists all: %d %v", status, out)
 	}
 	if status, out := call(http.MethodGet, "/api/v1/organizations?member=1", superToken, nil); status != http.StatusOK || len(out["data"].([]any)) != 2 {
@@ -418,6 +421,7 @@ func TestIntegration(t *testing.T) {
 	}
 
 	testMailFlow(t, call, application, userToken, userOrg, superOrg)
+	testTokenQuota(t, call, application, db, userToken, superToken, userOrg)
 	testIMAPSync(t, application, userOrg)
 	testAgentFlow(t, call, callStream, application, userToken, userOrg)
 	testAgentDrafts(t, call, application, userToken, userOrg)

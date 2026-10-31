@@ -21,6 +21,7 @@ type Handlers struct {
 	APIKey       *apiKeyHandler
 	MCP          *mcpEndpointHandler
 	IPBlock      *ipBlockHandler
+	Quota        *quotaHandler
 }
 
 func New(app *app.Application) *Handlers {
@@ -40,5 +41,6 @@ func New(app *app.Application) *Handlers {
 		APIKey:       &apiKeyHandler{app: app},
 		MCP:          &mcpEndpointHandler{mcp: mailagent.NewMCPHandler(app, sync)},
 		IPBlock:      &ipBlockHandler{app: app},
+		Quota:        &quotaHandler{app: app},
 	}
 }

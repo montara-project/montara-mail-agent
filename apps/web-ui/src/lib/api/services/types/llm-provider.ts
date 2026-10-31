@@ -5,7 +5,7 @@ import type { ApiListResponse, AxiosDeleteResponse, AxiosItemResponse, Metadata 
 import type { Models } from '../../models'
 
 /** Where a provider applies: an organization's id, or null for global. */
-export type LLMProviderScope = string | null
+export type LLMProviderScope = string | null | 'platform'
 
 export type LLMProviderBody = {
   name: string
