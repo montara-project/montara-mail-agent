@@ -28,7 +28,7 @@ type llmProviderView struct {
 }
 
 // scope is the provider a route works on: the organization in the path, or
-// nil, the global one, on the /llm-providers/global routes.
+// nil, the platform one, on the /llm-providers/platform routes.
 func scope(c fiber.Ctx) (*uuid.UUID, error) {
 	if c.Params("id") == "" {
 		return nil, nil
@@ -38,7 +38,7 @@ func scope(c fiber.Ctx) (*uuid.UUID, error) {
 }
 
 // manage checks that the signed-in user may change the provider of a scope:
-// the organization's owner, or a super user for the global one.
+// the organization's owner, or a super user for the platform one.
 func (h *llmProviderHandler) manage(c fiber.Ctx, scope *uuid.UUID) error {
 	if scope != nil {
 		return owner(c, h.app, *scope)
@@ -52,14 +52,14 @@ func (h *llmProviderHandler) manage(c fiber.Ctx, scope *uuid.UUID) error {
 		return err
 	}
 	if !super {
-		return apperr.New(apperr.KindForbidden, "only a super user can change the global provider")
+		return apperr.New(apperr.KindForbidden, "only a super user can change the platform provider")
 	}
 	return nil
 }
 
-// List returns the providers the user can see: the global one and those of
+// List returns the providers the user can see: the platform one and those of
 // their organizations, or all of them for a super user. The metadata says
-// whether the user may manage the global one and whether the server's
+// whether the user may manage the platform one and whether the server's
 // fallback model covers an organization with neither.
 func (h *llmProviderHandler) List(c fiber.Ctx) error {
 	uid, err := lib.ContextGetUID(c)
@@ -88,7 +88,7 @@ type llmProviderListView struct {
 	HasAPIKey bool `json:"has_api_key"`
 }
 
-// SetScope moves a provider to an organization, or to global with an empty
+// SetScope moves a provider to an organization, or to platform with an empty
 // organization_id. The user must be able to manage both scopes.
 func (h *llmProviderHandler) SetScope(c fiber.Ctx) error {
 	id, err := pathID(c, "LLM provider")
@@ -104,9 +104,6 @@ func (h *llmProviderHandler) SetScope(c fiber.Ctx) error {
 		orgID := uuid.MustParse(body.OrganizationID)
 		target = &orgID
 	}
-	if body.PlatformUser && target != nil {
-		return apperr.New(apperr.KindBadRequest, "platform_user excludes an organization: clear organization_id")
-	}
 
 	repo := &h.app.Repositories.LLMProvider
 	p, err := repo.GetByID(c.Context(), id)
@@ -116,20 +113,10 @@ func (h *llmProviderHandler) SetScope(c fiber.Ctx) error {
 	if err := h.manage(c, p.OrganizationID); err != nil {
 		return err
 	}
-	if body.PlatformUser {
-		uid, err := lib.ContextGetUID(c)
-		if err != nil {
-			return apperr.ErrUnauthorized
-		}
-		if super, err := isSuperUser(c.Context(), h.app, uid); err != nil {
-			return err
-		} else if !super {
-			return apperr.New(apperr.KindForbidden, "only a super user can change the platform-user provider")
-		}
-	} else if err := h.manage(c, target); err != nil {
+	if err := h.manage(c, target); err != nil {
 		return err
 	}
-	if err := repo.SetScope(c.Context(), id, target, body.PlatformUser); err != nil {
+	if err := repo.SetScope(c.Context(), id, target); err != nil {
 		return err
 	}
 	if p, err = repo.GetByID(c.Context(), id); err != nil {
@@ -163,7 +150,7 @@ func (h *llmProviderHandler) Get(c fiber.Ctx) error {
 }
 
 // Put creates or replaces the provider of the route's scope; owner (or super
-// user for the global one) only, since it holds a paid API key.
+// user for the platform one) only, since it holds a paid API key.
 func (h *llmProviderHandler) Put(c fiber.Ctx) error {
 	scope, err := scope(c)
 	if err != nil {
@@ -267,7 +254,7 @@ func (h *llmProviderHandler) apiKey(c fiber.Ctx, scope *uuid.UUID, kind, baseURL
 }
 
 // Delete removes the provider of the route's scope: an organization then
-// falls back to the global provider, and that to the server's model.
+// falls back to the platform provider, and that to the server's model.
 func (h *llmProviderHandler) Delete(c fiber.Ctx) error {
 	scope, err := scope(c)
 	if err != nil {
@@ -277,99 +264,6 @@ func (h *llmProviderHandler) Delete(c fiber.Ctx) error {
 		return err
 	}
 	if err := h.app.Repositories.LLMProvider.Delete(c.Context(), scope); err != nil {
-		return err
-	}
-	return dtos.Message(c, fiber.StatusOK, "LLM provider removed")
-}
-
-// managePlatform guards the platform-user scope: a super user only.
-func (h *llmProviderHandler) managePlatform(c fiber.Ctx) error {
-	uid, err := lib.ContextGetUID(c)
-	if err != nil {
-		return apperr.ErrUnauthorized
-	}
-	super, err := isSuperUser(c.Context(), h.app, uid)
-	if err != nil {
-		return err
-	}
-	if !super {
-		return apperr.New(apperr.KindForbidden, "only a super user can manage the platform-user provider")
-	}
-	return nil
-}
-
-// GetPlatform returns the platform-user provider, or null when there is none.
-func (h *llmProviderHandler) GetPlatform(c fiber.Ctx) error {
-	if err := h.managePlatform(c); err != nil {
-		return err
-	}
-	meta := dtos.Metadata{"fallback": h.app.AIConfig != nil || h.app.AI != nil, "private_hosts": h.app.Config.App.AllowPrivateHosts}
-	p, err := h.app.Repositories.LLMProvider.GetPlatform(c.Context())
-	if apperr.IsNotFound(err) {
-		return dtos.Response(c, fiber.StatusOK, nil, meta, "")
-	}
-	if err != nil {
-		return err
-	}
-	return dtos.Response(c, fiber.StatusOK, llmProviderView{p, len(p.APIKey) > 0}, meta, "")
-}
-
-// PutPlatform creates or replaces the platform-user provider.
-func (h *llmProviderHandler) PutPlatform(c fiber.Ctx) error {
-	if err := h.managePlatform(c); err != nil {
-		return err
-	}
-	var body dtos.LLMProviderBody
-	if err := lib.ValidateRequestBody(c, &body); err != nil {
-		return err
-	}
-	key, err := h.apiKey(c, nil, body.Kind, body.BaseURL, body.APIKey)
-	if err != nil {
-		return err
-	}
-
-	repo := &h.app.Repositories.LLMProvider
-	p := models.LLMProvider{OrganizationID: nil, PlatformUser: true, Name: body.Name, Kind: body.Kind, BaseURL: body.BaseURL, Model: body.Model, APIKey: []byte{}}
-	if key != "" {
-		p.APIKey = h.app.Secrets.Seal(key)
-	}
-	if err := repo.Upsert(c.Context(), p); err != nil {
-		return err
-	}
-	if p, err = repo.GetPlatform(c.Context()); err != nil {
-		return err
-	}
-	return dtos.OK(c, llmProviderView{p, key != ""})
-}
-
-// ModelsPlatform lists the models the platform-user provider offers.
-func (h *llmProviderHandler) ModelsPlatform(c fiber.Ctx) error {
-	if err := h.managePlatform(c); err != nil {
-		return err
-	}
-	var body dtos.LLMModelsBody
-	if err := lib.ValidateRequestBody(c, &body); err != nil {
-		return err
-	}
-	key, err := h.apiKey(c, nil, body.Kind, body.BaseURL, body.APIKey)
-	if err != nil {
-		return err
-	}
-	ctx, cancel := context.WithTimeout(c.Context(), 15*time.Second)
-	defer cancel()
-	ids, err := llm.ListModels(ctx, llm.Config{Kind: body.Kind, BaseURL: body.BaseURL, APIKey: key, HTTPClient: h.app.HTTPClient})
-	if err != nil {
-		return apperr.New(apperr.KindBadGateway, "couldn't list the provider's models: check the base URL and the API key")
-	}
-	return dtos.OK(c, ids)
-}
-
-// DeletePlatform removes the platform-user provider.
-func (h *llmProviderHandler) DeletePlatform(c fiber.Ctx) error {
-	if err := h.managePlatform(c); err != nil {
-		return err
-	}
-	if err := h.app.Repositories.LLMProvider.DeletePlatform(c.Context()); err != nil {
 		return err
 	}
 	return dtos.Message(c, fiber.StatusOK, "LLM provider removed")

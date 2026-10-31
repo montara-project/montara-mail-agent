@@ -4,8 +4,8 @@ import type { ApiListResponse, AxiosDeleteResponse, AxiosItemResponse, Metadata 
 
 import type { Models } from '../../models'
 
-/** Where a provider applies: an organization's id, or null for global. */
-export type LLMProviderScope = string | null | 'platform'
+/** Where a provider applies: an organization's id, or null for the platform. */
+export type LLMProviderScope = string | null
 
 export type LLMProviderBody = {
   name: string
@@ -22,7 +22,7 @@ export type LLMModelsBody = Omit<LLMProviderBody, 'model' | 'name'>
 export type LLMProviderListResponse = ApiListResponse<
   Models.LLMProviderListed,
   Metadata & {
-    /** Only a super user may change the global provider. */
+    /** Only a super user may change the platform provider. */
     super_user: boolean
     /** Whether the server's own model covers an organization with no provider. */
     fallback: boolean

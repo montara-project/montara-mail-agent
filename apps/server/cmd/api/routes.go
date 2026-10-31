@@ -89,20 +89,14 @@ func routes(r *fiber.App, app *app.Application) {
 	organizations.Delete("/:id/llm-provider", idempotent, h.LLMProvider.Delete)
 	organizations.Post("/:id/llm-provider/models", slow, h.LLMProvider.Models)
 
-	// Every provider the user can see, the global one (super user only to
-	// change) and moving a provider between organizations and global.
+	// Every provider the user can see, the platform one (super user only to
+	// change) and moving a provider between organizations and the platform.
 	llmProviders := v1.Group("/llm-providers", m.Authorization)
 	llmProviders.Get("/", h.LLMProvider.List)
-	llmProviders.Put("/global", idempotent, h.LLMProvider.Put)
-	llmProviders.Delete("/global", idempotent, h.LLMProvider.Delete)
-	llmProviders.Post("/global/models", slow, h.LLMProvider.Models)
+	llmProviders.Put("/platform", idempotent, h.LLMProvider.Put)
+	llmProviders.Delete("/platform", idempotent, h.LLMProvider.Delete)
+	llmProviders.Post("/platform/models", slow, h.LLMProvider.Models)
 	llmProviders.Put("/:id/scope", idempotent, h.LLMProvider.SetScope)
-	// The platform-user scope: the provider every plain user falls back to
-	// ahead of the global one. A super user manages it.
-	llmProviders.Get("/platform-user", h.LLMProvider.GetPlatform)
-	llmProviders.Put("/platform-user", idempotent, h.LLMProvider.PutPlatform)
-	llmProviders.Delete("/platform-user", idempotent, h.LLMProvider.DeletePlatform)
-	llmProviders.Post("/platform-user/models", slow, h.LLMProvider.ModelsPlatform)
 	organizations.Get("/:id/mcp-servers", h.MCPServer.List)
 	organizations.Post("/:id/mcp-servers", slow, idempotent, h.MCPServer.Create)
 	organizations.Post("/:id/mcp-servers/test", slow, h.MCPServer.TestDraft)

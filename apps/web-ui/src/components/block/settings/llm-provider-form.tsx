@@ -1,6 +1,6 @@
 import { useStore } from '@tanstack/react-form'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Building2, Check, Globe, Pencil, Plus, RefreshCw, Trash2, Users } from 'lucide-react'
+import { Building2, Check, Pencil, Plus, RefreshCw, Trash2, Users } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
@@ -42,7 +42,6 @@ import { axiosErrorMessage, toastAxiosError } from '@/lib/api/axios-error'
 import { parseDto } from '@/lib/api/dtos/parse'
 import { LLMProviderFormSchema } from '@/lib/api/dtos/settings/llm-provider/schema'
 import { queries } from '@/lib/api/queries'
-import { PLATFORM_SCOPE } from '@/lib/api/services/llm-provider'
 
 const KIND_OPTIONS: { value: Models.LLMProviderKind; label: string }[] = [
   { value: 'openai', label: 'OpenAI compatible' },
@@ -54,9 +53,9 @@ const PLACEHOLDERS: Record<'openai' | 'anthropic', { baseURL: string; model: str
   anthropic: { baseURL: 'https://api.anthropic.com', model: 'e.g. claude-sonnet-5-5' },
 }
 
-/** The select's value for the global scope; organization ids fill the rest. */
-const GLOBAL = 'global'
-const toScope = (value: string): LLMProviderScope => (value === GLOBAL ? null : value)
+/** The select's value for the platform scope; organization ids fill the rest. */
+const PLATFORM = 'platform'
+const toScope = (value: string): LLMProviderScope => (value === PLATFORM ? null : value)
 
 /** What the list calls a provider: its name, else its host, else its format. */
 function providerName(provider: Models.LLMProvider) {
@@ -156,11 +155,7 @@ function ProviderDialog({
   const [picked, setPicked] = React.useState(
     () => scopeOptions.find((option) => !option.disabled)?.value ?? ''
   )
-  const scopeValue = provider
-    ? provider.platform_user
-      ? PLATFORM_SCOPE
-      : (provider.organization_id ?? GLOBAL)
-    : picked
+  const scopeValue = provider ? (provider.organization_id ?? PLATFORM) : picked
   const scope = toScope(scopeValue)
   const save = useMutation(queries.llmProvider.save(scope))
   // A self-hosted model's fields don't fit this form; editing it starts empty.
@@ -238,7 +233,7 @@ function ProviderDialog({
             </SelectContent>
           </Select>
           <FieldDescription>
-            Global runs in every organization that has no provider of its own.
+            Platform runs for every user, in every organization with no provider of its own.
           </FieldDescription>
         </Field>
       )}
@@ -314,7 +309,7 @@ function ProviderRow({
   const [openDelete, setOpenDelete] = React.useState(false)
   const remove = useMutation(queries.llmProvider.delete())
   const move = useMutation(queries.llmProvider.setScope())
-  const current = provider.platform_user ? PLATFORM_SCOPE : (provider.organization_id ?? GLOBAL)
+  const current = provider.organization_id ?? PLATFORM
 
   const moveTo = (option: ScopeOption) =>
     move.mutate(
@@ -334,11 +329,7 @@ function ProviderRow({
       <td className="text-muted-foreground py-3 pr-4">{provider.model}</td>
       <td className="py-3 pr-4">
         <Badge variant="secondary" appearance="light">
-          {provider.organization_id
-            ? provider.organization_name
-            : provider.platform_user
-              ? 'Platform (users)'
-              : 'Global'}
+          {provider.organization_id ? provider.organization_name : 'Platform'}
         </Badge>
       </td>
       <td className="py-3">
@@ -364,13 +355,7 @@ function ProviderRow({
                   aria-label="Where it runs"
                   disabled={move.isPending}
                 >
-                  {provider.organization_id ? (
-                    <Building2 />
-                  ) : provider.platform_user ? (
-                    <Users />
-                  ) : (
-                    <Globe />
-                  )}
+                  {provider.organization_id ? <Building2 /> : <Users />}
                 </Button>
               </DropdownMenuTrigger>
             </Hint>
@@ -385,13 +370,7 @@ function ProviderRow({
                     disabled={option.value === current || option.disabled}
                     onSelect={() => moveTo(option)}
                   >
-                    {option.value === GLOBAL ? (
-                      <Globe />
-                    ) : option.value === PLATFORM_SCOPE ? (
-                      <Users />
-                    ) : (
-                      <Building2 />
-                    )}
+                    {option.value === PLATFORM ? <Users /> : <Building2 />}
                     <span className="flex-1 truncate">{option.label}</span>
                     {option.value === current && <Check />}
                   </DropdownMenuItem>
@@ -416,7 +395,7 @@ function ProviderRow({
           title={`Delete ${providerName(provider)}?`}
           description={
             provider.organization_id
-              ? `${provider.organization_name} falls back to the global provider, or the server's model.`
+              ? `${provider.organization_name} falls back to the platform provider, or the server's model.`
               : "Organizations without their own provider fall back to the server's model."
           }
           open={openDelete}
@@ -451,19 +430,19 @@ function ProviderRow({
 function providerStatus(organization?: Models.Organization, data?: LLMProviderListResponse) {
   if (!organization || !data) return undefined
   const own = data.data.find((p) => p.organization_id === organization.id)
-  const global = data.data.find((p) => p.organization_id === null)
+  const platform = data.data.find((p) => p.organization_id === null)
   if (own) return `${organization.name} uses ${providerName(own)} (${own.model}).`
-  if (global)
-    return `${organization.name} uses the global ${providerName(global)} (${global.model}).`
+  if (platform)
+    return `${organization.name} uses the platform's ${providerName(platform)} (${platform.model}).`
   return data.metadata.fallback
     ? `${organization.name} has no provider, so AI features use the server's default model.`
     : `${organization.name} has no provider, so AI features are off.`
 }
 
 /**
- * The AI providers the user can see: the global one, which a super user
+ * The AI providers the user can see: the platform one, which a super user
  * manages, and one per organization, which its owner manages. An
- * organization's own provider wins over the global one.
+ * organization's own provider wins over the platform one.
  */
 export default function LLMProviderSettings() {
   const [openAdd, setOpenAdd] = React.useState(false)
@@ -471,23 +450,14 @@ export default function LLMProviderSettings() {
   const { data, isPending, isError, error } = useQuery(queries.llmProvider.list())
   const providers = data?.data ?? []
 
-  // Where a provider can run: global for a super user, and each organization;
+  // Where a provider can run: the platform for a super user, and each organization;
   // a scope that already has a provider is taken.
-  const taken = new Set(
-    providers.map((p) =>
-      p.organization_id ? p.organization_id : p.platform_user ? PLATFORM_SCOPE : GLOBAL
-    )
-  )
+  const taken = new Set(providers.map((p) => p.organization_id ?? PLATFORM))
   const scopeOptions: ScopeOption[] = [
     {
-      value: GLOBAL,
-      label: 'Global (all organizations)',
-      disabled: !data?.metadata.super_user || taken.has(GLOBAL),
-    },
-    {
-      value: PLATFORM_SCOPE,
-      label: 'Platform (all user accounts)',
-      disabled: !data?.metadata.super_user || taken.has(PLATFORM_SCOPE),
+      value: PLATFORM,
+      label: 'Platform (all users)',
+      disabled: !data?.metadata.super_user || taken.has(PLATFORM),
     },
     ...organizations.map((org) => {
       return {
@@ -512,7 +482,7 @@ export default function LLMProviderSettings() {
       return (
         <EmptyState
           title="No AI providers yet"
-          description="Add one for an organization, or a global one for every organization."
+          description="Add one for an organization, or a platform one for every user."
         />
       )
     }

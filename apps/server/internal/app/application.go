@@ -69,8 +69,7 @@ var ErrAINotConfigured = apperr.New(apperr.KindUnavailable, "AI is not configure
 var ErrQuotaExhausted = apperr.New(apperr.KindPaymentRequired, "Weekly AI quota is used up. Top up to keep going.")
 
 // LLMFor returns the model an organization's AI features call: its own
-// provider, else the platform-user one for a plain user, else the global one,
-// else the fallback. Every call is metered against userID's quota (the
+// provider, else the platform one, else the fallback. Every call is metered against userID's quota (the
 // organization owner's for background jobs) and refused when both the weekly
 // allowance and the pay-as-you-go balance are spent. It carries the one-shot
 // Complete the stateless tasks use and the Chat with tool calling the agent
@@ -80,19 +79,7 @@ func (a *Application) LLMFor(ctx context.Context, organizationID, userID uuid.UU
 		return nil, err
 	}
 
-	role, err := a.Repositories.User.Role(ctx, userID)
-	if apperr.IsNotFound(err) {
-		role = constant.RoleUser
-	} else if err != nil {
-		return nil, err
-	}
-	platformUser := role == constant.RoleUser
-	var orgScope *uuid.UUID
-	if organizationID != uuid.Nil {
-		orgScope = &organizationID
-	}
-
-	p, err := a.Repositories.LLMProvider.ForScope(ctx, orgScope, platformUser)
+	p, err := a.Repositories.LLMProvider.ForOrganization(ctx, organizationID)
 	if apperr.IsNotFound(err) {
 		if a.AIConfig != nil {
 			cfg := *a.AIConfig

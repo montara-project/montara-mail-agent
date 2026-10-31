@@ -12,7 +12,7 @@ import { services } from '../services'
 
 const LLM_PROVIDER_QUERY_KEY = 'llm-provider'
 
-/** Every provider the user can see, and what they may do with the global one. */
+/** Every provider the user can see, and what they may do with the platform one. */
 const list = () =>
   queryOptions({
     queryKey: [LLM_PROVIDER_QUERY_KEY, 'list'],
@@ -42,7 +42,7 @@ const del = () =>
     onSuccess: invalidate,
   })
 
-/** Moves a provider to an organization, or to global with null. */
+/** Moves a provider to an organization, or to the platform with null. */
 const setScope = () =>
   mutationOptions({
     mutationFn: async ({ id, scope }: { id: string; scope: LLMProviderScope }) => {

@@ -29,16 +29,13 @@ func testTokenQuota(t *testing.T, call callFunc, application *app.Application, d
 	}
 
 	// A platform provider is a super user's business.
-	if status, _ := call(http.MethodPut, "/api/v1/llm-providers/platform-user", userToken, map[string]any{"kind": "openai", "model": "m", "api_key": "sk-x", "base_url": "https://llm.example.com/v1"}); status != http.StatusForbidden {
+	if status, _ := call(http.MethodPut, "/api/v1/llm-providers/platform", userToken, map[string]any{"kind": "openai", "model": "m", "api_key": "sk-x", "base_url": "https://llm.example.com/v1"}); status != http.StatusForbidden {
 		t.Fatalf("platform provider as a plain user: %d, want 403", status)
 	}
-	if status, out := call(http.MethodPut, "/api/v1/llm-providers/platform-user", superToken, map[string]any{"kind": "openai", "model": "m", "api_key": "sk-x", "base_url": "https://llm.example.com/v1"}); status != http.StatusOK || data(out)["has_api_key"] != true {
+	if status, out := call(http.MethodPut, "/api/v1/llm-providers/platform", superToken, map[string]any{"kind": "openai", "model": "m", "api_key": "sk-x", "base_url": "https://llm.example.com/v1"}); status != http.StatusOK || data(out)["has_api_key"] != true {
 		t.Fatalf("platform provider as super user: %d %v", status, out)
 	}
-	if status, _ := call(http.MethodGet, "/api/v1/llm-providers/platform-user", userToken, nil); status != http.StatusForbidden {
-		t.Fatalf("platform provider read as a plain user: %d, want 403", status)
-	}
-	if status, _ := call(http.MethodDelete, "/api/v1/llm-providers/platform-user", superToken, nil); status != http.StatusOK {
+	if status, _ := call(http.MethodDelete, "/api/v1/llm-providers/platform", superToken, nil); status != http.StatusOK {
 		t.Fatalf("platform provider delete: %d, want 200", status)
 	}
 
