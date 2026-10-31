@@ -47,9 +47,9 @@ var providers = map[string]Provider{
 	constant.ProviderGmail: {
 		AuthURL:  "https://accounts.google.com/o/oauth2/v2/auth",
 		TokenURL: "https://oauth2.googleapis.com/token",
-		// The mail scope covers IMAP and SMTP; openid and email put the
-		// mailbox address into the token response's id_token.
-		Scopes: []string{"https://mail.google.com/", "openid", "email"},
+		// The mail scope covers IMAP and SMTP; openid, email and profile put the
+		// mailbox address and its owner's name into the token response's id_token.
+		Scopes: []string{"https://mail.google.com/", "openid", "email", "profile"},
 		// Google only sends a refresh token on the first consent, or when the
 		// consent screen is forced again.
 		AuthOptions: []oauth2.AuthCodeOption{
@@ -203,6 +203,22 @@ func (p Provider) MailboxEmail(ctx context.Context, client *http.Client, idToken
 		return email, nil
 	}
 	return "", errors.New("the token response carries no mailbox address")
+}
+
+// MailboxName reads the owner's display name from the id_token's name claim,
+// or "" when the token response carries none. Like MailboxEmail, it trusts the
+// id_token because it comes straight from the token endpoint over TLS.
+func MailboxName(idToken string) string {
+	parts := strings.Split(idToken, ".")
+	if len(parts) != 3 {
+		return ""
+	}
+	claims, err := decodeClaims(parts[1])
+	if err != nil {
+		return ""
+	}
+	name, _ := claims["name"].(string)
+	return strings.TrimSpace(name)
 }
 
 // jwtEmail decodes the middle segment of a JWT and reads the email claims

@@ -292,11 +292,15 @@ func (h *emailAccountHandler) OAuthFinish(c fiber.Ctx) error {
 	if err != nil {
 		return apperr.New(apperr.KindBadGateway, "%s", err.Error())
 	}
+	label := mailoauth.MailboxName(idToken(token))
+	if label == "" {
+		label = email
+	}
 	account := models.EmailAccount{
 		OrganizationID: organizationID,
 		Provider:       provider,
 		Email:          email,
-		Label:          email,
+		Label:          label,
 		Username:       email,
 	}
 	if servers, ok := constant.ProviderServers[provider]; ok {
