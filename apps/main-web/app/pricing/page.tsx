@@ -3,6 +3,8 @@ import type { Metadata } from 'next'
 import { CONTACT_EMAIL, TIERS } from '@/lib/pricing'
 import { pageMetadata } from '@/lib/seo'
 
+import { CurrentPrice, TierPrice } from './tier-price'
+
 export const metadata: Metadata = pageMetadata({
   path: '/pricing',
   title: 'Pricing',
@@ -10,27 +12,8 @@ export const metadata: Metadata = pageMetadata({
     'Montara Mail plans: start free with 20 mailboxes and 10M AI tokens a week, upgrade to Pro for unlimited mailboxes and 100M tokens.',
 })
 
-/** The promo currently running, from the static tier data. */
-function isDiscounted(tier: (typeof TIERS)[number]) {
-  return tier.discount > 0 && (!tier.discountEndsAt || new Date(tier.discountEndsAt) > new Date())
-}
-
-function price(tier: (typeof TIERS)[number]) {
-  return isDiscounted(tier) ? tier.amount - tier.discount : tier.amount
-}
-
-const fmt = (v: number) => `Rp${v.toLocaleString('id-ID')}`
-const fmtDate = (date: string) =>
-  new Date(date).toLocaleDateString('en-US', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  })
-
 /** One tier card: name, price with the promo strike-through, features, CTA. */
 function TierCard({ tier, highlighted }: { tier: (typeof TIERS)[number]; highlighted?: boolean }) {
-  const discounted = isDiscounted(tier)
   return (
     <div
       className={`grid content-start gap-4 rounded-xl border bg-card p-6 ${
@@ -48,20 +31,7 @@ function TierCard({ tier, highlighted }: { tier: (typeof TIERS)[number]; highlig
         </div>
         <p className="text-sm text-muted-foreground">{tier.tagline}</p>
       </div>
-      <div className="flex items-baseline gap-2">
-        {discounted && (
-          <span className="text-sm text-muted-foreground line-through">{fmt(tier.amount)}</span>
-        )}
-        <span className="text-3xl font-semibold tabular-nums">{fmt(price(tier))}</span>
-        <span className="text-sm text-muted-foreground">
-          {tier.interval === 'month' ? '/mo' : tier.interval === 'year' ? '/yr' : ''}
-        </span>
-      </div>
-      {discounted && (
-        <p className="text-xs text-emerald-600 dark:text-emerald-400">
-          Save {fmt(tier.discount)} until {fmtDate(tier.discountEndsAt)}.
-        </p>
-      )}
+      <TierPrice tier={tier} />
       <ul className="grid gap-2 text-sm text-muted-foreground">
         {tier.features.map((feature) => (
           <li key={feature} className="flex gap-2">
@@ -112,7 +82,7 @@ export default function PricingPage() {
       </div>
 
       <p className="text-muted-foreground mt-6 text-center text-sm">
-        Prefer yearly? Pro is {fmt(price(proYearly))} a year — two months free —{' '}
+        Prefer yearly? Pro is <CurrentPrice tier={proYearly} /> a year — two months free —{' '}
         <a className="text-foreground underline underline-offset-4" href={proYearly.cta.href}>
           upgrade in the app
         </a>
