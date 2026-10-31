@@ -68,7 +68,12 @@ const EMAIL_STARTERS = ['Summarize this email', 'Draft a reply to it', 'List wha
 
 /** The composer's / menu: each fills in a prompt to finish and send. The skills join it. */
 const QUICK_PROMPTS: PromptCommand[] = [
-  { key: 'find', name: '/find', desc: 'Find an email', prompt: 'Find the emails about ' },
+  {
+    key: 'find',
+    name: '/find',
+    desc: 'Find an email',
+    prompt: 'Find the emails about ',
+  },
   {
     key: 'unread',
     name: '/unread',
@@ -121,7 +126,12 @@ interface AgentPanelProps {
 }
 
 /** One streamed step the chat shows between prompt and answer. */
-type LiveRow = { kind: 'tool' | 'action'; name?: string; text?: string; payload?: unknown }
+type LiveRow = {
+  kind: 'tool' | 'action'
+  name?: string
+  text?: string
+  payload?: unknown
+}
 
 /** The history as the chat shows it: messages, and each run of tool calls as one trace. */
 type Block =
