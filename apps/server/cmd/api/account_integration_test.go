@@ -4,11 +4,47 @@ import (
 	"database/sql"
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
+	authula "github.com/Authula/authula"
+	authulamodels "github.com/Authula/authula/models"
 	totpservices "github.com/Authula/authula/plugins/totp/services"
+
+	"montara-mail-agent/server/internal/config"
 )
+
+// fakeOAuthCallback finishes a sign-in the way Authula's OAuth2 callback does,
+// without the provider: a new session, then a redirect marked as handled.
+func fakeOAuthCallback(auth *authula.Auth) authulamodels.Route {
+	return authulamodels.Route{
+		Method: http.MethodGet,
+		Path:   "/oauth2/test-callback",
+		Handler: http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+			reqCtx, _ := authulamodels.GetRequestContext(r.Context())
+			services := auth.CoreServices()
+			token, err := services.TokenService.Generate()
+			if err != nil {
+				reqCtx.SetJSONResponse(http.StatusInternalServerError, map[string]string{"message": err.Error()})
+				return
+			}
+			userID := r.URL.Query().Get("user")
+			session, err := services.SessionService.Create(r.Context(), userID, services.TokenService.Hash(token), nil, nil, time.Hour)
+			if err != nil {
+				reqCtx.SetJSONResponse(http.StatusInternalServerError, map[string]string{"message": err.Error()})
+				return
+			}
+			reqCtx.SetActorInContext(&authulamodels.Actor{ID: userID, Type: authulamodels.ActorUser})
+			reqCtx.Values[authulamodels.ContextSessionID.String()] = session.ID
+			reqCtx.Values[authulamodels.ContextSessionToken.String()] = token
+			reqCtx.Values[authulamodels.ContextAuthSuccess.String()] = true
+			reqCtx.RedirectURL = "http://localhost:3000/sign-in?via=google"
+			reqCtx.ResponseStatus = http.StatusFound
+			reqCtx.Handled = true
+		}),
+	}
+}
 
 // testAccountSettings walks the settings pages of a signed-in user: profile,
 // two-factor sign-in, then the password change, which ends every session.
@@ -25,7 +61,16 @@ func testAccountSettings(t *testing.T, call callFunc, cookies func() string, db 
 	}
 	token := out["access_token"].(string)
 
-	if status, out := call(http.MethodGet, "/api/v1/me/security", token, nil); status != http.StatusOK || data(out)["has_password"] != true || data(out)["totp_enabled"] != false {
+	// An OAuth2 callback leaves the session cookie the web app trades for tokens.
+	oauthCallback := "/api/v1/auth/oauth2/test-callback?user=" + out["user"].(map[string]any)["id"].(string)
+	if status, out := call(http.MethodGet, oauthCallback, "", nil); status != http.StatusFound || !strings.Contains(cookies(), config.SessionCookieName+"=") {
+		t.Fatalf("oauth callback: %d %v, cookies %q", status, out, cookies())
+	}
+	if status, out := call(http.MethodPost, "/api/v1/auth/token", "", nil, "Cookie", cookies()); status != http.StatusOK || out["access_token"] == nil {
+		t.Fatalf("trade the oauth session: %d %v", status, out)
+	}
+
+	if status, out := call(http.MethodGet, "/api/v1/me/security", token, nil); status != http.StatusOK || data(out)["has_password"] != true || data(out)["has_google"] != false || data(out)["totp_enabled"] != false {
 		t.Fatalf("security: %d %v", status, out)
 	}
 
@@ -85,6 +130,11 @@ func testAccountSettings(t *testing.T, call callFunc, cookies func() string, db 
 	}
 	if status, out := call(http.MethodGet, "/api/v1/me/security", token, nil); status != http.StatusOK || data(out)["totp_enabled"] != true {
 		t.Fatalf("totp after the first code: %d %v", status, out)
+	}
+
+	// An OAuth2 callback goes no further than the second step either.
+	if status, out := call(http.MethodGet, oauthCallback, "", nil); status != http.StatusFound || strings.Contains(cookies(), config.SessionCookieName+"=") {
+		t.Fatalf("oauth callback with totp: %d %v, cookies %q", status, out, cookies())
 	}
 
 	// Now a password alone gets no tokens, only the second step.

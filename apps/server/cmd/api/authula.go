@@ -476,6 +476,38 @@ func newAuth(cfg config.Config, mirror func(*authulamodels.User) error, activiti
 	}
 	auth.RegisterRoute(issuer.route())
 
+	// The OAuth2 callback marks its redirect as handled before the after hooks,
+	// and the router stops at the first hook of a handled request. That is
+	// totp.intercept (order 5), so the session cookie (order 10) never came.
+	// Clearing the mark runs them all; the router still redirects afterwards,
+	// and totp.intercept still stops the cookie for a two-factor user.
+	auth.RegisterHook(authulamodels.Hook{
+		Stage: authulamodels.HookAfter,
+		Matcher: func(reqCtx *authulamodels.RequestContext) bool {
+			success, _ := reqCtx.Values[authulamodels.ContextAuthSuccess.String()].(bool)
+			return success && reqCtx.Handled && reqCtx.RedirectURL != ""
+		},
+		Handler: func(reqCtx *authulamodels.RequestContext) error {
+			reqCtx.Handled = false
+			return nil
+		},
+		Order: -1,
+	})
+
+	// totp.intercept answers 200, which would turn that redirect into a blank
+	// page on the API. Keep it a redirect, so the web app can say what happened.
+	auth.RegisterHook(authulamodels.Hook{
+		Stage: authulamodels.HookAfter,
+		Matcher: func(reqCtx *authulamodels.RequestContext) bool {
+			return reqCtx.RedirectURL != "" && reqCtx.ResponseStatus == http.StatusOK
+		},
+		Handler: func(reqCtx *authulamodels.RequestContext) error {
+			reqCtx.ResponseStatus = http.StatusFound
+			return nil
+		},
+		Order: 6,
+	})
+
 	// A sign-in repeated while a session is active answers from that session
 	// and the jwt plugin skips minting for it, so mint here instead.
 	auth.RegisterHook(authulamodels.Hook{

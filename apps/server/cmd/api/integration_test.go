@@ -94,6 +94,7 @@ func TestIntegration(t *testing.T) {
 	repos := repositories.New(db)
 	mirror := mirrorUser(&repos.User)
 	auth := newAuth(cfg, mirror, &repos.ActivityLog, logger)
+	auth.RegisterRoute(fakeOAuthCallback(auth))
 	defer auth.CloseSystems()
 	defer auth.ClosePlugins()
 
