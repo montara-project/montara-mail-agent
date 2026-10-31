@@ -80,7 +80,7 @@ export default function QuotaSettings() {
 
   return (
     <div className="grid gap-4">
-      <WalletCard />
+      {showPurchases && <WalletCard />}
 
       <PlanCard>
         <QueryState
@@ -117,133 +117,135 @@ export default function QuotaSettings() {
 
       {showPurchases && <PlansComparison />}
 
-      <SectionCard
-        title="Pay as you go"
-        description="10M tokens per Rp10.000, spent only once the weekly allowance runs out, never expiring."
-        toolbar={
-          <Button size="sm" disabled={isPending || create.isPending} onClick={startTopup}>
-            {create.isPending && <Loader2 className="animate-spin" aria-hidden />}
-            Top up 10M for Rp10.000
-          </Button>
-        }
-      >
-        <div className="flex items-baseline justify-between text-sm">
-          <span className="text-muted-foreground">Balance</span>
-          {isPending ? (
-            <Skeleton className="h-5 w-20" />
-          ) : (
-            <span className="font-medium tabular-nums">
-              {/* The Plan & usage card already carries the error and its retry. */}
-              {quota ? `${formatTokens(quota.payg_balance_tokens)} tokens` : '–'}
-            </span>
-          )}
-        </div>
+      {showPurchases && (
+        <SectionCard
+          title="Pay as you go"
+          description="10M tokens per Rp10.000, spent only once the weekly allowance runs out, never expiring."
+          toolbar={
+            <Button size="sm" disabled={isPending || create.isPending} onClick={startTopup}>
+              {create.isPending && <Loader2 className="animate-spin" aria-hidden />}
+              Top up 10M for Rp10.000
+            </Button>
+          }
+        >
+          <div className="flex items-baseline justify-between text-sm">
+            <span className="text-muted-foreground">Balance</span>
+            {isPending ? (
+              <Skeleton className="h-5 w-20" />
+            ) : (
+              <span className="font-medium tabular-nums">
+                {/* The Plan & usage card already carries the error and its retry. */}
+                {quota ? `${formatTokens(quota.payg_balance_tokens)} tokens` : '–'}
+              </span>
+            )}
+          </div>
 
-        <div className="mt-4 empty:hidden">
-          <QueryState
-            isPending={topupsQuery.isPending}
-            isError={topupsQuery.isError && !topups}
-            error={topupsQuery.error}
-            onRetry={() => void topupsQuery.refetch()}
-            isEmpty={!topups?.length}
-            loading={null}
-            empty={null}
-          >
-            <div className="grid gap-1">
-              <p className="text-muted-foreground text-xs font-medium">Recent top-ups</p>
-              <ul className="-mx-2 grid">
-                {topups?.map((topup: TokenTopup) => {
-                  const date = monthDay(new Date(topup.created_at), true)
-                  return (
-                    <li
-                      key={topup.id}
-                      className="hover:bg-accent/50 relative grid grid-cols-[minmax(0,1fr)_auto_4rem_1rem] items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors sm:gap-3"
-                    >
-                      {/* The whole row opens the invoice. */}
-                      <Link
-                        to="/settings/billing/invoice/$id"
-                        params={{ id: topup.id }}
-                        aria-label={`Invoice from ${date}`}
-                        className="text-muted-foreground truncate tabular-nums outline-none after:absolute after:inset-0 after:rounded-md focus-visible:after:ring-[3px] focus-visible:after:ring-ring/50"
+          <div className="mt-4 empty:hidden">
+            <QueryState
+              isPending={topupsQuery.isPending}
+              isError={topupsQuery.isError && !topups}
+              error={topupsQuery.error}
+              onRetry={() => void topupsQuery.refetch()}
+              isEmpty={!topups?.length}
+              loading={null}
+              empty={null}
+            >
+              <div className="grid gap-1">
+                <p className="text-muted-foreground text-xs font-medium">Recent top-ups</p>
+                <ul className="-mx-2 grid">
+                  {topups?.map((topup: TokenTopup) => {
+                    const date = monthDay(new Date(topup.created_at), true)
+                    return (
+                      <li
+                        key={topup.id}
+                        className="hover:bg-accent/50 relative grid grid-cols-[minmax(0,1fr)_auto_4rem_1rem] items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors sm:gap-3"
                       >
-                        {date}
-                      </Link>
-                      <span className="tabular-nums">{formatTokens(topup.tokens)} tokens</span>
-                      <span className="justify-self-end">
-                        <TopupStatusBadge status={topup.status} />
-                      </span>
-                      <ChevronRight className="text-muted-foreground size-4" aria-hidden />
-                    </li>
-                  )
-                })}
-              </ul>
-              {topupTotal > TOPUP_PAGE_SIZES[0] && (
-                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span className="text-muted-foreground text-xs whitespace-nowrap tabular-nums">
-                    {first + 1}–{first + (topups?.length ?? 0)} of {topupTotal}
-                  </span>
-                  <Select
-                    value={String(pageSize)}
-                    onValueChange={(value) => {
-                      setPageSize(Number(value))
-                      setPage(1)
-                    }}
-                  >
-                    <SelectTrigger
-                      size="sm"
-                      // As quiet as the page buttons beside it, like the mail list's.
-                      className="text-muted-foreground hover:bg-accent hover:text-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground ms-auto h-7 w-auto gap-1 border-transparent bg-transparent px-2 text-xs font-normal shadow-none"
-                      aria-label="Top-ups per page"
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent position="popper" align="end">
-                      {TOPUP_PAGE_SIZES.map((option) => (
-                        <SelectItem key={option} value={String(option)} className="text-xs">
-                          {option} per page
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Pagination className={cn('mx-0 w-auto', pageCount <= 1 && 'hidden')}>
-                    <PaginationContent>
-                      <PaginationItem>
-                        <Button
-                          variant="ghost"
-                          mode="icon"
-                          size="sm"
-                          aria-label="Previous page"
-                          disabled={page === 1}
-                          onClick={() => setPage(page - 1)}
+                        {/* The whole row opens the invoice. */}
+                        <Link
+                          to="/settings/billing/invoice/$id"
+                          params={{ id: topup.id }}
+                          aria-label={`Invoice from ${date}`}
+                          className="text-muted-foreground truncate tabular-nums outline-none after:absolute after:inset-0 after:rounded-md focus-visible:after:ring-[3px] focus-visible:after:ring-ring/50"
                         >
-                          <ChevronLeft className="rtl:rotate-180" />
-                        </Button>
-                      </PaginationItem>
-                      <PaginationItem>
-                        <span className="text-muted-foreground px-2 text-xs tabular-nums">
-                          {page} / {pageCount}
+                          {date}
+                        </Link>
+                        <span className="tabular-nums">{formatTokens(topup.tokens)} tokens</span>
+                        <span className="justify-self-end">
+                          <TopupStatusBadge status={topup.status} />
                         </span>
-                      </PaginationItem>
-                      <PaginationItem>
-                        <Button
-                          variant="ghost"
-                          mode="icon"
-                          size="sm"
-                          aria-label="Next page"
-                          disabled={page >= pageCount}
-                          onClick={() => setPage(page + 1)}
-                        >
-                          <ChevronRight className="rtl:rotate-180" />
-                        </Button>
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
-                </div>
-              )}
-            </div>
-          </QueryState>
-        </div>
-      </SectionCard>
+                        <ChevronRight className="text-muted-foreground size-4" aria-hidden />
+                      </li>
+                    )
+                  })}
+                </ul>
+                {topupTotal > TOPUP_PAGE_SIZES[0] && (
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="text-muted-foreground text-xs whitespace-nowrap tabular-nums">
+                      {first + 1}–{first + (topups?.length ?? 0)} of {topupTotal}
+                    </span>
+                    <Select
+                      value={String(pageSize)}
+                      onValueChange={(value) => {
+                        setPageSize(Number(value))
+                        setPage(1)
+                      }}
+                    >
+                      <SelectTrigger
+                        size="sm"
+                        // As quiet as the page buttons beside it, like the mail list's.
+                        className="text-muted-foreground hover:bg-accent hover:text-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground ms-auto h-7 w-auto gap-1 border-transparent bg-transparent px-2 text-xs font-normal shadow-none"
+                        aria-label="Top-ups per page"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent position="popper" align="end">
+                        {TOPUP_PAGE_SIZES.map((option) => (
+                          <SelectItem key={option} value={String(option)} className="text-xs">
+                            {option} per page
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Pagination className={cn('mx-0 w-auto', pageCount <= 1 && 'hidden')}>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <Button
+                            variant="ghost"
+                            mode="icon"
+                            size="sm"
+                            aria-label="Previous page"
+                            disabled={page === 1}
+                            onClick={() => setPage(page - 1)}
+                          >
+                            <ChevronLeft className="rtl:rotate-180" />
+                          </Button>
+                        </PaginationItem>
+                        <PaginationItem>
+                          <span className="text-muted-foreground px-2 text-xs tabular-nums">
+                            {page} / {pageCount}
+                          </span>
+                        </PaginationItem>
+                        <PaginationItem>
+                          <Button
+                            variant="ghost"
+                            mode="icon"
+                            size="sm"
+                            aria-label="Next page"
+                            disabled={page >= pageCount}
+                            onClick={() => setPage(page + 1)}
+                          >
+                            <ChevronRight className="rtl:rotate-180" />
+                          </Button>
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                )}
+              </div>
+            </QueryState>
+          </div>
+        </SectionCard>
+      )}
 
       <Dialog open={checkoutOpen} onOpenChange={(open) => !open && closeCheckout()}>
         {/* Kept after closing, so the dialog doesn't empty while it animates out. */}

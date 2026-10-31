@@ -88,39 +88,43 @@ export default function PlanCard({ children }: { children: React.ReactNode }) {
           )}
 
           {active && sub && (
-            <div className="grid gap-2">
-              <div className="flex items-baseline justify-between gap-3">
-                <span className="text-muted-foreground">
-                  {sub.auto_renew ? 'Renews' : 'Ends'}{' '}
-                  {sub.current_period_end ? monthDay(new Date(sub.current_period_end), true) : '–'}
-                  {sub.auto_renew
-                    ? ' from your wallet'
-                    : `. Turn auto-renew back on to keep ${sub.plan_name}.`}
-                </span>
-                <span className="tabular-nums">{formatRupiah(sub.amount)}</span>
+            <React.Fragment>
+              <div className="grid gap-2">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="text-muted-foreground">
+                    {sub.auto_renew ? 'Renews' : 'Ends'}{' '}
+                    {sub.current_period_end
+                      ? monthDay(new Date(sub.current_period_end), true)
+                      : '–'}
+                    {sub.auto_renew
+                      ? ' from your wallet'
+                      : `. Turn auto-renew back on to keep ${sub.plan_name}.`}
+                  </span>
+                  <span className="tabular-nums">{formatRupiah(sub.amount)}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-muted-foreground" id="billing-auto-renew">
+                    Auto-renew
+                  </span>
+                  <Switch
+                    aria-labelledby="billing-auto-renew"
+                    checked={sub.auto_renew}
+                    disabled={autoRenew.isPending}
+                    onCheckedChange={(checked) =>
+                      autoRenew.mutate({ enabled: checked }, { onError: toastAxiosError })
+                    }
+                  />
+                </div>
               </div>
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-muted-foreground" id="billing-auto-renew">
-                  Auto-renew
-                </span>
-                <Switch
-                  aria-labelledby="billing-auto-renew"
-                  checked={sub.auto_renew}
-                  disabled={autoRenew.isPending}
-                  onCheckedChange={(checked) =>
-                    autoRenew.mutate({ enabled: checked }, { onError: toastAxiosError })
-                  }
-                />
-              </div>
-            </div>
+
+              <Separator />
+            </React.Fragment>
           )}
 
           {!pending && !active && security && !security.super_user && (
             <p className="text-muted-foreground">No subscription. Pick a plan below to upgrade.</p>
           )}
         </QueryState>
-
-        <Separator />
 
         {children}
       </div>
