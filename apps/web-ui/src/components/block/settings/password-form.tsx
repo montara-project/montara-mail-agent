@@ -2,10 +2,14 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { toast } from 'sonner'
 
+import type { Models } from '@/lib/api/models'
+
+import googleLogo from '@/assets/brands/google.svg'
 import SectionCard from '@/components/block/common/section-card'
 import { FieldDescription } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAppForm } from '@/hooks/form'
+import { useHideEmails } from '@/hooks/use-hide-emails'
 import { axiosErrorMessage, toastAxiosError } from '@/lib/api/axios-error'
 import { parseDto } from '@/lib/api/dtos/parse'
 import { UpdatePasswordSchema } from '@/lib/api/dtos/settings/profile/schema'
@@ -67,34 +71,61 @@ function PasswordForm() {
   )
 }
 
-/** Change the password; for an account that signs in without one, say so. */
+/** How an account without a password, or one linked to Google, signs in. */
+function SignInMethod({ security }: { security: Models.UserSecurity }) {
+  const { data: me } = useQuery(queries.auth.profile())
+  const { mask } = useHideEmails()
+
+  return (
+    <SectionCard title="Sign-in method" description="How you sign in to Montara.">
+      {security.has_google ? (
+        <div className="grid gap-3">
+          <div className="flex items-center gap-3 text-sm">
+            <img src={googleLogo} alt="" className="size-5 shrink-0" />
+            <div className="grid min-w-0">
+              <span className="font-medium">Google</span>
+              <span className="text-muted-foreground truncate">{mask(me?.user?.email ?? '')}</span>
+            </div>
+          </div>
+          {!security.has_password && (
+            <FieldDescription>
+              You sign in with Google, so there's no password to change here.
+            </FieldDescription>
+          )}
+        </div>
+      ) : (
+        <FieldDescription>
+          This account signs in with an email link, so it has no password to change.
+        </FieldDescription>
+      )}
+    </SectionCard>
+  )
+}
+
+/** Change the password, only for an account that has one; any other sign-in gets its own card. */
 export default function PasswordSettings() {
   const { data, isPending, isError, error } = useQuery(queries.profile.security())
 
-  const content = () => {
-    if (isPending) {
-      return (
-        <div className="grid max-w-xl gap-4">
-          <Skeleton className="h-10" />
-          <Skeleton className="h-10" />
-          <Skeleton className="h-10" />
-        </div>
-      )
-    }
-    if (isError) return <p className="text-destructive text-sm">{axiosErrorMessage(error)}</p>
-    if (!data.has_password) {
-      return (
-        <p className="text-muted-foreground text-sm">
-          This account signs in with Google or an email link, so it has no password to change.
-        </p>
-      )
-    }
-    return <PasswordForm />
+  if (isPending) return <Skeleton className="h-40" />
+  if (isError) {
+    return (
+      <SectionCard title="Sign-in method" description="How you sign in to Montara.">
+        <p className="text-destructive text-sm">{axiosErrorMessage(error)}</p>
+      </SectionCard>
+    )
   }
 
   return (
-    <SectionCard title="Change password" description="Use a password you don't use anywhere else.">
-      {content()}
-    </SectionCard>
+    <>
+      {(data.has_google || !data.has_password) && <SignInMethod security={data} />}
+      {data.has_password && (
+        <SectionCard
+          title="Change password"
+          description="Use a password you don't use anywhere else."
+        >
+          <PasswordForm />
+        </SectionCard>
+      )}
+    </>
   )
 }

@@ -108,7 +108,7 @@ is not synced, so archived Gmail mail leaves the app.
 
 | Route                                | What it does                                                                                       |
 | ------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| `GET /api/v1/me/security`            | Whether the user has a password (not Google or magic link only) and two-factor sign-in.            |
+| `GET /api/v1/me/security`            | Whether the user has a password (not Google or magic link only), Google sign-in and two-factor sign-in. |
 | `PATCH /api/v1/me`                   | Change the name and avatar (an `https` URL, or empty to remove it).                                |
 | `PATCH /api/v1/me/preferences`    | Change the user's app preferences: `split_inbox`.                                               |
 | `PUT /api/v1/me/password`            | Change the password after checking the current one; ends every session, so the user signs in again. |

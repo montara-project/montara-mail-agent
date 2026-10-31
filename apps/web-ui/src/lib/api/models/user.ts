@@ -61,6 +61,8 @@ export interface TOTPRedirect {
 export interface UserSecurity {
   /** False for a user who only signs in with Google or a magic link. */
   has_password: boolean
+  /** The account is linked to Google sign-in. */
+  has_google: boolean
   totp_enabled: boolean
   /** Sees the Platform pages, such as IP Block. */
   super_user: boolean
