@@ -33,12 +33,6 @@ export function SecuritySettings() {
       <PasswordSettings />
       <TOTPSettings />
       <ActivityLogList title="Activity log" description="Sign-ins and changes to your account." />
-      <SoonCard
-        title="Session management"
-        description="See where you're signed in and sign out other devices."
-      />
-      <SoonCard title="API keys" description="Keys that let your scripts call the Montara API." />
-      <SoonCard title="Connected apps" description="Apps you've given access to your account." />
     </div>
   )
 }
