@@ -342,16 +342,17 @@ func (s *Syncer) classify(ctx context.Context, account models.EmailAccount) {
 	if err != nil {
 		return
 	}
-	client, err := s.app.LLMFor(ctx, account.OrganizationID, ownerID)
-	if err != nil {
-		// No provider configured: the mail stays unclassified until one is.
-		return
-	}
 
 	repo := &s.app.Repositories.Mail
 	for range classifyRounds {
 		mails, err := repo.Unclassified(ctx, account.ID, mailai.ClassifyBatch)
 		if err != nil || len(mails) == 0 {
+			return
+		}
+		// Every round asks again: the last one may have spent the quota.
+		client, err := s.app.LLMFor(ctx, account.OrganizationID, ownerID)
+		if err != nil {
+			// No provider or no quota: the mail stays unclassified until there is.
 			return
 		}
 		labels, err := mailai.Classify(ctx, client, mails)

@@ -190,8 +190,22 @@ func (c anthropicClient) Complete(ctx context.Context, system, prompt string, ma
 			text.WriteString(b.Text)
 		}
 	}
-	c.onUsageReport("complete", Usage{Input: int(resp.Usage.InputTokens), Output: int(resp.Usage.OutputTokens)})
+	c.onUsageReport("complete", usageOrEstimate(
+		Usage{Input: int(resp.Usage.InputTokens), Output: int(resp.Usage.OutputTokens)},
+		len(system)+len(prompt), text.Len(),
+	))
 	return strings.TrimSpace(text.String()), nil
+}
+
+// usageOrEstimate returns what the server reported, or an estimate of about
+// four characters a token when it reported nothing: some compatible and
+// self-hosted servers leave usage out, and a call metered at zero would never
+// spend the quota.
+func usageOrEstimate(reported Usage, inputChars, outputChars int) Usage {
+	if reported.Input > 0 || reported.Output > 0 {
+		return reported
+	}
+	return Usage{Input: inputChars/4 + 1, Output: outputChars / 4}
 }
 
 // onUsageReport invokes the config's metering hook when one is set.
@@ -274,6 +288,9 @@ func (c openAIClient) Complete(ctx context.Context, system, prompt string, maxTo
 	if out.Choices[0].FinishReason == "content_filter" {
 		return "", ErrRefused
 	}
-	c.onUsageReport("complete", Usage{Input: out.Usage.PromptTokens, Output: out.Usage.CompletionTokens})
+	c.onUsageReport("complete", usageOrEstimate(
+		Usage{Input: out.Usage.PromptTokens, Output: out.Usage.CompletionTokens},
+		len(body), len(out.Choices[0].Message.Content),
+	))
 	return strings.TrimSpace(out.Choices[0].Message.Content), nil
 }

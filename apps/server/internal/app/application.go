@@ -72,6 +72,10 @@ var ErrAINotConfigured = apperr.New(apperr.KindUnavailable, "AI is not configure
 // pay-as-you-go balance are both spent.
 var ErrQuotaExhausted = apperr.New(apperr.KindPaymentRequired, "Weekly AI quota is used up. Top up to keep going.")
 
+// ErrPlanUnknown answers an AI request of a user whose tier isn't in the plan
+// catalog: with no allowance to measure against, the call is refused, not free.
+var ErrPlanUnknown = apperr.New(apperr.KindUnavailable, "AI is unavailable: this account's plan couldn't be read")
+
 // LLMFor returns the model an organization's AI features call: its own
 // provider, else the platform one, else the fallback. Every call is metered against userID's quota (the
 // organization owner's for background jobs) and refused when both the weekly
@@ -113,22 +117,35 @@ func (a *Application) LLMFor(ctx context.Context, organizationID, userID uuid.UU
 	})
 }
 
+// usageInsertAttempts bounds the retries of one usage row.
+const usageInsertAttempts = 3
+
 // usageHook returns the metering callback: an async insert with its own
 // deadline, so a client disconnecting mid-call cannot cancel the accounting
 // for work the model already did (tera-router's meter pattern).
 func (a *Application) usageHook(userID uuid.UUID, organizationID *uuid.UUID, weeklyLimit *int64, provider, model string) func(string, llm.Usage) {
 	return func(purpose string, usage llm.Usage) {
 		go func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
 			row := models.TokenUsage{
 				UserID: userID, OrganizationID: organizationID,
 				Provider: provider, Model: model, Purpose: purpose,
 				InputTokens: usage.Input, OutputTokens: usage.Output, WeeklyLimit: weeklyLimit,
 			}
-			if err := a.Repositories.TokenUsage.Insert(ctx, row); err != nil {
-				a.Logger.Warn("token usage not recorded", "error", err)
+			// A lost row is tokens the quota never sees, so a blip gets retries.
+			var err error
+			for attempt := range usageInsertAttempts {
+				if attempt > 0 {
+					time.Sleep(time.Duration(attempt) * time.Second)
+				}
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				err = a.Repositories.TokenUsage.Insert(ctx, row)
+				cancel()
+				if err == nil {
+					return
+				}
 			}
+			a.Logger.Error("token usage not recorded", "error", err, "user", userID,
+				"input_tokens", usage.Input, "output_tokens", usage.Output)
 		}()
 	}
 }
@@ -159,9 +176,12 @@ func (a *Application) checkQuota(ctx context.Context, userID uuid.UUID) (*int64,
 	if err != nil {
 		return nil, err
 	}
-	// The allowance is the tier's plans row; an unknown or unseeded tier, or
-	// a NULL weekly_tokens, enforces nothing (fail open: self-hosted servers
-	// without the seed bill nobody).
+	// The allowance is the tier's plans row. A NULL weekly_tokens is an
+	// unlimited tier; a tier missing from the catalog is refused.
+	if _, ok := a.PlanForTier(plan); !ok {
+		a.Logger.Error("no plan row for a user's tier", "tier", plan)
+		return nil, ErrPlanUnknown
+	}
 	limit := a.WeeklyTokenLimit(plan)
 	if limit == nil || *limit <= 0 {
 		return nil, nil

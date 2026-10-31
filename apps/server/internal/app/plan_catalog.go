@@ -27,8 +27,8 @@ var tierCodes = map[string][]string{
 }
 
 // ReloadPlans pulls the plans table into the in-memory catalog. A missing
-// tier stays out of the map, which reads as unlimited everywhere (fail open):
-// a database without the seeded rows enforces nothing, like limit <= 0.
+// tier stays out of the map: plan caps skip it, and checkQuota refuses its AI
+// calls. The Cloud Edition seeds the rows on every boot.
 func (a *Application) ReloadPlans(ctx context.Context) error {
 	plans, err := a.Repositories.Plan.All(ctx)
 	if err != nil {
@@ -52,7 +52,7 @@ func (a *Application) ReloadPlans(ctx context.Context) error {
 }
 
 // PlanForTier returns the cached plan row that carries a tier's limits; false
-// when the tier is unknown or unseeded, which reads as unlimited.
+// when the tier is unknown or unseeded.
 func (a *Application) PlanForTier(tier string) (models.Plan, bool) {
 	a.plans.mu.RLock()
 	defer a.plans.mu.RUnlock()

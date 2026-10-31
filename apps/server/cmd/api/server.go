@@ -52,16 +52,14 @@ func serve(app *app.Application) error {
 	// Warm the plan catalog before the first request; the daily billing
 	// sweep refreshes it. A failure stops the boot: an empty catalog enforces
 	// no limit, so a passing database error would lift every quota until the
-	// next sweep. A database without the seeded rows starts, unenforced. The
-	// Community Edition never loads it, so no plan limit applies there.
+	// next sweep. The boot seeds the rows, and checkQuota refuses a tier missing
+	// from the catalog. The Community Edition never loads it, so no plan limit
+	// applies there.
 	if !config.Community() {
 		loadCtx, cancelLoad := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancelLoad()
 		if err := app.ReloadPlans(loadCtx); err != nil {
 			return fmt.Errorf("load plan catalog: %w", err)
-		}
-		if _, seeded := app.PlanForTier(constant.PlanFree); !seeded {
-			app.Logger.Warn("plan catalog is empty, so no plan limit is enforced: run the server once with SEED_ON_BOOT=true")
 		}
 		go sweepBilling(ctx, app)
 	}

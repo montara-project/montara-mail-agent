@@ -113,6 +113,12 @@ func run() error {
 		if err := seedAll(db, superUser, logger); err != nil {
 			return err
 		}
+	} else if !config.Community() {
+		// Quota and plan limits read these rows, so the Cloud Edition always
+		// needs them, whatever SEED_ON_BOOT says. Existing rows stay untouched.
+		if err := (seeders.PlanSeeder{DB: db}).Seed(); err != nil {
+			return fmt.Errorf("plans seeder: %w", err)
+		}
 	}
 
 	var aiConfig *llm.Config

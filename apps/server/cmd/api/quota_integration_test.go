@@ -57,6 +57,23 @@ func testTokenQuota(t *testing.T, call callFunc, application *app.Application, d
 		t.Fatalf("summary with a spent quota: %d, want 402", status)
 	}
 
+	// A tier missing from the catalog is refused, not free.
+	if _, err := db.Exec(`UPDATE plans SET code = 'free_hidden' WHERE code = 'free'`); err != nil {
+		t.Fatal(err)
+	}
+	if err := application.ReloadPlans(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if status, _ := call(http.MethodPost, "/api/v1/mails/"+mailID+"/summary", userToken, nil); status != http.StatusServiceUnavailable {
+		t.Fatalf("summary with no plan row: %d, want 503", status)
+	}
+	if _, err := db.Exec(`UPDATE plans SET code = 'free' WHERE code = 'free_hidden'`); err != nil {
+		t.Fatal(err)
+	}
+	if err := application.ReloadPlans(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
 	// The webhook verifies its shared token first.
 	if _, err := db.Exec(`INSERT INTO token_topups (user_id, amount_idr, tokens, status, reference_id)
 		VALUES ($1, 10000, 500, 'pending', 'topup-test-1')`, userID); err != nil {
