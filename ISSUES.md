@@ -253,6 +253,13 @@ Cakupan baru sejak audit 2026-10-29: metering `token_usage`, kuota mingguan per 
 - **What:** Satu baris per panggilan LLM tanpa sweep — tabel tumbuh tanpa batas (performa query kuota jangka panjang).
 - **Fix:** Sweep harian `TOKEN_USAGE_RETENTION` (default 180 hari, 0 = selamanya). Saldo PAYG derivatif dari riwayat, jadi sweep **melipat overflow minggu lama ke saldo tersimpan sebelum menghapus** (hanya minggu yang sudah lewat penuh, batas per plan), sehingga saldo efektif tidak berubah saat meter dipangkas. Migrasi 0016 ikut menjatuhkan kolom `email_account_id` yang tak pernah terisi.
 
+### Q-17 · Medium — Dua sweep baru gagal diam-diam karena SQL tidak valid — ✅ FIXED
+
+- **Where:** `apps/server/internal/repositories/token.go` (`ExpireStaleTopups`, `FoldOldOverflow`)
+- **What:** `ExpireStaleTopups` memakai placeholder `$2`/`$3` tanpa `$1` (42P18), dan `CASE ... THEN $3 ELSE $2 END` di `FoldOldOverflow` membuat Postgres menginferensi parameter sebagai `text` (bigint - text, 42883). Keduanya gagal setiap boot dengan hanya log Warn — sweep berjalan tanpa efek tanpa terlihat.
+- **Lesson:** statement sweep tak pernah dieksekusi test (hanya berjalan di boot server dengan data nyata).
+- **Fix:** Penomoran parameter diperbaiki, cast eksplisit `$1::timestamptz` / `$2::bigint` / `$3::bigint`, diverifikasi langsung dengan `PREPARE`/`EXECUTE` ke database.
+
 ### Q-11 · Low — Webhook BorderPay tidak memvalidasi `x-borderpay-mode` — ⏸ ACCEPTED
 
 - **What:** Pembayaran test vs live dibedakan token per proyek di dashboard BorderPay; kebingungan mode menuntut token lintas mode.

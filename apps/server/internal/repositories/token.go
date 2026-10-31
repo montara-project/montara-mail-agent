@@ -187,12 +187,12 @@ func (r *TokenBalanceRepository) FoldOldOverflow(ctx context.Context, cutoff tim
 					SELECT user_id, date_trunc('week', created_at AT TIME ZONE 'UTC') AS wk,
 						SUM(input_tokens + output_tokens) AS used
 					FROM token_usage
-					WHERE date_trunc('week', created_at AT TIME ZONE 'UTC') < date_trunc('week', $1 AT TIME ZONE 'UTC')
+					WHERE date_trunc('week', created_at AT TIME ZONE 'UTC') < date_trunc('week', $1::timestamptz AT TIME ZONE 'UTC')
 					GROUP BY 1, 2
 				) w
 				JOIN users u ON u.id = w.user_id
 				CROSS JOIN LATERAL (
-					SELECT CASE WHEN u.plan = 'subscribed' THEN $3 ELSE $2 END AS lim
+					SELECT CASE WHEN u.plan = 'subscribed' THEN $3::bigint ELSE $2::bigint END AS lim
 				) l
 				GROUP BY w.user_id
 			) x
@@ -208,7 +208,7 @@ func (r *TokenBalanceRepository) FoldOldOverflow(ctx context.Context, cutoff tim
 func (r *TokenUsageRepository) DeleteUsageOlderThan(ctx context.Context, cutoff time.Time) (int64, error) {
 	res, err := r.execContext(ctx, `
 		DELETE FROM token_usage
-		WHERE date_trunc('week', created_at AT TIME ZONE 'UTC') < date_trunc('week', $1 AT TIME ZONE 'UTC')`,
+		WHERE date_trunc('week', created_at AT TIME ZONE 'UTC') < date_trunc('week', $1::timestamptz AT TIME ZONE 'UTC')`,
 		cutoff,
 	)
 	if err != nil {
@@ -221,8 +221,8 @@ func (r *TokenUsageRepository) DeleteUsageOlderThan(ctx context.Context, cutoff 
 // BorderPay expires its QRIS in an hour, so these were never paid.
 func (r *TokenTopupRepository) ExpireStaleTopups(ctx context.Context) (int64, error) {
 	res, err := r.execContext(ctx, `
-		UPDATE token_topups SET status = $2
-		WHERE status = $3 AND created_at < now() - interval '24 hours'`,
+		UPDATE token_topups SET status = $1
+		WHERE status = $2 AND created_at < now() - interval '24 hours'`,
 		models.TopupStatusExpired, models.TopupStatusPending,
 	)
 	if err != nil {
