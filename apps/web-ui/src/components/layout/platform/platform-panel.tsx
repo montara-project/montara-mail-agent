@@ -1,8 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
 import { Link, useLocation } from '@tanstack/react-router'
 import { LayoutDashboard, Settings, Sparkles, UserRound } from 'lucide-react'
 
-import UsageBar from '@/components/block/settings/billing/usage-bar'
+import TokenUsageCard from '@/components/block/settings/billing/token-usage-card'
 import OrganizationSwitcher from '@/components/layout/organization/organization-switcher'
 import { Button } from '@/components/ui/button'
 import {
@@ -16,35 +15,13 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
-import { queries } from '@/lib/api/queries'
 import { COMMUNITY } from '@/lib/constants/edition'
-import { formatTokens } from '@/lib/string'
 
 const PLATFORM_ITEMS = [
   { title: 'Dashboard', icon: LayoutDashboard, url: '/dashboard' },
   { title: 'Account', icon: UserRound, url: '/account' },
   { title: 'Control Center', icon: Settings, url: '/settings' },
 ]
-
-/** This week's tokens against the plan's allowance; hidden until they are known. */
-function TokenUsageCard() {
-  const { data: quota } = useQuery(queries.quota.status())
-  if (!quota) return null
-  const limit = quota.limit_tokens
-
-  return (
-    <div className="grid gap-2 rounded-lg border p-3 text-sm">
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="font-medium">Token usage</span>
-        <span className="text-muted-foreground text-xs whitespace-nowrap tabular-nums">
-          {formatTokens(quota.used_tokens)}
-          {limit !== null && ` / ${formatTokens(limit)}`}
-        </span>
-      </div>
-      {limit !== null && <UsageBar used={quota.used_tokens} limit={limit} />}
-    </div>
-  )
-}
 
 /** Second panel of the sidebar-09 shell on the Platform pages. */
 export default function PlatformPanel() {
@@ -82,7 +59,7 @@ export default function PlatformPanel() {
               Subscribe now
             </div>
             <p className="text-muted-foreground text-xs">
-              Plans for teams and heavier use are on the way.
+              Upgrade to Pro for unlimited mailboxes and 100M AI tokens a week.
             </p>
             <Button size="sm" asChild>
               <Link to="/settings/billing">Open billing</Link>

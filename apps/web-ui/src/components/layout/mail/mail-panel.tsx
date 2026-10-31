@@ -1,4 +1,3 @@
-import { Chip } from '@heroui/react/chip'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useSearch, useNavigate } from '@tanstack/react-router'
 import {
@@ -20,6 +19,7 @@ import type { Models } from '@/lib/api/models'
 
 import { ProviderIcon } from '@/components/block/account/connector-list'
 import ComposeSheet from '@/components/block/mail/compose-sheet'
+import TokenUsageCard from '@/components/block/settings/billing/token-usage-card'
 import OrganizationSwitcher from '@/components/layout/organization/organization-switcher'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -34,6 +34,7 @@ import {
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -46,6 +47,7 @@ import {
 import { useActiveOrganization } from '@/hooks/use-active-organization'
 import { useHideEmails } from '@/hooks/use-hide-emails'
 import { queries } from '@/lib/api/queries'
+import { COMMUNITY } from '@/lib/constants/edition'
 import { cn } from '@/lib/utils'
 
 import { IMPORTANCE_LABELS } from './mail-data'
@@ -166,15 +168,14 @@ export function AccountFlag({
   const index = accounts?.findIndex((item) => item.id === account.id) ?? 0
 
   return (
-    <Chip
-      size="sm"
+    <span
       title={mask(account.email)}
-      className={cn('chip--account', className)}
+      className={cn('chip chip--sm chip--account', className)}
       style={{ '--chip-hue': accountHue(index) } as React.CSSProperties}
     >
       <ProviderIcon provider={account.provider} className="size-3.5 bg-transparent" />
-      <Chip.Label>{mask(account.email)}</Chip.Label>
-    </Chip>
+      <span className="chip__label">{mask(account.email)}</span>
+    </span>
   )
 }
 
@@ -449,6 +450,11 @@ export default function MailPanel() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      {!COMMUNITY && (
+        <SidebarFooter className="p-4">
+          <TokenUsageCard />
+        </SidebarFooter>
+      )}
     </Sidebar>
   )
 }
