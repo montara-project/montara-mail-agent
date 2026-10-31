@@ -66,8 +66,22 @@ func testAccountSettings(t *testing.T, call callFunc, cookies func() string, db 
 	if status, out := call(http.MethodGet, oauthCallback, "", nil); status != http.StatusFound || !strings.Contains(cookies(), config.SessionCookieName+"=") {
 		t.Fatalf("oauth callback: %d %v, cookies %q", status, out, cookies())
 	}
-	if status, out := call(http.MethodPost, "/api/v1/auth/token", "", nil, "Cookie", cookies()); status != http.StatusOK || out["access_token"] == nil {
+	session := cookies()
+	if status, out := call(http.MethodPost, "/api/v1/auth/token", "", nil, "Cookie", session); status != http.StatusOK || out["access_token"] == nil {
 		t.Fatalf("trade the oauth session: %d %v", status, out)
+	}
+
+	// A session cookie left in the browser must not stop the real callback from
+	// signing in: it would answer that session as JSON and never redirect. The
+	// made-up code fails at Google or on the way there, both a 400.
+	status, out = call(http.MethodGet, "/api/v1/auth/oauth2/authorize/google?redirect_to=http://localhost:3000/sign-in", "", nil)
+	if status != http.StatusOK || out["auth_url"] == nil {
+		t.Fatalf("oauth authorize: %d %v", status, out)
+	}
+	authURL, _ := url.Parse(out["auth_url"].(string))
+	stateCookies := cookies()
+	if status, out := call(http.MethodGet, "/api/v1/auth/oauth2/callback/google?code=bad&state="+url.QueryEscape(authURL.Query().Get("state")), "", nil, "Cookie", stateCookies+session); status != http.StatusBadRequest {
+		t.Fatalf("oauth callback over a session: %d %v, want 400", status, out)
 	}
 
 	if status, out := call(http.MethodGet, "/api/v1/me/security", token, nil); status != http.StatusOK || data(out)["has_password"] != true || data(out)["has_google"] != false || data(out)["totp_enabled"] != false {
@@ -115,6 +129,7 @@ func testAccountSettings(t *testing.T, call callFunc, cookies func() string, db 
 	pending := cookies()
 	uri, _ := url.Parse(out["totp_uri"].(string))
 	backupCode := out["backup_codes"].([]any)[0].(string)
+	secondBackupCode := out["backup_codes"].([]any)[1].(string)
 	code, err := totpservices.NewTOTPService(6, 30).GenerateCode(uri.Query().Get("secret"), time.Now())
 	if err != nil {
 		t.Fatal(err)
@@ -135,6 +150,10 @@ func testAccountSettings(t *testing.T, call callFunc, cookies func() string, db 
 	// An OAuth2 callback goes no further than the second step either.
 	if status, out := call(http.MethodGet, oauthCallback, "", nil); status != http.StatusFound || strings.Contains(cookies(), config.SessionCookieName+"=") {
 		t.Fatalf("oauth callback with totp: %d %v, cookies %q", status, out, cookies())
+	}
+	// The code from its pending cookie finishes the sign-in, without /token.
+	if status, out := call(http.MethodPost, "/api/v1/auth/totp/verify-backup-code", "", map[string]any{"code": secondBackupCode}, "Cookie", cookies()); status != http.StatusOK || out["access_token"] == nil {
+		t.Fatalf("backup code after oauth: %d %v", status, out)
 	}
 
 	// Now a password alone gets no tokens, only the second step.

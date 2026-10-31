@@ -119,11 +119,18 @@ function loginStep(pickServer: boolean, needsCode: boolean): keyof typeof STEP_D
   return 'password'
 }
 
-export default function LoginForm({ className, ...props }: React.ComponentProps<'div'>) {
+export default function LoginForm({
+  className,
+  codeFirst = false,
+  ...props
+}: React.ComponentProps<'div'> & {
+  /** Start at the code step: Google already vouched for the user. */
+  codeFirst?: boolean
+}) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   // Set once the password was right but the account asks for a code too.
-  const [needsCode, setNeedsCode] = useState(false)
+  const [needsCode, setNeedsCode] = useState(codeFirst)
   // Choosing a server here, since an account on a self-hosted one can't reach settings first.
   const [pickServer, setPickServer] = useState(false)
   // Stays set on success: the browser leaves for Google's consent screen.

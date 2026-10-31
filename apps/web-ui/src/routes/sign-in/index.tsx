@@ -10,23 +10,26 @@ import { redirectIfAuthenticated } from '@/lib/auth/handler'
 export const Route = createFileRoute('/sign-in/')({
   // via=google is the address Google's callback returns the browser to (see
   // google-auth.ts): the sign-in page then trades the fresh session cookie
-  // for a token pair.
-  validateSearch: (search: Record<string, unknown>): { via?: string } => ({
+  // for a token pair. The API adds totp=1 for a user with two-factor sign-in,
+  // who has no session yet: the code step comes first and returns the tokens.
+  validateSearch: (search: Record<string, unknown>): { via?: string; totp?: number } => ({
     via: typeof search.via === 'string' ? search.via : undefined,
+    totp: search.totp === 1 ? 1 : undefined,
   }),
   beforeLoad: () => redirectIfAuthenticated('/dashboard'),
   component: RouteComponent,
 })
 
 function RouteComponent() {
-  const { via } = Route.useSearch()
+  const { via, totp } = Route.useSearch()
+  const needsCode = via === 'google' && totp === 1
   const router = useRouter()
   const [exchanging, setExchanging] = useState(false)
   // Once per visit: a failed exchange is not retried on every render.
   const attempted = useRef(false)
 
   useEffect(() => {
-    if (via !== 'google' || attempted.current) return
+    if (via !== 'google' || needsCode || attempted.current) return
     attempted.current = true
     setExchanging(true)
 
@@ -41,7 +44,7 @@ function RouteComponent() {
         toast.error("Google sign-in didn't finish. Try again, or log in with your email.")
       })
       .finally(() => setExchanging(false))
-  }, [via, router])
+  }, [via, needsCode, router])
 
   return (
     <main className="bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
@@ -52,7 +55,7 @@ function RouteComponent() {
             <p className="text-muted-foreground text-sm">Finishing Google sign-in…</p>
           </div>
         ) : (
-          <LoginForm />
+          <LoginForm codeFirst={needsCode} />
         )}
       </div>
     </main>

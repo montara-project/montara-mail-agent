@@ -62,6 +62,9 @@ func TestIntegration(t *testing.T) {
 			BaseURL:      "http://localhost:8080",
 			EmailFrom:    "noreply@example.com",
 			ResendAPIKey: "re_test",
+			// Turns the OAuth2 routes on; no test finishes a real Google sign-in.
+			GoogleClientID:     "test-client",
+			GoogleClientSecret: "test-secret",
 		},
 	}
 

@@ -82,9 +82,14 @@ var authRouteMappings = []authulamodels.RouteMapping{
 		Paths: []string{
 			"POST:/email-password/sign-in",
 			"/magic-link/*",
-			"/oauth2/*",
 		},
 		Plugins: []string{sessionAuthOptional, totpIntercept},
+	},
+	// No session lookup: with a session cookie in the browser, the callback
+	// answers that session as JSON instead of signing in and redirecting.
+	{
+		Paths:   []string{"/oauth2/*"},
+		Plugins: []string{totpIntercept},
 	},
 	{
 		Paths: []string{
@@ -274,6 +279,22 @@ func (i tokenIssuer) issue(reqCtx *authulamodels.RequestContext) error {
 
 	reqCtx.Values[jwtplugintypes.JWTTokenTypeAccess.String()] = pair.AccessToken
 	reqCtx.Values[jwtplugintypes.JWTTokenTypeRefresh.String()] = pair.RefreshToken
+	return nil
+}
+
+// redirectToTOTPStep keeps a sign-in stopped by totp.intercept a redirect, and
+// marks it with totp=1 for the web app, which can't read the HttpOnly pending
+// cookie: it then asks for the code instead of trading a session at /token.
+func redirectToTOTPStep(reqCtx *authulamodels.RequestContext) error {
+	target, err := url.Parse(reqCtx.RedirectURL)
+	if err != nil {
+		return err
+	}
+	query := target.Query()
+	query.Set("totp", "1")
+	target.RawQuery = query.Encode()
+	reqCtx.RedirectURL = target.String()
+	reqCtx.ResponseStatus = http.StatusFound
 	return nil
 }
 
@@ -495,17 +516,14 @@ func newAuth(cfg config.Config, mirror func(*authulamodels.User) error, activiti
 	})
 
 	// totp.intercept answers 200, which would turn that redirect into a blank
-	// page on the API. Keep it a redirect, so the web app can say what happened.
+	// page on the API.
 	auth.RegisterHook(authulamodels.Hook{
 		Stage: authulamodels.HookAfter,
 		Matcher: func(reqCtx *authulamodels.RequestContext) bool {
 			return reqCtx.RedirectURL != "" && reqCtx.ResponseStatus == http.StatusOK
 		},
-		Handler: func(reqCtx *authulamodels.RequestContext) error {
-			reqCtx.ResponseStatus = http.StatusFound
-			return nil
-		},
-		Order: 6,
+		Handler: redirectToTOTPStep,
+		Order:   6,
 	})
 
 	// A sign-in repeated while a session is active answers from that session

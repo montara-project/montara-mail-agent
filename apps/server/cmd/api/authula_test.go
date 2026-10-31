@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"net/http"
 	"testing"
 
 	authulamodels "github.com/Authula/authula/models"
@@ -18,6 +19,22 @@ func TestRefuseUnverified(t *testing.T) {
 	}
 	if err := refuseUnverified(context.Background(), &authulamodels.User{EmailVerified: true}); err != nil {
 		t.Errorf("verified user: %v", err)
+	}
+}
+
+func TestRedirectToTOTPStep(t *testing.T) {
+	reqCtx := &authulamodels.RequestContext{
+		RedirectURL:    "http://localhost:3000/sign-in?via=google",
+		ResponseStatus: http.StatusOK,
+	}
+	if err := redirectToTOTPStep(reqCtx); err != nil {
+		t.Fatal(err)
+	}
+	if want := "http://localhost:3000/sign-in?totp=1&via=google"; reqCtx.RedirectURL != want {
+		t.Errorf("redirect: %q, want %q", reqCtx.RedirectURL, want)
+	}
+	if reqCtx.ResponseStatus != http.StatusFound {
+		t.Errorf("status: %d, want %d", reqCtx.ResponseStatus, http.StatusFound)
 	}
 }
 
