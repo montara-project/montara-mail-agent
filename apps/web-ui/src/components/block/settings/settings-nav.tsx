@@ -47,7 +47,6 @@ const SETTINGS_GROUPS: { title: string; items: SettingsItem[] }[] = [
   {
     title: 'Agent tools',
     items: [
-      { title: 'AI Providers', icon: BrainCircuit, url: '/settings/ai-providers' },
       { title: 'Agent Bots', icon: Bot, url: '/settings/agent-bots' },
       { title: 'Tools', icon: Wrench },
       { title: 'Skills', icon: Wand2, url: '/settings/skills' },
@@ -64,7 +63,10 @@ const SETTINGS_GROUPS: { title: string; items: SettingsItem[] }[] = [
 /** Server-wide settings, shown to a super user only, before the danger zone. */
 const PLATFORM_GROUP: { title: string; items: SettingsItem[] } = {
   title: 'Platform',
-  items: [{ title: 'IP Block', icon: ShieldBan, url: '/settings/ip-blocks' }],
+  items: [
+    { title: 'AI Providers', icon: BrainCircuit, url: '/settings/ai-providers' },
+    { title: 'IP Block', icon: ShieldBan, url: '/settings/ip-blocks' },
+  ],
 }
 
 /** The settings index: each group a SectionCard of rows that open their page. */
