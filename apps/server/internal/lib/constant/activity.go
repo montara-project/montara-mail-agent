@@ -13,6 +13,7 @@ const (
 	ActivityOrganizationPurged      = "organization.purged"
 	ActivityEmailAccountConnected   = "email_account.connected"
 	ActivityEmailAccountDisonnected = "email_account.disconnected"
+	ActivityEmailAccountMoved       = "email_account.moved"
 	ActivityMailSent                = "mail.sent"
 	ActivityMailReplied             = "mail.replied"
 	ActivityMailForwarded           = "mail.forwarded"

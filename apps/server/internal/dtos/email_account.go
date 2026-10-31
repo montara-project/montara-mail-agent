@@ -30,3 +30,14 @@ func (dto EmailAccountBody) Validate(v *validator.MapValidator) {
 	v.Field("smtp_host").String().MaxLen(253).Regex(`^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$`)
 	v.Field("smtp_port").IntRange(1, 65535)
 }
+
+// EmailAccountMoveBody names the organization an email account transfers to;
+// the caller must be a member of both organizations, so the account never
+// changes hands between users.
+type EmailAccountMoveBody struct {
+	OrganizationID string `json:"organization_id"`
+}
+
+func (dto EmailAccountMoveBody) Validate(v *validator.MapValidator) {
+	v.Field("organization_id").Required().Regex(uuidPattern)
+}

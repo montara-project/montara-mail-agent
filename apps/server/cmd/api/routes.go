@@ -140,6 +140,7 @@ func routes(r *fiber.App, app *app.Application) {
 	emailAccounts.Post("/oauth/:provider/finish", slow, h.EmailAccount.OAuthFinish)
 	emailAccounts.Get("/:id/mails", h.EmailAccount.Mails)
 	emailAccounts.Delete("/:id", idempotent, h.EmailAccount.Delete)
+	emailAccounts.Post("/:id/transfer", idempotent, h.EmailAccount.Transfer)
 	emailAccounts.Post("/:id/sync", slow, h.EmailAccount.Sync)
 	emailAccounts.Post("/:id/send", slow, idempotent, h.EmailAccount.Send)
 
