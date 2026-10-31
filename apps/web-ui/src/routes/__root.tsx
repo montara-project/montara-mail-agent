@@ -35,7 +35,8 @@ const RootLayout = () => (
     {import.meta.env.DEV && (
       <TanStackDevtools
         config={{
-          position: 'bottom-right',
+          // The mail page's floating assistant button holds the bottom right.
+          position: 'bottom-left',
         }}
         plugins={[
           {

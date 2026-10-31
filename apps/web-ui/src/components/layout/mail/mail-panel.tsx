@@ -346,6 +346,7 @@ export default function MailPanel() {
   const [composing, setComposing] = React.useState(false)
   const navigate = useNavigate()
   const { agent } = useSearch({ strict: false })
+  const position = useAgentPanelPosition()
   // The open account's counts, or in the global inbox every account's.
   const counted = split === false ? (accounts ?? []) : account ? [account] : []
   const badges: Partial<Record<Models.MailFolder, number>> = {
@@ -367,19 +368,22 @@ export default function MailPanel() {
             <SquarePen />
             Compose
           </Button>
-          <Button
-            variant={agent ? 'secondary' : 'outline'}
-            aria-label="Toggle AI assistant"
-            title="AI assistant"
-            onClick={() =>
-              navigate({
-                to: '/mail',
-                search: (prev: Record<string, unknown>) => ({ ...prev, agent: !agent }),
-              })
-            }
-          >
-            <Sparkles />
-          </Button>
+          {/* Floating mode has its own button in the page's corner. */}
+          {position !== 'floating' && (
+            <Button
+              variant={agent ? 'secondary' : 'outline'}
+              aria-label="Toggle AI assistant"
+              title="AI assistant"
+              onClick={() =>
+                navigate({
+                  to: '/mail',
+                  search: (prev: Record<string, unknown>) => ({ ...prev, agent: !agent }),
+                })
+              }
+            >
+              <Sparkles />
+            </Button>
+          )}
         </div>
         <ComposeSheet
           open={composing}

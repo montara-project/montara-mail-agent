@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Sparkles } from 'lucide-react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import React from 'react'
 
 import MailList, { DEFAULT_PAGE_SIZE, pageSize } from '@/components/block/mail/mail-list'
@@ -11,6 +13,7 @@ import {
   useMailAccounts,
   useSplitInbox,
 } from '@/components/layout/mail/mail-panel'
+import { Button } from '@/components/ui/button'
 import { useActiveOrganization } from '@/hooks/use-active-organization'
 import { queries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
@@ -38,7 +41,7 @@ const AGENT_PANE = 'hidden w-80 shrink-0 border-l lg:flex xl:w-96'
 // Floating mode (Control Center > Agent tools > AI Assistant Panel) pins the
 // same panel over the page's bottom right corner instead of the third pane.
 const AGENT_FLOAT =
-  'fixed right-4 bottom-4 z-50 hidden h-[min(38rem,calc(100svh-5rem))] w-96 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border bg-card shadow-lg lg:block'
+  'fixed right-7 bottom-7 z-50 hidden h-[min(38rem,calc(100svh-6rem))] w-96 max-w-[calc(100vw-3.5rem)] overflow-hidden rounded-xl border bg-card shadow-lg lg:block'
 
 const str = (value: unknown) => (typeof value === 'string' && value !== '' ? value : undefined)
 
@@ -88,8 +91,20 @@ function RouteComponent() {
   const agentAccountId = split === false ? globalAccountId : account?.id
 
   const navigate = useNavigate()
-  const closeAgent = () => navigate({ to: '/mail', search: (s) => ({ ...s, agent: undefined }) })
+  const floatingButton = React.useRef<HTMLButtonElement>(null)
+  const closeAgent = async () => {
+    await navigate({
+      to: '/mail',
+      search: (s) => ({ ...s, agent: undefined }),
+    })
+    floatingButton.current?.focus()
+  }
   const floating = position === 'floating'
+  const reduceMotion = useReducedMotion()
+  const floatTransition = {
+    duration: reduceMotion ? 0 : 0.25,
+    ease: [0.2, 0, 0, 1] as const,
+  }
 
   // One panel, mounted where its preference puts it: the third pane beside the
   // reader, or floating over the page's bottom right corner. The empty pane
@@ -124,7 +139,48 @@ function RouteComponent() {
         )}
         {!floating && panel}
       </div>
-      {floating && panel && <div className={AGENT_FLOAT}>{panel}</div>}
+      {floating && (
+        <>
+          {/* Stays mounted under the panel, so closing can return the focus to it. */}
+          <motion.div
+            className="fixed right-7 bottom-7 z-40 hidden lg:block"
+            initial={false}
+            animate={agent ? { opacity: 0, scale: 0.6 } : { opacity: 1, scale: 1 }}
+            transition={floatTransition}
+            inert={agent}
+          >
+            <Button
+              ref={floatingButton}
+              className="size-14 rounded-full shadow-lg"
+              aria-label="Open AI assistant"
+              title="AI assistant"
+              onClick={() =>
+                navigate({
+                  to: '/mail',
+                  search: (s) => ({ ...s, agent: true }),
+                })
+              }
+            >
+              <Sparkles className="size-5" />
+            </Button>
+          </motion.div>
+          <AnimatePresence initial={false}>
+            {panel && (
+              <motion.div
+                key="agent"
+                className={AGENT_FLOAT}
+                style={{ transformOrigin: 'bottom right' }}
+                initial={{ opacity: 0, scale: 0.6 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.6 }}
+                transition={floatTransition}
+              >
+                {panel}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </>
+      )}
     </>
   )
 }
