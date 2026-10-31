@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   govulncheck:
-    runs-on: ubuntu-latest
+    runs-on: instabox-medium
     steps:
       - uses: actions/checkout@v7
 
@@ -36,7 +36,7 @@ jobs:
           govulncheck ./...
 
   npm-audit:
-    runs-on: ubuntu-latest
+    runs-on: instabox-medium
     steps:
       - uses: actions/checkout@v7
 
