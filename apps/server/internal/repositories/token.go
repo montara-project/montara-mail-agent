@@ -170,15 +170,24 @@ func (r *TokenTopupRepository) ByIDForUser(ctx context.Context, id, userID uuid.
 	))
 }
 
-// ListByUser returns userID's top-ups, newest first.
-func (r *TokenTopupRepository) ListByUser(ctx context.Context, userID uuid.UUID, limit int) ([]models.TokenTopup, error) {
+// ListByUser returns one page of userID's top-ups, newest first; the id keeps
+// the order stable across pages when two share a timestamp.
+func (r *TokenTopupRepository) ListByUser(ctx context.Context, userID uuid.UUID, offset, limit int) ([]models.TokenTopup, error) {
 	rows, err := r.queryContext(ctx, `
-		SELECT `+tokenTopupColumns+` FROM token_topups WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2`,
-		userID, limit)
+		SELECT `+tokenTopupColumns+` FROM token_topups WHERE user_id = $1
+		ORDER BY created_at DESC, id DESC OFFSET $2 LIMIT $3`,
+		userID, offset, limit)
 	if err != nil {
 		return nil, err
 	}
 	return collectRows(rows, scanTokenTopup)
+}
+
+// CountByUser returns how many top-ups userID has.
+func (r *TokenTopupRepository) CountByUser(ctx context.Context, userID uuid.UUID) (int, error) {
+	var total int
+	err := r.queryRowContext(ctx, `SELECT count(*) FROM token_topups WHERE user_id = $1`, userID).Scan(&total)
+	return total, err
 }
 
 // FoldOldOverflow moves the overflow each fully-elapsed week carried past the

@@ -1,4 +1,4 @@
-import { mutationOptions, queryOptions } from '@tanstack/react-query'
+import { keepPreviousData, mutationOptions, queryOptions } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
 
 import { getQueryClient } from '@/lib/providers/react-query'
@@ -16,13 +16,15 @@ const status = () =>
     },
   })
 
-const topups = () =>
+/** One page of the top-up history; the last page stays while the next loads. */
+const topups = (params: { offset: number; limit: number }) =>
   queryOptions({
-    queryKey: [QUOTA_QUERY_KEY, 'topups'],
+    queryKey: [QUOTA_QUERY_KEY, 'topups', params],
     queryFn: async () => {
-      const res = await services.quota.listTopups()
-      return res.data.data
+      const res = await services.quota.listTopups(params)
+      return res.data
     },
+    placeholderData: keepPreviousData,
   })
 
 const topup = (id: string) =>

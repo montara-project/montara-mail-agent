@@ -179,17 +179,26 @@ func (h *quotaHandler) GetTopup(c fiber.Ctx) error {
 	return dtos.OK(c, t)
 }
 
-// ListTopups returns the signed-in user's top-up history.
+// ListTopups returns one page of the signed-in user's top-up history.
 func (h *quotaHandler) ListTopups(c fiber.Ctx) error {
 	uid, err := lib.ContextGetUID(c)
 	if err != nil {
 		return apperr.ErrUnauthorized
 	}
-	topups, err := h.app.Repositories.TokenTopup.ListByUser(c.Context(), uid, 50)
+	var q dtos.ListQuery
+	if err := lib.ValidateRequestQuery(c, &q); err != nil {
+		return err
+	}
+	q.Clamp()
+	topups, err := h.app.Repositories.TokenTopup.ListByUser(c.Context(), uid, q.Offset, q.Limit)
 	if err != nil {
 		return err
 	}
-	return dtos.OK(c, topups)
+	total, err := h.app.Repositories.TokenTopup.CountByUser(c.Context(), uid)
+	if err != nil {
+		return err
+	}
+	return dtos.List(c, topups, dtos.ListMeta(total, q.Offset, q.Limit))
 }
 
 // borderpayWebhook is BorderPay's push on a status change: verify the shared

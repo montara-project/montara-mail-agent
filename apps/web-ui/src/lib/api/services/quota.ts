@@ -6,7 +6,7 @@ const path = '/api/v1/me/quota'
 
 const resources = (): QuotaResources => ({
   status: () => api.get(path),
-  listTopups: () => api.get(`${path}/topups`),
+  listTopups: (params) => api.get(`${path}/topups`, { params }),
   topup: (id: string) => api.get(`${path}/topups/${id}`),
   createTopup: () => api.post(`${path}/topups`, {}),
 })

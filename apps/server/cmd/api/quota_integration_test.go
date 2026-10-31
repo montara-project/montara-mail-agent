@@ -63,6 +63,27 @@ func testTokenQuota(t *testing.T, call callFunc, application *app.Application, d
 		t.Fatal(err)
 	}
 	_ = pending
+
+	// The history pages: 12 top-ups, newest first, 10 to a page by default.
+	if _, err := db.Exec(`INSERT INTO token_topups (user_id, amount_idr, tokens, status, reference_id)
+		SELECT $1, 10000, 500, 'expired', 'topup-page-' || n FROM generate_series(1, 11) n`, userID); err != nil {
+		t.Fatal(err)
+	}
+	topupPage := func(query string) (rows int, total any) {
+		t.Helper()
+		status, out := call(http.MethodGet, "/api/v1/me/quota/topups"+query, userToken, nil)
+		list, _ := out["data"].([]any)
+		if status != http.StatusOK {
+			t.Fatalf("top-ups%s: %d %v", query, status, out)
+		}
+		return len(list), out["metadata"].(map[string]any)["total"]
+	}
+	if rows, total := topupPage(""); rows != 10 || total != float64(12) {
+		t.Fatalf("first page: %d rows of %v, want 10 of 12", rows, total)
+	}
+	if rows, total := topupPage("?offset=10&limit=5"); rows != 2 || total != float64(12) {
+		t.Fatalf("last page: %d rows of %v, want 2 of 12", rows, total)
+	}
 	if status, _ := call(http.MethodPost, "/api/v1/webhooks/borderpay", "", map[string]any{
 		"event": "payment.paid", "data": map[string]any{"reference_id": "topup-test-1", "status": "paid"},
 	}); status != http.StatusUnauthorized {
