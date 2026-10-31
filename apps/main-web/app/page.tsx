@@ -271,7 +271,7 @@ const jsonLd = {
       name: SITE_NAME,
       url: SITE_URL,
       logo: `${SITE_URL}/favicon/android-chrome-512x512.png`,
-      email: 'support@montaramail.web.id',
+      email: 'hello@montaramail.web.id',
     },
     { '@type': 'WebSite', '@id': `${SITE_URL}/#website`, name: SITE_NAME, url: SITE_URL },
     {

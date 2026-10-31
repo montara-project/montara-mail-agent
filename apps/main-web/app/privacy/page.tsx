@@ -7,13 +7,13 @@ export const metadata = pageMetadata({
     'What Montara Mail stores when you connect your inboxes, what it sends to your AI model, who else handles your data, and how to remove it.',
 })
 
-const email = 'support@montaramail.web.id'
+const email = 'hello@montaramail.web.id'
 
 export default function PrivacyPage() {
   return (
     <article className="mx-auto max-w-3xl space-y-4 px-4 py-16 [&_h2]:mt-8 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:text-muted-foreground [&_p]:text-muted-foreground [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-5">
       <h1 className="text-3xl font-bold tracking-tight">Privacy Policy</h1>
-      <p>Last updated: October 27, 2026</p>
+      <p>Last updated: October 31, 2026</p>
 
       <p>
         This policy covers the hosted Montara Mail service at app.montaramail.web.id and this
@@ -41,11 +41,17 @@ export default function PrivacyPage() {
         </li>
         <li>
           <strong>What the AI produces:</strong> importance labels, summaries, drafted replies, and
-          your conversations with the assistant.
+          your conversations with the assistant, including the bots and skills you configure for it
+          (their instructions, memory, and style).
         </li>
         <li>
           <strong>Organization settings:</strong> the AI model your organization connects, including
           its API key, which is encrypted.
+        </li>
+        <li>
+          <strong>Assistant integrations:</strong> the MCP servers you connect for the assistant:
+          their name, endpoint or command, tool list, and any secrets you enter, which are
+          encrypted.
         </li>
         <li>
           <strong>Activity log:</strong> sign-ins and changes to your account and organization, with
@@ -72,6 +78,11 @@ export default function PrivacyPage() {
           <strong>Your organization&apos;s AI provider</strong>, as described above.
         </li>
         <li>
+          <strong>Integration endpoints you connect</strong> (MCP servers): when the assistant needs
+          a tool on one of them to complete your request, it sends that server the relevant message
+          content.
+        </li>
+        <li>
           <strong>Resend</strong>, which delivers our account emails: sign-up verification, sign-in
           links, and password resets.
         </li>
@@ -87,15 +98,32 @@ export default function PrivacyPage() {
 
       <h2>Google user data</h2>
       <p>
-        Montara Mail&apos;s use and transfer of information received from Google APIs adheres to the{' '}
+        Montara Mail connects to Google in two ways. When you sign in with Google, we receive your
+        Google name, email address, and profile picture. When you connect a Gmail mailbox, we
+        request the full Gmail scope (https://mail.google.com/) to sync your messages and send mail
+        on your behalf over Gmail&apos;s IMAP and SMTP. The OAuth token is stored encrypted and is
+        used only to show, sort, summarize, and send your mail inside Montara Mail — never for
+        advertising and never to train AI models.
+      </p>
+      <p>
+        Mail content is sent to the AI provider your organization chooses, and to the MCP servers
+        you connect, only as needed to provide these features. Montara Mail&apos;s use and transfer
+        of information received from Google APIs adheres to the{' '}
         <a
           href="https://developers.google.com/terms/api-services-user-data-policy"
           className="underline"
         >
           Google API Services User Data Policy
         </a>
-        , including the Limited Use requirements. We use Gmail data only to show, sort, summarize,
-        and send your mail inside Montara Mail.
+        , including the Limited Use requirements.
+      </p>
+      <p>
+        You can disconnect a Gmail mailbox in Montara Mail at any time, which removes its synced
+        mail from Montara Mail, or revoke access entirely under{' '}
+        <a href="https://myaccount.google.com/permissions" className="underline">
+          Google Account › Third-party apps with account access
+        </a>
+        .
       </p>
 
       <h2>Cookies and browser storage</h2>

@@ -9,13 +9,13 @@ export const metadata = pageMetadata({
     'The terms for the hosted Montara Mail service: your account and organization, connected mailboxes, AI drafts you approve, your AI provider, and acceptable use.',
 })
 
-const email = 'support@montaramail.web.id'
+const email = 'hello@montaramail.web.id'
 
 export default function TermsPage() {
   return (
     <article className="mx-auto max-w-3xl space-y-4 px-4 py-16 [&_h2]:mt-8 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:text-muted-foreground [&_p]:text-muted-foreground [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-5">
       <h1 className="text-3xl font-bold tracking-tight">Terms of Service</h1>
-      <p>Last updated: October 27, 2026</p>
+      <p>Last updated: October 31, 2026</p>
 
       <p>
         These terms cover the hosted Montara Mail service at app.montaramail.web.id. By using it you
