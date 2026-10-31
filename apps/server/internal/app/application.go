@@ -18,8 +18,8 @@ import (
 	"montara-mail-agent/server/internal/lib/constant"
 	"montara-mail-agent/server/internal/lib/llm"
 	"montara-mail-agent/server/internal/lib/mailoauth"
-	"montara-mail-agent/server/internal/models"
 	"montara-mail-agent/server/internal/lib/period"
+	"montara-mail-agent/server/internal/models"
 	"montara-mail-agent/server/internal/repositories"
 )
 
@@ -171,7 +171,7 @@ func (a *Application) checkQuota(ctx context.Context, userID uuid.UUID) error {
 	if used < limit {
 		return nil
 	}
-	balance, err := a.Repositories.TokenBalance.Balance(ctx, userID)
+	balance, err := a.Repositories.TokenBalance.Balance(ctx, userID, limit)
 	if err != nil {
 		return err
 	}

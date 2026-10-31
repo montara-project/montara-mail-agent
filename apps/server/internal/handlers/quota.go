@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -34,7 +35,6 @@ type quotaHandler struct{ app *app.Application }
 // when the plan is subscribed: the app shows that as Unlimited.
 type quotaStatus struct {
 	Plan        string `json:"plan"`
-	WeekStart   string `json:"week_start"`
 	UsedTokens  int64  `json:"used_tokens"`
 	LimitTokens *int64 `json:"limit_tokens"`
 	PaygTokens  int64  `json:"payg_balance_tokens"`
@@ -61,24 +61,21 @@ func (h *quotaHandler) Status(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	balance, err := h.app.Repositories.TokenBalance.Balance(ctx, uid)
+	limit := h.app.Config.Quota.FreeWeeklyTokens
+	if plan == constant.PlanSubscribed {
+		limit = h.app.Config.Quota.SubscribedWeeklyTokens
+	}
+	balance, err := h.app.Repositories.TokenBalance.Balance(ctx, uid, limit)
 	if err != nil {
 		return err
 	}
 
-	out := quotaStatus{Plan: plan, WeekStart: weekStart.Format(time.RFC3339), UsedTokens: used, PaygTokens: balance}
+	out := quotaStatus{Plan: plan, UsedTokens: used, PaygTokens: balance}
 	if plan != constant.PlanSubscribed && role != constant.RoleSuperUser {
-		limit := h.app.Config.Quota.FreeWeeklyTokens
-		if plan == constant.PlanSubscribed {
-			limit = h.app.Config.Quota.SubscribedWeeklyTokens
-		}
 		out.LimitTokens = &limit
 	}
 	return dtos.OK(c, out)
 }
-
-// createTopupBody is POST /me/quota/topups' payload; the package is fixed.
-type createTopupBody struct{}
 
 // topupView is a created top-up: everything the app needs to take the user
 // to BorderPay's checkout.
@@ -88,8 +85,6 @@ type topupView struct {
 	AmountIDR int    `json:"amount_idr"`
 	Tokens    int64  `json:"tokens"`
 	PayURL    string `json:"pay_url"`
-	QRString  string `json:"qr_string"`
-	ExpiresAt string `json:"expires_at"`
 }
 
 // CreateTopup starts one pay-as-you-go purchase: 10M tokens for Rp10,000
@@ -112,14 +107,14 @@ func (h *quotaHandler) CreateTopup(c fiber.Ctx) error {
 		return err
 	}
 
-	payURL, qr, expiresAt, err := h.createBorderPayPayment(c.Context(), t)
+	payURL, _, _, err := h.createBorderPayPayment(c.Context(), t)
 	if err != nil {
 		return err
 	}
 	if err := h.app.Repositories.TokenTopup.SetPayment(c.Context(), id, payURL); err != nil {
 		return err
 	}
-	return dtos.OK(c, topupView{ID: id.String(), Status: models.TopupStatusPending, AmountIDR: topupAmountIDR, Tokens: topupTokens, PayURL: payURL, QRString: qr, ExpiresAt: expiresAt})
+	return dtos.OK(c, topupView{ID: id.String(), Status: models.TopupStatusPending, AmountIDR: topupAmountIDR, Tokens: topupTokens, PayURL: payURL})
 }
 
 // createBorderPayPayment calls BorderPay's create-payment API: QRIS, the
@@ -194,7 +189,10 @@ func (body borderpayWebhookBody) Validate(v *validator.MapValidator) {
 }
 
 func (h *quotaHandler) BorderPayWebhook(c fiber.Ctx) error {
-	if h.app.Config.BorderPay.WebhookToken == "" || c.Get("x-borderpay-token") != h.app.Config.BorderPay.WebhookToken {
+	// The shared token compares in constant time; an unconfigured token
+	// refuses everything, so an unset endpoint can't be tricked open.
+	if h.app.Config.BorderPay.WebhookToken == "" ||
+		subtle.ConstantTimeCompare([]byte(c.Get("x-borderpay-token")), []byte(h.app.Config.BorderPay.WebhookToken)) != 1 {
 		return apperr.ErrUnauthorized
 	}
 	var body borderpayWebhookBody
@@ -205,17 +203,11 @@ func (h *quotaHandler) BorderPayWebhook(c fiber.Ctx) error {
 		return dtos.Message(c, fiber.StatusOK, "ignored")
 	}
 
-	t, transitioned, err := h.app.Repositories.TokenTopup.MarkPaidIfPending(c.Context(), body.Data.ReferenceID)
-	if err != nil {
+	if _, transitioned, err := h.app.Repositories.TokenTopup.MarkPaidAndCredit(c.Context(), body.Data.ReferenceID); err != nil {
 		return err
-	}
-	if !transitioned {
-		// A replay: the balance was credited the first time.
+	} else if !transitioned {
+		// A replay: the status flip and the credit committed together once.
 		return dtos.Message(c, fiber.StatusOK, "already processed")
-	}
-	if err := h.app.Repositories.TokenBalance.AddTokens(c.Context(), t.UserID, t.Tokens); err != nil {
-		h.app.Logger.Error("paid top-up could not be credited", "reference", t.ReferenceID, "error", err)
-		return err
 	}
 	return dtos.Message(c, fiber.StatusOK, "credited")
 }

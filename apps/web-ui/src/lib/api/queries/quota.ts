@@ -20,7 +20,7 @@ const topups = () =>
     queryKey: [QUOTA_QUERY_KEY, 'topups'],
     queryFn: async () => {
       const res = await services.quota.listTopups()
-      return res.data
+      return res.data.data
     },
   })
 

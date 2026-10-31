@@ -72,6 +72,7 @@ func parseFlag(cfg *config.Config) {
 
 	// Activity log
 	flag.DurationVar(&cfg.App.ActivityLogRetention, "activity-log-retention", envParse("ACTIVITY_LOG_RETENTION", 365*24*time.Hour, time.ParseDuration), "How long activity log entries are kept before the daily sweep deletes them (0 keeps them forever)")
+	flag.DurationVar(&cfg.App.TokenUsageRetention, "token-usage-retention", envParse("TOKEN_USAGE_RETENTION", 180*24*time.Hour, time.ParseDuration), "How long token usage rows are kept before the daily sweep folds their overflow into balances and deletes them (0 keeps them forever)")
 
 	// Agent
 	flag.DurationVar(&cfg.App.AgentAutoDraftInterval, "agent-autodraft-interval", envParse("AGENT_AUTO_DRAFT_INTERVAL", time.Hour, time.ParseDuration), "How often the agent drafts replies for important mail (0 disables the automation)")

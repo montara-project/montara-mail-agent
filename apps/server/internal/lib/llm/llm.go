@@ -183,7 +183,6 @@ func (c anthropicClient) Complete(ctx context.Context, system, prompt string, ma
 	if resp.StopReason == anthropic.StopReasonRefusal {
 		return "", ErrRefused
 	}
-	c.onUsageReport("complete", Usage{Input: int(resp.Usage.InputTokens), Output: int(resp.Usage.OutputTokens)})
 
 	var text strings.Builder
 	for _, block := range resp.Content {

@@ -55,6 +55,7 @@ func serve(app *app.Application) error {
 		go mailagent.AutoDraftLoop(ctx, app, every, app.Config.App.AgentAutoDraftDailyCap)
 	}
 	go sweepActivityLogs(ctx, app)
+	go sweepTokenUsage(ctx, app)
 	go app.IPBlocks.Run(ctx)
 
 	app.Logger.Info("starting server", "port", app.Config.App.Port, "env", app.Config.App.Env, "auth", authBasePath)
@@ -73,6 +74,38 @@ func serve(app *app.Application) error {
 			return nil
 		},
 	})
+}
+
+// sweepTokenUsage runs once a day: it expires top-ups that never got paid,
+// and with a retention configured it folds old weeks' overflow into
+// pay-as-you-go balances before deleting those usage rows, so a user's
+// effective balance never moves when the meter is trimmed.
+func sweepTokenUsage(ctx context.Context, app *app.Application) {
+	expired, err := app.Repositories.TokenTopup.ExpireStaleTopups(ctx)
+	if err != nil {
+		app.Logger.Warn("top-up expiry sweep failed", "error", err)
+	} else if expired > 0 {
+		app.Logger.Info("top-up expiry sweep", "expired", expired)
+	}
+
+	retention := app.Config.App.TokenUsageRetention
+	if retention <= 0 {
+		return
+	}
+	cutoff := time.Now().Add(-retention)
+	if err := app.Repositories.TokenBalance.FoldOldOverflow(ctx, cutoff,
+		app.Config.Quota.FreeWeeklyTokens, app.Config.Quota.SubscribedWeeklyTokens); err != nil {
+		app.Logger.Warn("token usage fold failed", "error", err)
+		return
+	}
+	deleted, err := app.Repositories.TokenUsage.DeleteUsageOlderThan(ctx, cutoff)
+	if err != nil {
+		app.Logger.Warn("token usage retention sweep failed", "error", err)
+		return
+	}
+	if deleted > 0 {
+		app.Logger.Info("token usage retention sweep", "deleted", deleted, "retention", retention)
+	}
 }
 
 // sweepActivityLogs deletes activity log entries older than the configured

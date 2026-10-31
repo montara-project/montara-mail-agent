@@ -16,7 +16,7 @@ const (
 	KindNotFound        Kind = http.StatusNotFound
 	KindConflict        Kind = http.StatusConflict
 	KindPaymentRequired Kind = http.StatusPaymentRequired
- KindTooManyRequests Kind = http.StatusTooManyRequests
+	KindTooManyRequests Kind = http.StatusTooManyRequests
 	KindInternal        Kind = http.StatusInternalServerError
 	KindBadGateway      Kind = http.StatusBadGateway
 	KindUnavailable     Kind = http.StatusServiceUnavailable

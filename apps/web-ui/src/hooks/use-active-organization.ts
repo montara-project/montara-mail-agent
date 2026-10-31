@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useSyncExternalStore } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
 
 import { queries } from '@/lib/api/queries'
 import { getQueryClient } from '@/lib/providers/react-query'
@@ -37,6 +37,11 @@ function readPick(userId: string) {
 export function setActiveOrganizationId(id: string) {
   const userId = signedInUserId()
   if (!userId) return
+  setPick(userId, id)
+}
+
+/** Stores one user's pick and tells every listener. */
+function setPick(userId: string, id: string) {
   picks.set(userId, id)
   try {
     localStorage.setItem(storageKey(userId), id)
@@ -78,6 +83,26 @@ export function useActiveOrganization() {
   )
   const organizations = data?.data ?? []
   const organization = organizations.find((org) => org.id === id) ?? organizations[0]
+
+  // One-time migration: the shared pre-per-user key moves to this user only
+  // when it names one of their organizations, and goes away either way.
+  const memberKey = organizations.map((org) => org.id).join(',')
+  useEffect(() => {
+    if (!userId || memberKey === '') return
+    let legacy: string | null = null
+    try {
+      legacy = localStorage.getItem(LEGACY_KEY)
+    } catch {
+      return
+    }
+    if (legacy === null) return
+    if (memberKey.split(',').includes(legacy)) setPick(userId, legacy)
+    try {
+      localStorage.removeItem(LEGACY_KEY)
+    } catch {
+      // Ignore.
+    }
+  }, [userId, memberKey])
 
   return { organization, organizations, isPending, isError }
 }

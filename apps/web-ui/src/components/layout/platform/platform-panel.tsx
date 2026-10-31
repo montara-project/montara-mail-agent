@@ -58,7 +58,7 @@ export default function PlatformPanel() {
             Plans for teams and heavier use are on the way.
           </p>
           <Button size="sm" asChild>
-            <Link to="/settings/billing">Subscribe now</Link>
+            <Link to="/settings/billing">Open billing</Link>
           </Button>
         </div>
       </SidebarFooter>

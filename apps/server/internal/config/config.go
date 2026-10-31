@@ -131,6 +131,10 @@ type ConfigApp struct {
 	// AgentAutoDraftDailyCap bounds how many drafts the automation may queue
 	// per organization per day, so a chatty inbox cannot run up the bill.
 	AgentAutoDraftDailyCap int
+	// TokenUsageRetention is how long token usage rows are kept before the
+	// daily sweep folds their overflow into pay-as-you-go balances and
+	// deletes them. 0 keeps the usage forever.
+	TokenUsageRetention time.Duration
 }
 
 type ConfigDB struct {

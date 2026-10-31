@@ -49,8 +49,9 @@ func testTokenQuota(t *testing.T, call callFunc, application *app.Application, d
 	if err := db.QueryRow(`SELECT id FROM mails WHERE email_account_id = $1 LIMIT 1`, account.ID).Scan(&mailID); err != nil {
 		t.Fatal(err)
 	}
+	// 1200 tokens against the test's 1000 allowance: 200 past it.
 	_, err := db.Exec(`INSERT INTO token_usage (user_id, provider, model, purpose, input_tokens, output_tokens)
-		VALUES ($1, 'openai', 'm', 'complete', 900, 900)`, userID)
+		VALUES ($1, 'openai', 'm', 'complete', 600, 600)`, userID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,10 +82,11 @@ func testTokenQuota(t *testing.T, call callFunc, application *app.Application, d
 		t.Fatalf("webhook paid: %d, want 200", status)
 	}
 
-	// The balance shows, and the AI endpoint passes the quota again (it fails
-	// later on the unreachable mail server instead).
+	// The balance shows what is left after the overflow it covered (500
+	// credited, 200 spent past the allowance), and the AI endpoint passes the
+	// quota again (it fails later on the unreachable mail server instead).
 	status, out = call(http.MethodGet, "/api/v1/me/quota", userToken, nil)
-	if status != http.StatusOK || out["data"].(map[string]any)["payg_balance_tokens"].(float64) != 500 {
+	if status != http.StatusOK || out["data"].(map[string]any)["payg_balance_tokens"].(float64) != 300 {
 		t.Fatalf("balance after the webhook: %d %v", status, out)
 	}
 	if status, _ := call(http.MethodPost, "/api/v1/mails/"+mailID+"/summary", userToken, nil); status == http.StatusPaymentRequired {
@@ -98,7 +100,7 @@ func testTokenQuota(t *testing.T, call callFunc, application *app.Application, d
 		t.Fatalf("webhook replay: %d, want 200", status)
 	}
 	status, out = call(http.MethodGet, "/api/v1/me/quota", userToken, nil)
-	if status != http.StatusOK || out["data"].(map[string]any)["payg_balance_tokens"].(float64) != 500 {
+	if status != http.StatusOK || out["data"].(map[string]any)["payg_balance_tokens"].(float64) != 300 {
 		t.Fatalf("balance after the replay: %d %v", status, out)
 	}
 

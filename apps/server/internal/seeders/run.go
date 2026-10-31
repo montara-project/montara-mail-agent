@@ -11,8 +11,7 @@ import (
 // first. The super user needs a
 // running Authula instance, so the API appends SuperUserSeeder itself.
 func All(db *sql.DB) []Seeder {
-	return []Seeder{
-	}
+	return []Seeder{}
 }
 
 // runSeed executes fn in one transaction, so a seeder either applies

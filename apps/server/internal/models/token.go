@@ -13,7 +13,6 @@ type TokenUsage struct {
 	CreatedAt      time.Time
 	UserID         uuid.UUID
 	OrganizationID *uuid.UUID
-	EmailAccountID *uuid.UUID
 	Provider       string
 	Model          string
 	Purpose        string
@@ -47,13 +46,13 @@ const (
 // TokenTopup is one pay-as-you-go purchase: 10M tokens per Rp10,000, paid
 // through BorderPay and never expiring.
 type TokenTopup struct {
-	ID          uuid.UUID
-	CreatedAt   time.Time
-	UserID      uuid.UUID
-	AmountIDR   int
-	Tokens      int64
-	Status      string
-	ReferenceID string
-	PayURL      string
-	PaidAt      *time.Time
+	ID          uuid.UUID  `json:"id"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UserID      uuid.UUID  `json:"-"`
+	AmountIDR   int        `json:"amount_idr"`
+	Tokens      int64      `json:"tokens"`
+	Status      string     `json:"status"`
+	ReferenceID string     `json:"reference_id"`
+	PayURL      string     `json:"pay_url"`
+	PaidAt      *time.Time `json:"paid_at"`
 }

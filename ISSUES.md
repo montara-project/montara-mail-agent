@@ -1,6 +1,6 @@
 # ISSUES.md — Codebase Audit
 
-Diperbarui: 2026-10-29 · Branch `dev` · Scope: `apps/server` (Go/Fiber/Authula), `apps/web-ui` (React/Vite), `apps/docs`, `.github/workflows`
+Diperbarui: 2026-10-31 · Branch `dev` · Scope: `apps/server` (Go/Fiber/Authula), `apps/web-ui` (React/Vite), `apps/main-web`, `apps/docs`, `.github/workflows`
 
 Audit sebelumnya (2026-10-25, S-1 s.d. S-8) diringkas di bagian 4. Sejak itu masuk: agent chat + tools + approval, agent bots, skills, MCP server eksternal (termasuk OAuth hosted), endpoint `/mcp` + API key, IP block, scope LLM provider global, dan situs docs. Audit ini mencakup semuanya.
 
@@ -24,8 +24,8 @@ Metode:
 
 - Semua temuan High, Medium dan Low sudah diperbaiki, kecuali yang ditandai **PARSIAL**, **DEFERRED** atau **BY DESIGN**.
 - Verifikasi:
-  - test integrasi Go lulus, termasuk test baru untuk OAuth finish, read-only key, IP block, dan fence prompt;
-  - typecheck + lint web-ui lulus;
+  - test integrasi Go lulus, termasuk test baru untuk OAuth finish, read-only key, IP block, fence prompt, kuota 402, webhook top up (401/paid/replay), scope platform, dan batas mailbox ke-21;
+  - typecheck + lint web-ui dan main-web lulus; build vite lulus;
   - build docs lulus.
 
 ---
@@ -192,6 +192,97 @@ Metode:
 
 ---
 
+### Batch 2026-10-31 (Q-) — kuota token, top up BorderPay, scope provider platform, batas mailbox
+
+Cakupan baru sejak audit 2026-10-29: metering `token_usage`, kuota mingguan per plan, top up PAYG via BorderPay (webhook + kredit), scope LLM provider `platform_user`, seleksi organization per user (`member=1`, localStorage per-user, auto workspace), batas 20 mailbox per user free, dan halaman Billing.
+
+### Q-1 · Medium — Saldo PAYG tidak pernah terdebit (top up jadi buffer abadi) — ✅ FIXED
+
+- **Where:** `apps/server/internal/repositories/token.go` (`Balance`), `apps/server/internal/app/application.go` (`checkQuota`)
+- **What:** Pemeriksaan kuota menjumlah `used < limit` lalu membiarkan saldo PAYG apa adanya — pembelian top up tidak pernah habis dipakai, jadi 10M token sekali beli menutup overflow setiap minggu selamanya.
+- **Fix:** `Balance` kini derivatif: saldo tersimpan dikurangi akumulasi overflow mingguan `GREATEST(used - limit, 0)` per minggu, clamp 0. Bebas race (satu SQL), tanpa bookkeeping debit.
+
+### Q-2 · Medium — Status top up "paid" dan kredit saldo bukan satu transaksi — ✅ FIXED
+
+- **Where:** `apps/server/internal/handlers/quota.go` (webhook), `apps/server/internal/repositories/token.go`
+- **What:** `MarkPaidIfPending` commit status dulu, `AddTokens` jalan terpisah; kredit gagal = pembayaran terkonfirmasi tapi tidak pernah terkredit, dan replay webhook tertolak sebagai "already processed".
+- **Fix:** `MarkPaidAndCredit` — flip status + upsert saldo dalam satu transaksi; kredit gagal meng-rollback status sehingga retry BorderPay memproses ulang.
+
+### Q-3 · Medium — `onUsageReport` ganda di Anthropic `Complete` melipatgandakan metering — ✅ FIXED
+
+- **Where:** `apps/server/internal/lib/llm/llm.go:186,194`
+- **What:** Sisa rekonstruksi menyisakan dua panggilan report per `Complete` — pemakaian Anthropic one-shot tercatat 2×, menguras kuota dua kali lebih cepat (integritas metering/billing).
+- **Fix:** Duplikat pertama dihapus; tiap completion melapor tepat sekali.
+
+### Q-4 · Low — Perbandingan token webhook tidak constant-time — ✅ FIXED
+
+- **Where:** `apps/server/internal/handlers/quota.go` (`BorderPayWebhook`)
+- **Fix:** `crypto/subtle.ConstantTimeCompare`, dengan penolakan token kosong dipertahankan.
+
+### Q-5 · Low — `SetScope` menerima `platform_user` + `organization_id` sekaligus — ✅ FIXED
+
+- **Where:** `apps/server/internal/handlers/llm_provider.go` (`SetScope`)
+- **What:** Kombinasi itu menghasilkan baris provider dengan scope campuran (org id + flag platform).
+- **Fix:** 400 "platform_user excludes an organization" sebelum cabang otorisasi.
+
+### Q-6 · Low — Error DB ditelan di `Balance` dan alur kredit — ✅ FIXED
+
+- **Where:** `apps/server/internal/repositories/token.go`
+- **What:** `translateNotFound(...) != nil` menelan error database nyata menjadi `0, nil`.
+- **Fix:** Hanya `sql.ErrNoRows` yang berarti "kosong/tidak pending"; sisanya dipropagasi.
+
+### Q-7 · Low — Down migration 0015 gagal bila ada provider platform — ✅ FIXED
+
+- **Where:** `apps/server/migrations/0015_token_quota.down.sql`
+- **What:** Rekreasi index unik lama `(organization_id) NULLS NOT DISTINCT` gagal bila baris platform + baris global sama-sama `organization_id` NULL.
+- **Fix:** `DELETE FROM llm_providers WHERE platform_user` sebelum drop kolom.
+
+### Q-8 · Low — Race `checkQuota` bisa over-allow secara terbatas — ⏸ ACCEPTED
+
+- **Where:** `apps/server/internal/app/application.go`
+- **What:** Dua request paralel sama-sama lolos cek sebelum pemakaian tercatat; over-allow dibatasi token panggilan yang in-flight (jauh di bawah jatah mingguan). Reservasi atomik + rekonsiliasi tidak proporsional; metering tetap mencatat usage aktual sehingga rekap mingguan benar.
+
+### Q-9 · Low — `checkMailboxCap` TOCTOU — ⏸ ACCEPTED
+
+- **Where:** `apps/server/internal/handlers/email_account.go`
+- **What:** Koneksi paralel bisa sedikit melewati 20; terbatas dan tanpa dampak keamanan.
+
+### Q-10 · Medium — `token_usage` tanpa retensi — ✅ FIXED
+
+- **Where:** `apps/server/migrations/0015_token_quota.up.sql`, `cmd/api/server.go` (`sweepTokenUsage`), `internal/repositories/token.go`
+- **What:** Satu baris per panggilan LLM tanpa sweep — tabel tumbuh tanpa batas (performa query kuota jangka panjang).
+- **Fix:** Sweep harian `TOKEN_USAGE_RETENTION` (default 180 hari, 0 = selamanya). Saldo PAYG derivatif dari riwayat, jadi sweep **melipat overflow minggu lama ke saldo tersimpan sebelum menghapus** (hanya minggu yang sudah lewat penuh, batas per plan), sehingga saldo efektif tidak berubah saat meter dipangkas. Migrasi 0016 ikut menjatuhkan kolom `email_account_id` yang tak pernah terisi.
+
+### Q-11 · Low — Webhook BorderPay tidak memvalidasi `x-borderpay-mode` — ⏸ ACCEPTED
+
+- **What:** Pembayaran test vs live dibedakan token per proyek di dashboard BorderPay; kebingungan mode menuntut token lintas mode.
+
+### Q-12 · Low — Top up `pending` tidak pernah di-expire di server — ✅ FIXED
+
+- **Fix:** Sweep harian yang sama menandai top up `pending` berumur > 24 jam sebagai `expired` (BorderPay meng-expire QRIS 60 menit, jadi ini tak pernah terbayar).
+
+### Q-13 · Low — `users.plan` hanya bisa diubah via SQL — ⏸ DEFERRED
+
+- **What:** Belum ada admin UI untuk memindahkan user free → subscribed; enforcement 100M/"Unlimited" sudah aktif menunggu jalur pembelian.
+
+### Q-14 · Low — List top up salah envelope JSON — ✅ FIXED
+
+- **Where:** `apps/web-ui/src/lib/api/services/types/quota.ts`, `queries/quota.ts`
+- **What:** `listTopups` diketik sebagai array polos padahal server membungkus `{data}`; konsumen menerima envelope, bukan array.
+- **Fix:** `AxiosItemResponse<TokenTopup[]>` + query mengembalikan `res.data.data`.
+
+### Q-15 · Low — Sidebar mengiklankan "Subscribe now" yang belum bisa dibeli — ✅ FIXED
+
+- **Where:** `apps/web-ui/src/components/layout/platform/platform-panel.tsx`
+- **Fix:** Label jadi "Open billing" menuju `/settings/billing` (kuota + top up), bukan aksi langganan yang belum ada.
+
+### Q-16 · Low — Migrasi kunci organization legacy bisa lintas user — ✅ FIXED
+
+- **Where:** `apps/web-ui/src/hooks/use-active-organization.ts`
+- **Fix:** Nilai legacy `activeOrganizationId` dimigrasi ke kunci per-user hanya bila id-nya termasuk member list user tsb, lalu kunci bersama dihapus apa pun hasilnya.
+
+---
+
 ## 2. Ponytail audit (complexity — format asli skill)
 
 ```
@@ -201,7 +292,18 @@ delete: AgentRepository.RenameConversation, unreachable (deadcode). Replacement:
 shrink: rate-limit exempt rule built twice and re-implemented for ipblock. Replacement: one clientExempt(app) shared by RateLimit and ipblock.New. [apps/server/cmd/api/server.go, routes.go, internal/middlewares/rate_limit.go] — FIXED
 yagni: mailoauth.TokenStore interface with one implementation and no fake. Replacement: *repositories.EmailAccountRepository. [apps/server/internal/lib/mailoauth/mailoauth.go] — FIXED
 net: about -75 lines, -0 deps.
+
+Batch 2026-10-31 (kode baru: kuota, top up, scope platform):
+
+delete: TokenBalanceRepository.AddTokens tanpa pemanggil sejak kredit pindah ke MarkPaidAndCredit. Replacement: nothing. [apps/server/internal/repositories/token.go] — FIXED
+delete: createTopupBody, struct kosong yang tidak pernah di-bind handler. Replacement: nothing. [apps/server/internal/handlers/quota.go] — FIXED
+stdlib: max64, clamping yang Go sediakan sebagai builtin. Replacement: max(0, v). [apps/server/internal/repositories/token.go] — FIXED
+yagni: TokenUsage.EmailAccountID + kolomnya, selalu NULL karena usageHook tidak pernah mengisinya. Replacement: dijatuhkan via migrasi 0016. [apps/server/internal/models/token.go, migrations/0015_token_quota.up.sql] — FIXED
+yagni: quotaStatus.WeekStart, TopupCheckout.QRString dan ExpiresAt — terkirim ke UI, tidak pernah dibaca. Replacement: buang field, atau tampilkan. [apps/server/internal/handlers/quota.go, apps/web-ui/src/lib/api/models/quota.ts] — FIXED
 ```
+
+`deadcode -test ./...` pada pohon baru: hanya temuan di atas; sisanya bersih.
+net: about -30 lines, -0 deps (batch ini). — SEMUA FIXED
 
 `deadcode -test ./...` kini kosong. Web-ui: tidak ada modul atau method service yang tidak dipakai.
 

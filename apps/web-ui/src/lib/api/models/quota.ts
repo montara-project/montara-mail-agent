@@ -1,7 +1,6 @@
 /** GET /me/quota: the plan, the week's usage and the pay-as-you-go balance. */
 export interface QuotaStatus {
   plan: 'free' | 'subscribed'
-  week_start: string
   used_tokens: number
   /** Null when the plan is subscribed: the app shows that as Unlimited. */
   limit_tokens: number | null
@@ -27,6 +26,4 @@ export interface TopupCheckout {
   amount_idr: number
   tokens: number
   pay_url: string
-  qr_string: string
-  expires_at: string
 }

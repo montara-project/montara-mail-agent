@@ -61,7 +61,7 @@ func (h *organizationHandler) List(c fiber.Ctx) error {
 
 	// A user who belongs to no organization yet gets one on the spot, so the
 	// app always lands them in a workspace of their own.
-	if !super && memberID == uid && total == 0 {
+	if !super && q.Search == "" && total == 0 {
 		if err := h.repo().EnsurePersonalOrganization(c.Context(), uid); err != nil {
 			return err
 		}

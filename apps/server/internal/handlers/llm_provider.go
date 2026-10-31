@@ -104,6 +104,9 @@ func (h *llmProviderHandler) SetScope(c fiber.Ctx) error {
 		orgID := uuid.MustParse(body.OrganizationID)
 		target = &orgID
 	}
+	if body.PlatformUser && target != nil {
+		return apperr.New(apperr.KindBadRequest, "platform_user excludes an organization: clear organization_id")
+	}
 
 	repo := &h.app.Repositories.LLMProvider
 	p, err := repo.GetByID(c.Context(), id)
