@@ -1,5 +1,15 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { ChevronRight, LogIn, Pencil, Plug, Plus, RefreshCw, Trash2 } from 'lucide-react'
+import {
+  ChevronRight,
+  Copy,
+  Link2,
+  LogIn,
+  Pencil,
+  Plug,
+  Plus,
+  RefreshCw,
+  Trash2,
+} from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
@@ -17,6 +27,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { toastAxiosError } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
+import { MCP_ENDPOINT } from '@/lib/constants/mcp'
 import { cn } from '@/lib/utils'
 
 const KIND_LABELS: Record<Models.MCPServerKind, string> = {
@@ -34,15 +45,28 @@ const STATUS_LABELS: Record<Models.MCPServerStatus, string> = {
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
-/** "2 tools · Connected", the status coloured when it needs attention. */
+const copy = (text: string, what: string) =>
+  navigator.clipboard.writeText(text).then(
+    () => toast.success(`${what} copied`),
+    () => toast.error(`Couldn't copy the ${what.toLowerCase()}; select it instead.`)
+  )
+
+/** "2 tools · Connected", with a dot for on or off and the status coloured when it needs attention. */
 function ServerSummary({ server }: { server: Models.MCPServer }) {
   return (
-    <span className="text-muted-foreground text-xs">
+    <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs whitespace-nowrap">
+      <span
+        aria-hidden
+        className={cn(
+          'size-1.5 shrink-0 rounded-full',
+          server.is_enabled ? 'bg-success' : 'bg-ink-3'
+        )}
+      />
       {plural(server.tools.length, 'tool')} ·{' '}
       <span
         className={cn(
           server.status === 'error' && 'text-destructive',
-          server.status === 'needs_auth' && 'text-amber-600 dark:text-amber-400'
+          server.status === 'needs_auth' && 'text-warning'
         )}
       >
         {STATUS_LABELS[server.status]}
@@ -196,11 +220,16 @@ function ServerRow({
               open && 'rotate-90'
             )}
           />
+          {/* A server is an AI thing, so its tile carries the AI accent. */}
+          <span className="bg-accent-ink/10 text-accent-ink flex size-9 shrink-0 items-center justify-center rounded-md">
+            <Plug className="size-4" aria-hidden />
+          </span>
           <span className="grid min-w-0">
             <span className="truncate text-sm font-medium">{server.name}</span>
-            <ServerSummary server={server} />
+            <span className="text-ink-3 truncate font-mono text-xs">{endpoint}</span>
           </span>
         </button>
+        <ServerSummary server={server} />
         <Badge variant="secondary" appearance="light" className="hidden sm:inline-flex">
           {KIND_LABELS[server.kind]}
         </Badge>
@@ -261,18 +290,12 @@ function ServerRow({
               />
               Sync tools
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-destructive hover:text-destructive"
-              onClick={() => setOpenDelete(true)}
-            >
+            <Button variant="destructive" size="sm" onClick={() => setOpenDelete(true)}>
               <Trash2 />
               Delete
             </Button>
           </div>
 
-          <p className="text-muted-foreground font-mono text-xs break-all">{endpoint}</p>
           {server.status_message && server.status !== 'connected' && (
             <p
               className={cn(
@@ -285,7 +308,7 @@ function ServerRow({
           )}
 
           {server.tools.length > 0 ? (
-            <ul className="divide-y overflow-hidden rounded-lg border">
+            <ul className="divide-y divide-border/60 overflow-hidden rounded-lg border border-border/60">
               {server.tools.map((tool) => (
                 <ToolRow key={tool.name} tool={tool} />
               ))}
@@ -337,7 +360,7 @@ function Loading() {
     <div className="grid gap-5 py-3">
       {[0, 1, 2].map((index) => (
         <div key={index} className="flex items-center gap-3">
-          <Skeleton className="size-4 rounded" />
+          <Skeleton className="size-9 rounded-md" />
           <div className="grid flex-1 gap-1.5">
             <Skeleton className="h-4 w-32" />
             <Skeleton className="h-3 w-40" />
@@ -363,20 +386,38 @@ export default function MCPServerList({ organizationId }: { organizationId: stri
   return (
     <section className="grid gap-3">
       <SectionHeading
-        title="MCP servers"
-        description={
-          isPending
-            ? 'Tools from outside servers, offered to the assistant chat.'
-            : `${servers.length} registered. Their tools are offered to the assistant chat, never to automatic drafts.`
-        }
+        title="MCP"
+        description="Model Context Protocol servers. Each one gets its own key and its own permissions."
         action={
-          <Button className="h-8.5 rounded-lg" onClick={() => setOpenAdd(true)}>
+          <Button size="sm" onClick={() => setOpenAdd(true)}>
             <Plus />
             <span>Add server</span>
           </Button>
         }
       />
       <SectionCard>
+        <div className="grid gap-2">
+          <h2 className="text-[9.5px] font-semibold uppercase text-zinc-600">Endpoint</h2>
+          <div className="flex min-w-0 items-center gap-2">
+            <code className="bg-muted/60 text-foreground flex min-w-0 flex-1 items-center gap-2 rounded-md border px-3 py-2 font-mono text-sm">
+              <Link2 className="text-ink-3 size-4 shrink-0" aria-hidden />
+              <span className="truncate">{MCP_ENDPOINT}</span>
+            </code>
+            <Button variant="secondary" size="sm" onClick={() => copy(MCP_ENDPOINT, 'Endpoint')}>
+              <Copy />
+              Copy
+            </Button>
+          </div>
+          <p className="text-ink-3 text-[11px] text-pretty">
+            Streamable HTTP only. Keys are scoped to this endpoint and can be revoked at any time.
+          </p>
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Registered servers"
+        description="Their tools are offered to the assistant chat, never to automatic drafts."
+      >
         <QueryState
           isPending={isPending}
           isError={isError}
@@ -391,7 +432,7 @@ export default function MCPServerList({ organizationId }: { organizationId: stri
             />
           }
         >
-          <ul className="-m-4 divide-y overflow-hidden rounded-lg">
+          <ul className="-m-4 divide-y divide-border/60 overflow-hidden rounded-lg">
             {servers.map((server) => (
               <ServerRow
                 key={server.id}

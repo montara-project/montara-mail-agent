@@ -28,14 +28,9 @@ export function OTPCodeInput({
       onChange={onChange}
       autoFocus={autoFocus}
     >
+      {/* Six uniform cells per the design: no separator between the halves. */}
       <InputOTP.Group>
-        {[0, 1, 2].map((index) => (
-          <InputOTP.Slot key={index} index={index} />
-        ))}
-      </InputOTP.Group>
-      <InputOTP.Separator />
-      <InputOTP.Group>
-        {[3, 4, 5].map((index) => (
+        {[0, 1, 2, 3, 4, 5].map((index) => (
           <InputOTP.Slot key={index} index={index} />
         ))}
       </InputOTP.Group>

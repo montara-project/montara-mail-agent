@@ -29,6 +29,16 @@ import { monthDay } from '@/lib/date'
 import { formatRupiah, formatTokens } from '@/lib/string'
 import { cn } from '@/lib/utils'
 
+// The allowance resets weekly; the next Monday 00:00 local, as the design's
+// window note. Computed once per module load: it only changes at midnight.
+const RESET_NOTE = (() => {
+  const now = new Date()
+  const next = new Date(now)
+  next.setDate(now.getDate() + ((8 - now.getDay()) % 7 || 7))
+  next.setHours(0, 0, 0, 0)
+  return `Resets ${next.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })} at 00:00`
+})()
+
 /** The page sizes the top-up history offers; the first is the default. */
 const TOPUP_PAGE_SIZES = [10, 25, 50] as const
 
@@ -79,10 +89,21 @@ export default function QuotaSettings() {
   }
 
   return (
-    <div className="grid gap-4">
-      {showPurchases && <WalletCard />}
+    <div className="grid gap-5">
+      <div className="grid gap-1.5">
+        <h1 className="text-2xl font-bold">Billing</h1>
+        <p className="text-muted-foreground text-[13px]">
+          Your plan, the wallet it renews from, and this week's AI usage.
+        </p>
+      </div>
+      {/* The plan row: the tier on one card, the wallet it renews from beside it. */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <PlanCard />
+        {showPurchases && <WalletCard />}
+      </div>
 
-      <PlanCard>
+      <p className="text-zinc-600 font-mono text-[9.5px] font-semibold uppercase">Usage</p>
+      <SectionCard title="This week's AI usage" description={RESET_NOTE}>
         <QueryState
           isPending={isPending}
           isError={quotaQuery.isError && !quota}
@@ -92,12 +113,18 @@ export default function QuotaSettings() {
           loading={<Skeleton className="h-9 w-full" />}
           empty={null}
         >
-          <div className="grid gap-2">
-            <div className="flex items-baseline justify-between gap-3 text-sm">
-              <span className="text-muted-foreground">This week's usage</span>
-              <span className="tabular-nums">
-                {formatTokens(used)}
-                {limit !== null && ` / ${formatTokens(limit)}`} tokens
+          {/* The quota is a single number, so the bar is one fill; a legend
+              (agent runs / summaries / drafts) would need a breakdown. */}
+          <div className="grid gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-muted-foreground text-[11px]">
+                Every AI call this week, across every account.
+              </span>
+              <span className="flex items-baseline gap-1.5">
+                <span className="text-lg font-bold tabular-nums">{formatTokens(used)}</span>
+                <span className="text-ink-3 text-[10.5px]">
+                  {limit !== null ? `of ${formatTokens(limit)}` : 'tokens'}
+                </span>
               </span>
             </div>
             {isPro && (
@@ -105,7 +132,9 @@ export default function QuotaSettings() {
                 100M tokens a week, and the pay-as-you-go balance on top.
               </p>
             )}
-            {limit !== null && <UsageBar used={used} limit={limit} />}
+            {limit !== null && (
+              <UsageBar used={used} limit={limit} className="h-1.5 rounded-[3px]" />
+            )}
             {!unlimited && percent >= 100 && (
               <p className="text-destructive text-xs">
                 The weekly allowance is spent; new AI calls draw from the pay-as-you-go balance.
@@ -113,16 +142,26 @@ export default function QuotaSettings() {
             )}
           </div>
         </QueryState>
-      </PlanCard>
+      </SectionCard>
 
-      {showPurchases && <PlansComparison />}
+      {showPurchases && (
+        <>
+          <p className="text-zinc-600 font-mono text-[9.5px] font-semibold uppercase">Plans</p>
+          <PlansComparison />
+        </>
+      )}
 
       {showPurchases && (
         <SectionCard
           title="Pay as you go"
           description="10M tokens per Rp10.000, spent only once the weekly allowance runs out, never expiring."
           toolbar={
-            <Button size="sm" disabled={isPending || create.isPending} onClick={startTopup}>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={isPending || create.isPending}
+              onClick={startTopup}
+            >
               {create.isPending && <Loader2 className="animate-spin" aria-hidden />}
               Top up 10M for Rp10.000
             </Button>

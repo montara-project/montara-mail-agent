@@ -10,7 +10,9 @@ import {
   Reply,
   Send,
   SpellCheck,
+  SquarePen,
   Tags,
+  Trash2,
   Wand2,
 } from 'lucide-react'
 import React from 'react'
@@ -19,7 +21,6 @@ import { toast } from 'sonner'
 import type { Models } from '@/lib/api/models'
 
 import EmptyState from '@/components/block/common/empty-state'
-import RowColumnAction from '@/components/block/common/row-column-action'
 import SectionCard from '@/components/block/common/section-card'
 import SectionHeading from '@/components/block/common/section-heading'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
@@ -40,7 +41,17 @@ import { queries } from '@/lib/api/queries'
 import { botOptions, fromBotSelect, toBotSelect } from './skill-bot'
 import { AddSkillForm, EditSkillForm } from './skill-form'
 
-/** The built-in skills' icons, also used by the reader's Skills menu. */
+/** The tile tint each built-in skill carries, per the design's per-skill hues. */
+const SKILL_TINTS: Record<string, string> = {
+  summarize: 'var(--accent-ink)',
+  draft_reply: 'var(--success)',
+  organize: 'var(--warning)',
+  translate: 'var(--info)',
+  translate_reply: 'var(--info)',
+}
+
+/**
+ * The built-in skills' icons, also used by the reader's Skills menu. */
 export const SKILL_ICONS: Record<string, typeof Wand2> = {
   summarize: FileText,
   organize: Tags,
@@ -66,6 +77,7 @@ function BuiltinSkillRow({
 }) {
   const save = useMutation(queries.agentSkills.setBuiltin(organizationId, skill.key))
   const Icon = SKILL_ICONS[skill.key] ?? Wand2
+  const tint = SKILL_TINTS[skill.key] ?? 'var(--accent-ink)'
 
   const change = (next: { is_enabled?: boolean; agent_bot_id?: string }) =>
     save.mutate(
@@ -77,20 +89,26 @@ function BuiltinSkillRow({
     )
 
   return (
-    <li className="flex flex-wrap items-center gap-3 py-3" aria-busy={save.isPending}>
-      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent-ink/10 text-accent-ink">
-        <Icon className="size-4" aria-hidden />
+    <li
+      className="bg-muted flex flex-wrap items-center gap-3 rounded-[10px] p-3"
+      aria-busy={save.isPending}
+    >
+      <div
+        className="flex size-[30px] shrink-0 items-center justify-center rounded-lg"
+        style={{ color: tint, backgroundColor: `color-mix(in srgb, ${tint} 12%, transparent)` }}
+      >
+        <Icon className="size-3.5" aria-hidden />
       </div>
       <div className="min-w-48 flex-1">
-        <p className="flex items-center gap-2 text-sm font-medium">
+        <p className="flex items-center gap-2 text-xs font-semibold">
           {skill.name}
           {skill.target === 'draft' && (
-            <Badge variant="secondary" appearance="light">
+            <Badge variant="secondary" appearance="light" size="sm">
               Your draft
             </Badge>
           )}
         </p>
-        <p className="text-muted-foreground text-xs">{skill.description}</p>
+        <p className="text-ink-3 text-[11px]">{skill.description}</p>
       </div>
       {/* On a phone the controls wrap under the text, not the icon. */}
       <div className="ms-11 flex basis-full items-center gap-3 sm:ms-0 sm:basis-auto">
@@ -154,27 +172,42 @@ function CustomSkillRow({
   }
 
   return (
-    <li className="flex items-center gap-3 py-3">
-      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent-ink/10 text-accent-ink">
-        <Wand2 className="size-4" aria-hidden />
+    <li className="bg-muted flex items-center gap-3 rounded-[10px] p-3">
+      <div className="bg-accent-ink/12 text-accent-ink flex size-[30px] shrink-0 items-center justify-center rounded-lg">
+        <Wand2 className="size-3.5" aria-hidden />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{skill.name}</p>
-        <p className="text-muted-foreground truncate text-xs">
-          {skill.description || skill.instruction}
-        </p>
+        <p className="truncate text-xs font-semibold">{skill.name}</p>
+        <p className="text-ink-3 truncate text-[11px]">{skill.description || skill.instruction}</p>
       </div>
       {botName && (
-        <Badge variant="secondary" appearance="light" className="max-w-32">
+        <Badge variant="secondary" appearance="light" size="sm" className="max-w-32">
           <span className="truncate">{botName}</span>
         </Badge>
       )}
       {!skill.is_enabled && (
-        <Badge variant="secondary" appearance="outline">
+        <Badge variant="secondary" appearance="outline" size="sm">
           Off
         </Badge>
       )}
-      <RowColumnAction onEdit={() => setOpenEdit(true)} onDelete={() => setOpenDelete(true)} />
+      <Button
+        variant="ghost"
+        mode="icon"
+        size="sm"
+        aria-label={`Edit ${skill.name}`}
+        onClick={() => setOpenEdit(true)}
+      >
+        <SquarePen />
+      </Button>
+      <Button
+        variant="destructive"
+        mode="icon"
+        size="sm"
+        aria-label={`Delete ${skill.name}`}
+        onClick={() => setOpenDelete(true)}
+      >
+        <Trash2 />
+      </Button>
 
       <SimpleAlertDialog
         title="Do you want to delete this skill?"
@@ -235,7 +268,7 @@ export default function SkillList({ organizationId }: { organizationId: string }
       )
     }
     return (
-      <ul className="divide-y">
+      <ul className="grid gap-1.5">
         {builtin.map((skill) => (
           <BuiltinSkillRow
             key={skill.key}
@@ -259,7 +292,7 @@ export default function SkillList({ organizationId }: { organizationId: string }
       )
     }
     return (
-      <ul className="divide-y">
+      <ul className="grid gap-1.5">
         {custom.map((skill) => (
           <CustomSkillRow
             key={skill.key}
@@ -273,16 +306,21 @@ export default function SkillList({ organizationId }: { organizationId: string }
   }
 
   return (
-    <div className="grid gap-8">
+    <div className="grid gap-5">
+      <div className="grid gap-1.5">
+        <h1 className="text-2xl font-bold">Skills</h1>
+        <p className="text-muted-foreground text-[13px]">
+          Reusable abilities the assistant can call. Enable only what you allow.
+        </p>
+      </div>
       <section className="grid gap-3">
-        <SectionHeading
-          title="Skills"
-          description="What the AI can do with an email, from the Skills menu in the reader or as a / command in the assistant. Skills marked Your draft rewrite the reply you are writing, from its Use AI menu. A skill with no bot of its own runs as the bot the user picked. Only the organization's owner can change them."
-        />
-        <SectionCard>
+        <SectionCard
+          title="Installed skills"
+          description="Each skill runs under your own permissions. A skill with no bot of its own runs as the bot the user picked; only the organization's owner can change them."
+        >
           {builtinContent()}
           {!isError && (
-            <p className="text-muted-foreground mt-3 text-xs">
+            <p className="text-ink-3 mt-3 text-xs">
               Humanize is adapted from{' '}
               <a
                 className="underline underline-offset-2"
@@ -315,9 +353,13 @@ export default function SkillList({ organizationId }: { organizationId: string }
             title="Custom Skills"
             description="Your own instructions, run on one email at a time."
             action={
-              <Button className="h-8.5 rounded-lg" onClick={() => setOpenAdd(true)}>
+              <Button
+                variant="secondary"
+                className="h-[30px] rounded-lg border-border bg-muted px-3 text-[11.5px] font-semibold shadow-none [&_svg]:size-3"
+                onClick={() => setOpenAdd(true)}
+              >
                 <Plus />
-                <span>Add</span>
+                <span>Add skill</span>
               </Button>
             }
           />

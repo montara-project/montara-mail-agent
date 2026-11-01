@@ -11,7 +11,6 @@ import {
   OctagonAlert,
   Plus,
   RefreshCw,
-  Search,
   Star,
   Trash2,
 } from 'lucide-react'
@@ -23,8 +22,9 @@ import type { MailScope } from '@/lib/api/queries/mail'
 import type { MailBulkAction } from '@/lib/api/services/types/mail'
 
 import Hint from '@/components/block/common/hint'
+import { providerColor } from '@/components/block/common/provider-badge'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
-import { formatMailListDate, senderName } from '@/components/layout/mail/mail-data'
+import { formatMailListDate, mailInitials, senderName } from '@/components/layout/mail/mail-data'
 import {
   AccountFlag,
   MobileMailBar,
@@ -53,7 +53,6 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useActiveOrganization } from '@/hooks/use-active-organization'
-import { useDebounce } from '@/hooks/use-debounce'
 import { useHideEmails } from '@/hooks/use-hide-emails'
 import { axiosErrorMessage, toastProgress } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
@@ -66,10 +65,6 @@ export const DEFAULT_PAGE_SIZE = 25
 /** A ?limit= from the URL as a page size, the default for anything else. */
 export const pageSize = (limit: unknown) =>
   PAGE_SIZES.find((size) => size === Number(limit)) ?? DEFAULT_PAGE_SIZE
-
-// The search shortcut as this platform writes it; Ctrl K works everywhere but a Mac.
-const SEARCH_KEYS =
-  typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K'
 
 /** The accounts on screen: the open one, or all of them in the global inbox. */
 function useShownAccounts() {
@@ -163,11 +158,10 @@ function EmptyList() {
 }
 
 /**
- * A row's columns: the checkbox, then the mail, 12px apart. The header puts
- * its checkbox and title on the same lines (CHECK_GAP), so they align. The
- * unread edge and the star sit in the row's left padding, not a column of their own.
+ * A row's columns: the avatar slot, then the mail, 10px apart. On hover or
+ * selection the row's checkbox takes the avatar's place, so nothing shifts.
  */
-const ROW_COLUMNS = 'grid-cols-[1.25rem_minmax(0,1fr)] gap-x-3'
+const ROW_COLUMNS = 'grid-cols-[auto_minmax(0,1fr)] gap-x-2.5'
 const CHECK_GAP = 'me-1' // + the header's gap-2: the same 12px as gap-x-3
 // Raised off the dark card, where the default background reads as a hole.
 const CHECK_SURFACE = 'dark:data-[state=unchecked]:bg-input/30'
@@ -358,14 +352,6 @@ export default function MailList({ className }: { className?: string }) {
   const flaggedAccount = useFlaggedAccount()
   const { mask } = useHideEmails()
   const failed = shown.filter((item) => item.sync_error)
-  const [search, setSearch] = React.useState(q ?? '')
-  // A term cleared or changed elsewhere (a folder link, the back button) shows in the box.
-  const [shownQ, setShownQ] = React.useState(q)
-  if (q !== shownQ) {
-    setShownQ(q)
-    setSearch(q ?? '')
-  }
-  const debounced = useDebounce(search.trim(), 300)
   // The selection lives on one page: another page, folder, label or search
   // starts it empty.
   const { label } = useSearch({ strict: false })
@@ -376,31 +362,7 @@ export default function MailList({ className }: { className?: string }) {
     setSeenPageKey(pageKey)
     setSelected(new Set())
   }
-  const searchRef = React.useRef<HTMLInputElement>(null)
   const scrollRef = React.useRef<HTMLDivElement>(null)
-
-  // ⌘K / Ctrl+K jumps to the search box.
-  React.useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-        event.preventDefault()
-        searchRef.current?.focus()
-      }
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [])
-
-  // The typed term reaches the URL once typing pauses, and starts again from
-  // page 1. Only a new term triggers it, so a term cleared elsewhere stays cleared.
-  const pushSearch = React.useEffectEvent((term: string) => {
-    if (term === (q ?? '')) return
-    navigate({
-      to: '/mail',
-      search: (prev) => ({ ...prev, q: term || undefined, page: undefined }),
-    })
-  })
-  React.useEffect(() => pushSearch(debounced), [debounced])
 
   const mails = data?.data ?? []
   // Only what is still on the page counts, so a refetch drops moved mail.
@@ -450,12 +412,14 @@ export default function MailList({ className }: { className?: string }) {
   const content = () => {
     if (isPending && scope) {
       return Array.from({ length: 5 }, (_, i) => (
-        <div key={i} className="grid gap-2 border-b px-4 py-4">
-          <Skeleton className="h-4 w-1/2" />
-          <Skeleton className="h-4 w-3/4" />
-          <Skeleton className="h-4 w-full" />
-          {/* The rows' account chip, so they don't jump in taller. */}
-          {!account && shown.length > 1 && <Skeleton className="mt-0.5 h-5 w-40 rounded-full" />}
+        <div key={i} className="flex items-start gap-2.5 border-b px-3.5 py-2.5">
+          <Skeleton className="size-6.5 shrink-0 rounded-[7px]" />
+          <div className="grid min-w-0 flex-1 gap-1.5">
+            <Skeleton className="h-3.5 w-2/3" />
+            <Skeleton className="h-3 w-3/4" />
+            {/* The rows' account chip, so they don't jump in taller. */}
+            {!account && shown.length > 1 && <Skeleton className="mt-0.5 h-5 w-40 rounded-chip" />}
+          </div>
         </div>
       ))
     }
@@ -474,97 +438,113 @@ export default function MailList({ className }: { className?: string }) {
     return mails.map((mail) => {
       const isSelected = selected.has(mail.id)
       const flag = flaggedAccount(mail)
+      // The avatar carries the mailbox's provider hue when one is flagged.
+      const tint = flag ? providerColor(flag.provider) : undefined
       return (
         // The link stretches over the row; the checkbox sits above it.
         <div
           key={mail.id}
           className={cn(
-            'hover:bg-accent/50 relative grid border-b px-4 py-4 text-sm',
+            'group/row hover:bg-accent/50 relative grid border-b px-3.5 py-2.5 text-sm',
             ROW_COLUMNS,
-            // Unread mail is tinted, so it stands out without reading the edge.
-            !mail.is_read && 'bg-blue-500/[0.06] dark:bg-blue-400/[0.08]',
-            isSelected && 'bg-accent/40',
+            // Unread mail keeps a quiet tint; the dot in the meta tells it too.
+            !mail.is_read && 'bg-muted',
+            isSelected && 'bg-accent',
             selectedId === mail.id && 'bg-accent hover:bg-accent'
           )}
         >
-          <span className="relative z-10 flex h-5 items-center">
+          {/* On hover or selection the checkbox takes the avatar's place. */}
+          <span className="relative z-10 grid size-6.5 shrink-0 place-items-center">
+            <span
+              aria-hidden
+              className={cn(
+                'absolute inset-0 flex items-center justify-center rounded-[7px] border text-[11px] font-bold transition-opacity',
+                !tint && 'border-border/60 bg-secondary text-muted-foreground',
+                'group-hover/row:opacity-0',
+                isSelected && 'opacity-0'
+              )}
+              style={
+                tint
+                  ? {
+                      color: tint,
+                      borderColor: `color-mix(in srgb, ${tint} 20%, transparent)`,
+                      backgroundColor: `color-mix(in srgb, ${tint} 12%, transparent)`,
+                    }
+                  : undefined
+              }
+            >
+              {mailInitials(senderName(mail))}
+            </span>
             <Checkbox
               checked={isSelected}
               onCheckedChange={(on) => toggle(mail.id, on === true)}
               aria-label={`Select ${mask(senderName(mail))}: ${mail.subject || '(no subject)'}`}
-              className={cn("after:absolute after:-inset-2.5 after:content-['']", CHECK_SURFACE)}
+              className={cn(
+                "absolute inset-0 m-auto size-4 after:absolute after:-inset-2.5 after:content-['']",
+                'opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100',
+                isSelected && 'opacity-100',
+                CHECK_SURFACE
+              )}
             />
           </span>
-          {/* An overlay, not a border, so a row's text doesn't move when it is read.
-              Screen readers hear the state as text; the edge is only its picture. */}
-          {!mail.is_read && (
-            <>
-              <span
-                className="absolute inset-y-0 start-0 w-0.5 bg-blue-500 dark:bg-blue-400"
-                aria-hidden
-              />
-              <span className="sr-only">Unread,</span>
-            </>
-          )}
-          {/* In the left padding, centred on the first line. */}
-          <span className="absolute start-0 top-4 flex h-5 w-4 items-center justify-center">
-            {mail.is_starred && (
-              <>
-                <Star className="size-3 fill-amber-400 text-amber-400" aria-hidden />
-                <span className="sr-only">Starred,</span>
-              </>
-            )}
-          </span>
+          {/* Screen readers hear the state as text; the meta's dot is only its picture. */}
+          {!mail.is_read && <span className="sr-only">Unread,</span>}
           <Link
             to="/mail"
             search={(prev) => ({ ...prev, mail: mail.id })}
             aria-current={selectedId === mail.id ? 'page' : undefined}
-            // grid-cols-1 is minmax(0, 1fr): an implicit auto column would grow to
-            // a long sender's full width and push the row sideways.
-            className="grid min-w-0 grid-cols-1 gap-1 outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px] focus-visible:after:ring-ring/50 focus-visible:after:ring-inset"
+            className="flex min-w-0 items-start gap-2.5 outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px] focus-visible:after:ring-ring/50 focus-visible:after:ring-inset"
           >
-            <div className="flex items-center gap-1.5">
+            <span className="grid min-w-0 flex-1 self-start gap-0.5">
+              {/* dir="auto": an Arabic or Hebrew mail reads right to left, punctuation included. */}
+              <span dir="auto" className="flex min-w-0 items-baseline justify-between gap-2">
+                <span
+                  className={cn(
+                    'min-w-0 truncate text-[11.5px]',
+                    mail.is_read ? 'font-medium' : 'font-bold'
+                  )}
+                >
+                  {mask(senderName(mail))}
+                </span>
+                <span className="text-ink-3 shrink-0 font-mono text-[9.5px] whitespace-nowrap tabular-nums">
+                  {formatMailListDate(mail.received_at)}
+                </span>
+              </span>
               <span
                 dir="auto"
                 className={cn(
-                  'truncate text-[15px]',
-                  mail.is_read ? 'font-medium' : 'font-semibold'
+                  'min-w-0 truncate',
+                  mail.is_read
+                    ? 'text-muted-foreground font-medium'
+                    : 'text-zinc-200 font-semibold text-[11.5px]'
                 )}
               >
-                {mask(senderName(mail))}
+                {mail.subject || '(no subject)'}
               </span>
-              <span
-                className={cn(
-                  'ms-auto shrink-0 text-xs tabular-nums',
-                  mail.is_read ? 'text-muted-foreground' : 'text-foreground font-medium'
-                )}
-              >
-                {formatMailListDate(mail.received_at)}
-              </span>
-            </div>
-            {/* dir="auto": an Arabic or Hebrew mail reads right to left, punctuation included. */}
-            <span
-              dir="auto"
-              className={cn(
-                'truncate',
-                mail.is_read ? 'font-medium' : 'font-semibold',
-                !mail.subject && 'text-muted-foreground font-normal'
+              {mail.teaser && (
+                <span dir="auto" className="text-ink-3 min-w-0 truncate text-[10.5px]">
+                  {mail.teaser}
+                </span>
               )}
-            >
-              {mail.subject || '(no subject)'}
-            </span>
-            {mail.teaser && (
-              <span dir="auto" className="text-muted-foreground line-clamp-2">
-                {mail.teaser}
+              <span className="mt-0.5 flex items-center gap-1.5">
+                {flag && (
+                  <>
+                    <span className="sr-only">Account:</span>
+                    {/* Above the link's stretched overlay, so its tooltip shows; a click still opens the mail. */}
+                    <AccountFlag account={flag} className="relative z-10 rounded-chip" />
+                  </>
+                )}
+                {mail.is_starred && (
+                  <>
+                    <Star className="fill-warning text-warning size-3" aria-hidden />
+                    <span className="sr-only">Starred,</span>
+                  </>
+                )}
+                {!mail.is_read && (
+                  <span aria-hidden className="bg-accent-ink size-1.5 shrink-0 rounded-full" />
+                )}
               </span>
-            )}
-            {flag && (
-              <>
-                <span className="sr-only">Account:</span>
-                {/* Above the link's stretched overlay, so its tooltip shows; a click still opens the mail. */}
-                <AccountFlag account={flag} className="relative z-10 mt-0.5 w-fit" />
-              </>
-            )}
+            </span>
           </Link>
         </div>
       )
@@ -574,8 +554,8 @@ export default function MailList({ className }: { className?: string }) {
   return (
     <div className={cn('flex min-h-0 flex-col', className)}>
       <MotionConfig reducedMotion="user">
-        <div className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
-          {mails.length > 0 && (
+        <div className="flex h-[50px] shrink-0 items-center gap-2 border-b px-4">
+          {selecting && (
             <Checkbox
               checked={selectAllState}
               onCheckedChange={() =>
@@ -589,7 +569,7 @@ export default function MailList({ className }: { className?: string }) {
               has no room for the count, and a count cut to its first digit would
               misread, so it hides; the select-all box still shows whether mail is selected. */}
           <h2 className="flex min-w-0 flex-1 items-baseline gap-2">
-            <span className="shrink-0 text-lg font-semibold">{folder.title}</span>
+            <span className="shrink-0 text-sm font-bold">{folder.title}</span>
             {/* "N unread" and "N selected" cross-fade; the count itself just updates. */}
             <AnimatePresence mode="popLayout" initial={false}>
               {selecting ? (
@@ -599,7 +579,7 @@ export default function MailList({ className }: { className?: string }) {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.18, ease: EASE_OUT }}
-                  className={`text-muted-foreground truncate text-xs tabular-nums ${COUNT_VISIBILITY}`}
+                  className={`bg-secondary text-muted-foreground truncate rounded-tag px-1.5 py-0.5 text-[11px] font-semibold tabular-nums ${COUNT_VISIBILITY}`}
                 >
                   {selectedMails.length} selected
                 </motion.span>
@@ -611,48 +591,33 @@ export default function MailList({ className }: { className?: string }) {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.18, ease: EASE_OUT }}
-                    className={`text-muted-foreground truncate text-xs tabular-nums ${COUNT_VISIBILITY}`}
+                    className={`bg-accent-ink/15 text-[#c7c7ff] font-mono text-[9px] font-semibold truncate rounded-chip px-1.5 py-0.5 tabular-nums ${COUNT_VISIBILITY}`}
                   >
-                    {unreadCount} unread
+                    {unreadCount} new
                   </motion.span>
                 )
               )}
             </AnimatePresence>
           </h2>
-          {/* The actions and the search share this space and cross-fade, so
-              nothing around them shifts. The search stays mounted for ⌘K. */}
           {/* Wide enough for the five actions, at touch size too. */}
           <div className="relative flex h-9 w-44 shrink-0 items-center justify-end pointer-coarse:w-52">
+            <Hint label="Refresh">
+              <Button
+                variant="secondary"
+                mode="icon"
+                size="xs"
+                aria-label="Refresh mail"
+                disabled={isPending && !!scope}
+                onClick={() => refetch()}
+              >
+                <RefreshCw />
+              </Button>
+            </Hint>
             <AnimatePresence>
               {selecting && (
                 <BulkActions folder={folder.id} mails={selectedMails} onDone={afterBulk} />
               )}
             </AnimatePresence>
-            <motion.label
-              animate={
-                selecting ? { opacity: 0, x: 8, scale: 0.98 } : { opacity: 1, x: 0, scale: 1 }
-              }
-              transition={{ duration: 0.18, ease: EASE_OUT }}
-              inert={selecting}
-              aria-hidden={selecting}
-              className={cn(
-                'bg-muted/60 focus-within:ring-ring/50 flex h-9 w-full items-center gap-2 rounded-lg px-2.5 focus-within:ring-[3px]',
-                selecting && 'pointer-events-none'
-              )}
-            >
-              <Search className="text-muted-foreground size-4 shrink-0" />
-              <input
-                ref={searchRef}
-                placeholder="Search"
-                aria-label="Search mail"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                className="placeholder:text-muted-foreground min-w-0 flex-1 bg-transparent text-sm outline-none"
-              />
-              <kbd className="text-muted-foreground text-xs pointer-coarse:hidden">
-                {SEARCH_KEYS}
-              </kbd>
-            </motion.label>
           </div>
         </div>
       </MotionConfig>

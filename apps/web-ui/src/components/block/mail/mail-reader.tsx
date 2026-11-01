@@ -27,6 +27,7 @@ import type { Models } from '@/lib/api/models'
 
 import Hint from '@/components/block/common/hint'
 import Markdown from '@/components/block/common/markdown'
+import { providerColor } from '@/components/block/common/provider-badge'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import ForwardDialog from '@/components/block/mail/forward-dialog'
 import MailBody from '@/components/block/mail/mail-body'
@@ -81,7 +82,7 @@ function Contacts({ contacts }: { contacts: Models.MailContact[] }) {
   return contacts.map((contact, i) => (
     <React.Fragment key={contact.email}>
       {i > 0 && ', '}
-      {contact.name && <span className="text-foreground">{mask(contact.name)}</span>}{' '}
+      {contact.name && <span className="font-medium">{mask(contact.name)}</span>}{' '}
       {mask(contact.email)}
     </React.Fragment>
   ))
@@ -227,6 +228,8 @@ export default function MailReader({ mailId }: { mailId: string }) {
   }
 
   const flag = flaggedAccount(mail)
+  // The avatar carries the mailbox's provider hue when one is flagged.
+  const tint = flag ? providerColor(flag.provider) : undefined
 
   const summaryContent = () => {
     if (summaryText) return <Markdown>{summaryText}</Markdown>
@@ -254,7 +257,7 @@ export default function MailReader({ mailId }: { mailId: string }) {
   }
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col">
+    <div className="flex min-w-0 flex-1 flex-col bg-background">
       <div className="flex h-14 shrink-0 items-center justify-between border-b px-3">
         {/* On a phone the actions may not all fit: the row scrolls instead of squeezing them. */}
         <div
@@ -356,29 +359,43 @@ export default function MailReader({ mailId }: { mailId: string }) {
 
       <div className="@container flex-1 overflow-y-auto px-6 py-5">
         <div className="flex flex-wrap items-start gap-3 border-b pb-4">
-          <Avatar className="size-10">
-            <AvatarFallback>{mailInitials(senderName(mail))}</AvatarFallback>
+          <Avatar className="size-10 border">
+            <AvatarFallback
+              className={cn(
+                'text-sm font-bold',
+                !tint && 'border-border/60 bg-secondary text-muted-foreground'
+              )}
+              style={
+                tint
+                  ? {
+                      color: tint,
+                      borderColor: `color-mix(in srgb, ${tint} 20%, transparent)`,
+                      backgroundColor: `color-mix(in srgb, ${tint} 12%, transparent)`,
+                    }
+                  : undefined
+              }
+            >
+              {mailInitials(senderName(mail))}
+            </AvatarFallback>
           </Avatar>
           {/* A narrow pane gives the sender the whole line; the date and actions wrap below. */}
           <div className="grid min-w-0 flex-1 basis-[calc(100%-3.25rem)] gap-0.5 text-sm @lg:basis-0">
             <p className="truncate">
-              <span className="font-semibold">{mask(senderName(mail))}</span>{' '}
-              {mail.from_name && (
-                <span className="text-muted-foreground">{mask(mail.from_email)}</span>
-              )}
+              <span className="font-bold">{mask(senderName(mail))}</span>{' '}
+              {mail.from_name && <span className="text-ink-3">{mask(mail.from_email)}</span>}
             </p>
             {(mail.to.length > 0 || mail.cc.length > 0) && (
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground text-[11.5px]">
                 {mail.to.length > 0 && (
                   <>
-                    <span className="text-foreground font-medium">To:</span>{' '}
+                    <span className="text-ink-3 font-medium">To:</span>{' '}
                     <Contacts contacts={mail.to} />
                   </>
                 )}
                 {mail.cc.length > 0 && (
                   <>
                     {mail.to.length > 0 && '; '}
-                    <span className="text-foreground font-medium">Cc:</span>{' '}
+                    <span className="text-ink-3 font-medium">Cc:</span>{' '}
                     <Contacts contacts={mail.cc} />
                   </>
                 )}
@@ -387,23 +404,33 @@ export default function MailReader({ mailId }: { mailId: string }) {
             {/* A reply goes out from this account. */}
             {flag && (
               <p className="flex min-w-0 items-center gap-1.5">
-                <span className="text-foreground shrink-0 font-medium">Received in:</span>
-                <AccountFlag account={flag} />
+                <span className="text-ink-3 shrink-0 font-mono text-[10.5px] font-semibold">
+                  Received in:
+                </span>
+                <AccountFlag account={flag} className="rounded-chip" />
               </p>
             )}
           </div>
-          <div className="text-muted-foreground flex shrink-0 items-center gap-0.5 text-sm @max-lg:ms-13">
-            <span className="me-1.5">{`${monthDay(new Date(mail.received_at))}, ${clock(new Date(mail.received_at), '.')}`}</span>
-            <IconButton label="Print" onClick={() => printMail(mail)}>
+          <div className="text-ink-3 flex shrink-0 items-center gap-1.5 text-sm @max-lg:ms-13">
+            <span className="text-ink-3 me-1.5 font-mono text-[10.5px]">{`${monthDay(new Date(mail.received_at))}, ${clock(new Date(mail.received_at), '.')}`}</span>
+            <IconButton
+              label="Print"
+              className="bg-muted rounded-[7px] [&_svg]:size-3.5"
+              onClick={() => printMail(mail)}
+            >
               <Printer />
             </IconButton>
-            <IconButton label="Forward" onClick={() => setForwarding(true)}>
+            <IconButton
+              label="Forward"
+              className="bg-muted rounded-[7px] [&_svg]:size-3.5"
+              onClick={() => setForwarding(true)}
+            >
               <Forward />
             </IconButton>
             {/* The assistant pane is desktop only, like the button that opens it. */}
             <IconButton
               label="Ask AI about this email"
-              className="hidden size-8 lg:inline-flex"
+              className="bg-muted hidden size-8 rounded-[7px] lg:inline-flex [&_svg]:size-3.5"
               onClick={() =>
                 navigate({ to: '/mail', search: (s) => ({ ...s, agent: true, about: mail.id }) })
               }
@@ -413,6 +440,7 @@ export default function MailReader({ mailId }: { mailId: string }) {
             <IconButton
               label={mail.is_starred ? 'Unstar' : 'Star'}
               aria-pressed={mail.is_starred}
+              className="bg-muted rounded-[7px] [&_svg]:size-3.5"
               onClick={() => update({ is_starred: !mail.is_starred })}
             >
               <Star className={cn(mail.is_starred && 'fill-amber-400 text-amber-400')} />
@@ -420,7 +448,7 @@ export default function MailReader({ mailId }: { mailId: string }) {
           </div>
         </div>
 
-        <h1 dir="auto" className="mt-5 text-2xl font-semibold">
+        <h1 dir="auto" className="mt-5 text-lg font-bold">
           {mail.subject || '(no subject)'}
         </h1>
 
@@ -429,7 +457,7 @@ export default function MailReader({ mailId }: { mailId: string }) {
             {/* The label's own hue, with the AI's sparkle for who decided it; wraps on narrow screens. */}
             <span
               className={cn(
-                'flex min-h-9 items-center gap-2 rounded-md border px-3 py-1.5 text-sm',
+                'flex min-h-9 items-center gap-2 rounded-chip border px-3 py-1.5 text-sm',
                 MAIL_LABELS.find((label) => label.id === mail.importance)?.tone ??
                   'bg-muted text-muted-foreground'
               )}
@@ -448,7 +476,10 @@ export default function MailReader({ mailId }: { mailId: string }) {
                     size="icon"
                     aria-label="Agree with importance"
                     aria-pressed={mail.importance_by === 'user'}
-                    className={cn(mail.importance_by === 'user' && 'bg-accent')}
+                    className={cn(
+                      'bg-muted border-border rounded-lg shadow-none',
+                      mail.importance_by === 'user' && 'bg-accent'
+                    )}
                     disabled={patch.isPending}
                     onClick={() => update({ importance: mail.importance! })}
                   >
@@ -462,6 +493,7 @@ export default function MailReader({ mailId }: { mailId: string }) {
                         variant="outline"
                         size="icon"
                         aria-label="Disagree: label it differently"
+                        className="bg-muted border-border rounded-lg shadow-none"
                         disabled={patch.isPending}
                       >
                         <ThumbsDown />
@@ -491,6 +523,7 @@ export default function MailReader({ mailId }: { mailId: string }) {
             <Button
               variant="outline"
               aria-expanded={summaryOpen}
+              className="bg-muted border-border text-foreground hover:text-foreground shadow-none"
               onClick={() => setSummaryOpen(!summaryOpen)}
             >
               <Sparkles />
@@ -505,7 +538,7 @@ export default function MailReader({ mailId }: { mailId: string }) {
           <section
             aria-label="AI email summary"
             aria-busy={!summaryText && summary.isPending}
-            className="mb-6 max-w-3xl rounded-xl border border-accent-ink/25 bg-accent-ink/6 p-4"
+            className="mb-6 max-w-3xl rounded-lg border border-accent-ink/25 bg-accent-tint p-4"
           >
             <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-accent-ink">
               <Sparkles className="size-4" />
@@ -525,6 +558,7 @@ export default function MailReader({ mailId }: { mailId: string }) {
           />
         )}
 
+        {/* The email renders bare, like the design: content, not chrome. */}
         <MailBody html={mail.body_html} text={mail.body} />
 
         <ReplyComposer

@@ -46,7 +46,11 @@ export default function SkillMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" disabled={disabled}>
+        <Button
+          variant="outline"
+          className="bg-muted border-border text-foreground hover:text-foreground shadow-none"
+          disabled={disabled}
+        >
           <Wand2 />
           Skills
           <ChevronDown />
@@ -67,7 +71,7 @@ export default function SkillMenu({
               className="items-start whitespace-normal"
               onSelect={() => onRun(skill)}
             >
-              <Icon className="mt-0.5" />
+              <Icon className="text-accent-ink mt-0.5" />
               <span className="grid gap-0.5">
                 <span className="font-medium">{skill.name}</span>
                 {skill.description && (
@@ -109,7 +113,7 @@ export function SkillResult({
     <section
       aria-label={`${name} result`}
       aria-busy={pending}
-      className="mb-6 max-w-3xl rounded-xl border border-accent-ink/25 bg-accent-ink/6 p-4"
+      className="mb-6 max-w-3xl rounded-lg border border-accent-ink/25 bg-accent-tint p-4"
     >
       <div className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-accent-ink">
         <Wand2 className="size-4" aria-hidden />

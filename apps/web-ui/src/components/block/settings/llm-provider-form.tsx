@@ -1,6 +1,6 @@
 import { useStore } from '@tanstack/react-form'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Building2, Check, Pencil, Plus, RefreshCw, Trash2, Users } from 'lucide-react'
+import { Building2, Check, Cpu, Pencil, Plus, RefreshCw, Trash2, Users } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
@@ -16,7 +16,6 @@ import Hint from '@/components/block/common/hint'
 import SectionCard from '@/components/block/common/section-card'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import SimpleAlertScrollableDialogForm from '@/components/block/common/simple-alert-scrollable-dialog-form'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -213,7 +212,10 @@ function ProviderDialog({
       disabled={!scopeValue}
     >
       {provider?.kind === 'self_hosted' && (
-        <p role="note" className="rounded-lg border border-amber-500/40 p-3 text-sm">
+        <p
+          role="note"
+          className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm text-pretty"
+        >
           A self-hosted model ({provider.model}) is in use. Saving here replaces it.
         </p>
       )}
@@ -321,24 +323,33 @@ function ProviderRow({
     )
 
   return (
-    <tr className="border-t">
-      <td className="py-3 pr-4 font-medium">{providerName(provider)}</td>
-      <td className="text-muted-foreground max-w-56 truncate py-3 pr-4 font-mono text-xs">
+    <tr className="border-t border-border/60">
+      <td className="py-3 pr-4">
+        {/* The name is the cell's label; the tile is decorative beside it. */}
+        <span className="inline-flex items-center gap-2.5">
+          <span className="bg-muted flex size-6 shrink-0 items-center justify-center rounded-md">
+            <Cpu className="text-muted-foreground size-3" aria-hidden />
+          </span>
+          <span className="truncate text-xs font-semibold">{providerName(provider)}</span>
+        </span>
+      </td>
+      <td className="text-ink-3 max-w-56 truncate py-3 pr-4 font-mono text-xs">
         {providerEndpoint(provider)}
       </td>
-      <td className="text-muted-foreground py-3 pr-4">{provider.model}</td>
+      <td className="text-muted-foreground py-3 pr-4 font-mono text-[11px]">{provider.model}</td>
       <td className="py-3 pr-4">
-        <Badge variant="secondary" appearance="light">
+        <span className="text-muted-foreground flex items-center gap-1.5 text-[11px]">
+          <span className="size-[5px] shrink-0 rounded-full bg-success" aria-hidden />
           {provider.organization_id ? provider.organization_name : 'Platform'}
-        </Badge>
+        </span>
       </td>
       <td className="py-3">
         <div className="flex justify-end gap-0.5">
           <Hint label="Edit">
             <Button
               variant="ghost"
-              size="icon"
-              className="size-8"
+              mode="icon"
+              size="sm"
               aria-label="Edit"
               onClick={() => setOpenEdit(true)}
             >
@@ -350,8 +361,8 @@ function ProviderRow({
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="size-8"
+                  mode="icon"
+                  size="sm"
                   aria-label="Where it runs"
                   disabled={move.isPending}
                 >
@@ -380,9 +391,9 @@ function ProviderRow({
           </DropdownMenu>
           <Hint label="Delete">
             <Button
-              variant="ghost"
-              size="icon"
-              className="size-8"
+              variant="destructive"
+              mode="icon"
+              size="sm"
               aria-label="Delete"
               onClick={() => setOpenDelete(true)}
             >
@@ -488,42 +499,64 @@ export default function LLMProviderSettings() {
     }
     return (
       <div className="-mx-4 overflow-x-auto px-4">
-        <table className="w-full min-w-xl text-left text-sm">
-          <thead className="text-muted-foreground text-xs">
-            <tr>
-              <th className="pb-2 pr-4 font-normal">Provider</th>
-              <th className="pb-2 pr-4 font-normal">Endpoint</th>
-              <th className="pb-2 pr-4 font-normal">Model</th>
-              <th className="pb-2 pr-4 font-normal">Runs in</th>
-              <th className="pb-2 font-normal">
-                <span className="sr-only">Actions</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {providers.map((provider) => (
-              <ProviderRow key={provider.id} provider={provider} scopeOptions={scopeOptions} />
-            ))}
-          </tbody>
-        </table>
+        <div className="rounded-[10px] border">
+          <table className="w-full min-w-xl text-left text-sm">
+            <thead>
+              <tr className="bg-muted">
+                <th className="text-zinc-600 px-3 py-[9px] font-mono text-[9px] font-semibold tracking-wide uppercase">
+                  Provider
+                </th>
+                <th className="text-zinc-600 px-3 py-[9px] font-mono text-[9px] font-semibold tracking-wide uppercase">
+                  Endpoint
+                </th>
+                <th className="text-zinc-600 px-3 py-[9px] font-mono text-[9px] font-semibold tracking-wide uppercase">
+                  Model
+                </th>
+                <th className="text-zinc-600 px-3 py-[9px] font-mono text-[9px] font-semibold tracking-wide uppercase">
+                  Runs in
+                </th>
+                <th className="px-3 py-[9px]">
+                  <span className="sr-only">Actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {providers.map((provider) => (
+                <ProviderRow key={provider.id} provider={provider} scopeOptions={scopeOptions} />
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     )
   }
 
   return (
-    <SectionCard
-      title="AI Providers"
-      description={providerStatus(organization, data)}
-      toolbar={
-        <Button className="h-8.5 rounded-lg" onClick={() => setOpenAdd(true)}>
-          <Plus />
-          <span>Add provider</span>
-        </Button>
-      }
-    >
-      {content()}
+    <div className="grid gap-5">
+      <div className="grid gap-1.5">
+        <h1 className="text-2xl font-bold">AI Providers</h1>
+        <p className="text-muted-foreground text-[13px]">
+          Endpoints and models for your AI features.
+        </p>
+      </div>
+      <SectionCard
+        title="Configured providers"
+        description={providerStatus(organization, data)}
+        toolbar={
+          <Button
+            variant="secondary"
+            className="h-[30px] rounded-lg border-border bg-muted px-3 text-[11.5px] font-semibold shadow-none [&_svg]:size-3"
+            onClick={() => setOpenAdd(true)}
+          >
+            <Plus />
+            <span>Add provider</span>
+          </Button>
+        }
+      >
+        {content()}
 
-      {openAdd && <ProviderDialog open onOpenChange={setOpenAdd} scopeOptions={scopeOptions} />}
-    </SectionCard>
+        {openAdd && <ProviderDialog open onOpenChange={setOpenAdd} scopeOptions={scopeOptions} />}
+      </SectionCard>
+    </div>
   )
 }

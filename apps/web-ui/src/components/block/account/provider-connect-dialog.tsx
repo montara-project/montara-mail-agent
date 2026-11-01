@@ -27,7 +27,7 @@ import { queries } from '@/lib/api/queries'
 import type { Connector } from './connector-list'
 
 const methodButtonClass =
-  'bg-card hover:bg-accent/50 focus-visible:ring-ring/50 flex items-center gap-3 rounded-xl border p-4 text-left text-sm transition-colors outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50'
+  'bg-card border-border/60 shadow-hairline hover:bg-accent/50 focus-visible:ring-ring/50 flex items-center gap-3 rounded-lg border p-4 text-left text-sm transition-colors outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50'
 
 /**
  * Connecting a branded provider offers two ways in, picked in this dialog:
@@ -130,7 +130,7 @@ export default function ProviderConnectDialog({
                   onClick={connectWithOAuth}
                   className={methodButtonClass}
                 >
-                  <span className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-lg">
+                  <span className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-md">
                     {oauthConnect.isPending ? (
                       <Loader2 className="size-1/2 animate-spin motion-reduce:animate-none" />
                     ) : (
@@ -154,7 +154,7 @@ export default function ProviderConnectDialog({
                   onClick={() => setMethod('app-password')}
                   className={methodButtonClass}
                 >
-                  <span className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-lg">
+                  <span className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-md">
                     <KeyRound className="size-1/2" />
                   </span>
                   <span className="grid min-w-0 flex-1">

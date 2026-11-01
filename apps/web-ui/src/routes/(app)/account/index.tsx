@@ -13,7 +13,14 @@ import { queries } from '@/lib/api/queries'
 // The OAuth callback returns the browser here with the provider's code and
 // the flow's state (or an error), and the route finishes the connection as
 // the signed-in user, toasts how it went and strips the query.
-type AccountSearch = { oauth?: string; code?: string; state?: string; error?: string }
+type AccountSearch = {
+  oauth?: string
+  code?: string
+  state?: string
+  error?: string
+  /** Set by the sidebar's Add account row: scrolls to the provider grid. */
+  connect?: string
+}
 
 const str = (value: unknown) => (typeof value === 'string' && value !== '' ? value : undefined)
 
@@ -23,6 +30,7 @@ export const Route = createFileRoute('/(app)/account/')({
     code: str(search.code),
     state: str(search.state),
     error: str(search.error),
+    connect: str(search.connect),
   }),
   component: RouteComponent,
 })

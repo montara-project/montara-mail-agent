@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { ExternalLink, Loader2 } from 'lucide-react'
+import { ExternalLink, Loader2, Plus } from 'lucide-react'
 import React from 'react'
 
 import type { Models } from '@/lib/api/models'
@@ -65,7 +65,8 @@ export default function WalletCard() {
         description="The balance a subscription renews from automatically at period end."
         toolbar={
           <Button size="sm" onClick={() => setOpen(true)}>
-            Top up wallet
+            <Plus />
+            <span>Top up</span>
           </Button>
         }
       >
@@ -75,12 +76,12 @@ export default function WalletCard() {
           error={walletQuery.error}
           onRetry={() => void walletQuery.refetch()}
           isEmpty={false}
-          loading={<Skeleton className="h-5 w-full" />}
+          loading={<Skeleton className="h-8 w-32" />}
           empty={null}
         >
-          <div className="flex items-baseline justify-between text-sm">
-            <span className="text-muted-foreground">Balance</span>
-            <span className="font-medium tabular-nums">
+          <div className="grid gap-0.5">
+            <span className="text-ink-3 text-xs">Balance</span>
+            <span className="text-2xl font-semibold tabular-nums">
               {formatRupiah(walletQuery.data?.balance_idr ?? 0)}
             </span>
           </div>
@@ -97,11 +98,11 @@ export default function WalletCard() {
             empty={null}
           >
             <div className="grid gap-1">
-              <p className="text-muted-foreground text-xs font-medium">Recent wallet top-ups</p>
-              <ul className="-mx-2 grid">
+              <p className="text-ink-3 text-xs font-medium">Recent wallet top-ups</p>
+              <ul className="divide-y divide-border/60">
                 {topups?.map((t) => (
-                  <li key={t.id} className="flex items-center gap-3 px-2 py-2 text-sm">
-                    <span className="text-muted-foreground tabular-nums">
+                  <li key={t.id} className="flex items-center gap-3 py-2 text-sm">
+                    <span className="text-ink-3 tabular-nums">
                       {monthDay(new Date(t.created_at), true)}
                     </span>
                     <span className="ms-auto tabular-nums">{formatRupiah(t.amount_idr)}</span>

@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Plus } from 'lucide-react'
+import { Bot, Plus, SquarePen, Trash2 } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
@@ -7,8 +7,8 @@ import type { Models } from '@/lib/api/models'
 
 import { AddAgentBotForm, EditAgentBotForm } from '@/components/block/agent-bot/agent-bot-form'
 import EmptyState from '@/components/block/common/empty-state'
-import RowColumnAction from '@/components/block/common/row-column-action'
 import SectionCard from '@/components/block/common/section-card'
+import SectionHeading from '@/components/block/common/section-heading'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -33,18 +33,37 @@ function AgentBotRow({ record }: { record: Models.AgentBot }) {
 
   return (
     <li className="flex items-center gap-3 py-3">
+      {/* A bot is an AI thing, so its tile carries the AI accent. */}
+      <span className="bg-accent-ink/10 text-accent-ink flex size-9 shrink-0 items-center justify-center rounded-md">
+        <Bot className="size-4" aria-hidden />
+      </span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{record.name}</p>
-        {record.description && (
-          <p className="text-muted-foreground truncate text-xs">{record.description}</p>
-        )}
+        {record.description && <p className="text-ink-3 truncate text-xs">{record.description}</p>}
       </div>
       {record.is_default && (
-        <Badge variant="success" appearance="light">
+        <Badge variant="secondary" appearance="light" size="sm">
           Default
         </Badge>
       )}
-      <RowColumnAction onEdit={() => setOpenEdit(true)} onDelete={() => setOpenDelete(true)} />
+      <Button
+        variant="ghost"
+        mode="icon"
+        size="sm"
+        aria-label={`Edit ${record.name}`}
+        onClick={() => setOpenEdit(true)}
+      >
+        <SquarePen />
+      </Button>
+      <Button
+        variant="destructive"
+        mode="icon"
+        size="sm"
+        aria-label={`Delete ${record.name}`}
+        onClick={() => setOpenDelete(true)}
+      >
+        <Trash2 />
+      </Button>
 
       <SimpleAlertDialog
         title="Do you want to delete this agent bot?"
@@ -69,9 +88,16 @@ export default function AgentBotList({ organizationId }: { organizationId: strin
   const content = () => {
     if (isPending) {
       return (
-        <div className="grid gap-3">
-          <Skeleton className="h-10" />
-          <Skeleton className="h-10" />
+        <div className="grid gap-3 py-3">
+          {[0, 1].map((index) => (
+            <div key={index} className="flex items-center gap-3">
+              <Skeleton className="size-9 rounded-md" />
+              <div className="grid flex-1 gap-1.5">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-3 w-3/5" />
+              </div>
+            </div>
+          ))}
         </div>
       )
     }
@@ -84,7 +110,7 @@ export default function AgentBotList({ organizationId }: { organizationId: strin
       )
     }
     return (
-      <ul className="divide-y">
+      <ul className="divide-y divide-border/60">
         {bots.map((bot) => (
           <AgentBotRow key={bot.id} record={bot} />
         ))}
@@ -93,19 +119,20 @@ export default function AgentBotList({ organizationId }: { organizationId: strin
   }
 
   return (
-    <SectionCard
-      title="Agent Bots"
-      description="Personas the AI assistant can speak as. Only the organization's owner can change them."
-      toolbar={
-        <Button className="h-8.5 rounded-lg" onClick={() => setOpenAdd(true)}>
-          <Plus />
-          <span>Add</span>
-        </Button>
-      }
-    >
-      {content()}
+    <section className="grid gap-3">
+      <SectionHeading
+        title="Agent Bots"
+        description="Personas the AI assistant can speak as. Only the organization's owner can change them."
+        action={
+          <Button onClick={() => setOpenAdd(true)}>
+            <Plus />
+            <span>Add</span>
+          </Button>
+        }
+      />
+      <SectionCard>{content()}</SectionCard>
 
       <AddAgentBotForm organizationId={organizationId} open={openAdd} onOpenChange={setOpenAdd} />
-    </SectionCard>
+    </section>
   )
 }

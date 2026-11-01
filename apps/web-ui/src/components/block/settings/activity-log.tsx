@@ -1,47 +1,19 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
-import {
-  Dot,
-  Forward,
-  LogIn,
-  type LucideIcon,
-  Plug,
-  Send,
-  ShieldCheck,
-  Trash2,
-  Undo2,
-  Unplug,
-  User,
-} from 'lucide-react'
 
 import type { Models } from '@/lib/api/models'
 
 import EmptyState from '@/components/block/common/empty-state'
 import SectionCard from '@/components/block/common/section-card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { activityLogQueries } from '@/lib/api/queries/activity-log'
-import { clock, monthDay } from '@/lib/date'
+import { timeAgo } from '@/lib/date'
 
 interface ActivityLogListProps {
   title: string
   description: string
   /** Given, the list shows that organization's entries; else the user's own. */
   organizationId?: string
-}
-
-// The icon an entry carries, by its exact action; the area's icon covers the
-// rest.
-const ACTION_ICONS: Partial<Record<Models.ActivityAction, LucideIcon>> = {
-  'auth.sign_in': LogIn,
-  'profile.updated': User,
-  'password.changed': ShieldCheck,
-  'email_account.connected': Plug,
-  'email_account.disconnected': Unplug,
-  'mail.sent': Send,
-  'mail.replied': Undo2,
-  'mail.forwarded': Forward,
-  'mail.deleted': Trash2,
 }
 
 // The badge an entry carries, by its action's area (the word before the dot).
@@ -55,26 +27,23 @@ const AREA_LABELS: Record<string, string> = {
 }
 
 function ActivityRow({ entry, showActor }: { entry: Models.ActivityLog; showActor: boolean }) {
-  const Icon = ACTION_ICONS[entry.action] ?? Dot
   const area = entry.action.split('.')[0]
   const actor = entry.actor_name || 'Unknown'
 
   return (
-    <li className="flex items-start gap-3 py-3">
-      <span className="bg-muted text-muted-foreground mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full">
-        <Icon className="size-4" />
-      </span>
+    <li className="border-border/60 flex items-center gap-3 border-b py-2.5 last:border-b-0">
+      <span className="size-1.5 shrink-0 rounded-full bg-zinc-600" aria-hidden />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{entry.description}</p>
-        <p className="text-muted-foreground mt-0.5 text-xs">
+        <p className="truncate text-xs font-medium">{entry.description}</p>
+        <p className="text-ink-3 mt-0.5 truncate text-[10.5px]">
           {showActor ? `${actor} · ` : ''}
-          {`${monthDay(new Date(entry.created_at), true)} ${clock(new Date(entry.created_at))}`}
+          {timeAgo(new Date(entry.created_at))}
           {entry.ip ? ` · from ${entry.ip}` : ''}
         </p>
       </div>
-      <Badge variant="secondary" appearance="light" className="shrink-0">
+      <span className="bg-muted shrink-0 rounded-[5px] px-[7px] py-[3px] text-[10px] font-semibold text-muted-foreground">
         {AREA_LABELS[area] ?? entry.action}
-      </Badge>
+      </span>
     </li>
   )
 }
@@ -112,7 +81,7 @@ export default function ActivityLogList({
     }
     return (
       <>
-        <ul className="divide-y">
+        <ul>
           {entries.map((entry) => (
             <ActivityRow key={entry.id} entry={entry} showActor={!!organizationId} />
           ))}

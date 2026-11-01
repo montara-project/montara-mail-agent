@@ -1,12 +1,14 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { ArrowRightLeft, Loader2, RefreshCw, Unplug } from 'lucide-react'
+import { ArrowRightLeft, Loader2, Plus, RefreshCw, Unplug } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
 
+import ProviderBadge from '@/components/block/common/provider-badge'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
+import StatusDot from '@/components/block/common/status-dot'
 import { useSplitInbox } from '@/components/layout/mail/mail-panel'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -25,7 +27,7 @@ import { axiosErrorMessage, toastAxiosError } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
 import { timeAgo } from '@/lib/date'
 
-import { CONNECTORS, ProviderIcon } from './connector-list'
+import { ProviderIcon } from './connector-list'
 
 /** When the account last synced, or why it could not. */
 function SyncStatus({ account }: { account: Models.EmailAccount }) {
@@ -37,14 +39,9 @@ function SyncStatus({ account }: { account: Models.EmailAccount }) {
     )
   }
   if (!account.synced_at) {
-    return (
-      <span className="flex items-center gap-1.5">
-        <RefreshCw className="size-3 animate-spin motion-reduce:animate-none" />
-        Syncing...
-      </span>
-    )
+    return <StatusDot status="pending" label="Syncing..." />
   }
-  return <span>Synced {timeAgo(new Date(account.synced_at))}</span>
+  return <StatusDot status="synced" label={`Synced ${timeAgo(new Date(account.synced_at))}`} />
 }
 
 /** Connected mail accounts of the active organization; each card opens that account's mailbox. */
@@ -73,8 +70,8 @@ export default function MailAccountList() {
     if (isPending && organization) {
       return (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          <Skeleton className="h-32 rounded-xl" />
-          <Skeleton className="h-32 rounded-xl" />
+          <Skeleton className="h-32 rounded-lg" />
+          <Skeleton className="h-32 rounded-lg" />
         </div>
       )
     }
@@ -91,7 +88,7 @@ export default function MailAccountList() {
     }
     if (!accounts?.length) {
       return (
-        <p className="text-muted-foreground rounded-xl border border-dashed p-6 text-center text-sm">
+        <p className="text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm">
           No account is connected yet. Pick a provider below.
         </p>
       )
@@ -99,33 +96,44 @@ export default function MailAccountList() {
     return (
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {accounts.map((account) => (
-          <div key={account.id} className="bg-card grid gap-3 rounded-xl border p-4 text-sm">
-            <Link
-              to="/mail"
-              search={split ? { account: account.id } : {}}
-              className="focus-visible:ring-ring/50 -m-1 flex items-center gap-3 rounded-lg p-1 outline-none focus-visible:ring-[3px]"
-            >
-              <ProviderIcon provider={account.provider} />
-              <div className="grid min-w-0 flex-1">
-                <span className="truncate font-semibold hover:underline">
-                  {mask(account.label)}
+          <div
+            key={account.id}
+            className="bg-card border-border/60 shadow-hairline grid gap-3.5 rounded-lg border p-[18px] text-sm"
+          >
+            <div className="flex items-start gap-3">
+              <Link
+                to="/mail"
+                search={split ? { account: account.id } : {}}
+                className="focus-visible:ring-ring/50 -my-1 flex min-w-0 flex-1 items-center gap-3 rounded-md p-1 outline-none focus-visible:ring-[3px]"
+              >
+                <ProviderIcon
+                  provider={account.provider}
+                  tint={false}
+                  className="rounded-[11px] bg-secondary"
+                />
+                <span className="grid min-w-0 flex-1">
+                  <span className="truncate font-semibold hover:underline">
+                    {mask(account.label)}
+                  </span>
+                  <span className="text-muted-foreground truncate text-xs">
+                    {mask(account.email)}
+                  </span>
                 </span>
-                <span className="text-muted-foreground truncate text-xs">
-                  {mask(account.email)}
-                </span>
-              </div>
-              {account.unread > 0 && <Badge>{account.unread} unread</Badge>}
-            </Link>
-            <div className="text-muted-foreground flex items-center justify-between gap-2 text-xs">
-              <span>
-                {CONNECTORS.find((c) => c.id === account.provider)?.name ?? account.provider}
-              </span>
-              <SyncStatus account={account} />
+              </Link>
+              <ProviderBadge provider={account.provider} className="mt-2.5 shrink-0" />
             </div>
-            <div className="flex justify-end gap-2 border-t pt-3">
+            <div className="text-muted-foreground flex items-center justify-between gap-2 text-xs">
+              <SyncStatus account={account} />
+              {account.unread > 0 && (
+                <Badge variant="secondary" size="sm" className="shrink-0">
+                  {account.unread} unread
+                </Badge>
+              )}
+            </div>
+            <div className="grid grid-cols-3 gap-1.5">
               <Button
-                variant="outline"
-                size="sm"
+                variant="secondary"
+                className="h-7 rounded-lg bg-secondary text-[11.5px] font-medium text-muted-foreground shadow-none [&_svg]:size-3"
                 disabled={sync.isPending && sync.variables === account.id}
                 onClick={() =>
                   sync.mutate(account.id, {
@@ -144,8 +152,8 @@ export default function MailAccountList() {
                 Sync now
               </Button>
               <Button
-                variant="outline"
-                size="sm"
+                variant="secondary"
+                className="h-7 rounded-lg bg-secondary text-[11.5px] font-medium text-muted-foreground shadow-none [&_svg]:size-3"
                 disabled={otherOrgs.length === 0}
                 onClick={() => {
                   setMoveTarget('')
@@ -155,7 +163,11 @@ export default function MailAccountList() {
                 <ArrowRightLeft />
                 Move
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setDisconnecting(account)}>
+              <Button
+                variant="secondary"
+                className="text-zinc-600 hover:text-muted-foreground h-7 rounded-lg bg-secondary text-[11.5px] font-medium shadow-none [&_svg]:size-3"
+                onClick={() => setDisconnecting(account)}
+              >
                 <Unplug />
                 Disconnect
               </Button>
@@ -166,15 +178,53 @@ export default function MailAccountList() {
     )
   }
 
+  const failing = (accounts ?? []).filter((account) => account.sync_error).length
+  const synced = (accounts ?? [])
+    .map((account) => account.synced_at)
+    .filter((value): value is string => !!value)
+  const lastSync = synced.length
+    ? timeAgo(new Date(Math.max(...synced.map((d) => new Date(d).getTime()))))
+    : null
+
+  const scrollToConnect = () => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    document
+      .getElementById('connect-section')
+      ?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' })
+  }
+
   return (
     <section aria-labelledby="mail-accounts-title" className="grid gap-3">
-      <div>
-        <h2 id="mail-accounts-title" className="text-lg font-semibold">
-          Email accounts
-        </h2>
-        <p className="text-muted-foreground text-sm">Pick an account to open its mailbox.</p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="grid gap-1">
+          <h2 id="mail-accounts-title" className="text-lg font-semibold">
+            Email accounts
+          </h2>
+          <p className="text-muted-foreground text-sm">
+            {accounts?.length
+              ? `${accounts.length} ${accounts.length === 1 ? 'account' : 'accounts'} connected${lastSync ? ` · last sync ${lastSync}` : ''}`
+              : 'Connect your first mailbox below.'}
+          </p>
+        </div>
+        <div className="flex items-center gap-6">
+          <StatusDot
+            status={failing > 0 ? 'failed' : 'healthy'}
+            label={
+              failing > 0
+                ? `${failing} connection${failing === 1 ? '' : 's'} need attention`
+                : 'All connections healthy'
+            }
+          />
+          <Button className="h-8 rounded-lg" onClick={scrollToConnect}>
+            <Plus />
+            Add account
+          </Button>
+        </div>
       </div>
       {content()}
+      <p className="text-ink-3 text-[11.5px]">
+        Disconnecting an account removes local messages but keeps the mailbox itself untouched.
+      </p>
       <Dialog open={!!moving} onOpenChange={(open) => !open && setMoving(null)}>
         <DialogContent className="gap-0 p-0 sm:max-w-md">
           <div className="grid gap-4 p-6">

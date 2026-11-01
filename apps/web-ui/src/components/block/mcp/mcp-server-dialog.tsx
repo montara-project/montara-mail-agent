@@ -375,8 +375,8 @@ export default function MCPServerDialog({
                       patch({ kind: k.kind })
                     }}
                     className={cn(
-                      'flex shrink-0 items-center justify-between gap-3 rounded-lg px-2.5 py-2 text-start text-sm transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 disabled:cursor-not-allowed',
-                      active ? 'bg-background font-medium shadow-xs' : 'hover:bg-accent/60',
+                      'flex shrink-0 items-center justify-between gap-3 rounded-control px-2.5 py-2 text-start text-sm transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 disabled:cursor-not-allowed',
+                      active ? 'bg-secondary font-medium' : 'hover:bg-accent/60',
                       locked && 'opacity-50'
                     )}
                   >

@@ -1,13 +1,16 @@
 import { Link, useLocation } from '@tanstack/react-router'
+import { Mail } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import React from 'react'
 
 import type { Models } from '@/lib/api/models'
 import type { UserInfo } from '@/types/menu'
 
+import { AnimatedThemeToggler } from '#/components/ui/animated-theme-toggler'
 import MailPanel, { MAIL_FOLDERS, useMailFolder } from '@/components/layout/mail/mail-panel'
-import PlatformPanel from '@/components/layout/platform/platform-panel'
-import { AnimatedThemeToggler } from '@/components/ui/animated-theme-toggler'
+import AccountsPanel from '@/components/layout/platform/accounts-panel'
+import DashboardPanel from '@/components/layout/platform/dashboard-panel'
+import SettingsPanel from '@/components/layout/settings/settings-panel'
 import {
   Sidebar,
   SidebarContent,
@@ -43,8 +46,9 @@ function ThemeToggle() {
 /** The second panel shown next to the rail for a path, if any. */
 function sidebarPanel(pathname: string) {
   if (pathname.startsWith('/mail')) return <MailPanel />
-  if (['/dashboard', '/account', '/settings'].some((path) => pathname.startsWith(path)))
-    return <PlatformPanel />
+  if (pathname.startsWith('/dashboard')) return <DashboardPanel />
+  if (pathname.startsWith('/account')) return <AccountsPanel />
+  if (pathname.startsWith('/settings')) return <SettingsPanel />
   return null
 }
 
@@ -93,11 +97,12 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
                 <Link to="/dashboard">
-                  <img
-                    src="/images/mail-agent-logo.png"
-                    alt="Montara"
-                    className="aspect-square size-8 shrink-0"
-                  />
+                  <span
+                    aria-hidden
+                    className="grid size-[30px] shrink-0 place-items-center rounded-[9px] bg-accent-ink/15 ring-1 ring-accent-ink/25"
+                  >
+                    <Mail className="size-3.75 text-[#a5a5ff]" />
+                  </span>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">Montara</span>
                     <span className="truncate text-xs">{COMMUNITY ? 'Community' : 'Mail'}</span>

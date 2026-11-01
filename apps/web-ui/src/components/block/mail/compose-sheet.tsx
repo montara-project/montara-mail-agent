@@ -1,9 +1,10 @@
 import { useMutation } from '@tanstack/react-query'
-import { Trash2 } from 'lucide-react'
+import { Minus, X } from 'lucide-react'
 import React from 'react'
 
 import type { Models } from '@/lib/api/models'
 
+import Hint from '@/components/block/common/hint'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -28,12 +29,16 @@ const EMPTY = { to: '', cc: '', subject: '' }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[4.5rem_1fr] items-center gap-2">
-      <span className="text-muted-foreground text-sm">{label}</span>
+    <div className="border-border/60 grid grid-cols-[3.5rem_1fr] items-center gap-2.5 border-b px-[18px] py-[11px]">
+      <span className="text-ink-3 text-[11.5px] font-semibold">{label}</span>
       {children}
     </div>
   )
 }
+
+/** The design's borderless field: the row border does the framing. */
+const bareField =
+  'h-auto border-0 bg-transparent px-0 text-[12.5px] shadow-none focus-visible:ring-[3px] focus-visible:ring-ring/30 focus-visible:border-0'
 
 /**
  * A new mail from one of the organization's accounts. It closes only through
@@ -116,25 +121,46 @@ export default function ComposeSheet({
       <SheetContent
         size="xl"
         showCloseButton={false}
-        className="w-full gap-0"
+        className="bg-card w-full gap-0"
         aria-describedby={undefined}
         onEscapeKeyDown={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
       >
-        <SheetHeader className="flex-row items-center justify-between border-b p-4">
-          <SheetTitle>New message</SheetTitle>
-          <Button variant="ghost" size="sm" onClick={discard} disabled={send.isPending}>
-            <Trash2 />
-            Discard
-          </Button>
+        <SheetHeader className="flex-row items-center justify-between border-b px-[18px] py-[13px]">
+          <SheetTitle className="text-sm font-bold">New message</SheetTitle>
+          <div className="flex items-center gap-1.5">
+            <Hint label="Close and keep the draft">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="bg-muted hover:bg-accent size-6 rounded-md shadow-none [&_svg]:size-3"
+                aria-label="Close and keep the draft"
+                onClick={() => onOpenChange(false)}
+              >
+                <Minus />
+              </Button>
+            </Hint>
+            <Hint label="Discard draft">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="bg-muted hover:bg-accent size-6 rounded-md shadow-none [&_svg]:size-3"
+                aria-label="Discard draft"
+                disabled={send.isPending}
+                onClick={discard}
+              >
+                <X />
+              </Button>
+            </Hint>
+          </div>
         </SheetHeader>
-        <div className="grid gap-3 border-b p-4">
+        <div className="border-border/60 grid border-b">
           <Row label="From">
             {accounts?.length ? (
               <Select value={fromId} onValueChange={setFrom} indicatorPosition="right">
                 <SelectTrigger
                   aria-label="From"
-                  className="h-9 [&>span]:min-w-0 [&>span]:flex-1 [&>span]:text-start [&>span]:break-all"
+                  className="h-auto w-full justify-start gap-2 border-0 bg-transparent p-0 text-[12.5px] shadow-none focus-visible:ring-[3px] focus-visible:ring-ring/30 [&>span]:min-w-0 [&>span]:flex-1 [&>span]:text-start [&>span]:break-all"
                 >
                   <SelectValue />
                 </SelectTrigger>
@@ -151,7 +177,9 @@ export default function ComposeSheet({
                 </SelectContent>
               </Select>
             ) : (
-              <span className="text-muted-foreground text-sm">No email account connected</span>
+              <span className="text-muted-foreground text-[12.5px]">
+                No email account connected
+              </span>
             )}
           </Row>
           <Row label="To">
@@ -160,10 +188,16 @@ export default function ComposeSheet({
                 aria-label="To"
                 placeholder="name@example.com, other@example.com"
                 autoComplete="off"
+                className={bareField}
                 {...field('to')}
               />
               {!showCc && (
-                <Button variant="ghost" size="sm" onClick={() => setShowCc(true)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-foreground h-auto px-1 py-0.5 text-[11.5px] font-semibold"
+                  onClick={() => setShowCc(true)}
+                >
                   Cc
                 </Button>
               )}
@@ -171,11 +205,11 @@ export default function ComposeSheet({
           </Row>
           {showCc && (
             <Row label="Cc">
-              <Input aria-label="Cc" autoComplete="off" {...field('cc')} />
+              <Input aria-label="Cc" autoComplete="off" className={bareField} {...field('cc')} />
             </Row>
           )}
           <Row label="Subject">
-            <Input aria-label="Subject" {...field('subject')} />
+            <Input aria-label="Subject" className={bareField} {...field('subject')} />
           </Row>
           {problem && (
             <p role="alert" className="text-destructive text-sm">
@@ -184,7 +218,7 @@ export default function ComposeSheet({
           )}
         </div>
         {/* The editor takes the rest of the sheet; its text scrolls on its own. */}
-        <div className="min-h-0 flex-1 p-4">
+        <div className="min-h-0 flex-1 px-[18px] py-4">
           <React.Suspense
             fallback={
               <div className="grid gap-2" aria-busy="true">
@@ -197,7 +231,7 @@ export default function ComposeSheet({
               fill
               initial={initial}
               placeholder="Write your message..."
-              cancelLabel="Close"
+              cancelLabel="Save draft"
               onCancel={(next) => {
                 setDraft(next)
                 onOpenChange(false)

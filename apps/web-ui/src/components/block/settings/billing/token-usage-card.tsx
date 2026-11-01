@@ -11,10 +11,10 @@ export default function TokenUsageCard() {
   const limit = quota.limit_tokens
 
   return (
-    <div className="grid gap-2 rounded-lg border p-3 text-sm">
+    <div className="bg-muted grid gap-1.5 rounded-lg p-2 px-2.25">
       <div className="flex items-baseline justify-between gap-2">
-        <span className="font-medium">Token usage</span>
-        <span className="text-muted-foreground text-xs whitespace-nowrap tabular-nums">
+        <span className="text-[10.5px] font-semibold text-muted-foreground">AI tokens</span>
+        <span className="text-ink-3 font-mono text-[9.5px] whitespace-nowrap tabular-nums">
           {formatTokens(quota.used_tokens)}
           {limit !== null && ` / ${formatTokens(limit)}`}
         </span>

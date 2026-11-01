@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Copy, KeyRound, Plus, Trash2 } from 'lucide-react'
+import { Copy, KeyRound, Link2, Plus, Trash2 } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
@@ -33,11 +33,8 @@ import {
   GLOBAL_SCOPE,
 } from '@/lib/api/dtos/settings/api-key/schema'
 import { queries } from '@/lib/api/queries'
-import { SERVER_URL } from '@/lib/api/server-url'
+import { MCP_ENDPOINT } from '@/lib/constants/mcp'
 import { isPast, timeAgo } from '@/lib/date'
-
-/** Where MCP clients connect: the server this browser uses. */
-const MCP_ENDPOINT = `${SERVER_URL || window.location.origin}/mcp`
 
 const LIFETIME_OPTIONS = API_KEY_LIFETIMES.map((days) => ({
   value: days,
@@ -73,7 +70,7 @@ const day = (iso: string) =>
 function KeyMeta({ apiKey }: { apiKey: Models.APIKey }) {
   const expired = !!apiKey.expires_at && isPast(new Date(apiKey.expires_at))
   return (
-    <span className="text-muted-foreground text-xs">
+    <span className="text-ink-3 text-xs">
       Created {day(apiKey.created_at)}
       {apiKey.expires_at && (
         <span className={expired ? 'text-destructive' : undefined}>
@@ -97,7 +94,7 @@ function KeyRow({ apiKey }: { apiKey: Models.APIKey }) {
       <span className="grid min-w-0 flex-1 gap-0.5">
         <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
           <span className="truncate text-sm font-medium">{apiKey.name}</span>
-          <span className="text-muted-foreground font-mono text-xs">{apiKey.hint}</span>
+          <span className="text-ink-3 font-mono text-xs">{apiKey.hint}</span>
           <Badge variant="secondary" appearance="light" size="sm" className="max-w-48">
             <span className="truncate">
               {apiKey.organization_id
@@ -114,14 +111,14 @@ function KeyRow({ apiKey }: { apiKey: Models.APIKey }) {
         <KeyMeta apiKey={apiKey} />
       </span>
       <Button
-        variant="ghost"
+        variant="destructive"
+        mode="icon"
         size="sm"
-        className="text-destructive hover:text-destructive"
+        aria-label={`Revoke ${apiKey.name}`}
         disabled={remove.isPending}
         onClick={() => setConfirming(true)}
       >
         <Trash2 />
-        Revoke
       </Button>
 
       <SimpleAlertDialog
@@ -270,7 +267,7 @@ function KeyCreatedDialog({
             </code>
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               size="sm"
               onClick={() => copy(created.key, 'Key')}
             >
@@ -283,7 +280,7 @@ function KeyCreatedDialog({
               <span className="text-sm font-medium">Client config</span>
               <Button
                 type="button"
-                variant="ghost"
+                variant="secondary"
                 size="sm"
                 onClick={() => copy(config, 'Config')}
               >
@@ -294,7 +291,7 @@ function KeyCreatedDialog({
             <pre className="bg-muted/60 overflow-x-auto rounded-md border p-3 font-mono text-xs leading-relaxed">
               {config}
             </pre>
-            <p className="text-muted-foreground text-xs text-pretty">
+            <p className="text-ink-3 text-xs text-pretty">
               Add it to your MCP client's servers, e.g. Claude Desktop's or Cursor's{' '}
               <code className="font-mono">mcp.json</code>.
             </p>
@@ -340,26 +337,26 @@ export default function APIKeyList() {
         title="API keys"
         description="Let MCP clients such as Claude Desktop or Cursor search and sort your mail. What they propose to send waits for your approval in the AI assistant."
         action={
-          <Button className="h-8.5 rounded-lg" onClick={() => setCreating(true)}>
+          <Button onClick={() => setCreating(true)}>
             <Plus />
             <span>Create key</span>
           </Button>
         }
       />
 
-      <SectionCard>
+      <SectionCard title="MCP endpoint">
         <div className="grid gap-2">
-          <span className="text-sm font-medium">MCP endpoint</span>
           <div className="flex min-w-0 items-center gap-2">
-            <code className="bg-muted/60 min-w-0 flex-1 truncate rounded-md border px-3 py-2 font-mono text-sm">
-              {MCP_ENDPOINT}
+            <code className="bg-muted/60 text-foreground flex min-w-0 flex-1 items-center gap-2 rounded-md border px-3 py-2 font-mono text-sm">
+              <Link2 className="text-ink-3 size-4 shrink-0" aria-hidden />
+              <span className="truncate">{MCP_ENDPOINT}</span>
             </code>
-            <Button variant="outline" size="sm" onClick={() => copy(MCP_ENDPOINT, 'Endpoint')}>
+            <Button variant="secondary" size="sm" onClick={() => copy(MCP_ENDPOINT, 'Endpoint')}>
               <Copy />
               Copy
             </Button>
           </div>
-          <p className="text-muted-foreground text-xs text-pretty">
+          <p className="text-ink-3 text-xs text-pretty">
             Streamable HTTP. Send a key as <code className="font-mono">Authorization: Bearer</code>;
             it opens this endpoint only, not your account.
           </p>
@@ -381,7 +378,7 @@ export default function APIKeyList() {
             />
           }
         >
-          <ul className="-m-4 divide-y overflow-hidden rounded-lg">
+          <ul className="-m-4 divide-y divide-border/60 overflow-hidden rounded-lg">
             {keys.map((apiKey) => (
               <KeyRow key={apiKey.id} apiKey={apiKey} />
             ))}

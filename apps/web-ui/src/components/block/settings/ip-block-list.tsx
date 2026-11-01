@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Plus, ShieldBan, Trash2 } from 'lucide-react'
+import { Ban, Plus } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
@@ -11,7 +11,6 @@ import SectionCard from '@/components/block/common/section-card'
 import SectionHeading from '@/components/block/common/section-heading'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import SimpleAlertScrollableDialogForm from '@/components/block/common/simple-alert-scrollable-dialog-form'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FieldDescription } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -21,6 +20,7 @@ import { parseDto } from '@/lib/api/dtos/parse'
 import { IP_BLOCK_DURATIONS, IPBlockSchema } from '@/lib/api/dtos/settings/ip-block/schema'
 import { queries } from '@/lib/api/queries'
 import { timeAgo } from '@/lib/date'
+import { cn } from '@/lib/utils'
 
 const DURATION_OPTIONS = IP_BLOCK_DURATIONS.map((hours) => ({
   value: hours,
@@ -35,12 +35,11 @@ const DURATION_OPTIONS = IP_BLOCK_DURATIONS.map((hours) => ({
 
 const ago = (iso: string) => timeAgo(new Date(iso))
 
-/** "Blocked 3 minutes ago by you@… · Lifts in about 1 hour". */
+/** "Blocked 3 minutes ago · Lifts in about 1 hour", the design's faint when line. */
 function BlockMeta({ block }: { block: Models.IPBlock }) {
   return (
-    <span className="text-muted-foreground text-xs">
+    <span className="text-zinc-600 text-[10.5px]">
       Blocked {ago(block.created_at)}
-      {block.created_by_email && ` by ${block.created_by_email}`}
       {' · '}
       {block.expires_at ? `Lifts ${ago(block.expires_at)}` : 'Until removed'}
     </span>
@@ -50,31 +49,45 @@ function BlockMeta({ block }: { block: Models.IPBlock }) {
 function BlockRow({ block }: { block: Models.IPBlock }) {
   const [confirming, setConfirming] = React.useState(false)
   const remove = useMutation(queries.ipBlocks.delete())
+  const auto = block.source === 'auto'
 
   return (
-    <li className="flex flex-wrap items-center gap-3 px-4 py-3">
-      <ShieldBan className="text-muted-foreground size-4 shrink-0" aria-hidden />
+    <li className="bg-muted flex flex-wrap items-center gap-3 rounded-[10px] px-3 py-3">
+      <span
+        className={cn(
+          'flex size-[30px] shrink-0 items-center justify-center rounded-[8px]',
+          auto ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-red-400'
+        )}
+      >
+        <Ban className="size-3.5" aria-hidden />
+      </span>
       <span className="grid min-w-0 flex-1 gap-0.5">
-        <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
-          <span className="font-mono text-sm">{block.network}</span>
-          <Badge
-            variant={block.source === 'auto' ? 'warning' : 'secondary'}
-            appearance="light"
-            size="sm"
+        <span className="flex min-w-0 flex-wrap items-center gap-x-1.75">
+          <span className="truncate font-mono text-xs font-semibold">{block.network}</span>
+          <span
+            className={cn(
+              'rounded-tag px-1.5 py-0.5 font-mono text-[9px] font-semibold',
+              auto ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-red-400'
+            )}
           >
-            {block.source === 'auto' ? 'Automatic' : 'Manual'}
-          </Badge>
+            {auto ? 'Auto' : 'Manual'}
+          </span>
         </span>
-        {block.reason && <span className="text-sm text-pretty">{block.reason}</span>}
+        <span className="text-ink-3 text-[11px] text-pretty">
+          {block.reason ||
+            (auto ? 'Repeated failures' : block.created_by_email) ||
+            'No reason given'}
+        </span>
         <BlockMeta block={block} />
       </span>
       <Button
-        variant="ghost"
+        variant="outline"
         size="sm"
+        className="rounded-[7px] px-2.5 text-[11.5px] font-semibold"
+        aria-label={`Unblock ${block.network}`}
         disabled={remove.isPending}
         onClick={() => setConfirming(true)}
       >
-        <Trash2 />
         Unblock
       </Button>
 
@@ -172,10 +185,10 @@ function BlockDialog({ yourIP, onClose }: { yourIP?: string; onClose: () => void
 /** Shaped like the rows it stands in for. */
 function Loading() {
   return (
-    <div className="grid gap-5 py-3">
+    <div className="grid gap-3">
       {[0, 1].map((index) => (
-        <div key={index} className="flex items-center gap-3">
-          <Skeleton className="size-4 rounded" />
+        <div key={index} className="bg-muted flex items-center gap-3 rounded-[10px] px-3 py-3">
+          <Skeleton className="size-[30px] rounded-[8px]" />
           <div className="grid flex-1 gap-1.5">
             <Skeleton className="h-4 w-36" />
             <Skeleton className="h-3 w-64" />
@@ -205,15 +218,22 @@ export default function IPBlockList() {
             ? `Blocked addresses can't reach the app or the API. The server also blocks an address for ${auto.block_minutes} minutes after ${auto.failed_sign_ins} failed sign-ins or ${auto.rate_limit_hits} rate-limit hits within ${auto.window_minutes} minutes.`
             : "Blocked addresses can't reach the app or the API."
         }
-        action={
-          <Button className="h-8.5 rounded-lg" onClick={() => setBlocking(true)}>
+      />
+
+      <SectionCard
+        title="Blocked addresses"
+        description={
+          isPending
+            ? undefined
+            : `${blocks.length} ${blocks.length === 1 ? 'address' : 'addresses'} currently blocked.`
+        }
+        toolbar={
+          <Button variant="secondary" size="sm" onClick={() => setBlocking(true)}>
             <Plus />
             <span>Block address</span>
           </Button>
         }
-      />
-
-      <SectionCard>
+      >
         <QueryState
           isPending={isPending}
           isError={isError}
@@ -228,7 +248,7 @@ export default function IPBlockList() {
             />
           }
         >
-          <ul className="-m-4 divide-y overflow-hidden rounded-lg">
+          <ul className="grid gap-3">
             {blocks.map((block) => (
               <BlockRow key={block.id} block={block} />
             ))}

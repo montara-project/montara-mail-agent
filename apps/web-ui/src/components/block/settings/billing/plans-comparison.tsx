@@ -60,7 +60,8 @@ const checkoutInProgress = (subscription: Models.Subscription) =>
 
 /**
  * One tier: what it costs and its action above the line, what it carries below.
- * Two subgrid rows, so the line sits at the same height on all three.
+ * Two subgrid rows, so the line sits at the same height on all three. The
+ * tier the user is on gets a lifted border and a stronger tint.
  */
 function Tier({
   name,
@@ -70,7 +71,7 @@ function Tier({
   note,
   tagline,
   features,
-  featured,
+  current,
   action,
 }: {
   name: string
@@ -80,41 +81,42 @@ function Tier({
   note?: React.ReactNode
   tagline: string
   features: string[]
-  featured?: boolean
+  current?: boolean
   action?: React.ReactNode
 }) {
   return (
-    <div className="row-span-2 grid grid-rows-subgrid gap-0 overflow-hidden rounded-xl border">
-      <div className={cn('flex flex-col gap-4 p-5', featured && 'bg-muted/50')}>
+    <div
+      className={cn(
+        'row-span-2 grid grid-rows-subgrid gap-0 overflow-hidden rounded-lg border',
+        current ? 'border-accent-ink/40 bg-accent-ink/8' : 'border-border/60 bg-card'
+      )}
+    >
+      <div className="flex flex-col gap-4 p-4">
         <div className="flex min-h-6 items-center justify-between gap-2">
-          <h3 className="text-lg font-semibold">{name}</h3>
+          <h3 className="text-[13px] font-bold">{name}</h3>
           {badge && (
-            <Badge variant="secondary" appearance="light" size="sm">
+            <span className="bg-accent-tint rounded-[4px] px-1.5 py-0.5 font-mono text-[8.5px] font-semibold text-[#a5a5ff] uppercase">
               {badge}
-            </Badge>
+              <span className="sr-only">tier</span>
+            </span>
           )}
         </div>
         <div className="grid gap-1.5">
           <div className="flex min-h-10 flex-wrap items-center gap-x-2">
-            <span className="text-3xl font-semibold tracking-tight tabular-nums">{price}</span>
-            {unit && (
-              <span className="text-muted-foreground w-min text-xs leading-tight">{unit}</span>
-            )}
+            <span className="text-lg font-bold tracking-tight tabular-nums">{price}</span>
+            {unit && <span className="text-ink-3 w-min text-[10.5px] leading-tight">{unit}</span>}
           </div>
           {note}
         </div>
-        <p className="text-muted-foreground text-sm">{tagline}</p>
+        <p className="text-ink-3 text-[11px]">{tagline}</p>
         {action && <div className="mt-auto pt-1 *:w-full">{action}</div>}
       </div>
-      <div className="grid content-start gap-3 border-t p-5">
-        <h4 className="text-xs font-semibold tracking-wide uppercase">Features</h4>
-        <ul className="grid gap-2.5 text-sm">
+      <div className="grid content-start gap-1.5 p-4">
+        <ul className="grid gap-1.5">
           {features.map((feature) => (
-            <li key={feature} className="flex items-start gap-2.5">
-              <span className="mt-px flex size-4.5 shrink-0 items-center justify-center rounded-full bg-lime-400 text-lime-950">
-                <Check className="size-3" strokeWidth={3} aria-hidden />
-              </span>
-              <span className="text-muted-foreground">{feature}</span>
+            <li key={feature} className="flex items-start gap-1.5">
+              <Check className="text-success mt-px size-2.5 shrink-0" strokeWidth={3} aria-hidden />
+              <span className="text-muted-foreground text-[11px]">{feature}</span>
             </li>
           ))}
         </ul>
@@ -190,7 +192,7 @@ export default function PlansComparison() {
           empty={null}
         >
           {monthly && yearly && (
-            <div className="bg-muted mb-5 inline-flex max-w-full gap-0.5 rounded-lg p-1 text-sm">
+            <div className="bg-inset mb-5 inline-flex max-w-full gap-0.5 rounded-control p-1 text-sm">
               {(['month', 'year'] as const).map((value) => (
                 <button
                   key={value}
@@ -200,7 +202,7 @@ export default function PlansComparison() {
                   className={cn(
                     'focus-visible:ring-ring/50 flex items-center gap-2 rounded-md border px-3 py-1 font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-[3px]',
                     billing === value
-                      ? 'bg-background shadow-xs'
+                      ? 'bg-secondary border-transparent'
                       : 'text-muted-foreground hover:text-foreground border-transparent'
                   )}
                 >
@@ -224,11 +226,11 @@ export default function PlansComparison() {
                 price="Rp0"
                 tagline="The essentials for trying the agent."
                 features={FEATURES.free}
+                current={quota?.plan === 'free'}
                 action={quota?.plan === 'free' ? currentPlanButton : undefined}
               />
               <Tier
                 name="Pro"
-                featured
                 badge={quota?.plan === 'pro' ? undefined : 'Recommended'}
                 price={pro && formatRupiah(effectivePrice(pro))}
                 unit={billing === 'month' ? 'per month' : 'per year'}
@@ -239,7 +241,7 @@ export default function PlansComparison() {
                       <span className="text-muted-foreground me-1.5 line-through">
                         {formatRupiah(pro.amount)}
                       </span>
-                      <span className="text-green-700 dark:text-green-400">
+                      <span className="text-success">
                         Save {formatRupiah(pro.discount_amount)}
                         {pro.discount_ends_at
                           ? ` until ${monthDay(new Date(pro.discount_ends_at), true)}`
@@ -250,6 +252,7 @@ export default function PlansComparison() {
                 }
                 tagline="For teams who live in their inbox."
                 features={FEATURES.pro}
+                current={quota?.plan === 'pro'}
                 action={proAction}
               />
               <Tier
@@ -257,11 +260,12 @@ export default function PlansComparison() {
                 price="Custom"
                 tagline="Unlimited everything, billed per contract."
                 features={FEATURES.enterprise}
+                current={quota?.plan === 'enterprise'}
                 action={
                   quota?.plan === 'enterprise' ? (
                     currentPlanButton
                   ) : (
-                    <Button asChild>
+                    <Button variant="outline" asChild>
                       <a href={`mailto:${CONTACT_EMAIL}`}>Contact us</a>
                     </Button>
                   )

@@ -6,16 +6,16 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
-  'cursor-pointer group rounded-md whitespace-nowrap focus-visible:outline-hidden inline-flex items-center justify-center has-data-[arrow=true]:justify-between whitespace-nowrap text-sm font-medium ring-offset-background transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-60 [&_svg]:shrink-0',
+  'cursor-pointer group rounded-control whitespace-nowrap focus-visible:outline-hidden inline-flex items-center justify-center has-data-[arrow=true]:justify-between whitespace-nowrap text-sm font-medium ring-offset-background transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-60 [&_svg]:shrink-0',
   {
     variants: {
       variant: {
         primary:
           'bg-primary text-primary-foreground hover:bg-primary/90 data-[state=open]:bg-primary/90',
         destructive:
-          'bg-destructive text-destructive-foreground hover:bg-destructive/90 data-[state=open]:bg-destructive/90',
+          'bg-transparent text-destructive border border-destructive hover:bg-destructive hover:text-destructive-foreground data-[state=open]:bg-destructive data-[state=open]:text-destructive-foreground',
         secondary:
-          'bg-secondary text-secondary-foreground hover:bg-secondary/90 data-[state=open]:bg-secondary/90',
+          'bg-secondary text-secondary-foreground hover:bg-white/10 data-[state=open]:bg-white/10',
         outline:
           'bg-background text-accent-foreground border border-input hover:bg-accent data-[state=open]:bg-accent',
         ghost:
@@ -32,7 +32,7 @@ const buttonVariants = cva(
         md: 'h-9 px-3 gap-1.5 text-sm [&_svg:not([class*=size-])]:size-4',
         sm: 'h-8 px-2.5 gap-1.25 text-xs [&_svg:not([class*=size-])]:size-3.5',
         xs: 'h-7 px-2 gap-1 text-xs [&_svg:not([class*=size-])]:size-3.5',
-        icon: 'size-9 [&_svg:not([class*=size-])]:size-4 shrink-0',
+        icon: 'size-8 [&_svg:not([class*=size-])]:size-4 shrink-0',
       },
       mode: {
         default: 'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
@@ -167,7 +167,7 @@ const buttonVariants = cva(
       },
       {
         size: 'icon',
-        className: 'w-9 h-9 p-0 [&_svg:not([class*=size-])]:size-4',
+        className: 'w-8 h-8 p-0 [&_svg:not([class*=size-])]:size-4',
       },
 
       // Input mode

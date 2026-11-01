@@ -8,7 +8,7 @@ import type { Models } from '@/lib/api/models'
 
 import SectionCard from '@/components/block/common/section-card'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
-import { Badge } from '@/components/ui/badge'
+import StatusDot from '@/components/block/common/status-dot'
 import { Button } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { OTPCodeInput } from '@/components/ui/input-otp'
@@ -30,7 +30,7 @@ function BackupCodes({ codes }: { codes: string[] }) {
     <div className="grid gap-3">
       <ul
         aria-label="Backup codes"
-        className="bg-muted/40 grid grid-cols-2 gap-x-6 gap-y-1 rounded-lg border p-3 font-mono text-sm sm:grid-cols-3"
+        className="bg-muted/40 grid grid-cols-2 gap-x-6 gap-y-1 rounded-md border p-3 font-mono text-sm sm:grid-cols-3"
       >
         {codes.map((code) => (
           <li key={code}>{code}</li>
@@ -39,7 +39,7 @@ function BackupCodes({ codes }: { codes: string[] }) {
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           size="sm"
           onClick={() =>
             navigator.clipboard.writeText(text).then(
@@ -51,7 +51,7 @@ function BackupCodes({ codes }: { codes: string[] }) {
           <Copy />
           Copy
         </Button>
-        <Button type="button" variant="outline" size="sm" asChild>
+        <Button type="button" variant="secondary" size="sm" asChild>
           <a
             href={`data:text/plain;charset=utf-8,${encodeURIComponent(text + '\n')}`}
             download="montara-backup-codes.txt"
@@ -98,13 +98,15 @@ function Setup({ setup, onClose }: { setup: Models.TOTPSetup; onClose: () => voi
           Use an authenticator app such as Google Authenticator, 1Password or Authy.
         </p>
         {/* White behind the code in both themes: scanners need the contrast. */}
-        <div className="w-fit rounded-lg border bg-white p-3">
+        <div className="w-fit rounded-md border bg-white p-3">
           <QRCodeSVG value={setup.totp_uri} size={176} title="Authenticator QR code" />
         </div>
         {secret && (
           <p className="text-sm">
             Can't scan it? Enter this key:{' '}
-            <code className="bg-muted rounded px-1.5 py-0.5 font-mono break-all">{secret}</code>
+            <code className="bg-muted rounded-chip px-1.5 py-0.5 font-mono break-all">
+              {secret}
+            </code>
           </p>
         )}
       </section>
@@ -132,7 +134,7 @@ function Setup({ setup, onClose }: { setup: Models.TOTPSetup; onClose: () => voi
           <Button type="submit" disabled={verifying || !code.trim()}>
             {verifying ? 'Verifying...' : 'Turn on'}
           </Button>
-          <Button type="button" variant="outline" onClick={onClose} disabled={verifying}>
+          <Button type="button" variant="secondary" onClick={onClose} disabled={verifying}>
             Cancel
           </Button>
         </div>
@@ -164,29 +166,31 @@ function Enabled() {
 
   return (
     <div className="grid max-w-xl gap-4">
-      <p className="text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <StatusDot status="synced" label="Enabled" />
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="secondary"
+            disabled={regenerate.isPending}
+            onClick={() => setConfirming('codes')}
+          >
+            <KeyRound />
+            New backup codes
+          </Button>
+          <Button
+            variant="destructive"
+            disabled={disable.isPending}
+            onClick={() => setConfirming('disable')}
+          >
+            Turn off
+          </Button>
+        </div>
+      </div>
+      <p className="text-muted-foreground text-sm">
         Signing in asks for a code from your authenticator app after the password, on every browser
         you don't mark as trusted.
       </p>
       {codes && <BackupCodes codes={codes} />}
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant="outline"
-          disabled={regenerate.isPending}
-          onClick={() => setConfirming('codes')}
-        >
-          <KeyRound />
-          New backup codes
-        </Button>
-        <Button
-          variant="destructive"
-          className="text-white"
-          disabled={disable.isPending}
-          onClick={() => setConfirming('disable')}
-        >
-          Turn off
-        </Button>
-      </div>
       <SimpleAlertDialog
         open={confirming !== null}
         onOpenChange={(open) => !open && setConfirming(null)}
@@ -228,16 +232,17 @@ export default function TOTPSettings() {
     if (enabled) return <Enabled />
     if (setup) return <Setup setup={setup} onClose={() => setSetup(null)} />
     return (
-      <div className="grid max-w-xl gap-4">
-        <p className="text-sm">
-          With it on, someone who learns your password still can't sign in without your phone.
-        </p>
-        <div>
-          <Button onClick={() => enable.mutate()} disabled={enable.isPending}>
+      <div className="grid gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <StatusDot status="pending" label="Not enabled" />
+          <Button variant="secondary" onClick={() => enable.mutate()} disabled={enable.isPending}>
             <ShieldCheck />
             {enable.isPending ? 'Starting...' : 'Set up'}
           </Button>
         </div>
+        <p className="text-muted-foreground text-sm">
+          With it on, someone who learns your password still can't sign in without your phone.
+        </p>
       </div>
     )
   }
@@ -246,13 +251,6 @@ export default function TOTPSettings() {
     <SectionCard
       title="Two-factor authentication"
       description="A code from your phone on top of the password."
-      toolbar={
-        data && (
-          <Badge variant={enabled ? 'success' : 'secondary'} appearance="light">
-            {enabled ? 'On' : 'Off'}
-          </Badge>
-        )
-      }
     >
       {content()}
     </SectionCard>

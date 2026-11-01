@@ -19,6 +19,7 @@ import {
   ListOrdered,
   Loader2,
   Paperclip,
+  Send,
   Strikethrough,
   Underline,
   X,
@@ -93,13 +94,16 @@ function AttachmentList({ files, onChange }: { files: File[]; onChange: (files: 
       {files.map((file, i) => (
         <li
           key={`${file.name}-${file.size}-${i}`}
-          className="bg-muted/40 flex max-w-64 items-center gap-2 rounded-lg border py-1.5 pr-1 pl-2 text-sm"
+          className="bg-muted flex h-7 max-w-64 items-center gap-2 rounded-lg border px-2.5 py-1.5"
         >
-          <FileIcon className="text-muted-foreground size-4 shrink-0" />
-          <span className="grid min-w-0 leading-tight">
-            <span className="truncate font-medium">{file.name}</span>
-            <span className="text-muted-foreground text-xs">{formatBytes(file.size)}</span>
+          <FileIcon className="text-[#a5a5ff] size-3.5 shrink-0" aria-hidden />
+          <span className="text-muted-foreground min-w-0 truncate font-mono text-[10.5px]">
+            {file.name}
           </span>
+          <span className="text-ink-3 shrink-0 font-mono text-[9.5px]">
+            {formatBytes(file.size)}
+          </span>
+          <span className="truncate font-medium">{file.name}</span>
           <Hint label="Remove">
             <button
               type="button"
@@ -246,7 +250,7 @@ function EditorBody({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="text-muted-foreground size-8"
+                  className="text-muted-foreground bg-muted hover:bg-accent size-[26px] rounded-[7px] shadow-none [&_svg]:size-3"
                   aria-label="Attach files"
                   onClick={() => fileInput.current?.click()}
                 >
@@ -273,7 +277,7 @@ function EditorBody({
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  'text-muted-foreground size-8',
+                  'text-muted-foreground bg-muted hover:bg-accent size-[26px] rounded-[7px] shadow-none [&_svg]:size-3',
                   item.active && 'bg-accent text-foreground'
                 )}
                 aria-label={item.label}
@@ -286,7 +290,13 @@ function EditorBody({
           ))}
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-2">
-          <Button type="button" variant="outline" onClick={cancel} title="Esc">
+          <Button
+            type="button"
+            variant="outline"
+            className="text-muted-foreground hover:text-foreground h-[30px] rounded-lg border-border bg-transparent px-3 text-[11.5px] font-semibold shadow-none"
+            onClick={cancel}
+            title="Esc"
+          >
             {cancelLabel}
           </Button>
           <Button
@@ -294,9 +304,14 @@ function EditorBody({
             title="Send (Ctrl+Enter)"
             aria-busy={sending}
             disabled={empty || sending}
+            className="h-[30px] gap-1.5 rounded-lg px-3.5 text-[11.5px] font-semibold"
             onClick={send}
           >
-            {sending && <Loader2 className="animate-spin motion-reduce:animate-none" />}
+            {sending ? (
+              <Loader2 className="animate-spin motion-reduce:animate-none" />
+            ) : (
+              <Send className="size-3" aria-hidden />
+            )}
             Send
           </Button>
         </div>

@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query'
+import { useSearch } from '@tanstack/react-router'
 import { Plus, Server } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
@@ -12,6 +13,7 @@ import larkLogo from '@/assets/connectors/lark.svg'
 import outlookLogo from '@/assets/connectors/outlook.svg'
 import yahooLogo from '@/assets/connectors/yahoo.svg'
 import zohoLogo from '@/assets/connectors/zoho.svg'
+import { providerColor } from '@/components/block/common/provider-badge'
 import SimpleAlertScrollableDialogForm from '@/components/block/common/simple-alert-scrollable-dialog-form'
 import { FieldDescription } from '@/components/ui/field'
 import { useAppForm } from '@/hooks/form'
@@ -102,21 +104,33 @@ export const CONNECTORS: Connector[] = [
   },
 ]
 
-/** A provider's brand logo on a tile; custom IMAP gets a generic server icon. */
+/**
+ * A provider's brand logo on a tile tinted with its brand color; providers
+ * without a brand token (lark, zoho, custom IMAP) get a muted tile, and IMAP
+ * keeps a generic server icon.
+ */
 export function ProviderIcon({
   provider,
   className,
+  tint = true,
 }: {
   provider: Models.EmailProvider
   className?: string
+  /** The brand-colored tile; off where a parent already colors the surface. */
+  tint?: boolean
 }) {
   const logo = CONNECTORS.find((c) => c.id === provider)?.logo
+  const color = tint ? providerColor(provider) : undefined
   return (
     <span
       className={cn(
-        'bg-muted flex size-10 shrink-0 items-center justify-center rounded-lg',
+        'flex size-10 shrink-0 items-center justify-center rounded-md',
+        !color && 'bg-muted',
         className
       )}
+      style={
+        color ? { backgroundColor: `color-mix(in srgb, ${color} 10%, transparent)` } : undefined
+      }
     >
       {logo ? (
         <img src={logo} alt="" className="size-3/5 object-contain" />
@@ -246,6 +260,26 @@ function ConnectForm({ connector, onClose }: { connector: Connector; onClose: ()
 /** Providers a mailbox can be connected from. */
 export default function ConnectorList() {
   const [connecting, setConnecting] = React.useState<Connector | null>(null)
+  // The sidebar's Add account row lands here with ?connect=1 and scrolls to the
+  // grid. The flag is stripped from the URL without a router navigation, which
+  // would reset the scroll it just performed.
+  const { connect } = useSearch({ strict: false }) as { connect?: string }
+  const gridRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    if (connect !== '1') return
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    window.history.replaceState(null, '', '/account')
+    // The router's scroll restoration can reset the position right after the
+    // first load; the retries re-anchor the grid once layout settles.
+    const scroll = () => gridRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' })
+    const raf = requestAnimationFrame(scroll)
+    const timer = window.setTimeout(scroll, 80)
+    return () => {
+      cancelAnimationFrame(raf)
+      window.clearTimeout(timer)
+    }
+  }, [connect])
 
   return (
     <section aria-labelledby="connectors-title" className="grid gap-3">
@@ -255,15 +289,19 @@ export default function ConnectorList() {
         </h2>
         <p className="text-muted-foreground text-sm">Add a mailbox from one of these providers.</p>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div ref={gridRef} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 scroll-mt-20">
         {CONNECTORS.map((connector) => (
           <button
             key={connector.id}
             type="button"
             onClick={() => setConnecting(connector)}
-            className="bg-card hover:bg-accent/50 focus-visible:ring-ring/50 flex items-center gap-3 rounded-xl border p-4 text-left text-sm transition-colors outline-none focus-visible:ring-[3px]"
+            className="bg-card border-border/60 hover:bg-accent/50 shadow-hairline focus-visible:ring-ring/50 flex h-[76px] items-center gap-3 rounded-lg border p-[18px] text-left text-sm transition-colors outline-none focus-visible:ring-[3px]"
           >
-            <ProviderIcon provider={connector.id} />
+            <ProviderIcon
+              provider={connector.id}
+              tint={false}
+              className="rounded-[11px] bg-secondary"
+            />
             <div className="grid min-w-0 flex-1">
               <span className="truncate font-semibold">
                 <span className="sr-only">Connect </span>
@@ -273,7 +311,7 @@ export default function ConnectorList() {
                 {connector.description}
               </span>
             </div>
-            <Plus className="text-muted-foreground size-4" aria-hidden />
+            <Plus className="text-zinc-600 size-4 shrink-0" aria-hidden />
           </button>
         ))}
       </div>
