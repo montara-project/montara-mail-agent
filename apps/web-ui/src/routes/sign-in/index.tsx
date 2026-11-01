@@ -26,7 +26,7 @@ const PROVIDERS = [
   { label: 'Gmail', dot: 'bg-brand-gmail' },
   { label: 'Outlook', dot: 'bg-brand-outlook' },
   { label: 'Proton', dot: 'bg-brand-proton' },
-  { label: '+2 more', dot: 'bg-zinc-600' },
+  { label: '+2 more', dot: 'bg-ink-faint' },
 ]
 
 /** The left panel's story, per card step. Server picking reuses the identify story. */
@@ -94,7 +94,7 @@ function Stepper({ step }: { step: AuthStep }) {
             ) : active ? (
               <span className="size-[5px] rounded-full bg-accent-ink" aria-hidden />
             ) : (
-              <span className="font-mono text-[9px] font-semibold text-zinc-600">{item.n}</span>
+              <span className="font-mono text-[9px] font-semibold text-ink-faint">{item.n}</span>
             )}
             <span
               className={
@@ -146,28 +146,28 @@ function RouteComponent() {
   return (
     <main className="flex min-h-svh bg-background">
       {/* Left / product proof: the brand, the pitch and the trust line. */}
-      <aside className="relative hidden w-[560px] shrink-0 flex-col justify-between overflow-hidden border-r border-border bg-gradient-to-b from-[#15151c] to-[#0a0a0c] px-11 pt-11 pb-10 lg:flex">
+      <aside className="relative hidden w-[560px] shrink-0 flex-col justify-between overflow-hidden border-r border-border bg-gradient-to-b from-card to-background px-11 pt-11 pb-10 lg:flex">
         <div
-          className="absolute -top-40 -left-44 size-[560px] rounded-full bg-[radial-gradient(closest-side,#7c7cff2e,#7c7cff00)]"
+          className="absolute -top-40 -left-44 size-[560px] rounded-full bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--accent-ink)_18%,transparent),transparent)]"
           aria-hidden
         />
         <div className="relative flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="grid size-[30px] place-items-center rounded-[9px] border border-accent-ink/25 bg-accent-tint">
-              <Mail className="size-[15px] text-[#c7c7ff]" aria-hidden />
+              <Mail className="size-[15px] text-accent-soft" aria-hidden />
             </div>
             <span className="text-[13px] font-bold">Montara Mail</span>
           </div>
-          <span className="font-mono text-[9px] font-semibold text-zinc-600">{EDITION_LABEL}</span>
+          <span className="font-mono text-[9px] font-semibold text-ink-faint">{EDITION_LABEL}</span>
         </div>
 
         <div className="relative flex flex-col gap-3">
           <div className="flex items-center gap-[7px]">
-            <span className="font-mono text-[9.5px] font-semibold text-[#c7c7ff]">
+            <span className="font-mono text-[9.5px] font-semibold text-accent-soft">
               {pitch.eyebrow}
             </span>
-            <span className="size-[3px] rounded-full bg-zinc-600" aria-hidden />
-            <span className="font-mono text-[9.5px] font-semibold text-zinc-600">
+            <span className="size-[3px] rounded-full bg-ink-faint" aria-hidden />
+            <span className="font-mono text-[9.5px] font-semibold text-ink-faint">
               {pitch.kicker}
             </span>
           </div>
@@ -177,7 +177,7 @@ function RouteComponent() {
             <div className="mt-2 flex flex-col gap-2.5 border-t border-border pt-[18px]">
               {pitch.assurance.map((line) => (
                 <div key={line} className="flex items-center gap-2">
-                  <Check className="size-3 shrink-0 text-[#c7c7ff]" aria-hidden />
+                  <Check className="size-3 shrink-0 text-accent-soft" aria-hidden />
                   <p className="text-[11.5px] text-ink-3">{line}</p>
                 </div>
               ))}
@@ -198,15 +198,15 @@ function RouteComponent() {
         </div>
 
         {view === 'verify' ? (
-          <p className="relative font-mono text-[9.5px] text-zinc-600">
+          <p className="relative font-mono text-[9.5px] text-ink-faint">
             Montara Mail · {EDITION_LABEL} inbox
           </p>
         ) : (
           <div className="relative flex justify-between border-t border-border pt-4">
             {pitch.trust.map((line) => (
               <div key={line} className="flex items-center gap-1.5">
-                <Check className="size-[11px] shrink-0 text-[#c7c7ff]" aria-hidden />
-                <span className="font-mono text-[9px] font-semibold text-zinc-600">{line}</span>
+                <Check className="size-[11px] shrink-0 text-accent-soft" aria-hidden />
+                <span className="font-mono text-[9px] font-semibold text-ink-faint">{line}</span>
               </div>
             ))}
           </div>
@@ -215,7 +215,7 @@ function RouteComponent() {
 
       {/* Right / sign-in: the stepper, the card and the legal lines. */}
       <section className="relative flex flex-1 flex-col items-center justify-center px-10 py-10 lg:px-[60px]">
-        <span className="absolute top-10 right-10 font-mono text-[9.5px] font-semibold text-zinc-600 lg:right-[60px]">
+        <span className="absolute top-10 right-10 font-mono text-[9.5px] font-semibold text-ink-faint lg:right-[60px]">
           Jakarta · EN
         </span>
         {exchanging ? (
@@ -228,7 +228,7 @@ function RouteComponent() {
             <Stepper step={authStep} />
             <LoginForm codeFirst={needsCode} onStepChange={setAuthStep} />
             <div className="flex flex-col items-center gap-1 text-center">
-              <p className="text-[11px] text-zinc-600">
+              <p className="text-[11px] text-ink-faint">
                 By continuing you agree to the{' '}
                 <a
                   href={TERMS_URL}
@@ -249,7 +249,7 @@ function RouteComponent() {
                 </a>
                 .
               </p>
-              <p className="text-[11px] text-zinc-600">
+              <p className="text-[11px] text-ink-faint">
                 Lost access? Ask your workspace admin to reset the mailbox.
               </p>
             </div>

@@ -297,7 +297,7 @@ function Quarantined() {
                 <ShieldX className="size-3" aria-hidden />
               </span>
               <div className="grid min-w-0 flex-1 gap-0.5">
-                <span className="truncate text-xs font-semibold text-zinc-200">
+                <span className="truncate text-xs font-semibold text-ink-strong">
                   {mask(mail.from_email || senderName(mail))}
                 </span>
                 <span className="text-ink-3 truncate text-[11.5px]">
@@ -368,7 +368,7 @@ function Mailboxes() {
                 <ProviderIcon provider={account.provider} className="size-4" />
               </span>
               <span className="grid min-w-0 flex-1">
-                <span className="truncate text-xs font-semibold text-zinc-200">
+                <span className="truncate text-xs font-semibold text-ink-strong">
                   {mask(account.label)}
                 </span>
                 <span className="text-ink-3 truncate text-[10.5px]">{mask(account.email)}</span>
@@ -394,7 +394,7 @@ function Shortcuts() {
         <Link
           to="/mail"
           search={{ folder: 'inbox' }}
-          className="hover:bg-accent/50 focus-visible:ring-ring/50 flex items-center gap-2.5 rounded-[8px] bg-muted px-2 py-[7px] text-xs font-medium text-zinc-300 outline-none focus-visible:ring-[3px]"
+          className="hover:bg-accent/50 focus-visible:ring-ring/50 flex items-center gap-2.5 rounded-[8px] bg-muted px-2 py-[7px] text-xs font-medium text-ink-strong outline-none focus-visible:ring-[3px]"
         >
           <Inbox className="text-muted-foreground size-4 shrink-0" aria-hidden />
           <span className="flex-1">Open unified inbox</span>
@@ -403,7 +403,7 @@ function Shortcuts() {
         <Link
           to="/mail"
           search={{ folder: 'spam' }}
-          className="hover:bg-accent/50 focus-visible:ring-ring/50 flex items-center gap-2.5 rounded-[8px] bg-muted px-2 py-[7px] text-xs font-medium text-zinc-300 outline-none focus-visible:ring-[3px]"
+          className="hover:bg-accent/50 focus-visible:ring-ring/50 flex items-center gap-2.5 rounded-[8px] bg-muted px-2 py-[7px] text-xs font-medium text-ink-strong outline-none focus-visible:ring-[3px]"
         >
           <ShieldCheck className="text-muted-foreground size-4 shrink-0" aria-hidden />
           <span className="flex-1">Spam &amp; blocked</span>

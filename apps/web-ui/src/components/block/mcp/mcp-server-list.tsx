@@ -397,7 +397,7 @@ export default function MCPServerList({ organizationId }: { organizationId: stri
       />
       <SectionCard>
         <div className="grid gap-2">
-          <h2 className="text-[9.5px] font-semibold uppercase text-zinc-600">Endpoint</h2>
+          <h2 className="text-[9.5px] font-semibold uppercase text-ink-faint">Endpoint</h2>
           <div className="flex min-w-0 items-center gap-2">
             <code className="bg-muted/60 text-foreground flex min-w-0 flex-1 items-center gap-2 rounded-md border px-3 py-2 font-mono text-sm">
               <Link2 className="text-ink-3 size-4 shrink-0" aria-hidden />

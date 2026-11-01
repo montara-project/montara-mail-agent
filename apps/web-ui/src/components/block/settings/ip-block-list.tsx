@@ -38,7 +38,7 @@ const ago = (iso: string) => timeAgo(new Date(iso))
 /** "Blocked 3 minutes ago · Lifts in about 1 hour", the design's faint when line. */
 function BlockMeta({ block }: { block: Models.IPBlock }) {
   return (
-    <span className="text-zinc-600 text-[10.5px]">
+    <span className="text-ink-faint text-[10.5px]">
       Blocked {ago(block.created_at)}
       {' · '}
       {block.expires_at ? `Lifts ${ago(block.expires_at)}` : 'Until removed'}
@@ -56,7 +56,7 @@ function BlockRow({ block }: { block: Models.IPBlock }) {
       <span
         className={cn(
           'flex size-[30px] shrink-0 items-center justify-center rounded-[8px]',
-          auto ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-red-400'
+          auto ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-danger-soft'
         )}
       >
         <Ban className="size-3.5" aria-hidden />
@@ -67,7 +67,7 @@ function BlockRow({ block }: { block: Models.IPBlock }) {
           <span
             className={cn(
               'rounded-tag px-1.5 py-0.5 font-mono text-[9px] font-semibold',
-              auto ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-red-400'
+              auto ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-danger-soft'
             )}
           >
             {auto ? 'Auto' : 'Manual'}

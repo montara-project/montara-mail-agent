@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link, useSearch, useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import {
   Archive,
   ArrowUpRight,
@@ -9,9 +9,9 @@ import {
   PenLine,
   Send,
   Settings,
+  Sparkles,
   SquarePen,
   Trash2,
-  Sparkles,
 } from 'lucide-react'
 import React from 'react'
 
@@ -243,7 +243,7 @@ function UpgradeBanner() {
     <div className="flex flex-col gap-2 rounded-[10px] border border-accent-ink/20 bg-accent-ink/10 p-2.5">
       <div className="flex items-center gap-2">
         <span className="grid size-6 shrink-0 place-items-center rounded-md bg-accent-ink/15">
-          <Sparkles className="size-3.5 text-[#c7c7ff]" />
+          <Sparkles className="size-3.5 text-accent-soft" />
         </span>
         <span className="grid min-w-0 flex-1 text-left leading-tight">
           <span className="truncate text-xs font-bold">Upgrade your plan</span>
@@ -341,7 +341,7 @@ export default function MailPanel() {
                     <SidebarMenuBadge
                       className={cn(
                         item.id === 'inbox'
-                          ? 'bg-accent-ink/20 text-[#c7c7ff]'
+                          ? 'bg-accent-ink/20 text-accent-soft'
                           : 'bg-muted text-ink-3'
                       )}
                     >
@@ -354,7 +354,7 @@ export default function MailPanel() {
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel className="font-mono text-[9px] font-semibold tracking-[1px] text-zinc-700 uppercase">
+          <SidebarGroupLabel className="font-mono text-[9px] font-semibold tracking-[1px] text-ink-faint uppercase">
             Labels
           </SidebarGroupLabel>
           <SidebarGroupContent>

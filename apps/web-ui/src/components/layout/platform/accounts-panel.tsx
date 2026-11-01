@@ -68,13 +68,13 @@ export default function AccountsPanel() {
                 <SidebarMenuButton
                   asChild
                   isActive
-                  className="data-active:bg-accent-tint data-active:text-foreground [&_svg]:text-[#c7c7ff]"
+                  className="data-active:bg-accent-tint data-active:text-foreground [&_svg]:text-accent-soft"
                 >
                   <Link to="/mail">
                     <Inbox />
                     <span>Unified inbox</span>
                     {unread > 0 && (
-                      <span className="bg-accent-ink/25 ml-auto rounded-[4px] px-[5px] py-px font-mono text-[9.5px] font-semibold text-[#c7c7ff] tabular-nums">
+                      <span className="bg-accent-ink/25 ml-auto rounded-[4px] px-[5px] py-px font-mono text-[9.5px] font-semibold text-accent-soft tabular-nums">
                         {unread > 99 ? '99+' : unread}
                       </span>
                     )}
@@ -129,9 +129,9 @@ export default function AccountsPanel() {
                           </span>
                         </span>
                         {isOpen ? (
-                          <ChevronDown className="text-zinc-600 size-3 shrink-0" aria-hidden />
+                          <ChevronDown className="text-ink-faint size-3 shrink-0" aria-hidden />
                         ) : (
-                          <ChevronRight className="text-zinc-600 size-3 shrink-0" aria-hidden />
+                          <ChevronRight className="text-ink-faint size-3 shrink-0" aria-hidden />
                         )}
                       </button>
                       {isOpen && (
@@ -165,7 +165,7 @@ export default function AccountsPanel() {
                                 {account.email}
                               </span>
                               {account.unread > 0 && (
-                                <span className="text-[#c7c7ff] font-mono text-[9px] font-semibold tabular-nums">
+                                <span className="text-accent-soft font-mono text-[9px] font-semibold tabular-nums">
                                   {account.unread}
                                 </span>
                               )}

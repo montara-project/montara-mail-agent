@@ -55,7 +55,7 @@ export default function OrganizationSwitcher() {
             className="h-11 w-full min-w-0 justify-between gap-2 rounded-[9px] bg-muted px-[7px] shadow-none"
           >
             <span className="flex min-w-0 items-center gap-2">
-              <span className="grid size-6 shrink-0 place-items-center rounded-md bg-accent-tint text-[10.5px] font-bold text-[#a5a5ff] uppercase">
+              <span className="grid size-6 shrink-0 place-items-center rounded-md bg-accent-tint text-[10.5px] font-bold text-accent-soft uppercase">
                 {label.charAt(0).toUpperCase()}
               </span>
               <span className="grid min-w-0 flex-1 text-left leading-tight">

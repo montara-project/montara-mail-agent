@@ -113,7 +113,7 @@ export default function DashboardPanel() {
           <TokenUsageCard />
           <Link
             to="/settings/billing"
-            className="hover:bg-accent flex items-center gap-[7px] rounded-lg border border-border bg-white/[0.06] px-2.5 py-2 text-[11.5px] font-semibold outline-none"
+            className="hover:bg-accent flex items-center gap-[7px] rounded-lg border border-border bg-secondary px-2.5 py-2 text-[11.5px] font-semibold outline-none"
           >
             <Sparkles className="text-accent-ink size-3 shrink-0" aria-hidden />
             Upgrade to Pro

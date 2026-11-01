@@ -165,7 +165,7 @@ export default function MailAccountList() {
               </Button>
               <Button
                 variant="secondary"
-                className="text-zinc-600 hover:text-muted-foreground h-7 rounded-lg bg-secondary text-[11.5px] font-medium shadow-none [&_svg]:size-3"
+                className="text-ink-faint hover:text-muted-foreground h-7 rounded-lg bg-secondary text-[11.5px] font-medium shadow-none [&_svg]:size-3"
                 onClick={() => setDisconnecting(account)}
               >
                 <Unplug />

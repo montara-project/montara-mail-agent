@@ -101,7 +101,7 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
                     aria-hidden
                     className="grid size-[30px] shrink-0 place-items-center rounded-[9px] bg-accent-ink/15 ring-1 ring-accent-ink/25"
                   >
-                    <Mail className="size-3.75 text-[#a5a5ff]" />
+                    <Mail className="size-3.75 text-accent-soft" />
                   </span>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">Montara</span>

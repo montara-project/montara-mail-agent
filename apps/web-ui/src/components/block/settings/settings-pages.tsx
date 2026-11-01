@@ -88,11 +88,11 @@ export function DeleteAccountSettings() {
       />
       <div className="grid gap-5">
         <div className="border-destructive/20 bg-destructive/5 flex items-start gap-3.5 rounded-lg border p-4.5">
-          <span className="bg-destructive/10 text-red-400 grid size-9 shrink-0 place-items-center rounded-md">
+          <span className="bg-destructive/10 text-danger-soft grid size-9 shrink-0 place-items-center rounded-md">
             <TriangleAlert className="size-4" aria-hidden />
           </span>
           <div className="grid gap-1">
-            <h2 className="text-[13px] font-bold text-red-400">This action is permanent</h2>
+            <h2 className="text-[13px] font-bold text-danger-soft">This action is permanent</h2>
             <p className="text-muted-foreground text-[11.5px] text-pretty">
               Deleting your account removes all mailboxes, messages, API keys, agent bots and
               billing history. Domains and mail delivered elsewhere stay untouched.

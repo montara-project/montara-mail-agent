@@ -115,7 +115,7 @@ function OrganizationRow({ record, active }: { record: Models.Organization; acti
         variant="ghost"
         mode="icon"
         size="sm"
-        className="text-zinc-600 hover:text-destructive [&_svg]:size-3.5"
+        className="text-ink-faint hover:text-destructive [&_svg]:size-3.5"
         aria-label={`Delete ${record.name}`}
         onClick={() => setOpenDelete(true)}
       >

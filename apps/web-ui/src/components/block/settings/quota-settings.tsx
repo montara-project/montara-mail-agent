@@ -102,7 +102,7 @@ export default function QuotaSettings() {
         {showPurchases && <WalletCard />}
       </div>
 
-      <p className="text-zinc-600 font-mono text-[9.5px] font-semibold uppercase">Usage</p>
+      <p className="text-ink-faint font-mono text-[9.5px] font-semibold uppercase">Usage</p>
       <SectionCard title="This week's AI usage" description={RESET_NOTE}>
         <QueryState
           isPending={isPending}
@@ -146,7 +146,7 @@ export default function QuotaSettings() {
 
       {showPurchases && (
         <>
-          <p className="text-zinc-600 font-mono text-[9.5px] font-semibold uppercase">Plans</p>
+          <p className="text-ink-faint font-mono text-[9.5px] font-semibold uppercase">Plans</p>
           <PlansComparison />
         </>
       )}

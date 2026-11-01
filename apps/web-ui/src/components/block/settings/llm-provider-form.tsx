@@ -503,16 +503,16 @@ export default function LLMProviderSettings() {
           <table className="w-full min-w-xl text-left text-sm">
             <thead>
               <tr className="bg-muted">
-                <th className="text-zinc-600 px-3 py-[9px] font-mono text-[9px] font-semibold tracking-wide uppercase">
+                <th className="text-ink-faint px-3 py-[9px] font-mono text-[9px] font-semibold tracking-wide uppercase">
                   Provider
                 </th>
-                <th className="text-zinc-600 px-3 py-[9px] font-mono text-[9px] font-semibold tracking-wide uppercase">
+                <th className="text-ink-faint px-3 py-[9px] font-mono text-[9px] font-semibold tracking-wide uppercase">
                   Endpoint
                 </th>
-                <th className="text-zinc-600 px-3 py-[9px] font-mono text-[9px] font-semibold tracking-wide uppercase">
+                <th className="text-ink-faint px-3 py-[9px] font-mono text-[9px] font-semibold tracking-wide uppercase">
                   Model
                 </th>
-                <th className="text-zinc-600 px-3 py-[9px] font-mono text-[9px] font-semibold tracking-wide uppercase">
+                <th className="text-ink-faint px-3 py-[9px] font-mono text-[9px] font-semibold tracking-wide uppercase">
                   Runs in
                 </th>
                 <th className="px-3 py-[9px]">

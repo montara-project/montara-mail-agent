@@ -37,6 +37,12 @@ export const AnimatedThemeToggler = ({
       return
     }
 
+    // Reduced motion: the circular reveal is movement, so skip straight to the swap.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      applyTheme()
+      return
+    }
+
     // innerWidth/innerHeight (not visualViewport): percentages must resolve
     // against the snapshot reference box, which includes classic scrollbars.
     const width = window.innerWidth

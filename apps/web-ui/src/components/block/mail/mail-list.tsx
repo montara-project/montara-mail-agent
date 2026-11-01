@@ -516,7 +516,7 @@ export default function MailList({ className }: { className?: string }) {
                   'min-w-0 truncate',
                   mail.is_read
                     ? 'text-muted-foreground font-medium'
-                    : 'text-zinc-200 font-semibold text-[11.5px]'
+                    : 'text-ink-strong font-semibold text-[11.5px]'
                 )}
               >
                 {mail.subject || '(no subject)'}
@@ -591,7 +591,7 @@ export default function MailList({ className }: { className?: string }) {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.18, ease: EASE_OUT }}
-                    className={`bg-accent-ink/15 text-[#c7c7ff] font-mono text-[9px] font-semibold truncate rounded-chip px-1.5 py-0.5 tabular-nums ${COUNT_VISIBILITY}`}
+                    className={`bg-accent-ink/15 text-accent-soft font-mono text-[9px] font-semibold truncate rounded-chip px-1.5 py-0.5 tabular-nums ${COUNT_VISIBILITY}`}
                   >
                     {unreadCount} new
                   </motion.span>
@@ -599,20 +599,31 @@ export default function MailList({ className }: { className?: string }) {
               )}
             </AnimatePresence>
           </h2>
-          {/* Wide enough for the five actions, at touch size too. */}
+          {/* Wide enough for the five actions, at touch size too. The refresh
+              cross-fades away while a selection shows the bulk actions. */}
           <div className="relative flex h-9 w-44 shrink-0 items-center justify-end pointer-coarse:w-52">
-            <Hint label="Refresh">
-              <Button
-                variant="secondary"
-                mode="icon"
-                size="xs"
-                aria-label="Refresh mail"
-                disabled={isPending && !!scope}
-                onClick={() => refetch()}
-              >
-                <RefreshCw />
-              </Button>
-            </Hint>
+            <motion.span
+              animate={
+                selecting ? { opacity: 0, x: 8, scale: 0.98 } : { opacity: 1, x: 0, scale: 1 }
+              }
+              transition={{ duration: 0.18, ease: EASE_OUT }}
+              inert={selecting}
+              aria-hidden={selecting}
+              className={cn('flex', selecting && 'pointer-events-none')}
+            >
+              <Hint label="Refresh">
+                <Button
+                  variant="secondary"
+                  mode="icon"
+                  size="xs"
+                  aria-label="Refresh mail"
+                  disabled={isPending && !!scope}
+                  onClick={() => refetch()}
+                >
+                  <RefreshCw />
+                </Button>
+              </Hint>
+            </motion.span>
             <AnimatePresence>
               {selecting && (
                 <BulkActions folder={folder.id} mails={selectedMails} onDone={afterBulk} />

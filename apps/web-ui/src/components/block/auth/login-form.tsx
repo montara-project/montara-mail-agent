@@ -44,7 +44,7 @@ function providerDotClass(email: string) {
   if (/^(proton\.(me|mail\.com))$/.test(domain)) return 'bg-brand-proton'
   if (/yahoo\./.test(domain)) return 'bg-brand-yahoo'
   if (/(icloud|me|mac)\.com$/.test(domain)) return 'bg-brand-icloud'
-  return 'bg-zinc-600'
+  return 'bg-ink-faint'
 }
 
 /**
@@ -87,7 +87,7 @@ function AuthField({
         {label}
       </FieldLabel>
       <InputWrapper className="h-[42px] gap-[9px] px-3">
-        {Icon && <Icon className="size-3.5 text-zinc-600" />}
+        {Icon && <Icon className="size-3.5 text-ink-faint" />}
         <Input
           id={field.name}
           name={field.name}
@@ -198,8 +198,8 @@ function TOTPStep({
           inbox, so it stays a paste hint: OTPCodeInput splits a pasted code. */}
       {!backup && (
         <div className="flex items-center gap-2 rounded-md border border-accent-ink/40 bg-accent-tint px-[11px] py-[9px]">
-          <Sparkles className="size-3 shrink-0 text-[#c7c7ff]" aria-hidden />
-          <p className="text-[11.5px] text-[#c7c7ff]">
+          <Sparkles className="size-3 shrink-0 text-accent-soft" aria-hidden />
+          <p className="text-[11.5px] text-accent-soft">
             Paste the code — Montara fills each digit for you.
           </p>
         </div>
@@ -373,7 +373,7 @@ export default function LoginForm({
       {step === 'code' ? (
         <div className="flex flex-col gap-2.5 px-8 pt-[30px] pb-[22px]">
           <div className="flex items-center justify-between">
-            <span className="font-mono text-[9.5px] font-semibold text-[#c7c7ff]">
+            <span className="font-mono text-[9.5px] font-semibold text-accent-soft">
               VERIFICATION
             </span>
             <span className="inline-flex items-center gap-1 rounded-chip bg-warning/10 px-2 py-[3px]">
@@ -386,13 +386,13 @@ export default function LoginForm({
           <h1 className="text-[27px] font-bold tracking-[-0.4px]">Enter your 6-digit code</h1>
           <p className="flex flex-wrap items-center gap-2 text-[12.5px]">
             <span className="text-ink-3">Code from</span>
-            <span className="font-bold text-[#e4e4e7]">
+            <span className="font-bold text-ink-strong">
               {backup ? 'Backup code' : 'your authenticator app'}
             </span>
             <button
               type="button"
               onClick={() => setBackup(!backup)}
-              className="cursor-pointer font-semibold text-[#c7c7ff] underline-offset-2 hover:underline"
+              className="cursor-pointer font-semibold text-accent-soft underline-offset-2 hover:underline"
             >
               {backup ? 'Use the app code' : 'Use a backup code'}
             </button>
@@ -400,7 +400,9 @@ export default function LoginForm({
         </div>
       ) : (
         <div className="flex flex-col gap-2 px-[26px] pt-[26px] pb-[18px]">
-          <span className="font-mono text-[9.5px] font-semibold text-[#c7c7ff]">WELCOME BACK</span>
+          <span className="font-mono text-[9.5px] font-semibold text-accent-soft">
+            WELCOME BACK
+          </span>
           <h1 className="text-[26px] font-bold tracking-[-0.4px]">Sign in to your inbox</h1>
           <p className="text-[12.5px] leading-[1.5] text-ink-3">{STEP_DESCRIPTIONS[step]}</p>
         </div>
@@ -433,7 +435,7 @@ export default function LoginForm({
             </Button>
             <div className="flex items-center gap-2.5" aria-hidden>
               <span className="h-px grow bg-border" />
-              <span className="font-mono text-[9px] font-semibold text-zinc-600">or</span>
+              <span className="font-mono text-[9px] font-semibold text-ink-faint">or</span>
               <span className="h-px grow bg-border" />
             </div>
             <form
@@ -487,7 +489,7 @@ export default function LoginForm({
             </form>
             {lastEmail && (
               <div className="flex flex-col gap-[7px] border-t border-border pt-2">
-                <span className="font-mono text-[9px] font-semibold text-zinc-600">
+                <span className="font-mono text-[9px] font-semibold text-ink-faint">
                   Recently used
                 </span>
                 <div className="flex flex-wrap gap-1.5">
@@ -522,16 +524,16 @@ export default function LoginForm({
         )}
       </div>
       {step === 'code' ? (
-        <div className="flex items-center gap-2 border-t border-border bg-white/[0.02] px-8 py-[13px]">
-          <Shield className="size-[11px] shrink-0 text-zinc-600" aria-hidden />
-          <p className="font-mono text-[9.5px] text-zinc-600">
+        <div className="flex items-center gap-2 border-t border-border bg-secondary/50 px-8 py-[13px]">
+          <Shield className="size-[11px] shrink-0 text-ink-faint" aria-hidden />
+          <p className="font-mono text-[9.5px] text-ink-faint">
             Codes are verified by your server and never stored.
           </p>
         </div>
       ) : (
-        <div className="flex items-center gap-2 border-t border-border bg-white/[0.02] px-[26px] py-3">
-          <Lock className="size-[11px] shrink-0 text-zinc-600" aria-hidden />
-          <p className="font-mono text-[9.5px] text-zinc-600">
+        <div className="flex items-center gap-2 border-t border-border bg-secondary/50 px-[26px] py-3">
+          <Lock className="size-[11px] shrink-0 text-ink-faint" aria-hidden />
+          <p className="font-mono text-[9.5px] text-ink-faint">
             Sent only to your server — encrypted in transit.
           </p>
         </div>

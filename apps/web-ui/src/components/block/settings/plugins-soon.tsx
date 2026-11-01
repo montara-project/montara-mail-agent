@@ -34,12 +34,12 @@ export default function PluginsSoon() {
         <div className="flex items-start gap-3.5">
           {/* A plugin is an AI-adjacent thing, so its tile carries the AI accent. */}
           <span className="grid size-[34px] shrink-0 place-items-center rounded-[9px] bg-accent-tint">
-            <Puzzle className="size-4 text-[#a5a5ff]" aria-hidden />
+            <Puzzle className="size-4 text-accent-soft" aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <p className="text-[13px] font-bold">The plugin registry opens soon</p>
-              <span className="bg-muted rounded-tag px-[7px] py-[3px] font-mono text-[9.5px] font-semibold text-zinc-600">
+              <span className="bg-muted rounded-tag px-[7px] py-[3px] font-mono text-[9.5px] font-semibold text-ink-faint">
                 Soon
               </span>
             </div>
@@ -68,7 +68,7 @@ export default function PluginsSoon() {
                 <p className="truncate text-xs font-semibold">{plugin.name}</p>
                 <p className="text-ink-3 text-[11px]">{plugin.description}</p>
               </div>
-              <span className="rounded-[7px] border px-2.5 py-[5px] text-[11px] font-semibold text-zinc-600">
+              <span className="rounded-[7px] border px-2.5 py-[5px] text-[11px] font-semibold text-ink-faint">
                 Unavailable
               </span>
             </div>

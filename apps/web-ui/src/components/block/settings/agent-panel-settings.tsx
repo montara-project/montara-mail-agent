@@ -43,7 +43,7 @@ export default function AgentPanelSettings() {
         description="Where the assistant lives in Mail. The choice follows your account across every device."
       />
       <div className="grid gap-1.5">
-        <h2 className="text-[9.5px] font-semibold uppercase text-zinc-600">Placement</h2>
+        <h2 className="text-[9.5px] font-semibold uppercase text-ink-faint">Placement</h2>
         <SectionCard>
           <div role="radiogroup" aria-label="Panel position" className="grid gap-2">
             {OPTIONS.map((option) => {

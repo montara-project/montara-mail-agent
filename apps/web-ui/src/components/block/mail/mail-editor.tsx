@@ -96,7 +96,7 @@ function AttachmentList({ files, onChange }: { files: File[]; onChange: (files: 
           key={`${file.name}-${file.size}-${i}`}
           className="bg-muted flex h-7 max-w-64 items-center gap-2 rounded-lg border px-2.5 py-1.5"
         >
-          <FileIcon className="text-[#a5a5ff] size-3.5 shrink-0" aria-hidden />
+          <FileIcon className="text-accent-soft size-3.5 shrink-0" aria-hidden />
           <span className="text-muted-foreground min-w-0 truncate font-mono text-[10.5px]">
             {file.name}
           </span>

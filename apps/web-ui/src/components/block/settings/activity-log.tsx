@@ -32,7 +32,7 @@ function ActivityRow({ entry, showActor }: { entry: Models.ActivityLog; showActo
 
   return (
     <li className="border-border/60 flex items-center gap-3 border-b py-2.5 last:border-b-0">
-      <span className="size-1.5 shrink-0 rounded-full bg-zinc-600" aria-hidden />
+      <span className="size-1.5 shrink-0 rounded-full bg-ink-faint" aria-hidden />
       <div className="min-w-0 flex-1">
         <p className="truncate text-xs font-medium">{entry.description}</p>
         <p className="text-ink-3 mt-0.5 truncate text-[10.5px]">

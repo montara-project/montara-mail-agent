@@ -95,7 +95,7 @@ function Tier({
         <div className="flex min-h-6 items-center justify-between gap-2">
           <h3 className="text-[13px] font-bold">{name}</h3>
           {badge && (
-            <span className="bg-accent-tint rounded-[4px] px-1.5 py-0.5 font-mono text-[8.5px] font-semibold text-[#a5a5ff] uppercase">
+            <span className="bg-accent-tint rounded-[4px] px-1.5 py-0.5 font-mono text-[8.5px] font-semibold text-accent-soft uppercase">
               {badge}
               <span className="sr-only">tier</span>
             </span>

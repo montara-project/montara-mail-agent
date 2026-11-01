@@ -311,7 +311,7 @@ export default function ConnectorList() {
                 {connector.description}
               </span>
             </div>
-            <Plus className="text-zinc-600 size-4 shrink-0" aria-hidden />
+            <Plus className="text-ink-faint size-4 shrink-0" aria-hidden />
           </button>
         ))}
       </div>

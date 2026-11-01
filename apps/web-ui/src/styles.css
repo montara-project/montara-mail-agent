@@ -6,6 +6,41 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  --background: #fafafa;
+  --foreground: #18181b;
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --popover: #ffffff;
+  --popover-foreground: #18181b;
+  --primary: #18181b;
+  --primary-foreground: #fafafa;
+  --secondary: #18181b0f;
+  --secondary-foreground: #18181b;
+  --muted: #18181b08;
+  --muted-foreground: #52525b;
+  --accent: #18181b0f;
+  --accent-foreground: #18181b;
+  /* Skeleton pulse stays neutral: palettes override --accent, which the
+     Skeleton used to inherit. */
+  --skeleton: #18181b0d;
+  --destructive: #ef4444;
+  --destructive-foreground: #fafafa;
+  --border: #18181b1a;
+  --input: #18181b26;
+  --ring: #7c7cff;
+  --radius: 14px;
+  --sidebar-background: #fafafa;
+  --sidebar-foreground: #18181b;
+  --sidebar-primary: #18181b;
+  --sidebar-primary-foreground: #fafafa;
+  --sidebar-accent: #18181b0f;
+  --sidebar-accent-foreground: #18181b;
+  --sidebar-border: #18181b1a;
+  --sidebar-ring: #7c7cff;
+}
+
+/* The approved dark redesign palette, applied when next-themes adds .dark. */
+.dark {
   --background: #0a0a0a;
   --foreground: #fafafa;
   --card: #18181b;
@@ -20,15 +55,12 @@
   --muted-foreground: #a1a1a1;
   --accent: #ffffff14;
   --accent-foreground: #fafafa;
-  /* Skeleton pulse stays neutral: palettes override --accent, which the
-     Skeleton used to inherit. */
   --skeleton: #ffffff0d;
   --destructive: #ef4444;
   --destructive-foreground: #fafafa;
   --border: #ffffff1a;
   --input: #ffffff26;
   --ring: #7c7cff;
-  --radius: 14px;
   --sidebar-background: #0a0a0a;
   --sidebar-foreground: #fafafa;
   --sidebar-primary: #fafafa;
@@ -53,9 +85,13 @@
   --line: var(--border);
   --line-strong: var(--input);
   --hover: var(--accent);
-  --hover-2: #ffffff0d;
+  --hover-2: #18181b0d;
   --accent-ink: #7c7cff;
   --accent-tint: #7c7cff1f;
+  --accent-soft: #6d28d9;
+  --danger-soft: #dc2626;
+  --ink-strong: #3f3f46;
+  --ink-faint: #71717a;
   /* Mail importance labels: their own hues (red = important, gray = low
      priority, amber = broadcast), so violet means only the AI. */
   --label-important: #ef4444;
@@ -72,6 +108,14 @@
   --brand-icloud: #3693f3;
 }
 
+.dark {
+  --hover-2: #ffffff0d;
+  --accent-soft: #c7c7ff;
+  --danger-soft: #f87171;
+  --ink-strong: #e4e4e7;
+  --ink-faint: #52525b;
+}
+
 @theme inline {
   --font-mono: 'JetBrains Mono', monospace;
   --font-sans: 'Nunito Sans', sans-serif;
@@ -79,6 +123,10 @@
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
   --color-ink-3: var(--ink-3);
+  --color-ink-strong: var(--ink-strong);
+  --color-ink-faint: var(--ink-faint);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger-soft: var(--danger-soft);
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
   --color-inset: var(--inset);

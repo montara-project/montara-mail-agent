@@ -360,7 +360,7 @@ export default function AgentPanel({
       {/* Header: the same 3.5rem as the list and reader toolbars, so the borders line up. */}
       <div className="flex h-14 shrink-0 items-center gap-2.5 border-b px-3">
         <span className="grid size-[26px] shrink-0 place-items-center rounded-[7px] border border-accent-ink/25 bg-accent-tint">
-          <Sparkles className="size-3.5 text-[#c7c7ff]" aria-hidden />
+          <Sparkles className="size-3.5 text-accent-soft" aria-hidden />
         </span>
         <div className="grid min-w-0 flex-1 leading-tight">
           <h2 className="text-[12.5px] font-bold">Assistant</h2>
@@ -451,11 +451,11 @@ export default function AgentPanel({
         >
           {/* The context the chat is bound to, per the design's context strip. */}
           <div className="bg-muted/50 flex shrink-0 items-center gap-2 border-b px-3 py-2">
-            <Link2 className="text-zinc-600 size-2.5 shrink-0" aria-hidden />
-            <span className="text-zinc-600 font-mono text-[8px] font-semibold">CONTEXT</span>
+            <Link2 className="text-ink-faint size-2.5 shrink-0" aria-hidden />
+            <span className="text-ink-faint font-mono text-[8px] font-semibold">CONTEXT</span>
             {about ? (
               <span className="bg-secondary flex min-w-0 items-center gap-1.5 rounded-[5px] px-[7px] py-[3px]">
-                <Mail className="size-2.5 shrink-0 text-[#c7c7ff]" aria-hidden />
+                <Mail className="size-2.5 shrink-0 text-accent-soft" aria-hidden />
                 <span
                   className="min-w-0 truncate text-[10px] font-semibold"
                   title={aboutMail?.subject}
@@ -475,7 +475,7 @@ export default function AgentPanel({
               </span>
             ) : mailbox ? (
               <span className="bg-secondary flex min-w-0 items-center gap-1.5 rounded-[5px] px-[7px] py-[3px]">
-                <Inbox className="size-2.5 shrink-0 text-[#c7c7ff]" aria-hidden />
+                <Inbox className="size-2.5 shrink-0 text-accent-soft" aria-hidden />
                 <span className="min-w-0 truncate text-[10px] font-semibold">
                   {mask(mailbox.email)}
                 </span>
@@ -484,7 +484,7 @@ export default function AgentPanel({
             {(about || conversationId) && (
               <button
                 type="button"
-                className="text-zinc-600 hover:text-foreground ms-auto shrink-0 text-[10px] font-semibold outline-none"
+                className="text-ink-faint hover:text-foreground ms-auto shrink-0 text-[10px] font-semibold outline-none"
                 onClick={about ? detach : startNewChat}
               >
                 Clear
@@ -517,7 +517,7 @@ export default function AgentPanel({
                         className="bg-muted hover:bg-accent focus-visible:ring-ring/50 flex h-6 items-center gap-1.5 rounded-md px-2 text-[10.5px] font-semibold text-muted-foreground outline-none focus-visible:ring-2"
                         onClick={() => ask(starter.label)}
                       >
-                        <starter.icon className="text-[#c7c7ff] size-2.5 shrink-0" aria-hidden />
+                        <starter.icon className="text-accent-soft size-2.5 shrink-0" aria-hidden />
                         {starter.label}
                       </button>
                     ))}
