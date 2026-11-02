@@ -9,6 +9,7 @@ const resources = (): ProfileResources => ({
   update: (body) => api.patch(path, body),
   updatePreferences: (body) => api.patch(`${path}/preferences`, body),
   changePassword: (body) => api.put(`${path}/password`, body),
+  deleteAccount: (body) => api.delete(path, { data: body }),
 })
 
 export const profileServices = resources()

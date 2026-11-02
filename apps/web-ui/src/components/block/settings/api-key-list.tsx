@@ -1,14 +1,13 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Copy, KeyRound, Link2, Plus, Trash2 } from 'lucide-react'
+import { Copy, KeyRound, Link, Plus, Trash2 } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
 
-import EmptyState from '@/components/block/common/empty-state'
 import QueryState from '@/components/block/common/query-state'
-import SectionCard from '@/components/block/common/section-card'
 import SectionHeading from '@/components/block/common/section-heading'
+import { SettingsCard, SettingsPage } from '@/components/block/common/settings-card'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import SimpleAlertScrollableDialogForm from '@/components/block/common/simple-alert-scrollable-dialog-form'
 import {
@@ -70,7 +69,7 @@ const day = (iso: string) =>
 function KeyMeta({ apiKey }: { apiKey: Models.APIKey }) {
   const expired = !!apiKey.expires_at && isPast(new Date(apiKey.expires_at))
   return (
-    <span className="text-ink-3 text-xs">
+    <span className="text-ink-3 text-[10.5px] leading-[14px]">
       Created {day(apiKey.created_at)}
       {apiKey.expires_at && (
         <span className={expired ? 'text-destructive' : undefined}>
@@ -89,12 +88,16 @@ function KeyRow({ apiKey }: { apiKey: Models.APIKey }) {
   const remove = useMutation(queries.apiKeys.delete())
 
   return (
-    <li className="flex flex-wrap items-center gap-3 px-4 py-3">
-      <KeyRound className="text-muted-foreground size-4 shrink-0" aria-hidden />
+    <li className="flex flex-wrap items-center gap-3 px-[18px] py-3">
+      <span className="bg-muted grid size-7 shrink-0 place-items-center rounded-[8px]">
+        <KeyRound className="text-muted-foreground size-[13px]" aria-hidden />
+      </span>
       <span className="grid min-w-0 flex-1 gap-0.5">
         <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
-          <span className="truncate text-sm font-medium">{apiKey.name}</span>
-          <span className="text-ink-3 font-mono text-xs">{apiKey.hint}</span>
+          <span className="text-[12.5px] leading-[17px] font-semibold wrap-anywhere">
+            {apiKey.name}
+          </span>
+          <span className="text-ink-3 font-mono text-[10.5px]">{apiKey.hint}</span>
           <Badge variant="secondary" appearance="light" size="sm" className="max-w-48">
             <span className="truncate">
               {apiKey.organization_id
@@ -322,6 +325,15 @@ function Loading() {
   )
 }
 
+/** A group's label, above its card. */
+function GroupLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-ink-faint font-mono text-[10.5px] leading-[13px] font-semibold tracking-[1px] uppercase">
+      {children}
+    </p>
+  )
+}
+
 /**
  * The user's API keys, which let MCP clients outside the app reach their
  * mailboxes through /mcp.
@@ -332,59 +344,81 @@ export default function APIKeyList() {
   const { data: keys = [], isPending, isError, error, refetch } = useQuery(queries.apiKeys.list())
 
   return (
-    <section className="grid gap-3">
+    <SettingsPage>
       <SectionHeading
-        title="API keys"
-        description="Let MCP clients such as Claude Desktop or Cursor search and sort your mail. What they propose to send waits for your approval in the AI assistant."
-        action={
-          <Button onClick={() => setCreating(true)}>
-            <Plus />
-            <span>Create key</span>
-          </Button>
-        }
+        title="API Keys"
+        description="Let MCP clients such as Claude Desktop or Cursor search and sort your mail. Anything they propose to send waits for your approval."
       />
 
-      <SectionCard title="MCP endpoint">
-        <div className="grid gap-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <code className="bg-muted/60 text-foreground flex min-w-0 flex-1 items-center gap-2 rounded-md border px-3 py-2 font-mono text-sm">
-              <Link2 className="text-ink-3 size-4 shrink-0" aria-hidden />
+      <div className="grid gap-5">
+        <GroupLabel>Connection</GroupLabel>
+        <SettingsCard dense title="MCP endpoint">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <code
+              title={MCP_ENDPOINT}
+              className="bg-background text-foreground flex h-9.5 min-w-0 flex-1 items-center gap-2 rounded-md border px-3 font-mono text-xs"
+            >
+              <Link className="text-ink-3 size-[13px] shrink-0" aria-hidden />
               <span className="truncate">{MCP_ENDPOINT}</span>
             </code>
-            <Button variant="secondary" size="sm" onClick={() => copy(MCP_ENDPOINT, 'Endpoint')}>
+            <Button
+              variant="outline"
+              className="bg-muted h-9.5 gap-1.5 px-3 text-xs font-semibold shadow-none pointer-coarse:h-11 [&_svg]:size-[13px]"
+              onClick={() => copy(MCP_ENDPOINT, 'Endpoint')}
+            >
               <Copy />
               Copy
             </Button>
           </div>
-          <p className="text-ink-3 text-xs text-pretty">
-            Streamable HTTP. Send a key as <code className="font-mono">Authorization: Bearer</code>;
-            it opens this endpoint only, not your account.
+          <p className="text-ink-3 text-[11px] leading-[15px] text-pretty">
+            Streamable HTTP. Send a key as Authorization: Bearer. It opens this endpoint only, never
+            your account.
           </p>
-        </div>
-      </SectionCard>
+        </SettingsCard>
 
-      <SectionCard>
-        <QueryState
-          isPending={isPending}
-          isError={isError}
-          error={error}
-          onRetry={() => refetch()}
-          isEmpty={keys.length === 0}
-          loading={<Loading />}
-          empty={
-            <EmptyState
-              title="No API keys yet"
-              description="Create one for each app you connect, so you can revoke it alone."
-            />
+        <GroupLabel>Keys</GroupLabel>
+        <SettingsCard
+          dense
+          title="Active keys"
+          description="One key per app, so you can revoke each one alone."
+          action={
+            <Button
+              variant="outline"
+              className="bg-muted h-7.5 gap-1.5 px-3 text-[11.5px] font-semibold shadow-none pointer-coarse:h-11 [&_svg]:size-3"
+              onClick={() => setCreating(true)}
+            >
+              <Plus />
+              Create key
+            </Button>
           }
         >
-          <ul className="-m-4 divide-y divide-border/60 overflow-hidden rounded-lg">
-            {keys.map((apiKey) => (
-              <KeyRow key={apiKey.id} apiKey={apiKey} />
-            ))}
-          </ul>
-        </QueryState>
-      </SectionCard>
+          <QueryState
+            isPending={isPending}
+            isError={isError}
+            error={error}
+            onRetry={() => refetch()}
+            isEmpty={keys.length === 0}
+            loading={<Loading />}
+            empty={
+              <div className="grid justify-items-center gap-2 py-6 text-center">
+                <span className="bg-muted grid size-9 place-items-center rounded-[10px]">
+                  <KeyRound className="text-ink-3 size-4" aria-hidden />
+                </span>
+                <p className="text-[12.5px] leading-[17px] font-semibold">No API keys yet</p>
+                <p className="text-ink-3 text-[11px] leading-[15px]">
+                  Create one for each app you connect, so you can revoke it alone.
+                </p>
+              </div>
+            }
+          >
+            <ul className="divide-border/60 -m-[18px] divide-y overflow-hidden rounded-b-lg">
+              {keys.map((apiKey) => (
+                <KeyRow key={apiKey.id} apiKey={apiKey} />
+              ))}
+            </ul>
+          </QueryState>
+        </SettingsCard>
+      </div>
 
       {creating && (
         <CreateKeyDialog
@@ -396,6 +430,6 @@ export default function APIKeyList() {
         />
       )}
       {created && <KeyCreatedDialog created={created} onClose={() => setCreated(null)} />}
-    </section>
+    </SettingsPage>
   )
 }

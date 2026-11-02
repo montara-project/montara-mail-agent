@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"strings"
 	"time"
 
 	authulamodels "github.com/Authula/authula/models"
@@ -141,6 +142,59 @@ func (h *profileHandler) UpdatePreferences(c fiber.Ctx) error {
 		return err
 	}
 	return dtos.OK(c, user)
+}
+
+// DeleteAccount deletes the signed-in user for good, once they type their own
+// email: the API keys, the memberships, the organizations nobody else belongs
+// to and the Authula rows all go (see UserRepository.Purge). The caller is
+// signed out with everything else, since their sessions cascade away.
+func (h *profileHandler) DeleteAccount(c fiber.Ctx) error {
+	uid, err := lib.ContextGetUID(c)
+	if err != nil {
+		return apperr.ErrUnauthorized
+	}
+
+	var body dtos.DeleteAccountBody
+	if err := lib.ValidateRequestBody(c, &body); err != nil {
+		return err
+	}
+
+	users := h.app.Auth.CoreServices().UserService
+	user, err := users.GetByID(c.Context(), uid.String())
+	if err != nil {
+		return err
+	}
+	if user == nil {
+		return apperr.ErrUnauthorized
+	}
+	if !strings.EqualFold(strings.TrimSpace(body.Email), user.Email) {
+		return apperr.New(apperr.KindBadRequest, "the email doesn't match this account")
+	}
+
+	// The platform would be left unmanageable.
+	if role, err := h.app.Repositories.User.Role(c.Context(), uid); err != nil {
+		return err
+	} else if role == constant.RoleSuperUser {
+		others, err := h.app.Repositories.User.SuperUsersOtherThan(c.Context(), uid)
+		if err != nil {
+			return err
+		}
+		if others == 0 {
+			return apperr.New(apperr.KindConflict, "this is the only super user; promote another one first")
+		}
+	}
+
+	// Activity is recorded before the purge: this user's own log rows go with
+	// the account, so the entry survives only in an organization's trail.
+	recordActivity(c, h.app, uuid.Nil, constant.ActivityAccountDeleted, "Deleted their account", nil)
+
+	// One transaction covers both schemas: the Authula row (its accounts,
+	// sessions, keys and two-factor state cascade), the mirror row, and every
+	// application row the account owned.
+	if err := h.app.Repositories.User.Purge(c.Context(), uid); err != nil {
+		return err
+	}
+	return dtos.Message(c, fiber.StatusOK, "account deleted")
 }
 
 // ChangePassword replaces the user's password after checking the current one,

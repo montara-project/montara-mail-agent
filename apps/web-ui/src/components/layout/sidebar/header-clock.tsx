@@ -14,7 +14,7 @@ function format(now: Date, timeZone: string, options: Intl.DateTimeFormatOptions
   }
 }
 
-/** A quiet chip of the topbar's right side: hairline border, muted text, an icon. */
+/** A quiet chip of the topbar's right side: a hairline, faint fill, muted mono text. */
 function ClockChip({
   icon: Icon,
   className,
@@ -27,11 +27,11 @@ function ClockChip({
   return (
     <span
       className={cn(
-        'border-border/60 text-muted-foreground hidden h-7 items-center gap-1.5 rounded-chip border px-2.5 text-xs whitespace-nowrap sm:flex',
+        'bg-muted text-muted-foreground hidden h-[19px] shrink-0 items-center gap-[5px] rounded-chip px-[7px] font-mono text-[9.5px] leading-none whitespace-nowrap',
         className
       )}
     >
-      <Icon className="text-ink-3 size-3.5 shrink-0" aria-hidden />
+      <Icon className="text-ink-3 size-2.5 shrink-0" aria-hidden />
       {children}
     </span>
   )
@@ -71,11 +71,13 @@ export default function HeaderClock() {
       role="timer"
       aria-live="off"
     >
-      <ClockChip icon={Sun}>{date}</ClockChip>
-      <ClockChip icon={Clock}>
+      <ClockChip icon={Sun} className="sm:flex">
+        {date}
+      </ClockChip>
+      <ClockChip icon={Clock} className="sm:flex">
         <span className="tabular-nums">{time}</span>
       </ClockChip>
-      <ClockChip icon={Globe} className="md:flex">
+      <ClockChip icon={Globe} className="xl:flex">
         <span className="truncate">{timeZone}</span>
         <span className="text-ink-3 tabular-nums">{timezoneOffset(timeZone, now)}</span>
       </ClockChip>

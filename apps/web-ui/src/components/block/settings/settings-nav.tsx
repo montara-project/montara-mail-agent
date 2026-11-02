@@ -1,120 +1,196 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import {
-  Bot,
-  BrainCircuit,
-  Building2,
-  ChevronRight,
-  CreditCard,
-  Inbox,
-  KeyRound,
-  Package,
-  Plug,
-  ShieldBan,
-  ShieldCheck,
-  Sparkles,
-  Trash2,
-  User,
-  Wand2,
-  Wrench,
-} from 'lucide-react'
+import { ChevronRight, Search } from 'lucide-react'
+import React from 'react'
 
-import SectionCard from '@/components/block/common/section-card'
+import { SEARCH_KEYS } from '@/components/layout/mail/mail-search'
 import { Badge } from '@/components/ui/badge'
+import {
+  DANGER_GROUP,
+  PLATFORM_GROUP,
+  SETTINGS_GROUPS,
+  type SettingsGroup,
+  type SettingsItem,
+} from '@/data/settings-menu'
 import { queries } from '@/lib/api/queries'
-import { COMMUNITY } from '@/lib/constants/edition'
+import { cn } from '@/lib/utils'
 
-/** A page of the Control Center; one without a url isn't built yet and shows as Soon. */
-type SettingsItem = { title: string; icon: typeof User; url?: string }
+const ROW =
+  'flex items-center gap-2.5 rounded-control px-[11px] py-[9px] outline-none transition-colors duration-150 focus-visible:ring-[3px] focus-visible:ring-ring/50 motion-reduce:transition-none'
 
-const SETTINGS_GROUPS: { title: string; items: SettingsItem[] }[] = [
-  {
-    title: 'Account',
-    items: [
-      { title: 'My Profile', icon: User, url: '/settings/profile' },
-      { title: 'Mail', icon: Inbox, url: '/settings/mail' },
-      { title: 'Security', icon: ShieldCheck, url: '/settings/security' },
-      { title: 'API Keys', icon: KeyRound, url: '/settings/api-keys' },
-    ],
-  },
-  {
-    title: 'Workspace',
-    items: [
-      { title: 'Organization', icon: Building2, url: '/settings/organization' },
-      // The Community Edition takes no payments.
-      ...(COMMUNITY ? [] : [{ title: 'Billing', icon: CreditCard, url: '/settings/billing' }]),
-    ],
-  },
-  {
-    title: 'Agent tools',
-    items: [
-      { title: 'Agent Bots', icon: Bot, url: '/settings/agent-bots' },
-      { title: 'AI Assistant Panel', icon: Sparkles, url: '/settings/ai-assistant-panel' },
-      { title: 'Tools', icon: Wrench },
-      { title: 'Skills', icon: Wand2, url: '/settings/skills' },
-      { title: 'MCP', icon: Plug, url: '/settings/mcp' },
-      { title: 'Plugins', icon: Package },
-    ],
-  },
-  {
-    title: 'Danger zone',
-    items: [{ title: 'Delete Account', icon: Trash2, url: '/settings/delete-account' }],
-  },
-]
-
-/** Server-wide settings, shown to a super user only, before the danger zone. */
-const PLATFORM_GROUP: { title: string; items: SettingsItem[] } = {
-  title: 'Platform',
-  items: [
-    { title: 'AI Providers', icon: BrainCircuit, url: '/settings/ai-providers' },
-    { title: 'IP Block', icon: ShieldBan, url: '/settings/ip-blocks' },
-  ],
+/** Icon, title and meta: what a row shows whether or not it opens a page. */
+function RowContent({ item, danger }: { item: SettingsItem; danger?: boolean }) {
+  return (
+    <>
+      <span
+        className={cn(
+          'grid size-[26px] shrink-0 place-items-center rounded-[7px]',
+          !danger && 'bg-secondary'
+        )}
+      >
+        <item.icon
+          className={cn('size-[13px]', danger ? 'text-destructive' : 'text-muted-foreground')}
+          aria-hidden
+        />
+      </span>
+      <span className="grid min-w-0 flex-1 gap-px">
+        <span
+          className={cn('text-[12.5px] leading-[17px] font-semibold', danger && 'text-danger-soft')}
+        >
+          {item.title}
+        </span>
+        <span
+          className={cn(
+            'text-[10.5px] leading-[14px]',
+            danger ? 'text-muted-foreground' : 'text-ink-3'
+          )}
+        >
+          {item.meta}
+        </span>
+      </span>
+      {(item.soon || !item.url) && (
+        <Badge variant="secondary" appearance="light" size="sm" className="shrink-0">
+          Soon
+        </Badge>
+      )}
+      {item.url && (
+        <ChevronRight
+          className={cn('size-3 shrink-0', danger ? 'text-destructive' : 'text-ink-faint')}
+          aria-hidden
+        />
+      )}
+    </>
+  )
 }
 
-/** The settings index: each group a SectionCard of rows that open their page. */
-export default function SettingsNav() {
-  const { data: security } = useQuery(queries.profile.security())
-  const groups = security?.super_user
-    ? [...SETTINGS_GROUPS.slice(0, -1), PLATFORM_GROUP, ...SETTINGS_GROUPS.slice(-1)]
-    : SETTINGS_GROUPS
+/** One group's card: a header with the row count, then its rows in two columns. */
+function SettingsSection({ group, danger }: { group: SettingsGroup; danger?: boolean }) {
+  const id = React.useId()
 
   return (
-    <nav aria-label="Control Center" className="grid gap-8">
-      {groups.map((group) => (
-        <section key={group.title} className="grid gap-2">
-          <h2 className="text-muted-foreground text-sm">{group.title}</h2>
-          <SectionCard>
-            {/* Rows run to the card's edges, so the hover fills the whole row. */}
-            <ul className="-m-4 divide-y overflow-hidden rounded-lg">
-              {group.items.map((item) => (
-                <li key={item.title}>
-                  {item.url ? (
-                    <Link
-                      to={item.url}
-                      className="hover:bg-accent/50 focus-visible:bg-accent/50 flex items-center gap-3 px-4 py-3 text-sm outline-none"
-                    >
-                      <item.icon className="text-muted-foreground size-4 shrink-0" />
-                      <span className="flex-1">{item.title}</span>
-                      <ChevronRight className="text-muted-foreground size-4 shrink-0" />
-                    </Link>
-                  ) : (
-                    <div
-                      aria-disabled
-                      className="text-muted-foreground flex items-center gap-3 px-4 py-3 text-sm"
-                    >
-                      <item.icon className="size-4 shrink-0" />
-                      <span className="flex-1">{item.title}</span>
-                      <Badge variant="secondary" appearance="light" size="sm">
-                        Soon
-                      </Badge>
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </SectionCard>
-        </section>
+    <section
+      aria-labelledby={id}
+      className={cn(
+        '@container overflow-hidden rounded-lg border',
+        danger ? 'border-destructive/20 bg-card dark:bg-destructive/5' : 'bg-card'
+      )}
+    >
+      <div
+        className={cn(
+          'flex items-center justify-between gap-2 border-b px-3.5 py-2.5',
+          danger && 'border-destructive/20'
+        )}
+      >
+        <h2
+          id={id}
+          className={cn(
+            'flex items-center gap-2 font-mono text-[10.5px] leading-[14px] font-semibold tracking-[1px] uppercase',
+            danger ? 'text-danger-soft' : 'text-ink-faint'
+          )}
+        >
+          <group.icon
+            className={cn('size-[13px]', danger ? 'text-destructive' : 'text-ink-3')}
+            aria-hidden
+          />
+          {group.title}
+        </h2>
+        {!danger && (
+          <span className="bg-muted text-muted-foreground rounded-[4px] px-[5px] py-px font-mono text-[10.5px] leading-3 font-semibold tabular-nums">
+            {group.items.length}
+          </span>
+        )}
+      </div>
+      <ul className={cn('grid gap-1.5 px-3 py-2.5', !danger && '@xl:grid-cols-2')}>
+        {group.items.map((item) => (
+          <li key={item.title} className="grid">
+            {item.url ? (
+              <Link
+                to={item.url}
+                className={cn(
+                  ROW,
+                  danger
+                    ? 'border-destructive/20 bg-card hover:bg-destructive/10 dark:bg-destructive/12 dark:hover:bg-destructive/20 border px-2.5 py-2'
+                    : 'bg-muted hover:bg-accent'
+                )}
+              >
+                <RowContent item={item} danger={danger} />
+              </Link>
+            ) : (
+              <div aria-disabled className={cn(ROW, 'bg-muted')}>
+                <RowContent item={item} />
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+/** The settings index: a search over every page, then each group's card of rows. */
+export default function SettingsNav() {
+  const { data: security } = useQuery(queries.profile.security())
+  const [query, setQuery] = React.useState('')
+  const inputRef = React.useRef<HTMLInputElement>(null)
+
+  React.useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        inputRef.current?.focus()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
+
+  const groups = security?.super_user ? [...SETTINGS_GROUPS, PLATFORM_GROUP] : SETTINGS_GROUPS
+
+  // A search on a group's name lists all of it; otherwise only the rows that match.
+  const term = query.trim().toLowerCase()
+  const matches = (group: SettingsGroup): SettingsGroup =>
+    !term || group.title.toLowerCase().includes(term)
+      ? group
+      : {
+          ...group,
+          items: group.items.filter((item) =>
+            `${item.title} ${item.meta}`.toLowerCase().includes(term)
+          ),
+        }
+  const shown = groups.map(matches).filter((group) => group.items.length > 0)
+  const danger = matches(DANGER_GROUP)
+  const empty = shown.length === 0 && danger.items.length === 0
+
+  return (
+    <nav aria-label="Control Center" className="grid gap-3.5">
+      <label className="bg-card focus-within:ring-ring/50 flex items-center gap-2.25 rounded-[10px] border px-3 py-2 focus-within:ring-[3px]">
+        <Search className="text-ink-3 size-[13px] shrink-0" aria-hidden />
+        <span className="sr-only">Search settings</span>
+        <input
+          ref={inputRef}
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') setQuery('')
+          }}
+          placeholder="Search settings, tools and providers"
+          className="placeholder:text-ink-3 min-w-0 flex-1 bg-transparent text-ellipsis text-[12.5px] leading-[17px] outline-none pointer-coarse:text-base"
+        />
+        <kbd className="text-ink-3 bg-muted rounded-tag border px-[5px] py-0.5 font-mono text-[10.5px] leading-[11px] font-semibold pointer-coarse:hidden">
+          {SEARCH_KEYS}
+        </kbd>
+      </label>
+
+      {shown.map((group) => (
+        <SettingsSection key={group.title} group={group} />
       ))}
+      {danger.items.length > 0 && <SettingsSection group={danger} danger />}
+      {empty && (
+        <p role="status" className="text-muted-foreground py-10 text-center text-sm wrap-anywhere">
+          No settings match “{query.trim()}”.
+        </p>
+      )}
     </nav>
   )
 }

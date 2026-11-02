@@ -1,14 +1,14 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Ban, Plus } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
+import { ArrowUpRight, Ban, Info, Plus } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
 
-import EmptyState from '@/components/block/common/empty-state'
 import QueryState from '@/components/block/common/query-state'
-import SectionCard from '@/components/block/common/section-card'
 import SectionHeading from '@/components/block/common/section-heading'
+import { SettingsListCard, SettingsPage } from '@/components/block/common/settings-card'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import SimpleAlertScrollableDialogForm from '@/components/block/common/simple-alert-scrollable-dialog-form'
 import { Button } from '@/components/ui/button'
@@ -33,15 +33,20 @@ const DURATION_OPTIONS = IP_BLOCK_DURATIONS.map((hours) => ({
   }[hours],
 }))
 
-const ago = (iso: string) => timeAgo(new Date(iso))
+/** "Manual · hello@montaramail.web.id", or what the server blamed: the source, then why. */
+function blockSource(block: Models.IPBlock) {
+  const auto = block.source === 'auto'
+  const why = block.reason.trim() || (auto ? 'Repeated failures' : block.created_by_email)
+  return `${auto ? 'Auto' : 'Manual'} · ${why || 'No reason given'}`
+}
 
-/** "Blocked 3 minutes ago · Lifts in about 1 hour", the design's faint when line. */
+/** "Blocked 41 minutes ago · lifts in 19 minutes", the design's faint when line. */
 function BlockMeta({ block }: { block: Models.IPBlock }) {
   return (
-    <span className="text-ink-faint text-[10.5px]">
-      Blocked {ago(block.created_at)}
+    <span className="text-ink-faint text-[10px] leading-[14px]">
+      Blocked {timeAgo(new Date(block.created_at))}
       {' · '}
-      {block.expires_at ? `Lifts ${ago(block.expires_at)}` : 'Until removed'}
+      {block.expires_at ? `lifts ${timeAgo(new Date(block.expires_at))}` : 'until removed'}
     </span>
   )
 }
@@ -52,38 +57,37 @@ function BlockRow({ block }: { block: Models.IPBlock }) {
   const auto = block.source === 'auto'
 
   return (
-    <li className="bg-muted flex flex-wrap items-center gap-3 rounded-[10px] px-3 py-3">
+    <li className="bg-muted hover:bg-popover hover:border-input flex flex-wrap items-center gap-x-[11px] gap-y-2 rounded-[9px] border border-transparent px-2.5 py-[9px] transition-colors duration-150 motion-reduce:transition-none">
       <span
         className={cn(
-          'flex size-[30px] shrink-0 items-center justify-center rounded-[8px]',
-          auto ? 'bg-warning/10 text-warning-ink' : 'bg-destructive/10 text-danger-ink'
+          'grid size-7 shrink-0 place-items-center rounded-[8px]',
+          auto ? 'bg-warning/12 text-warning-ink' : 'bg-destructive/12 text-danger-ink'
         )}
       >
-        <Ban className="size-3.5" aria-hidden />
+        <Ban className="size-[13px]" aria-hidden />
       </span>
-      <span className="grid min-w-0 flex-1 gap-0.5">
-        <span className="flex min-w-0 flex-wrap items-center gap-x-1.75">
-          <span className="truncate font-mono text-xs font-semibold">{block.network}</span>
+      <span className="grid min-w-0 flex-1 gap-px">
+        <span className="flex min-w-0 flex-wrap items-center gap-x-[7px] gap-y-1">
+          <span className="min-w-0 font-mono text-[11.5px] leading-4 font-semibold wrap-anywhere">
+            {block.network}
+          </span>
           <span
             className={cn(
-              'rounded-tag px-1.5 py-0.5 font-mono text-[9px] font-semibold',
-              auto ? 'bg-warning/10 text-warning-ink' : 'bg-destructive/10 text-danger-ink'
+              'rounded-[4px] px-[5px] py-px font-mono text-[8.5px] leading-3 font-semibold tracking-[0.4px] uppercase',
+              auto ? 'bg-warning/12 text-warning-ink' : 'bg-destructive/12 text-danger-ink'
             )}
           >
-            {auto ? 'Auto' : 'Manual'}
+            {block.source}
           </span>
         </span>
-        <span className="text-ink-3 text-[11px] text-pretty">
-          {block.reason ||
-            (auto ? 'Repeated failures' : block.created_by_email) ||
-            'No reason given'}
+        <span className="text-ink-3 text-[10.5px] leading-[14px] text-pretty">
+          {blockSource(block)}
         </span>
         <BlockMeta block={block} />
       </span>
       <Button
         variant="outline"
-        size="sm"
-        className="rounded-[7px] px-2.5 text-[11.5px] font-semibold"
+        className="bg-muted border-border h-7 shrink-0 px-2.5 text-[10.5px] font-semibold shadow-none pointer-coarse:h-11"
         aria-label={`Unblock ${block.network}`}
         disabled={remove.isPending}
         onClick={() => setConfirming(true)}
@@ -185,13 +189,13 @@ function BlockDialog({ yourIP, onClose }: { yourIP?: string; onClose: () => void
 /** Shaped like the rows it stands in for. */
 function Loading() {
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-0.5">
       {[0, 1].map((index) => (
-        <div key={index} className="bg-muted flex items-center gap-3 rounded-[10px] px-3 py-3">
-          <Skeleton className="size-[30px] rounded-[8px]" />
+        <div key={index} className="flex items-center gap-[11px] px-2.5 py-[9px]">
+          <Skeleton className="size-7 rounded-[8px]" />
           <div className="grid flex-1 gap-1.5">
-            <Skeleton className="h-4 w-36" />
-            <Skeleton className="h-3 w-64" />
+            <Skeleton className="h-3.5 w-36" />
+            <Skeleton className="h-3 w-56" />
           </div>
         </div>
       ))}
@@ -210,7 +214,7 @@ export default function IPBlockList() {
   const auto = data?.metadata.auto
 
   return (
-    <section className="grid gap-3">
+    <SettingsPage>
       <SectionHeading
         title="IP Block"
         description={
@@ -220,18 +224,34 @@ export default function IPBlockList() {
         }
       />
 
-      <SectionCard
+      <SettingsListCard
+        icon={Ban}
         title="Blocked addresses"
-        description={
-          isPending
-            ? undefined
-            : `${blocks.length} ${blocks.length === 1 ? 'address' : 'addresses'} currently blocked.`
-        }
-        toolbar={
-          <Button variant="secondary" size="sm" onClick={() => setBlocking(true)}>
+        description="Addresses and ranges that cannot reach your mail"
+        action={
+          <Button
+            variant="outline"
+            className="bg-muted border-border h-7 gap-1.5 px-[11px] text-[11px] font-semibold shadow-none pointer-coarse:h-11 [&_svg]:size-[11px]"
+            onClick={() => setBlocking(true)}
+          >
             <Plus />
-            <span>Block address</span>
+            Block address
           </Button>
+        }
+        footer={
+          <>
+            <p className="text-ink-3 flex items-start gap-[5px] text-[10.5px] leading-[14px]">
+              <Info className="mt-px size-[11px] shrink-0" aria-hidden />
+              Auto-blocks lift on their own · manual blocks stay until you remove them
+            </p>
+            <Link
+              to="/settings/security"
+              className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 pointer-coarse:h-11 inline-flex items-center gap-1 rounded-[5px] text-[10.5px] leading-[14px] font-semibold transition-colors duration-150 outline-none focus-visible:ring-[3px] motion-reduce:transition-none"
+            >
+              Block log
+              <ArrowUpRight className="size-[11px]" aria-hidden />
+            </Link>
+          </>
         }
       >
         <QueryState
@@ -242,23 +262,28 @@ export default function IPBlockList() {
           isEmpty={blocks.length === 0}
           loading={<Loading />}
           empty={
-            <EmptyState
-              title="No blocked addresses"
-              description="Addresses you block, and the ones the server blocks on its own, show here."
-            />
+            <div className="grid justify-items-center gap-2 py-6 text-center">
+              <span className="bg-muted grid size-9 place-items-center rounded-[10px]">
+                <Ban className="text-ink-3 size-4" aria-hidden />
+              </span>
+              <p className="text-[12.5px] leading-[17px] font-semibold">No blocked addresses</p>
+              <p className="text-ink-3 text-[11px] leading-[15px]">
+                Addresses you block, and the ones the server blocks on its own, show here.
+              </p>
+            </div>
           }
         >
-          <ul className="grid gap-3">
+          <ul className="grid gap-0.5">
             {blocks.map((block) => (
               <BlockRow key={block.id} block={block} />
             ))}
           </ul>
         </QueryState>
-      </SectionCard>
+      </SettingsListCard>
 
       {blocking && (
         <BlockDialog yourIP={data?.metadata.your_ip} onClose={() => setBlocking(false)} />
       )}
-    </section>
+    </SettingsPage>
   )
 }

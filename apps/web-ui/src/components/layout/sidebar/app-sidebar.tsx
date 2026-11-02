@@ -38,7 +38,7 @@ function ThemeToggle() {
       theme={resolvedTheme === 'light' ? 'light' : 'dark'}
       onThemeChange={setTheme}
       title="Toggle theme"
-      className="self-center hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-sidebar-ring flex size-8 items-center justify-center rounded-md outline-none focus-visible:ring-2 [&_svg]:size-4"
+      className="self-center hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-sidebar-ring flex size-[34px] items-center justify-center rounded-[8px] outline-none focus-visible:ring-2 [&_svg]:size-4"
     />
   )
 }
@@ -91,22 +91,19 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
       {...props}
     >
       {/* Icon rail: not collapsible, fixed to the icon width. */}
-      <Sidebar
-        collapsible="none"
-        className="w-[calc(var(--sidebar-width-icon)+1px)]! shrink-0 border-r"
-      >
+      <Sidebar collapsible="none" className="w-[52px]! shrink-0 border-r">
         {/* Rail buttons are a fixed centered 2rem square, the same size the collapsed
         state forces, so nothing moves or resizes when the sidebar toggles. */}
-        <SidebarHeader className="md:h-16 md:justify-center">
+        <SidebarHeader className="p-2.5 pb-0 md:items-center">
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton size="lg" asChild className="md:mx-auto md:size-8 md:p-0">
+              <SidebarMenuButton size="lg" asChild className="md:mx-auto md:size-[30px] md:p-0">
                 <Link to="/dashboard">
                   <span
                     aria-hidden
-                    className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-accent-ink/15 ring-1 ring-accent-ink/25"
+                    className="grid size-[30px] shrink-0 place-items-center rounded-[8px] bg-accent-ink/15 ring-1 ring-accent-ink/25"
                   >
-                    <Mail className="size-3.75 text-accent-soft" />
+                    <Mail className="size-[15px] text-accent-soft" />
                   </span>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">Montara</span>
@@ -117,17 +114,17 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarHeader>
-        <SidebarContent>
-          <SidebarGroup>
+        <SidebarContent className="gap-1 p-0 pt-1.5">
+          <SidebarGroup className="p-0">
             <SidebarGroupContent className="px-1.5 md:px-0">
-              <SidebarMenu>
+              <SidebarMenu className="md:gap-1.5">
                 {NAV_ITEMS.map((item) => (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton
                       asChild
                       tooltip={{ children: item.title, hidden: false }}
                       isActive={pathname.startsWith(item.url)}
-                      className="px-2.5 md:mx-auto md:size-8 md:p-2"
+                      className="rounded-[8px] px-2.5 md:mx-auto md:size-[34px] md:rounded-[8px] md:p-[9px] [&_svg]:size-4"
                     >
                       <Link to={item.url}>
                         {item.icon && <item.icon />}
@@ -167,7 +164,7 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter>
+        <SidebarFooter className="gap-3 p-2.5">
           <ThemeToggle />
           <NavUser user={userInfo} userError={userError} onRetryUser={onRetryUser} />
         </SidebarFooter>

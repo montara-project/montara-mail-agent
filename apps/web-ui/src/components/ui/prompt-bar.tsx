@@ -500,7 +500,7 @@ export default function PromptBar({
                   setPlusOpen((open) => !open)
                   inputRef.current?.focus()
                 }}
-                className={`text-ink-3 hover:bg-hover hover:text-ink flex size-7 shrink-0 items-center justify-center justify-self-start transition-[background-color,color,transform] duration-150 active:scale-[0.94] disabled:pointer-events-none ${roundness} ${
+                className={`text-ink-3 hover:bg-hover hover:text-ink flex size-7 shrink-0 items-center justify-center justify-self-start transition-[background-color,color,transform] duration-150 enabled:active:scale-[0.96] disabled:pointer-events-none ${roundness} ${
                   plusOpen ? 'bg-hover text-ink' : ''
                 } ${wide ? 'row-start-2' : 'row-start-1'}`}
               >
@@ -586,7 +586,7 @@ export default function PromptBar({
                 aria-pressed={listening}
                 disabled={locked}
                 onClick={toggleDictation}
-                className={`flex size-7 shrink-0 items-center justify-center transition-[background-color,color,transform] duration-150 active:scale-[0.94] disabled:pointer-events-none ${roundness} ${
+                className={`flex size-7 shrink-0 items-center justify-center transition-[background-color,color,transform] duration-150 enabled:active:scale-[0.96] disabled:pointer-events-none ${roundness} ${
                   listening
                     ? 'bg-accent-tint text-accent-ink'
                     : 'text-ink-3 hover:bg-hover hover:text-ink'
@@ -622,7 +622,7 @@ export default function PromptBar({
                 type="button"
                 aria-label="Stop"
                 onClick={onStop}
-                className={`bg-inset text-ink hover:bg-hover flex size-7 shrink-0 items-center justify-center transition-[background-color,transform] duration-200 active:scale-[0.94] ${roundness} ${
+                className={`bg-inset text-ink hover:bg-hover flex size-7 shrink-0 items-center justify-center transition-[background-color,transform] duration-200 enabled:active:scale-[0.96] ${roundness} ${
                   wide ? 'row-start-2' : 'row-start-1'
                 }`}
                 style={{ gridColumnStart: columns.length }}

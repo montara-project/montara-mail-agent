@@ -36,7 +36,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   mcp: 'MCP',
   plugins: 'Plugins',
   'ai-providers': 'AI Providers',
-  'ip-blocks': 'IP Blocks',
+  'ip-blocks': 'IP Block',
   'delete-account': 'Delete Account',
   invoice: 'Invoice',
 }
@@ -68,7 +68,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbPage className="font-medium">
+              <BreadcrumbPage className="font-semibold text-foreground">
                 {segmentLabel(pathSegments[0])}
               </BreadcrumbPage>
             </BreadcrumbItem>
@@ -95,9 +95,15 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
               <React.Fragment key={index}>
                 <BreadcrumbItem className="hidden md:block">
                   {isLast ? (
-                    <BreadcrumbPage className="font-medium">{newSegment}</BreadcrumbPage>
+                    <BreadcrumbPage className="font-semibold text-foreground">
+                      {newSegment}
+                    </BreadcrumbPage>
                   ) : (
-                    <BreadcrumbLink className="font-medium" href={href} asChild>
+                    <BreadcrumbLink
+                      className="text-ink-3 hover:text-foreground"
+                      href={href}
+                      asChild
+                    >
                       <Link to={href}>{newSegment}</Link>
                     </BreadcrumbLink>
                   )}
@@ -126,7 +132,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
         onRetryUser={() => void refetch()}
       />
       <SidebarInset>
-        <header className="sticky bg-background top-0 z-20 flex h-16 shrink-0 items-center gap-2 border-b">
+        <header className="sticky bg-background top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b">
           <div className="flex w-full items-center justify-between px-6">
             <div className="flex min-w-0 items-center gap-2">
               <SidebarTrigger className={cn('-ml-1', !hasPanel && 'md:hidden')} />

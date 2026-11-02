@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
 
-import SectionCard from '@/components/block/common/section-card'
+import { SettingsCard } from '@/components/block/common/settings-card'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import StatusDot from '@/components/block/common/status-dot'
 import { Button } from '@/components/ui/button'
@@ -19,6 +19,12 @@ import { SECURITY_QUERY_KEY } from '@/lib/api/queries/profile'
 import { services } from '@/lib/api/services'
 import { verifyTOTP } from '@/lib/auth/email-auth'
 import { getQueryClient } from '@/lib/providers/react-query'
+import { cn } from '@/lib/utils'
+
+const STATE = 'gap-[7px] text-[12.5px] font-semibold'
+const ACTION =
+  'h-8 gap-1.5 px-3 text-xs font-semibold shadow-none pointer-coarse:h-11 [&_svg]:size-[13px]'
+const HINT = 'text-ink-3 text-[11px] leading-[15px]'
 
 const refreshSecurity = () => getQueryClient().invalidateQueries({ queryKey: [SECURITY_QUERY_KEY] })
 
@@ -165,12 +171,13 @@ function Enabled() {
   })
 
   return (
-    <div className="grid max-w-xl gap-4">
+    <div className="grid gap-3.5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <StatusDot status="synced" label="Enabled" />
+        <StatusDot status="synced" label="Enabled" className={cn(STATE, 'text-success-text')} />
         <div className="flex flex-wrap gap-2">
           <Button
-            variant="secondary"
+            variant="outline"
+            className={cn(ACTION, 'bg-muted')}
             disabled={regenerate.isPending}
             onClick={() => setConfirming('codes')}
           >
@@ -179,6 +186,7 @@ function Enabled() {
           </Button>
           <Button
             variant="destructive"
+            className={ACTION}
             disabled={disable.isPending}
             onClick={() => setConfirming('disable')}
           >
@@ -186,7 +194,7 @@ function Enabled() {
           </Button>
         </div>
       </div>
-      <p className="text-muted-foreground text-sm">
+      <p className={HINT}>
         Signing in asks for a code from your authenticator app after the password, on every browser
         you don't mark as trusted.
       </p>
@@ -232,15 +240,24 @@ export default function TOTPSettings() {
     if (enabled) return <Enabled />
     if (setup) return <Setup setup={setup} onClose={() => setSetup(null)} />
     return (
-      <div className="grid gap-4">
+      <div className="grid gap-3.5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <StatusDot status="pending" label="Not enabled" />
-          <Button variant="secondary" onClick={() => enable.mutate()} disabled={enable.isPending}>
+          <StatusDot
+            status="pending"
+            label="Not enabled"
+            className={cn(STATE, 'text-warning-text')}
+          />
+          <Button
+            variant="outline"
+            className={cn(ACTION, 'bg-muted')}
+            onClick={() => enable.mutate()}
+            disabled={enable.isPending}
+          >
             <ShieldCheck />
-            {enable.isPending ? 'Starting...' : 'Set up'}
+            {enable.isPending ? 'Starting...' : 'Set up 2FA'}
           </Button>
         </div>
-        <p className="text-muted-foreground text-sm">
+        <p className={HINT}>
           With it on, someone who learns your password still can't sign in without your phone.
         </p>
       </div>
@@ -248,11 +265,11 @@ export default function TOTPSettings() {
   }
 
   return (
-    <SectionCard
+    <SettingsCard
       title="Two-factor authentication"
       description="A code from your phone on top of the password."
     >
       {content()}
-    </SectionCard>
+    </SettingsCard>
   )
 }

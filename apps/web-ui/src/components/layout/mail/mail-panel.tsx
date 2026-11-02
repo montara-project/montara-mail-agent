@@ -287,34 +287,8 @@ export default function MailPanel() {
 
   return (
     <Sidebar collapsible="none" className="hidden flex-1 md:flex">
-      <SidebarHeader className="gap-3.5 p-4 pb-2">
+      <SidebarHeader className="gap-3.5 p-4 pb-0">
         <OrganizationSwitcher />
-        <div className="flex w-full gap-2">
-          <Button
-            className="h-9 flex-1 justify-center rounded-lg bg-accent-ink text-xs font-semibold text-[#0a0a0a] hover:bg-accent-ink/90"
-            onClick={() => setComposing(true)}
-            disabled={!accounts?.length}
-          >
-            <PenLine className="size-3.5" />
-            Compose
-          </Button>
-          {/* Floating mode has its own button in the page's corner. */}
-          {position !== 'floating' && (
-            <Button
-              variant={agent ? 'secondary' : 'outline'}
-              aria-label="Toggle AI assistant"
-              title="AI assistant"
-              onClick={() =>
-                navigate({
-                  to: '/mail',
-                  search: (prev: Record<string, unknown>) => ({ ...prev, agent: !agent }),
-                })
-              }
-            >
-              <Sparkles />
-            </Button>
-          )}
-        </div>
         <ComposeSheet
           open={composing}
           onOpenChange={setComposing}
@@ -326,6 +300,34 @@ export default function MailPanel() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem className="mb-1.5 flex gap-2">
+                <Button
+                  className="h-8 flex-1 justify-center rounded-[8px] bg-accent-ink text-xs font-semibold text-[#0a0a0a] hover:bg-accent-ink/90"
+                  onClick={() => setComposing(true)}
+                  disabled={!accounts?.length}
+                >
+                  <PenLine className="size-3.5" />
+                  Compose
+                </Button>
+                {/* Floating mode has its own button in the page's corner. */}
+                {position !== 'floating' && (
+                  <Button
+                    variant={agent ? 'secondary' : 'outline'}
+                    size="icon"
+                    className="size-8 rounded-[8px]"
+                    aria-label="Toggle AI assistant"
+                    title="AI assistant"
+                    onClick={() =>
+                      navigate({
+                        to: '/mail',
+                        search: (prev: Record<string, unknown>) => ({ ...prev, agent: !agent }),
+                      })
+                    }
+                  >
+                    <Sparkles />
+                  </Button>
+                )}
+              </SidebarMenuItem>
               {MAIL_FOLDERS.map((item) => (
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton asChild isActive={folder.id === item.id}>
@@ -354,9 +356,7 @@ export default function MailPanel() {
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel className="font-mono text-[10.5px] font-semibold tracking-[1px] text-ink-faint uppercase">
-            Labels
-          </SidebarGroupLabel>
+          <SidebarGroupLabel>Labels</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {MAIL_LABELS.map((item) => (
@@ -389,15 +389,18 @@ export default function MailPanel() {
         )}
       </SidebarContent>
       {!COMMUNITY && (
-        <SidebarFooter className="gap-1 p-4">
+        <SidebarFooter className="gap-2 p-2.5">
           <TokenUsageCard />
-          <Link
-            to="/settings"
-            className="hover:bg-accent flex items-center gap-2 rounded-control px-2 py-2 text-sm outline-none"
-          >
-            <Settings className="text-muted-foreground size-4 shrink-0" aria-hidden />
-            Control Center
-          </Link>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <Link to="/settings">
+                  <Settings />
+                  <span>Control Center</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
         </SidebarFooter>
       )}
     </Sidebar>

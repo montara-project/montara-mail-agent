@@ -45,9 +45,9 @@ export default function OrganizationSwitcher() {
   const meta = stats ? `${stats.accounts} ${stats.accounts === 1 ? 'mailbox' : 'mailboxes'}` : ''
 
   return (
-    // Same height and bottom border as the page header (h-16), so the two lines meet;
+    // Same height and bottom border as the page header (h-14), so the two lines meet;
     // the negative margins cancel the panel header's p-4.
-    <div className="-mx-4 -mt-4 flex h-16 shrink-0 items-center border-b px-4">
+    <div className="-mx-4 -mt-4 flex h-14 shrink-0 items-center border-b px-2.5">
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -55,7 +55,7 @@ export default function OrganizationSwitcher() {
             className="h-11 w-full min-w-0 justify-between gap-2 rounded-[9px] bg-muted px-[7px] shadow-none"
           >
             <span className="flex min-w-0 items-center gap-2">
-              <span className="grid size-6 shrink-0 place-items-center rounded-md bg-accent-tint text-[10.5px] font-bold text-accent-soft uppercase">
+              <span className="grid size-6 shrink-0 place-items-center rounded-[6px] bg-accent-tint text-[10.5px] font-bold text-accent-soft uppercase">
                 {label.charAt(0).toUpperCase()}
               </span>
               <span className="grid min-w-0 flex-1 text-left leading-tight">

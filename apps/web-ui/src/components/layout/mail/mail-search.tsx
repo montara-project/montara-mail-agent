@@ -46,7 +46,7 @@ export default function MailSearchBar() {
   React.useEffect(() => pushSearch(debounced), [debounced])
 
   return (
-    <label className="border-border/60 bg-muted/60 focus-within:border-ring/60 focus-within:ring-ring/30 hidden h-[30px] w-64 items-center border rounded-control gap-1.5 px-2.5 md:flex">
+    <label className="border-border/60 bg-muted/60 focus-within:border-ring/60 focus-within:ring-ring/30 hidden h-[30px] w-64 min-w-0 items-center rounded-control border gap-1.5 px-2.5 lg:flex">
       <Search className="text-ink-3 size-3 shrink-0" aria-hidden />
       <input
         ref={inputRef}
@@ -56,7 +56,7 @@ export default function MailSearchBar() {
         onChange={(event) => setSearch(event.target.value)}
         className="placeholder:text-ink-3 min-w-0 flex-1 bg-transparent text-[11.5px] outline-none"
       />
-      <kbd className="text-ink-3 pointer-coarse:hidden bg-secondary rounded-chip px-1 py-px font-mono text-[10.5px] font-semibold">
+      <kbd className="text-ink-3 bg-secondary rounded-chip px-1 py-px font-mono text-[10.5px] font-semibold pointer-coarse:hidden">
         {SEARCH_KEYS}
       </kbd>
     </label>

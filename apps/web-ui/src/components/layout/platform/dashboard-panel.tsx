@@ -49,7 +49,7 @@ export default function DashboardPanel() {
 
   return (
     <Sidebar collapsible="none" className="hidden flex-1 md:flex">
-      <SidebarHeader className="gap-3.5 p-4 pb-2">
+      <SidebarHeader className="gap-3.5 p-4 pb-0">
         <OrganizationSwitcher />
       </SidebarHeader>
       <SidebarContent>

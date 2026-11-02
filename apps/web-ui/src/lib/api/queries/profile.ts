@@ -53,4 +53,19 @@ const changePassword = () =>
     },
   })
 
-export const profileQueries = { security, update, updatePreferences, changePassword } as const
+/** Deletes the account; the caller's sessions end with it, so the app signs out. */
+const deleteAccount = () =>
+  mutationOptions({
+    mutationFn: async (email: string) => {
+      const res = await services.profile.deleteAccount({ email })
+      return res.data
+    },
+  })
+
+export const profileQueries = {
+  security,
+  update,
+  updatePreferences,
+  changePassword,
+  deleteAccount,
+} as const

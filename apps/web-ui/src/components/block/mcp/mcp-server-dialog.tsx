@@ -359,7 +359,7 @@ export default function MCPServerDialog({
             {!server && (
               <p className="text-muted-foreground mb-1 px-2 text-xs font-medium uppercase">New</p>
             )}
-            <div className="flex gap-1 overflow-x-auto sm:flex-col">
+            <div className="flex gap-1 overflow-x-auto overscroll-x-contain sm:flex-col sm:overflow-visible">
               {KINDS.filter((k) => !server || k.kind === server.kind).map((k) => {
                 const locked = k.kind === 'command' && !commandAllowed && !server
                 const active = !importing && draft.kind === k.kind
@@ -402,7 +402,7 @@ export default function MCPServerDialog({
             )}
           </nav>
 
-          <div className="flex min-h-0 flex-col overflow-y-auto">
+          <div className="flex min-h-0 flex-col overflow-y-auto overscroll-contain">
             {importing ? (
               <>
                 <div className="grid flex-1 content-start gap-5 p-6">

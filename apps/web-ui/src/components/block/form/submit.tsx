@@ -30,8 +30,11 @@ export default function SubmitButton({
       disabled={isSubmitting}
       {...props}
     >
-      {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}
-      {Icon ? <Icon className="size-4" /> : null}
+      {isSubmitting ? (
+        <Loader2 className="size-4 animate-spin" />
+      ) : Icon ? (
+        <Icon className="size-4" />
+      ) : null}
       {label}
     </Button>
   )

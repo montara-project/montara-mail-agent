@@ -142,9 +142,9 @@ function MessageRow({ mail }: { mail: Models.Mail }) {
       >
         {name.charAt(0).toUpperCase()}
       </span>
-      <span className="grid min-w-0 flex-1 gap-0.5">
+      <span className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)] gap-0.5">
         <span className="flex items-baseline gap-1.5">
-          <span className="min-w-0 truncate text-sm font-medium">{mask(name)}</span>
+          <span className="max-w-[60%] shrink-0 truncate text-sm font-medium">{mask(name)}</span>
           {mail.subject && (
             <span className="text-muted-foreground min-w-0 truncate text-sm">· {mail.subject}</span>
           )}
@@ -423,12 +423,13 @@ function RouteComponent() {
     <PageContainer className="gap-3">
       <DashboardToolbar />
       <MailStats />
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="grid content-start gap-3">
+      {/* minmax(0,1fr) on every level: an implicit grid track grows to fit a row's nowrap text. */}
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-3 xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="grid grid-cols-[minmax(0,1fr)] content-start gap-3">
           <RecentMessages />
           <Quarantined />
         </div>
-        <div className="grid content-start gap-3">
+        <div className="grid grid-cols-[minmax(0,1fr)] content-start gap-3">
           <Mailboxes />
           <Shortcuts />
         </div>

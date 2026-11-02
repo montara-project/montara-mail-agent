@@ -66,6 +66,9 @@ func routes(r *fiber.App, app *app.Application) {
 	me.Patch("/", idempotent, h.Profile.Update)
 	me.Patch("/preferences", idempotent, h.Profile.UpdatePreferences)
 	me.Put("/password", slow, idempotent, h.Profile.ChangePassword)
+	// Deleting the account deletes everything it owns, so it shares the slow
+	// budget with the same reasoning as the password check.
+	me.Delete("/", slow, idempotent, h.Profile.DeleteAccount)
 	// The keys MCP clients sign in to /mcp with.
 	me.Get("/api-keys", h.APIKey.List)
 	// The Community Edition has no plans, quota or purchases: the routes don't exist.

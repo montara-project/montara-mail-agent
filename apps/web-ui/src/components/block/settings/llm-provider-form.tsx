@@ -1,6 +1,17 @@
 import { useStore } from '@tanstack/react-form'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Building2, Check, Cpu, Pencil, Plus, RefreshCw, Trash2, Users } from 'lucide-react'
+import {
+  Building2,
+  Check,
+  ChevronDown,
+  Cpu,
+  Info,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Trash2,
+  Users,
+} from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
@@ -13,10 +24,12 @@ import type {
 
 import EmptyState from '@/components/block/common/empty-state'
 import Hint from '@/components/block/common/hint'
-import SectionCard from '@/components/block/common/section-card'
+import SectionHeading from '@/components/block/common/section-heading'
+import { SettingsPage } from '@/components/block/common/settings-card'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import SimpleAlertScrollableDialogForm from '@/components/block/common/simple-alert-scrollable-dialog-form'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -299,6 +312,46 @@ function ProviderDialog({
   )
 }
 
+/** The column widths the design gives the provider table; the endpoint takes the rest. */
+const PROVIDER_COL = 'w-full md:w-[150px] md:shrink-0'
+const MODEL_COL = 'md:w-[188px] md:shrink-0'
+const RUNS_COL = 'md:w-[110px] md:shrink-0'
+const ACTIONS_COL = 'md:w-[132px] md:shrink-0'
+
+/** The column labels: mono, uppercase, faint, above the rows. */
+function ProviderTableHead() {
+  return (
+    <div className="hidden items-center gap-2.5 px-2.5 py-[7px] md:flex">
+      <span
+        className={`text-ink-faint font-mono text-[9px] leading-3 font-semibold tracking-[0.8px] uppercase ${PROVIDER_COL}`}
+      >
+        Provider
+      </span>
+      <span className="text-ink-faint min-w-0 flex-1 font-mono text-[9px] leading-3 font-semibold tracking-[0.8px] uppercase">
+        Endpoint
+      </span>
+      <span
+        className={`text-ink-faint font-mono text-[9px] leading-3 font-semibold tracking-[0.8px] uppercase ${MODEL_COL}`}
+      >
+        Model
+      </span>
+      <span
+        className={`text-ink-faint font-mono text-[9px] leading-3 font-semibold tracking-[0.8px] uppercase ${RUNS_COL}`}
+      >
+        Runs in
+      </span>
+      <span className={ACTIONS_COL}>
+        <span className="sr-only">Actions</span>
+      </span>
+    </div>
+  )
+}
+
+/** "Built-in" is the vendor's own endpoint; anything else is a custom one. */
+function providerTag(provider: Models.LLMProviderListed) {
+  return provider.base_url ? 'Custom' : 'Built-in'
+}
+
 /** One provider: what it calls, where it runs, and its actions. */
 function ProviderRow({
   provider,
@@ -323,117 +376,125 @@ function ProviderRow({
     )
 
   return (
-    <tr className="border-t border-border/60">
-      <td className="py-3 pr-4">
-        {/* The name is the cell's label; the tile is decorative beside it. */}
-        <span className="inline-flex items-center gap-2.5">
-          <span className="bg-muted flex size-6 shrink-0 items-center justify-center rounded-md">
-            <Cpu className="text-muted-foreground size-3" aria-hidden />
+    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 rounded-[8px] px-2.5 py-2 md:flex-nowrap">
+      <div className={`flex items-center gap-[9px] ${PROVIDER_COL}`}>
+        <span className="bg-accent-tint grid size-[26px] shrink-0 place-items-center rounded-[7px]">
+          <Cpu className="text-accent-ink size-3" aria-hidden />
+        </span>
+        <span className="grid min-w-0 gap-px">
+          <span className="truncate text-xs leading-4 font-semibold">{providerName(provider)}</span>
+          <span className="text-ink-faint truncate text-[10px] leading-[14px]">
+            {providerTag(provider)}
           </span>
-          <span className="truncate text-xs font-semibold">{providerName(provider)}</span>
         </span>
-      </td>
-      <td className="text-ink-3 max-w-56 truncate py-3 pr-4 font-mono text-xs">
-        {providerEndpoint(provider)}
-      </td>
-      <td className="text-muted-foreground py-3 pr-4 font-mono text-[11px]">{provider.model}</td>
-      <td className="py-3 pr-4">
-        <span className="text-muted-foreground flex items-center gap-1.5 text-[11px]">
-          <span className="size-[5px] shrink-0 rounded-full bg-success" aria-hidden />
-          {provider.organization_id ? provider.organization_name : 'Platform'}
-        </span>
-      </td>
-      <td className="py-3">
-        <div className="flex justify-end gap-0.5">
-          <Hint label="Edit">
-            <Button
-              variant="ghost"
-              mode="icon"
-              size="sm"
-              aria-label="Edit"
-              onClick={() => setOpenEdit(true)}
-            >
-              <Pencil />
-            </Button>
-          </Hint>
-          <DropdownMenu>
-            <Hint label="Where it runs">
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  mode="icon"
-                  size="sm"
-                  aria-label="Where it runs"
-                  disabled={move.isPending}
-                >
-                  {provider.organization_id ? <Building2 /> : <Users />}
-                </Button>
-              </DropdownMenuTrigger>
-            </Hint>
-            <DropdownMenuContent align="end" className="w-60">
-              <DropdownMenuLabel className="text-muted-foreground text-xs">
-                Runs in
-              </DropdownMenuLabel>
-              {scopeOptions.map((option, index) => (
-                <React.Fragment key={option.value}>
-                  {index === 1 && <DropdownMenuSeparator />}
-                  <DropdownMenuItem
-                    disabled={option.value === current || option.disabled}
-                    onSelect={() => moveTo(option)}
-                  >
-                    {option.value === PLATFORM ? <Users /> : <Building2 />}
-                    <span className="flex-1 truncate">{option.label}</span>
-                    {option.value === current && <Check />}
-                  </DropdownMenuItem>
-                </React.Fragment>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Hint label="Delete">
-            <Button
-              variant="destructive"
-              mode="icon"
-              size="sm"
-              aria-label="Delete"
-              onClick={() => setOpenDelete(true)}
-            >
-              <Trash2 />
-            </Button>
-          </Hint>
-        </div>
+      </div>
 
-        <SimpleAlertDialog
-          title={`Delete ${providerName(provider)}?`}
-          description={
-            provider.organization_id
-              ? `${provider.organization_name} falls back to the platform provider, or the server's model.`
-              : "Organizations without their own provider fall back to the server's model."
-          }
-          open={openDelete}
-          onOpenChange={setOpenDelete}
-          onConfirm={() =>
-            remove.mutate(provider.organization_id, {
-              onSuccess: () => {
-                toast.success('AI provider deleted')
-                setOpenDelete(false)
-              },
-              onError: toastAxiosError,
-            })
-          }
-          confirmText="Delete"
-          variant="destructive"
+      <span className="text-ink-3 order-4 basis-full min-w-0 truncate font-mono text-[10.5px] leading-[15px] md:order-none md:basis-auto md:flex-1">
+        {providerEndpoint(provider)}
+      </span>
+
+      <span
+        className={`text-ink-3 order-5 truncate font-mono text-[10.5px] leading-[15px] md:order-none ${MODEL_COL}`}
+      >
+        {provider.model || '—'}
+      </span>
+
+      {/* The chip is the picker: its chevron promises the menu it opens. */}
+      <div className={`order-2 md:order-none ${RUNS_COL}`}>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              disabled={move.isPending}
+              aria-label={`Where ${providerName(provider)} runs`}
+              className="bg-muted text-muted-foreground hover:bg-accent focus-visible:ring-ring/50 flex h-6 w-full items-center justify-between gap-[5px] rounded-chip border px-[7px] text-[10.5px] leading-[14px] outline-none transition-colors duration-150 focus-visible:ring-[3px] disabled:opacity-60 motion-reduce:transition-none"
+            >
+              <span className="flex min-w-0 items-center gap-[5px]">
+                <span className="bg-success size-[5px] shrink-0 rounded-full" aria-hidden />
+                <span className="truncate">
+                  {provider.organization_id ? provider.organization_name : 'Platform'}
+                </span>
+              </span>
+              <ChevronDown className="text-ink-faint size-[9px] shrink-0" aria-hidden />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-60">
+            <DropdownMenuLabel className="text-muted-foreground text-xs">Runs in</DropdownMenuLabel>
+            {scopeOptions.map((option, index) => (
+              <React.Fragment key={option.value}>
+                {index === 1 && <DropdownMenuSeparator />}
+                <DropdownMenuItem
+                  disabled={option.value === current || option.disabled}
+                  onSelect={() => moveTo(option)}
+                >
+                  {option.value === PLATFORM ? <Users /> : <Building2 />}
+                  <span className="flex-1 truncate">{option.label}</span>
+                  {option.value === current && <Check />}
+                </DropdownMenuItem>
+              </React.Fragment>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <div
+        className={`order-3 ml-auto flex items-center justify-end gap-[3px] md:order-none md:ml-0 ${ACTIONS_COL}`}
+      >
+        <Hint label="Edit">
+          <Button
+            variant="ghost"
+            mode="icon"
+            aria-label={`Edit ${providerName(provider)}`}
+            className="text-muted-foreground size-5 rounded-tag pointer-coarse:size-11"
+            onClick={() => setOpenEdit(true)}
+          >
+            <Pencil className="size-[11px]" />
+          </Button>
+        </Hint>
+        <Hint label="Delete">
+          <Button
+            variant="ghost"
+            mode="icon"
+            aria-label={`Delete ${providerName(provider)}`}
+            className="text-danger-soft hover:text-danger-soft size-5 rounded-tag pointer-coarse:size-11"
+            onClick={() => setOpenDelete(true)}
+          >
+            <Trash2 className="size-[11px]" />
+          </Button>
+        </Hint>
+      </div>
+
+      <SimpleAlertDialog
+        title={`Delete ${providerName(provider)}?`}
+        description={
+          provider.organization_id
+            ? `${provider.organization_name} falls back to the platform provider, or the server's model.`
+            : "Organizations without their own provider fall back to the server's model."
+        }
+        open={openDelete}
+        onOpenChange={setOpenDelete}
+        onConfirm={() =>
+          remove.mutate(provider.organization_id, {
+            onSuccess: () => {
+              toast.success('AI provider deleted')
+              setOpenDelete(false)
+            },
+            onError: toastAxiosError,
+          })
+        }
+        confirmText="Delete"
+        variant="destructive"
+      />
+      {/* Mounted while open, so the form starts from what is stored. */}
+      {openEdit && (
+        <ProviderDialog
+          open
+          onOpenChange={setOpenEdit}
+          provider={provider}
+          scopeOptions={scopeOptions}
         />
-        {/* Mounted while open, so the form starts from what is stored. */}
-        {openEdit && (
-          <ProviderDialog
-            open
-            onOpenChange={setOpenEdit}
-            provider={provider}
-            scopeOptions={scopeOptions}
-          />
-        )}
-      </td>
-    </tr>
+      )}
+    </div>
   )
 }
 
@@ -482,81 +543,81 @@ export default function LLMProviderSettings() {
   const content = () => {
     if (isPending) {
       return (
-        <div className="grid gap-3">
-          <Skeleton className="h-10" />
-          <Skeleton className="h-10" />
+        <div className="grid gap-2 px-2.5 pt-2.5 pb-1.5">
+          <Skeleton className="h-10 rounded-[8px]" />
+          <Skeleton className="h-10 rounded-[8px]" />
         </div>
       )
     }
-    if (isError) return <p className="text-destructive text-sm">{axiosErrorMessage(error)}</p>
+    if (isError) {
+      return <p className="text-destructive px-2.5 py-3 text-sm">{axiosErrorMessage(error)}</p>
+    }
     if (providers.length === 0) {
       return (
         <EmptyState
+          className="border-0 py-10"
           title="No AI providers yet"
           description="Add one for an organization, or a platform one for every user."
         />
       )
     }
     return (
-      <div className="relative -mx-4 overflow-x-auto px-4">
-        <div className="rounded-[10px] border">
-          <table className="w-full min-w-xl text-left text-sm">
-            <thead>
-              <tr className="bg-muted">
-                <th className="text-ink-faint px-3 py-[9px] font-mono text-[9px] font-semibold tracking-wide uppercase">
-                  Provider
-                </th>
-                <th className="text-ink-faint px-3 py-[9px] font-mono text-[9px] font-semibold tracking-wide uppercase">
-                  Endpoint
-                </th>
-                <th className="text-ink-faint px-3 py-[9px] font-mono text-[9px] font-semibold tracking-wide uppercase">
-                  Model
-                </th>
-                <th className="text-ink-faint px-3 py-[9px] font-mono text-[9px] font-semibold tracking-wide uppercase">
-                  Runs in
-                </th>
-                <th className="px-3 py-[9px]">
-                  <span className="sr-only">Actions</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {providers.map((provider) => (
-                <ProviderRow key={provider.id} provider={provider} scopeOptions={scopeOptions} />
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div className="px-2.5 pt-2.5 pb-1.5">
+        <ProviderTableHead />
+        {providers.map((provider, index) => (
+          <React.Fragment key={provider.id}>
+            {index > 0 && <div className="bg-border h-px" aria-hidden />}
+            <ProviderRow provider={provider} scopeOptions={scopeOptions} />
+          </React.Fragment>
+        ))}
       </div>
     )
   }
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
-      <div className="grid gap-1.5">
-        <h1 className="text-2xl font-bold">AI Providers</h1>
-        <p className="text-muted-foreground text-[13px]">
-          Endpoints and models for your AI features.
-        </p>
-      </div>
-      <SectionCard
-        title="Configured providers"
-        description={providerStatus(organization, data)}
-        toolbar={
+    <SettingsPage>
+      <SectionHeading
+        title="AI Providers"
+        description={`Endpoints and models for your AI features. ${organization?.name ?? 'This workspace'} falls back to the platform router.`}
+      />
+
+      <Card className="overflow-hidden rounded-lg shadow-none">
+        <div className="flex items-center justify-between gap-2.5 px-4 py-3.5">
+          <div className="flex min-w-0 flex-1 items-center gap-[9px]">
+            <Cpu className="text-ink-3 size-[13px] shrink-0" aria-hidden />
+            <div className="grid min-w-0 gap-1">
+              <h2 className="text-[13.5px] leading-[18px] font-bold">Configured providers</h2>
+              <p className="text-ink-3 text-[11px] leading-[15px] text-pretty">
+                {providerStatus(organization, data) ??
+                  'Every provider this account can reach, and where each one runs.'}
+              </p>
+            </div>
+          </div>
           <Button
             variant="secondary"
-            className="h-[30px] rounded-lg border-border bg-muted px-3 text-[11.5px] font-semibold shadow-none [&_svg]:size-3"
+            className="border-border bg-muted hover:bg-accent h-[27px] shrink-0 gap-1.5 rounded-[7px]! border px-[11px] text-[11px] leading-[15px] font-semibold shadow-none [&_svg]:size-[11px] pointer-coarse:h-11"
             onClick={() => setOpenAdd(true)}
           >
             <Plus />
             <span>Add provider</span>
           </Button>
-        }
-      >
+        </div>
+
+        <div className="bg-input h-px" aria-hidden />
+
         {content()}
 
-        {openAdd && <ProviderDialog open onOpenChange={setOpenAdd} scopeOptions={scopeOptions} />}
-      </SectionCard>
-    </div>
+        <div className="bg-input h-px" aria-hidden />
+        <div className="flex items-center gap-2 px-4 py-[11px]">
+          <Info className="text-ink-faint size-[11px] shrink-0" aria-hidden />
+          <p className="text-ink-3 text-[10.5px] leading-[14px] text-pretty">
+            Requests route to the first provider with a valid key, then fall back to the platform
+            router.
+          </p>
+        </div>
+      </Card>
+
+      {openAdd && <ProviderDialog open onOpenChange={setOpenAdd} scopeOptions={scopeOptions} />}
+    </SettingsPage>
   )
 }
