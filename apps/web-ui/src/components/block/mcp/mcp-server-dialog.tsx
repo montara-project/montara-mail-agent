@@ -560,6 +560,11 @@ export default function MCPServerDialog({
                     <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                       Cancel
                     </Button>
+                    {error && (
+                      <p role="alert" className="text-destructive text-sm">
+                        {error}
+                      </p>
+                    )}
                     <Button type="submit" disabled={!!error || saving} title={error}>
                       {submitLabel}
                     </Button>

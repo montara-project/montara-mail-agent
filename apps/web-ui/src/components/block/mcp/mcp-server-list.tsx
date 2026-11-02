@@ -66,7 +66,7 @@ function ServerSummary({ server }: { server: Models.MCPServer }) {
       <span
         className={cn(
           server.status === 'error' && 'text-destructive',
-          server.status === 'needs_auth' && 'text-warning'
+          server.status === 'needs_auth' && 'text-warning-text'
         )}
       >
         {STATUS_LABELS[server.status]}

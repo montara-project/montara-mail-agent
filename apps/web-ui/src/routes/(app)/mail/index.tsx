@@ -128,7 +128,7 @@ function RouteComponent() {
       progress.error(error)
     }
   })
-  const onKey = React.useEffectEvent((event: KeyboardEvent) => {
+  const onKey = React.useEffectEvent(async (event: KeyboardEvent) => {
     if (event.metaKey || event.ctrlKey || event.altKey) return
     const key = event.key.toLowerCase()
     if (key !== 'j' && key !== 'k' && key !== 'e') return
@@ -157,7 +157,14 @@ function RouteComponent() {
         : index === -1 || index === 0
           ? undefined
           : mails[index - 1]
-    if (next) navigate({ to: '/mail', search: (prev) => ({ ...prev, mail: next.id }) })
+    if (next) {
+      await navigate({ to: '/mail', search: (prev) => ({ ...prev, mail: next.id }) })
+      // Move focus with the selection: screen readers announce the new subject
+      // heading, and sighted keyboard users see the reader is the focus target.
+      requestAnimationFrame(() =>
+        document.querySelector<HTMLElement>('[data-mail-subject]')?.focus()
+      )
+    }
   })
   React.useEffect(() => {
     // A wrapped listener: an effect event can't be the listener itself.
@@ -185,7 +192,7 @@ function RouteComponent() {
   return (
     <>
       {/* Viewport height minus the page header and the page padding, so each column scrolls on its own. */}
-      <div className="bg-border flex h-[calc(100svh-6rem)] gap-px overflow-hidden rounded-xl border p-px">
+      <div className="bg-border flex h-[calc(100svh-6rem)] gap-px overflow-hidden rounded-xl border bg-clip-padding">
         {/* On phones the list and the reader take turns. */}
         <MailList
           className={cn('w-full md:w-80 lg:w-96 bg-background', mailId && 'hidden md:flex')}
@@ -208,19 +215,19 @@ function RouteComponent() {
             </div>
             <div className="absolute bottom-6 start-6 flex flex-col gap-1.5">
               <div className="flex items-center gap-2.5">
-                <kbd className="grid h-5 w-11 place-items-center rounded-chip bg-muted font-mono text-[9px] font-semibold text-muted-foreground">
+                <kbd className="grid h-5 w-11 place-items-center rounded-chip bg-muted font-mono text-[10.5px] font-semibold text-muted-foreground">
                   J / K
                 </kbd>
                 <span className="text-ink-3 text-[10.5px]">Next or previous message</span>
               </div>
               <div className="flex items-center gap-2.5">
-                <kbd className="grid h-5 w-11 place-items-center rounded-chip bg-muted font-mono text-[9px] font-semibold text-muted-foreground">
+                <kbd className="grid h-5 w-11 place-items-center rounded-chip bg-muted font-mono text-[10.5px] font-semibold text-muted-foreground">
                   E
                 </kbd>
                 <span className="text-ink-3 text-[10.5px]">Archive</span>
               </div>
               <div className="flex items-center gap-2.5">
-                <kbd className="grid h-5 w-11 place-items-center rounded-chip bg-muted font-mono text-[9px] font-semibold text-muted-foreground">
+                <kbd className="grid h-5 w-11 place-items-center rounded-chip bg-muted font-mono text-[10.5px] font-semibold text-muted-foreground">
                   {SEND_KEYS}
                 </kbd>
                 <span className="text-ink-3 text-[10.5px]">Send draft</span>

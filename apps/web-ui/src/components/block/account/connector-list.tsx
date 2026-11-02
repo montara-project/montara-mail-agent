@@ -1,5 +1,4 @@
 import { useMutation } from '@tanstack/react-query'
-import { useSearch } from '@tanstack/react-router'
 import { Plus, Server } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
@@ -260,36 +259,20 @@ function ConnectForm({ connector, onClose }: { connector: Connector; onClose: ()
 /** Providers a mailbox can be connected from. */
 export default function ConnectorList() {
   const [connecting, setConnecting] = React.useState<Connector | null>(null)
-  // The sidebar's Add account row lands here with ?connect=1 and scrolls to the
-  // grid. The flag is stripped from the URL without a router navigation, which
-  // would reset the scroll it just performed.
-  const { connect } = useSearch({ strict: false }) as { connect?: string }
-  const gridRef = React.useRef<HTMLDivElement>(null)
-
-  React.useEffect(() => {
-    if (connect !== '1') return
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    window.history.replaceState(null, '', '/account')
-    // The router's scroll restoration can reset the position right after the
-    // first load; the retries re-anchor the grid once layout settles.
-    const scroll = () => gridRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' })
-    const raf = requestAnimationFrame(scroll)
-    const timer = window.setTimeout(scroll, 80)
-    return () => {
-      cancelAnimationFrame(raf)
-      window.clearTimeout(timer)
-    }
-  }, [connect])
 
   return (
-    <section aria-labelledby="connectors-title" className="grid gap-3">
+    <section
+      id="connect-section"
+      aria-labelledby="connectors-title"
+      className="grid scroll-mt-20 gap-3"
+    >
       <div>
         <h2 id="connectors-title" className="text-lg font-semibold">
           Connect an account
         </h2>
         <p className="text-muted-foreground text-sm">Add a mailbox from one of these providers.</p>
       </div>
-      <div ref={gridRef} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 scroll-mt-20">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {CONNECTORS.map((connector) => (
           <button
             key={connector.id}

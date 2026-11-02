@@ -498,7 +498,7 @@ export default function LLMProviderSettings() {
       )
     }
     return (
-      <div className="-mx-4 overflow-x-auto px-4">
+      <div className="relative -mx-4 overflow-x-auto px-4">
         <div className="rounded-[10px] border">
           <table className="w-full min-w-xl text-left text-sm">
             <thead>
@@ -532,7 +532,7 @@ export default function LLMProviderSettings() {
   }
 
   return (
-    <div className="grid gap-5">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
       <div className="grid gap-1.5">
         <h1 className="text-2xl font-bold">AI Providers</h1>
         <p className="text-muted-foreground text-[13px]">

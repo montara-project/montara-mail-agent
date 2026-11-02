@@ -201,7 +201,7 @@ function ActionButton({
         <Button
           variant="ghost"
           size="icon"
-          className="size-8 pointer-coarse:size-10"
+          className="size-8 pointer-coarse:size-11"
           aria-label={label}
           {...props}
         >
@@ -262,7 +262,7 @@ function BulkActions({
       initial="hidden"
       animate="shown"
       exit="hidden"
-      className="absolute inset-y-0 start-0 flex items-center"
+      className="absolute inset-y-0 end-0 flex items-center"
       aria-busy={bulk.isPending}
     >
       {folder !== 'archive' && (
@@ -307,7 +307,7 @@ function BulkActions({
               <Button
                 variant="ghost"
                 size="icon"
-                className="size-8 pointer-coarse:size-10"
+                className="size-8 pointer-coarse:size-11"
                 aria-label="Move to"
                 disabled={bulk.isPending}
               >
@@ -506,7 +506,7 @@ export default function MailList({ className }: { className?: string }) {
                 >
                   {mask(senderName(mail))}
                 </span>
-                <span className="text-ink-3 shrink-0 font-mono text-[9.5px] whitespace-nowrap tabular-nums">
+                <span className="text-ink-3 shrink-0 font-mono text-[10.5px] whitespace-nowrap tabular-nums">
                   {formatMailListDate(mail.received_at)}
                 </span>
               </span>
@@ -554,7 +554,7 @@ export default function MailList({ className }: { className?: string }) {
   return (
     <div className={cn('flex min-h-0 flex-col', className)}>
       <MotionConfig reducedMotion="user">
-        <div className="flex h-[50px] shrink-0 items-center gap-2 border-b px-4">
+        <div className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
           {selecting && (
             <Checkbox
               checked={selectAllState}
@@ -591,7 +591,7 @@ export default function MailList({ className }: { className?: string }) {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.18, ease: EASE_OUT }}
-                    className={`bg-accent-ink/15 text-accent-soft font-mono text-[9px] font-semibold truncate rounded-chip px-1.5 py-0.5 tabular-nums ${COUNT_VISIBILITY}`}
+                    className={`bg-accent-ink/15 text-accent-soft font-mono text-[10.5px] font-semibold truncate rounded-chip px-1.5 py-0.5 tabular-nums ${COUNT_VISIBILITY}`}
                   >
                     {unreadCount} new
                   </motion.span>
@@ -601,7 +601,7 @@ export default function MailList({ className }: { className?: string }) {
           </h2>
           {/* Wide enough for the five actions, at touch size too. The refresh
               cross-fades away while a selection shows the bulk actions. */}
-          <div className="relative flex h-9 w-44 shrink-0 items-center justify-end pointer-coarse:w-52">
+          <div className="relative flex h-9 w-40 shrink-0 items-center justify-end pointer-coarse:w-55">
             <motion.span
               animate={
                 selecting ? { opacity: 0, x: 8, scale: 0.98 } : { opacity: 1, x: 0, scale: 1 }

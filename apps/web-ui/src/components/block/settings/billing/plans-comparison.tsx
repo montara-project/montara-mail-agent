@@ -241,7 +241,7 @@ export default function PlansComparison() {
                       <span className="text-muted-foreground me-1.5 line-through">
                         {formatRupiah(pro.amount)}
                       </span>
-                      <span className="text-success">
+                      <span className="text-success-ink">
                         Save {formatRupiah(pro.discount_amount)}
                         {pro.discount_ends_at
                           ? ` until ${monthDay(new Date(pro.discount_ends_at), true)}`

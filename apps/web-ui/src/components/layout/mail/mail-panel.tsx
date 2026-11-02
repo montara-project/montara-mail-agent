@@ -247,7 +247,7 @@ function UpgradeBanner() {
         </span>
         <span className="grid min-w-0 flex-1 text-left leading-tight">
           <span className="truncate text-xs font-bold">Upgrade your plan</span>
-          <span className="text-ink-3 truncate text-[9.5px]">
+          <span className="text-ink-3 truncate text-[10.5px]">
             {meta ? `${subscription.plan_name} · ${meta}` : subscription.plan_name}
           </span>
         </span>
@@ -291,7 +291,7 @@ export default function MailPanel() {
         <OrganizationSwitcher />
         <div className="flex w-full gap-2">
           <Button
-            className="h-9 flex-1 justify-center rounded-lg bg-accent-ink text-xs font-semibold text-white hover:bg-accent-ink/90"
+            className="h-9 flex-1 justify-center rounded-lg bg-accent-ink text-xs font-semibold text-[#0a0a0a] hover:bg-accent-ink/90"
             onClick={() => setComposing(true)}
             disabled={!accounts?.length}
           >
@@ -354,7 +354,7 @@ export default function MailPanel() {
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel className="font-mono text-[9px] font-semibold tracking-[1px] text-ink-faint uppercase">
+          <SidebarGroupLabel className="font-mono text-[10.5px] font-semibold tracking-[1px] text-ink-faint uppercase">
             Labels
           </SidebarGroupLabel>
           <SidebarGroupContent>

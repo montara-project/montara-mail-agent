@@ -45,9 +45,9 @@ export default function OrganizationSwitcher() {
   const meta = stats ? `${stats.accounts} ${stats.accounts === 1 ? 'mailbox' : 'mailboxes'}` : ''
 
   return (
-    // Same height and bottom border as the page header (h-14), so the two lines meet;
+    // Same height and bottom border as the page header (h-16), so the two lines meet;
     // the negative margins cancel the panel header's p-4.
-    <div className="-mx-4 -mt-4 flex h-14 shrink-0 items-center border-b px-4">
+    <div className="-mx-4 -mt-4 flex h-16 shrink-0 items-center border-b px-4">
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button

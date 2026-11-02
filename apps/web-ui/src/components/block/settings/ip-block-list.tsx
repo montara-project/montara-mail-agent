@@ -56,7 +56,7 @@ function BlockRow({ block }: { block: Models.IPBlock }) {
       <span
         className={cn(
           'flex size-[30px] shrink-0 items-center justify-center rounded-[8px]',
-          auto ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-danger-soft'
+          auto ? 'bg-warning/10 text-warning-ink' : 'bg-destructive/10 text-danger-ink'
         )}
       >
         <Ban className="size-3.5" aria-hidden />
@@ -67,7 +67,7 @@ function BlockRow({ block }: { block: Models.IPBlock }) {
           <span
             className={cn(
               'rounded-tag px-1.5 py-0.5 font-mono text-[9px] font-semibold',
-              auto ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-danger-soft'
+              auto ? 'bg-warning/10 text-warning-ink' : 'bg-destructive/10 text-danger-ink'
             )}
           >
             {auto ? 'Auto' : 'Manual'}

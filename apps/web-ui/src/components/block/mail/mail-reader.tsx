@@ -67,7 +67,7 @@ function IconButton({ label, ...props }: React.ComponentProps<typeof Button> & {
       <Button
         variant="ghost"
         size="icon"
-        className="size-8 pointer-coarse:size-10"
+        className="size-8 pointer-coarse:size-11"
         aria-label={label}
         {...props}
       />
@@ -359,7 +359,7 @@ export default function MailReader({ mailId }: { mailId: string }) {
 
       <div className="@container flex-1 overflow-y-auto px-6 py-5">
         <div className="flex flex-wrap items-start gap-3 border-b pb-4">
-          <Avatar className="size-10 border">
+          <Avatar className="size-10">
             <AvatarFallback
               className={cn(
                 'text-sm font-bold',
@@ -443,12 +443,17 @@ export default function MailReader({ mailId }: { mailId: string }) {
               className="bg-muted rounded-[7px] [&_svg]:size-3.5"
               onClick={() => update({ is_starred: !mail.is_starred })}
             >
-              <Star className={cn(mail.is_starred && 'fill-amber-400 text-amber-400')} />
+              <Star className={cn(mail.is_starred && 'fill-warning text-warning')} />
             </IconButton>
           </div>
         </div>
 
-        <h1 dir="auto" className="mt-5 text-lg font-bold">
+        <h1
+          dir="auto"
+          tabIndex={-1}
+          data-mail-subject
+          className="mt-5 text-lg font-bold rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        >
           {mail.subject || '(no subject)'}
         </h1>
 
@@ -540,7 +545,7 @@ export default function MailReader({ mailId }: { mailId: string }) {
             aria-busy={!summaryText && summary.isPending}
             className="mb-6 max-w-3xl rounded-lg border border-accent-ink/25 bg-accent-tint p-4"
           >
-            <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-accent-ink">
+            <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-accent-soft">
               <Sparkles className="size-4" />
               AI Summary
             </p>

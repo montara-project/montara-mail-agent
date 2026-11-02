@@ -100,7 +100,7 @@ function AttachmentList({ files, onChange }: { files: File[]; onChange: (files: 
           <span className="text-muted-foreground min-w-0 truncate font-mono text-[10.5px]">
             {file.name}
           </span>
-          <span className="text-ink-3 shrink-0 font-mono text-[9.5px]">
+          <span className="text-ink-3 shrink-0 font-mono text-[10.5px]">
             {formatBytes(file.size)}
           </span>
           <span className="truncate font-medium">{file.name}</span>

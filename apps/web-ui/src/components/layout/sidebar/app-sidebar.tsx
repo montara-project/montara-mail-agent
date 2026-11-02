@@ -91,15 +91,20 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
       {...props}
     >
       {/* Icon rail: not collapsible, fixed to the icon width. */}
-      <Sidebar collapsible="none" className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r">
-        <SidebarHeader>
+      <Sidebar
+        collapsible="none"
+        className="w-[calc(var(--sidebar-width-icon)+1px)]! shrink-0 border-r"
+      >
+        {/* Rail buttons are a fixed centered 2rem square, the same size the collapsed
+        state forces, so nothing moves or resizes when the sidebar toggles. */}
+        <SidebarHeader className="md:h-16 md:justify-center">
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
+              <SidebarMenuButton size="lg" asChild className="md:mx-auto md:size-8 md:p-0">
                 <Link to="/dashboard">
                   <span
                     aria-hidden
-                    className="grid size-[30px] shrink-0 place-items-center rounded-[9px] bg-accent-ink/15 ring-1 ring-accent-ink/25"
+                    className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-accent-ink/15 ring-1 ring-accent-ink/25"
                   >
                     <Mail className="size-3.75 text-accent-soft" />
                   </span>
@@ -122,7 +127,7 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
                       asChild
                       tooltip={{ children: item.title, hidden: false }}
                       isActive={pathname.startsWith(item.url)}
-                      className="px-2.5 md:px-2"
+                      className="px-2.5 md:mx-auto md:size-8 md:p-2"
                     >
                       <Link to={item.url}>
                         {item.icon && <item.icon />}
@@ -168,7 +173,9 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
         </SidebarFooter>
       </Sidebar>
 
-      {sidebarPanel(pathname)}
+      {/* The second panel is hidden, not clipped, once the rail collapses: while
+      it stays laid out it keeps its min-content width and squeezes the rail.*/}
+      <div className="contents group-data-[collapsible=icon]:hidden">{sidebarPanel(pathname)}</div>
     </Sidebar>
   )
 }

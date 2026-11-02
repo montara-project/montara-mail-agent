@@ -18,8 +18,6 @@ type AccountSearch = {
   code?: string
   state?: string
   error?: string
-  /** Set by the sidebar's Add account row: scrolls to the provider grid. */
-  connect?: string
 }
 
 const str = (value: unknown) => (typeof value === 'string' && value !== '' ? value : undefined)
@@ -30,7 +28,6 @@ export const Route = createFileRoute('/(app)/account/')({
     code: str(search.code),
     state: str(search.state),
     error: str(search.error),
-    connect: str(search.connect),
   }),
   component: RouteComponent,
 })

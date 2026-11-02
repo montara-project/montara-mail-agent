@@ -23,7 +23,6 @@ function SoonCard({ title, description }: { title: string; description: string }
         </Badge>
       </div>
       <p className="text-muted-foreground mt-1 text-sm">{description}</p>
-      <p className="text-ink-3 mt-2 text-xs">This isn't available yet.</p>
     </div>
   )
 }

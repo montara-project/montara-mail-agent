@@ -14,7 +14,7 @@ export default function TokenUsageCard() {
     <div className="bg-muted grid gap-1.5 rounded-lg p-2 px-2.25">
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-[10.5px] font-semibold text-muted-foreground">AI tokens</span>
-        <span className="text-ink-3 font-mono text-[9.5px] whitespace-nowrap tabular-nums">
+        <span className="text-ink-3 font-mono text-[10.5px] whitespace-nowrap tabular-nums">
           {formatTokens(quota.used_tokens)}
           {limit !== null && ` / ${formatTokens(limit)}`}
         </span>

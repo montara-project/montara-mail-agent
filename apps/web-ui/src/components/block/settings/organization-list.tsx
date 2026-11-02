@@ -88,7 +88,7 @@ function OrganizationRow({ record, active }: { record: Models.Organization; acti
         </span>
       </span>
       {active ? (
-        <span className="bg-success/10 text-success flex shrink-0 items-center gap-1.5 rounded-[5px] px-[7px] py-[3px] text-[10.5px] font-semibold">
+        <span className="bg-success/10 text-success-ink flex shrink-0 items-center gap-1.5 rounded-[5px] px-[7px] py-[3px] text-[10.5px] font-semibold">
           <span className="size-[5px] rounded-full bg-success" aria-hidden />
           Active
         </span>

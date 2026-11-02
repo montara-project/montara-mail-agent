@@ -56,7 +56,7 @@ export default function MailSearchBar() {
         onChange={(event) => setSearch(event.target.value)}
         className="placeholder:text-ink-3 min-w-0 flex-1 bg-transparent text-[11.5px] outline-none"
       />
-      <kbd className="text-ink-3 pointer-coarse:hidden bg-secondary rounded-chip px-1 py-px font-mono text-[9px] font-semibold">
+      <kbd className="text-ink-3 pointer-coarse:hidden bg-secondary rounded-chip px-1 py-px font-mono text-[10.5px] font-semibold">
         {SEARCH_KEYS}
       </kbd>
     </label>

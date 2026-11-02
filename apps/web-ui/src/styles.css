@@ -23,7 +23,7 @@
   /* Skeleton pulse stays neutral: palettes override --accent, which the
      Skeleton used to inherit. */
   --skeleton: #18181b0d;
-  --destructive: #ef4444;
+  --destructive: #dc2626;
   --destructive-foreground: #fafafa;
   --border: #18181b1a;
   --input: #18181b26;
@@ -93,13 +93,21 @@
   --ink-strong: #3f3f46;
   --ink-faint: #71717a;
   /* Mail importance labels: their own hues (red = important, gray = low
-     priority, amber = broadcast), so violet means only the AI. */
-  --label-important: #ef4444;
+     priority, amber = broadcast), so violet means only the AI. The light
+     values are text-safe on white surfaces; .dark re-brightens for dark. */
+  --label-important: #b91c1c;
   --label-low-priority: #52525b;
-  --label-broadcast: #f59e0b;
+  --label-broadcast: #92400e;
   --success: #22c55e;
   --warning: #f59e0b;
   --info: #2c8bef;
+  --success-text: #15803d;
+  --warning-text: #a16207;
+  /* Ink pair for text on the soft success/warning/destructive 
+     tints, where --*-text falls short of AA. */
+  --success-ink: #166534;
+  --warning-ink: #854d0e;
+  --danger-ink: #b91c1c;
   /* Provider brand colors: logo tile, badge and status only — never on primary actions. */
   --brand-gmail: #ea4335;
   --brand-outlook: #2c8bef;
@@ -112,8 +120,19 @@
   --hover-2: #ffffff0d;
   --accent-soft: #c7c7ff;
   --danger-soft: #f87171;
+  --ink-3: #8b8b94;
   --ink-strong: #e4e4e7;
-  --ink-faint: #52525b;
+  --ink-faint: #8b8b94;
+  /* The light label values are tuned for white surfaces; dark surfaces get
+     the bright hues back, which pass AA against the dark tints. */
+  --label-important: #ef4444;
+  --label-low-priority: #a1a1a1;
+  --label-broadcast: #f59e0b;
+  --success-text: #22c55e;
+  --warning-text: #f59e0b;
+  --success-ink: #22c55e;
+  --warning-ink: #f59e0b;
+  --danger-ink: #f87171;
 }
 
 @theme inline {
@@ -142,6 +161,11 @@
   --color-label-broadcast: var(--label-broadcast);
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-success-text: var(--success-text);
+  --color-warning-text: var(--warning-text);
+  --color-success-ink: var(--success-ink);
+  --color-warning-ink: var(--warning-ink);
+  --color-danger-ink: var(--danger-ink);
   --color-info: var(--info);
   --color-brand-gmail: var(--brand-gmail);
   --color-brand-outlook: var(--brand-outlook);
