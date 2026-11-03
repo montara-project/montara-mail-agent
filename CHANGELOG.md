@@ -3,6 +3,16 @@
 All notable changes to this project are documented in this file. Versions follow the git tags (`v*`); Docker images are published to ghcr.io with the same version.
 
 
+## [1.4.0](https://github.com/montara-project/montara-mail-agent/compare/v1.3.0...v1.4.0) (2026-11-03)
+
+### Bug Fixes
+
+* update custom skills per user ([33f8d3a](https://github.com/montara-project/montara-mail-agent/commit/33f8d3af259fa805389fab81005accf899a84b83))
+* update draft/reply skills ([9d166aa](https://github.com/montara-project/montara-mail-agent/commit/9d166aa44d54d30ff17bf39de7af9b299efd5c30))
+* update email count badge ([8eee981](https://github.com/montara-project/montara-mail-agent/commit/8eee98105cf65456f7cc283875ddb78ae4323b6c))
+* update font style ([e5b87d4](https://github.com/montara-project/montara-mail-agent/commit/e5b87d48cd6a75c578a5c62941b036b4bd58d352))
+* update mcp ([aaf18f7](https://github.com/montara-project/montara-mail-agent/commit/aaf18f79e63961494e5a1d4d291def8846dd5547))
+
 ## [1.3.0](https://github.com/montara-project/montara-mail-agent/compare/v1.2.0...v1.3.0) (2026-11-03)
 
 ### Bug Fixes
