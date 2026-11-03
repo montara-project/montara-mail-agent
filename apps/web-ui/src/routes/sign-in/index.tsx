@@ -214,7 +214,7 @@ function RouteComponent() {
       </aside>
 
       {/* Right / sign-in: the stepper, the card and the legal lines. */}
-      <section className="relative flex flex-1 flex-col items-center justify-center px-10 py-10 lg:px-[60px]">
+      <section className="relative flex min-w-0 flex-1 flex-col items-center justify-center px-4 py-10 sm:px-10 lg:px-[60px]">
         <span className="absolute top-10 right-10 font-mono text-[9.5px] font-semibold text-ink-faint lg:right-[60px]">
           Jakarta · EN
         </span>
@@ -224,7 +224,7 @@ function RouteComponent() {
             <p className="text-muted-foreground text-sm">Finishing Google sign-in…</p>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-[18px]">
+          <div className="flex w-full flex-col items-center gap-[18px]">
             <Stepper step={authStep} />
             <LoginForm codeFirst={needsCode} onStepChange={setAuthStep} />
             <div className="flex flex-col items-center gap-1 text-center">

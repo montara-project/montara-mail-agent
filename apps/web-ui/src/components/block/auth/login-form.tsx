@@ -365,7 +365,8 @@ export default function LoginForm({
     <div
       className={cn(
         'flex flex-col overflow-hidden rounded-2xl border border-border bg-card',
-        step === 'code' ? 'w-[460px]' : 'w-[440px]',
+        'w-full',
+        step === 'code' ? 'max-w-[460px]' : 'max-w-[440px]',
         className
       )}
       {...props}
@@ -376,14 +377,19 @@ export default function LoginForm({
             <span className="font-mono text-[9.5px] font-semibold text-accent-soft">
               VERIFICATION
             </span>
-            <span className="inline-flex items-center gap-1 rounded-chip bg-warning/10 px-2 py-[3px]">
-              <Clock3 className="size-2.5 text-warning" aria-hidden />
-              <span className="font-mono text-[9.5px] font-semibold text-warning">
-                Rotates every 30 s
+            {/* Only an app code rotates; a backup code works once, whenever. */}
+            {!backup && (
+              <span className="inline-flex items-center gap-1 rounded-chip bg-warning/10 px-2 py-[3px]">
+                <Clock3 className="size-2.5 text-warning" aria-hidden />
+                <span className="font-mono text-[9.5px] font-semibold text-warning">
+                  Rotates every 30 s
+                </span>
               </span>
-            </span>
+            )}
           </div>
-          <h1 className="text-[27px] font-bold tracking-[-0.4px]">Enter your 6-digit code</h1>
+          <h1 className="text-[27px] font-bold tracking-[-0.4px]">
+            {backup ? 'Enter a backup code' : 'Enter your 6-digit code'}
+          </h1>
           <p className="flex flex-wrap items-center gap-2 text-[12.5px]">
             <span className="text-ink-3">Code from</span>
             <span className="font-bold text-ink-strong">
