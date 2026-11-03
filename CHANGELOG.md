@@ -3,6 +3,14 @@
 All notable changes to this project are documented in this file. Versions follow the git tags (`v*`); Docker images are published to ghcr.io with the same version.
 
 
+## [1.5.0](https://github.com/montara-project/montara-mail-agent/compare/v1.4.0...v1.5.0) (2026-11-03)
+
+### Bug Fixes
+
+* update adjustment text size for comfortable ([b1e467b](https://github.com/montara-project/montara-mail-agent/commit/b1e467b84c90964882780f73ba3d250c6837cf4d))
+* update billing and invoice page ([3ec546b](https://github.com/montara-project/montara-mail-agent/commit/3ec546bfe095537ab2a7ae92527b72b5fa534b40))
+* update minor ([65a44ad](https://github.com/montara-project/montara-mail-agent/commit/65a44ad15375c90976173fd74552a8f859f7508e))
+
 ## [1.4.0](https://github.com/montara-project/montara-mail-agent/compare/v1.3.0...v1.4.0) (2026-11-03)
 
 ### Bug Fixes
