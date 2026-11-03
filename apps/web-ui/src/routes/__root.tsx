@@ -29,7 +29,9 @@ const RootLayout = () => (
   <ThemeProvider>
     {/* outlet = react children */}
     <Outlet />
-    <Toaster position="bottom-right" richColors closeButton />
+    {/* Top right, under the header: the bottom right holds the mail page's
+    floating assistant, which toasts would cover. */}
+    <Toaster position="top-right" offset={{ top: 72, right: 16 }} richColors closeButton />
 
     {/* declare devtools panel */}
     {import.meta.env.DEV && (

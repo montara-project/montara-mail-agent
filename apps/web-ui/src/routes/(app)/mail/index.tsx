@@ -45,9 +45,11 @@ type MailSearch = {
 const AgentPanel = React.lazy(() => import('@/components/block/mail/agent-panel'))
 const AGENT_PANE = 'hidden w-80 shrink-0 lg:flex xl:w-96'
 // Floating mode (Control Center > Agent tools > AI Assistant Panel) pins the
-// same panel over the page's bottom right corner instead of the third pane.
+// same panel over the page's bottom right corner instead of the third pane:
+// 12px inside the mail box on the right and bottom (the box sits 16px from the
+// viewport), and at most as tall as leaves 12px under the box's top.
 const AGENT_FLOAT =
-  'fixed right-7 bottom-7 z-50 hidden h-[min(38rem,calc(100svh-6rem))] w-96 max-w-[calc(100vw-3.5rem)] overflow-hidden rounded-xl border bg-card shadow-lg lg:block'
+  'fixed right-7 bottom-7 z-50 hidden h-[min(38rem,calc(100svh-7rem))] w-96 max-w-[calc(100vw-3.5rem)] overflow-hidden rounded-xl border bg-card shadow-lg lg:block'
 // The send-draft shortcut as this platform writes it, for the empty pane's hint.
 const SEND_KEYS =
   typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘↵' : 'Ctrl+↵'
@@ -191,8 +193,8 @@ function RouteComponent() {
 
   return (
     <>
-      {/* Viewport height minus the page header and the page padding, so each column scrolls on its own. */}
-      <div className="bg-border flex h-[calc(100svh-6rem)] gap-px overflow-hidden rounded-xl border bg-clip-padding">
+      {/* Viewport height minus the page header (3.5rem) and the page padding (2rem), so each column scrolls on its own. */}
+      <div className="bg-border flex h-[calc(100svh-5.5rem)] gap-px overflow-hidden rounded-xl border bg-clip-padding">
         {/* On phones the list and the reader take turns. */}
         <MailList
           className={cn('w-full md:w-80 lg:w-96 bg-background', mailId && 'hidden md:flex')}
