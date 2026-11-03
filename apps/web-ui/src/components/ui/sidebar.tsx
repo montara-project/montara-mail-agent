@@ -223,7 +223,7 @@ function Sidebar({
         data-slot="sidebar-container"
         data-side={side}
         className={cn(
-          'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear motion-reduce:transition-none data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)] md:flex',
+          'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear motion-reduce:transition-none data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:-left-(--sidebar-width) data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:-right-(--sidebar-width) md:flex',
           // Adjust the padding for floating and inset variants.
           variant === 'floating' || variant === 'inset'
             ? 'p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]'
@@ -323,7 +323,7 @@ function SidebarGroup({ className, ...props }: React.ComponentProps<'div'>) {
       // A group after another one stands apart from the rows above it, as the
       // design's 14px label padding does; the first group sits right under the header.
       className={cn(
-        'relative flex w-full min-w-0 flex-col [[data-slot=sidebar-group]+&]:pt-[0.8125rem]',
+        'relative flex w-full min-w-0 flex-col [[data-slot=sidebar-group]+&]:pt-3.25',
         className
       )}
       {...props}
@@ -343,7 +343,7 @@ function SidebarGroupLabel({
       data-slot="sidebar-group-label"
       data-sidebar="group-label"
       className={cn(
-        'text-sidebar-foreground/70 ring-sidebar-ring flex h-[1.375rem] shrink-0 items-center rounded-md px-2 pb-1 font-mono text-[0.6875rem] font-semibold tracking-[0.0625rem] text-ink-faint uppercase outline-hidden transition-[margin,opacity] duration-200 ease-linear motion-reduce:transition-none group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0',
+        'ring-sidebar-ring flex h-5.5 shrink-0 items-center rounded-md px-2 pb-1 font-mono text-[0.6875rem] font-semibold tracking-[0.0625rem] text-muted-foreground/60 uppercase outline-hidden transition-[margin,opacity] duration-200 ease-linear motion-reduce:transition-none group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0',
         className
       )}
       {...props}

@@ -79,6 +79,23 @@ func testBilling(t *testing.T, call callFunc, application *app.Application, db *
 		t.Fatalf("wallet topup webhook replay: %d %v", status, out)
 	}
 
+	// The top-up's invoice endpoint returns the row to its owner; an id the
+	// user doesn't own answers the same not-found a malformed id does.
+	var topupID string
+	if err := db.QueryRow(`SELECT id FROM wallet_topups WHERE reference_id = 'wallet-topup-test-1'`).Scan(&topupID); err != nil {
+		t.Fatal(err)
+	}
+	if status, out := call(http.MethodGet, "/api/v1/me/billing/wallet/topups/"+topupID, userToken, nil); status != http.StatusOK ||
+		out["data"].(map[string]any)["status"] != "paid" {
+		t.Fatalf("wallet topup detail: %d %v", status, out)
+	}
+	if status, _ := call(http.MethodGet, "/api/v1/me/billing/wallet/topups/"+uuid.NewString(), userToken, nil); status != http.StatusNotFound {
+		t.Fatalf("wallet topup detail unknown id: %d, want 404", status)
+	}
+	if status, _ := call(http.MethodGet, "/api/v1/me/billing/wallet/topups/not-a-uuid", userToken, nil); status != http.StatusNotFound {
+		t.Fatalf("wallet topup detail bad id: %d, want 404", status)
+	}
+
 	// The webhook also activates a paid subscription: status flips, the plan
 	// becomes pro, the period starts; a replay changes nothing.
 	if _, err := db.Exec(`INSERT INTO subscriptions (user_id, plan_id, status, amount, reference_id)

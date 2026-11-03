@@ -36,7 +36,8 @@ type LedgerRow = {
   sub: string
   amount: number
   paid: boolean
-  /** A paid or settled token top-up leads to its invoice page. */
+  /** A paid or settled top-up leads to its invoice page. */
+  invoiceTo?: '/settings/billing/invoice/$id' | '/settings/billing/wallet-invoice/$id'
   invoiceId?: string
   /** A pending gateway payment leads back to its checkout. */
   checkoutUrl?: string
@@ -71,6 +72,7 @@ export default function RecentTransactions() {
       // A gateway purchase still waiting leads back to its checkout; any other
       // state has an invoice page, legacy QRIS ones included.
       checkoutUrl: t.status === 'pending' && t.pay_url ? t.pay_url : undefined,
+      invoiceTo: '/settings/billing/invoice/$id',
       invoiceId: t.status === 'pending' && t.pay_url ? undefined : t.id,
     }))
     const walletRows = (walletQuery.data?.data ?? []).map<LedgerRow>((t) => ({
@@ -81,8 +83,11 @@ export default function RecentTransactions() {
       sub: `${monthDay(new Date(t.created_at), true)} · ${statusLabel[t.status]}`,
       amount: t.amount_idr,
       paid: t.status === 'paid',
-      // A pending top-up's pay page is its way back to the checkout.
+      // A pending top-up's pay page is its way back to the checkout; any other
+      // state has a wallet invoice page, same as the token rows.
       checkoutUrl: t.status === 'pending' && t.pay_url ? t.pay_url : undefined,
+      invoiceTo: '/settings/billing/wallet-invoice/$id',
+      invoiceId: t.status === 'pending' && t.pay_url ? undefined : t.id,
     }))
     return [...tokenRows, ...walletRows].sort((a, b) => b.at - a.at)
   }, [tokensQuery.data, walletQuery.data])
@@ -106,9 +111,9 @@ export default function RecentTransactions() {
 
   return (
     <Card className="w-full rounded-lg border-border/60 shadow-hairline">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-[1.125rem] py-[0.8125rem]">
-        <span className="flex min-w-0 items-center gap-[0.5625rem]">
-          <History className="size-[0.8125rem] shrink-0 text-ink-3" aria-hidden />
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4.5 py-3.25">
+        <span className="flex min-w-0 items-center gap-2.25">
+          <History className="size-3.25 shrink-0 text-ink-3" aria-hidden />
           <span className="text-ink-faint font-mono text-[0.6875rem] font-semibold tracking-[0.0625rem] uppercase">
             Recent transactions
           </span>
@@ -128,15 +133,13 @@ export default function RecentTransactions() {
           }}
           isEmpty={rows.length === 0}
           loading={
-            <div className="grid gap-2 px-[1.125rem] py-2">
+            <div className="grid gap-2 px-4.5 py-2">
               {[0, 1, 2, 3, 4].map((i) => (
                 <Skeleton key={i} className="h-9 w-full" />
               ))}
             </div>
           }
-          empty={
-            <p className="text-muted-foreground px-[1.125rem] py-3 text-sm">No transactions yet.</p>
-          }
+          empty={<p className="text-muted-foreground px-4.5 py-3 text-sm">No transactions yet.</p>}
         >
           <ul className="grid">
             {pageRows.map((row, index) => {
@@ -145,7 +148,7 @@ export default function RecentTransactions() {
                   <span
                     aria-hidden="true"
                     className={cn(
-                      'grid size-[1.625rem] shrink-0 place-items-center rounded-[0.4375rem]',
+                      'grid size-6.5 shrink-0 place-items-center rounded-[0.4375rem]',
                       row.kind === 'wallet'
                         ? 'bg-success/12 text-success'
                         : 'bg-accent-ink/6 text-accent-ink'
@@ -161,7 +164,7 @@ export default function RecentTransactions() {
                     <span className="text-ink-strong truncate text-[0.78125rem] leading-4 font-semibold">
                       {row.title}
                     </span>
-                    <span className="text-ink-3 truncate text-[0.71875rem] leading-[0.875rem]">
+                    <span className="text-ink-3 truncate text-[0.71875rem] leading-3.5">
                       {row.sub}
                     </span>
                   </span>
@@ -179,10 +182,7 @@ export default function RecentTransactions() {
               const linkClass =
                 'focus-visible:after:ring-ring/50 flex min-w-0 flex-1 items-center gap-2.5 outline-none after:absolute after:inset-0 hover:after:bg-accent/50 focus-visible:after:ring-[0.1875rem] focus-visible:after:ring-inset'
               return (
-                <li
-                  key={row.key}
-                  className="relative flex items-center gap-2.5 px-[1.125rem] py-[0.5625rem]"
-                >
+                <li key={row.key} className="relative flex items-center gap-2.5 px-4.5 py-2.25">
                   {row.checkoutUrl ? (
                     <a
                       href={row.checkoutUrl}
@@ -193,9 +193,9 @@ export default function RecentTransactions() {
                     >
                       {content}
                     </a>
-                  ) : row.invoiceId ? (
+                  ) : row.invoiceTo && row.invoiceId ? (
                     <Link
-                      to="/settings/billing/invoice/$id"
+                      to={row.invoiceTo}
                       params={{ id: row.invoiceId }}
                       aria-label={`Invoice for ${row.title}`}
                       className={linkClass}
@@ -219,7 +219,7 @@ export default function RecentTransactions() {
       </div>
 
       {rows.length > 0 && (
-        <div className="flex shrink-0 items-center gap-2 border-t border-input px-[1.125rem] py-2">
+        <div className="flex shrink-0 items-center gap-2 border-t border-input px-4.5 py-2">
           <span className="text-muted-foreground text-xs whitespace-nowrap tabular-nums">
             {first + 1}–{first + pageRows.length} of{' '}
             {truncated ? `the newest ${rows.length}` : rows.length}

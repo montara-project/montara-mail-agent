@@ -1,3 +1,5 @@
+import { useQuery } from '@tanstack/react-query'
+
 import SectionHeading from '@/components/block/common/section-heading'
 import { SettingsPage } from '@/components/block/common/settings-card'
 import PendingPayments from '@/components/block/settings/billing/pending-payments'
@@ -6,13 +8,14 @@ import PlansComparison from '@/components/block/settings/billing/plans-compariso
 import RecentTransactions from '@/components/block/settings/billing/recent-transactions'
 import TokenTopUpCard from '@/components/block/settings/billing/token-topup-card'
 import UsageCard from '@/components/block/settings/billing/usage-card'
+import { queries } from '@/lib/api/queries'
 
 /** Control Center > Billing: the plan and the wallet it renews from, the
  * week's AI usage, the wallet's top-up row, and the plans. */
 export default function QuotaSettings() {
-  // const securityQuery = useQuery(queries.profile.security())
+  const securityQuery = useQuery(queries.profile.security())
   // A super user has no plan to buy past and no wallet to top up.
-  const showPurchases = true // TEMP: local layout verification
+  const showPurchases = !securityQuery.data?.super_user
 
   return (
     <SettingsPage>

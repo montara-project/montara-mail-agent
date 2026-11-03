@@ -483,7 +483,7 @@ export default function PromptBar({
           <span
             ref={measureRef}
             aria-hidden="true"
-            className="pointer-events-none invisible absolute text-[0.875rem] leading-[1.125rem] whitespace-pre"
+            className="pointer-events-none invisible absolute text-[0.875rem] leading-4.5 whitespace-pre"
           >
             {draft}
           </span>
@@ -552,7 +552,7 @@ export default function PromptBar({
               }}
               placeholder={listening ? 'Listening…' : (placeholder ?? 'Write a message…')}
               aria-label={label}
-              className={`min-h-7 px-1 py-[0.3125rem] text-[0.875rem] leading-[1.125rem] text-ink placeholder:text-ink-3 w-full min-w-0 resize-none bg-transparent [overflow-wrap:anywhere] outline-none disabled:cursor-not-allowed ${
+              className={`min-h-7 px-1 py-1.25 text-[0.875rem] leading-4.5 text-ink placeholder:text-ink-3 w-full min-w-0 resize-none bg-transparent [overflow-wrap:anywhere] outline-none disabled:cursor-not-allowed ${
                 wide ? 'col-span-full row-start-1' : 'row-start-1'
               }`}
             />
@@ -631,7 +631,7 @@ export default function PromptBar({
                 }`}
                 style={{ gridColumnStart: columns.length }}
               >
-                <span className="size-2.5 rounded-[0.125rem] bg-current" />
+                <span className="size-2.5 rounded-xs bg-current" />
               </button>
             ) : (
               <button

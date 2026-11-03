@@ -13,4 +13,5 @@ export type BillingResources = {
     limit: number
   }) => Promise<AxiosListResponse<Models.WalletTopup>>
   walletTopup: (body: { amount_idr: number }) => Promise<AxiosItemResponse<Models.WalletTopup>>
+  walletTopupById: (id: string) => Promise<AxiosItemResponse<Models.WalletTopup>>
 }
