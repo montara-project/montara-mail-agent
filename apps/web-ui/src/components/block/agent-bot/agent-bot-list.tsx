@@ -59,15 +59,17 @@ function AgentBotRow({ record }: { record: Models.AgentBot }) {
   const deleteMutation = useMutation(queries.agentBots.delete())
 
   return (
-    <li className="hover:border-input hover:bg-popover flex flex-wrap items-center gap-x-[11px] gap-y-2 rounded-[9px] border border-transparent px-[9px] py-2 transition-colors duration-150 motion-reduce:transition-none">
+    <li className="hover:border-input hover:bg-popover flex flex-wrap items-center gap-x-[0.6875rem] gap-y-2 rounded-[0.5625rem] border border-transparent px-[0.5625rem] py-2 transition-colors duration-150 motion-reduce:transition-none">
       {/* A bot is an AI thing, so its tile carries the AI accent. */}
-      <span className="bg-accent-tint text-accent-soft grid size-7 shrink-0 place-items-center rounded-[8px]">
-        <Bot className="size-[13px]" aria-hidden />
+      <span className="bg-accent-tint text-accent-soft grid size-7 shrink-0 place-items-center rounded-[0.5rem]">
+        <Bot className="size-[0.8125rem]" aria-hidden />
       </span>
-      <div className="grid min-w-0 flex-1 basis-[calc(100%-39px)] gap-px sm:basis-0">
-        <p className="text-[12.5px] leading-[17px] font-semibold wrap-anywhere">{record.name}</p>
+      <div className="grid min-w-0 flex-1 basis-[calc(100%-2.4375rem)] gap-px sm:basis-0">
+        <p className="text-[0.84375rem] leading-[1.0625rem] font-semibold wrap-anywhere">
+          {record.name}
+        </p>
         {record.description && (
-          <p className="text-ink-3 text-[10.5px] leading-[14px] text-pretty">
+          <p className="text-ink-3 text-[0.71875rem] leading-[0.875rem] text-pretty">
             {record.description}
           </p>
         )}
@@ -127,30 +129,30 @@ function WhatABotDoes() {
           key={step.step}
           className={
             step.accent
-              ? 'bg-popover border-input flex flex-wrap items-center gap-x-[11px] gap-y-2 rounded-[9px] border px-2.5 py-2'
-              : 'flex flex-wrap items-center gap-x-[11px] gap-y-2 rounded-[9px] px-2.5 py-2'
+              ? 'bg-popover border-input flex flex-wrap items-center gap-x-[0.6875rem] gap-y-2 rounded-[0.5625rem] border px-2.5 py-2'
+              : 'flex flex-wrap items-center gap-x-[0.6875rem] gap-y-2 rounded-[0.5625rem] px-2.5 py-2'
           }
         >
           <span
             className={
               step.accent
-                ? 'bg-accent-tint text-accent-ink grid size-7 shrink-0 place-items-center rounded-[8px]'
-                : 'bg-muted text-ink-2 grid size-7 shrink-0 place-items-center rounded-[8px]'
+                ? 'bg-accent-tint text-accent-ink grid size-7 shrink-0 place-items-center rounded-[0.5rem]'
+                : 'bg-muted text-ink-2 grid size-7 shrink-0 place-items-center rounded-[0.5rem]'
             }
           >
-            <step.icon className="size-[13px]" aria-hidden />
+            <step.icon className="size-[0.8125rem]" aria-hidden />
           </span>
-          <span className="grid min-w-0 flex-1 basis-[calc(100%-39px)] gap-px sm:basis-0">
-            <span className="text-[12px] leading-4 font-semibold">{step.title}</span>
-            <span className="text-ink-3 text-[10.5px] leading-[14px] text-pretty">
+          <span className="grid min-w-0 flex-1 basis-[calc(100%-2.4375rem)] gap-px sm:basis-0">
+            <span className="text-[0.8125rem] leading-4 font-semibold">{step.title}</span>
+            <span className="text-ink-3 text-[0.71875rem] leading-[0.875rem] text-pretty">
               {step.description}
             </span>
           </span>
           <span
             className={
               step.accent
-                ? 'bg-accent-tint text-accent-ink rounded-[5px] px-1.5 py-[3px] font-mono text-[9px] leading-3 font-semibold'
-                : 'bg-muted text-ink-faint rounded-[5px] px-1.5 py-[3px] font-mono text-[9px] leading-3 font-semibold'
+                ? 'bg-accent-tint text-accent-ink rounded-[0.3125rem] px-1.5 py-[0.1875rem] font-mono text-[0.6875rem] leading-3 font-semibold'
+                : 'bg-muted text-ink-faint rounded-[0.3125rem] px-1.5 py-[0.1875rem] font-mono text-[0.6875rem] leading-3 font-semibold'
             }
           >
             {step.step}
@@ -166,8 +168,8 @@ function Loading() {
   return (
     <div className="grid gap-0.5">
       {[0, 1].map((index) => (
-        <div key={index} className="flex items-center gap-x-[11px] px-[9px] py-2">
-          <Skeleton className="size-7 rounded-[8px]" />
+        <div key={index} className="flex items-center gap-x-[0.6875rem] px-[0.5625rem] py-2">
+          <Skeleton className="size-7 rounded-[0.5rem]" />
           <div className="grid flex-1 gap-1.5">
             <Skeleton className="h-3.5 w-40" />
             <Skeleton className="h-3 w-56" />
@@ -203,7 +205,7 @@ export default function AgentBotList({ organizationId }: { organizationId: strin
           action={
             <Button
               variant="outline"
-              className="bg-muted border-border h-7 gap-1.5 px-[11px] text-[11px] font-semibold shadow-none pointer-coarse:h-11 [&_svg]:size-[11px]"
+              className="bg-muted border-border h-7 gap-1.5 px-[0.6875rem] text-[0.75rem] font-semibold shadow-none pointer-coarse:h-11 [&_svg]:size-[0.6875rem]"
               onClick={() => setOpenAdd(true)}
             >
               <Plus />
@@ -215,11 +217,13 @@ export default function AgentBotList({ organizationId }: { organizationId: strin
             <Loading />
           ) : bots.length === 0 ? (
             <div className="grid justify-items-center gap-2 py-6 text-center">
-              <span className="bg-muted grid size-9 place-items-center rounded-[10px]">
+              <span className="bg-muted grid size-9 place-items-center rounded-[0.625rem]">
                 <Bot className="text-ink-3 size-4" aria-hidden />
               </span>
-              <p className="text-[12.5px] leading-[17px] font-semibold">No agent bots yet</p>
-              <p className="text-ink-3 text-[11px] leading-[15px]">
+              <p className="text-[0.84375rem] leading-[1.0625rem] font-semibold">
+                No agent bots yet
+              </p>
+              <p className="text-ink-3 text-[0.75rem] leading-[0.9375rem]">
                 Add a bot to give the assistant its own soul, memory, style and instructions.
               </p>
             </div>
@@ -241,17 +245,17 @@ export default function AgentBotList({ organizationId }: { organizationId: strin
           noun="steps"
           footer={
             <>
-              <p className="text-ink-3 flex items-start gap-[5px] text-[10.5px] leading-[14px]">
+              <p className="text-ink-3 flex items-start gap-[0.3125rem] text-[0.71875rem] leading-[0.875rem]">
                 Every action needs your approval before it runs
               </p>
               <a
                 href={DOCS_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 pointer-coarse:h-11 inline-flex items-center gap-1 rounded-[5px] text-[10.5px] leading-[14px] font-semibold outline-none transition-colors duration-150 focus-visible:ring-[3px] motion-reduce:transition-none"
+                className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 pointer-coarse:h-11 inline-flex items-center gap-1 rounded-[0.3125rem] text-[0.71875rem] leading-[0.875rem] font-semibold outline-none transition-colors duration-150 focus-visible:ring-[0.1875rem] motion-reduce:transition-none"
               >
                 See an example
-                <ArrowUpRight className="size-[11px]" aria-hidden />
+                <ArrowUpRight className="size-[0.6875rem]" aria-hidden />
               </a>
             </>
           }

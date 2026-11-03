@@ -32,6 +32,7 @@ import { Route as appSettingsProfileRouteImport } from './routes/(app)/settings/
 import { Route as appSettingsSecurityRouteImport } from './routes/(app)/settings/security'
 import { Route as appSettingsSkillsRouteImport } from './routes/(app)/settings/skills'
 import { Route as appSettingsBillingInvoiceIdRouteImport } from './routes/(app)/settings/billing_.invoice.$id'
+import { Route as appSettingsBillingWalletInvoiceIdRouteImport } from './routes/(app)/settings/billing_.wallet-invoice.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -150,6 +151,12 @@ const appSettingsBillingInvoiceIdRoute =
     path: '/billing/invoice/$id',
     getParentRoute: () => appSettingsRouteRoute,
   } as any)
+const appSettingsBillingWalletInvoiceIdRoute =
+  appSettingsBillingWalletInvoiceIdRouteImport.update({
+    id: '/billing_/wallet-invoice/$id',
+    path: '/billing/wallet-invoice/$id',
+    getParentRoute: () => appSettingsRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -174,6 +181,7 @@ export interface FileRoutesByFullPath {
   '/mail/': typeof appMailIndexRoute
   '/settings/': typeof appSettingsIndexRoute
   '/settings/billing/invoice/$id': typeof appSettingsBillingInvoiceIdRoute
+  '/settings/billing/wallet-invoice/$id': typeof appSettingsBillingWalletInvoiceIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -197,6 +205,7 @@ export interface FileRoutesByTo {
   '/mail': typeof appMailIndexRoute
   '/settings': typeof appSettingsIndexRoute
   '/settings/billing/invoice/$id': typeof appSettingsBillingInvoiceIdRoute
+  '/settings/billing/wallet-invoice/$id': typeof appSettingsBillingWalletInvoiceIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -223,6 +232,7 @@ export interface FileRoutesById {
   '/(app)/mail/': typeof appMailIndexRoute
   '/(app)/settings/': typeof appSettingsIndexRoute
   '/(app)/settings/billing_/invoice/$id': typeof appSettingsBillingInvoiceIdRoute
+  '/(app)/settings/billing_/wallet-invoice/$id': typeof appSettingsBillingWalletInvoiceIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -249,6 +259,7 @@ export interface FileRouteTypes {
     | '/mail/'
     | '/settings/'
     | '/settings/billing/invoice/$id'
+    | '/settings/billing/wallet-invoice/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -272,6 +283,7 @@ export interface FileRouteTypes {
     | '/mail'
     | '/settings'
     | '/settings/billing/invoice/$id'
+    | '/settings/billing/wallet-invoice/$id'
   id:
     | '__root__'
     | '/'
@@ -297,6 +309,7 @@ export interface FileRouteTypes {
     | '/(app)/mail/'
     | '/(app)/settings/'
     | '/(app)/settings/billing_/invoice/$id'
+    | '/(app)/settings/billing_/wallet-invoice/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -468,6 +481,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof appSettingsBillingInvoiceIdRouteImport
       parentRoute: typeof appSettingsRouteRoute
     }
+    '/(app)/settings/billing_/wallet-invoice/$id': {
+      id: '/(app)/settings/billing_/wallet-invoice/$id'
+      path: '/billing/wallet-invoice/$id'
+      fullPath: '/settings/billing/wallet-invoice/$id'
+      preLoaderRoute: typeof appSettingsBillingWalletInvoiceIdRouteImport
+      parentRoute: typeof appSettingsRouteRoute
+    }
   }
 }
 
@@ -488,6 +508,7 @@ interface appSettingsRouteRouteChildren {
   appSettingsSkillsRoute: typeof appSettingsSkillsRoute
   appSettingsIndexRoute: typeof appSettingsIndexRoute
   appSettingsBillingInvoiceIdRoute: typeof appSettingsBillingInvoiceIdRoute
+  appSettingsBillingWalletInvoiceIdRoute: typeof appSettingsBillingWalletInvoiceIdRoute
 }
 
 const appSettingsRouteRouteChildren: appSettingsRouteRouteChildren = {
@@ -507,6 +528,8 @@ const appSettingsRouteRouteChildren: appSettingsRouteRouteChildren = {
   appSettingsSkillsRoute: appSettingsSkillsRoute,
   appSettingsIndexRoute: appSettingsIndexRoute,
   appSettingsBillingInvoiceIdRoute: appSettingsBillingInvoiceIdRoute,
+  appSettingsBillingWalletInvoiceIdRoute:
+    appSettingsBillingWalletInvoiceIdRoute,
 }
 
 const appSettingsRouteRouteWithChildren =

@@ -86,7 +86,7 @@ export default function DashboardPanel() {
                         <item.icon />
                         <span>{item.title}</span>
                         {counts[item.folder] > 0 && (
-                          <span className="bg-muted ml-auto rounded-[4px] px-[5px] py-px font-mono text-[9.5px] font-semibold text-ink-3 tabular-nums">
+                          <span className="bg-muted ml-auto rounded-[0.25rem] px-[0.3125rem] py-px font-mono text-[0.6875rem] font-semibold text-ink-3 tabular-nums">
                             {counts[item.folder] > 99 ? '99+' : counts[item.folder]}
                           </span>
                         )}
@@ -98,7 +98,7 @@ export default function DashboardPanel() {
                     <SidebarMenuButton aria-disabled className={SOON_BUTTON}>
                       <item.icon />
                       <span>{item.title}</span>
-                      <span className="bg-muted text-ink-3 ml-auto rounded-[4px] px-[5px] py-px font-mono text-[9px] font-semibold">
+                      <span className="bg-muted text-ink-3 ml-auto rounded-[0.25rem] px-[0.3125rem] py-px font-mono text-[0.6875rem] font-semibold">
                         Soon
                       </span>
                     </SidebarMenuButton>
@@ -129,7 +129,7 @@ export default function DashboardPanel() {
           <TokenUsageCard />
           <Link
             to="/settings/billing"
-            className="hover:bg-accent flex items-center gap-[7px] rounded-lg border border-border bg-secondary px-2.5 py-2 text-[11.5px] font-semibold outline-none"
+            className="hover:bg-accent flex items-center gap-[0.4375rem] rounded-lg border border-border bg-secondary px-2.5 py-2 text-[0.78125rem] font-semibold outline-none"
           >
             <Sparkles className="text-accent-ink size-3 shrink-0" aria-hidden />
             Upgrade to Pro

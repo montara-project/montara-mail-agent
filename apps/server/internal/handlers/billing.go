@@ -230,6 +230,24 @@ func (h *billingHandler) WalletTopups(c fiber.Ctx) error {
 	return dtos.List(c, topups, dtos.ListMeta(total, q.Offset, q.Limit))
 }
 
+// WalletTopupByID returns one of the signed-in user's wallet top-ups, for the
+// invoice page.
+func (h *billingHandler) WalletTopupByID(c fiber.Ctx) error {
+	uid, err := lib.ContextGetUID(c)
+	if err != nil {
+		return apperr.ErrUnauthorized
+	}
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return apperr.New(apperr.KindNotFound, "record not found in wallet_topups")
+	}
+	t, err := h.app.Repositories.Wallet.TopupByIDForUser(c.Context(), id, uid)
+	if err != nil {
+		return err
+	}
+	return dtos.OK(c, t)
+}
+
 // AutoRenew flips the subscription's renewal switch; the daily sweep honors
 // it at period end. The user can switch it back on until the sweep expires
 // the row.

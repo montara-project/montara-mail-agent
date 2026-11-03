@@ -29,7 +29,7 @@ export default function AccountFilter({ className }: { className?: string }) {
           type="button"
           aria-label="Filter by email account"
           className={cn(
-            'border-border/60 text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring/50 flex h-8 max-w-56 items-center gap-1.5 rounded-control border px-2.5 text-xs outline-none focus-visible:ring-[3px]',
+            'border-border/60 text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring/50 flex h-8 max-w-56 items-center gap-1.5 rounded-control border px-2.5 text-xs outline-none focus-visible:ring-[0.1875rem]',
             className
           )}
         >

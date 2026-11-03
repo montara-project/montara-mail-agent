@@ -7,10 +7,7 @@ import { cn } from '@/lib/utils'
 export default function PageContainer({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
-      className={cn(
-        'mx-auto grid w-full max-w-[1280px] grid-cols-[minmax(0,1fr)] gap-4',
-        className
-      )}
+      className={cn('mx-auto grid w-full max-w-[80rem] grid-cols-[minmax(0,1fr)] gap-4', className)}
       {...props}
     />
   )

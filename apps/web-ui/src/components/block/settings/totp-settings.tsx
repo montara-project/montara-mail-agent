@@ -21,10 +21,10 @@ import { verifyTOTP } from '@/lib/auth/email-auth'
 import { getQueryClient } from '@/lib/providers/react-query'
 import { cn } from '@/lib/utils'
 
-const STATE = 'gap-[7px] text-[12.5px] font-semibold'
+const STATE = 'gap-[0.4375rem] text-[0.84375rem] font-semibold'
 const ACTION =
-  'h-8 gap-1.5 px-3 text-xs font-semibold shadow-none pointer-coarse:h-11 [&_svg]:size-[13px]'
-const HINT = 'text-ink-3 text-[11px] leading-[15px]'
+  'h-8 gap-1.5 px-3 text-xs font-semibold shadow-none pointer-coarse:h-11 [&_svg]:size-[0.8125rem]'
+const HINT = 'text-ink-3 text-[0.75rem] leading-[0.9375rem]'
 
 const refreshSecurity = () => getQueryClient().invalidateQueries({ queryKey: [SECURITY_QUERY_KEY] })
 

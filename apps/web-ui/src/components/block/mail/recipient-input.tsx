@@ -55,7 +55,7 @@ export default function RecipientInput({
             )}
           >
             <Avatar className="size-5">
-              <AvatarFallback className="text-[10px]">
+              <AvatarFallback className="text-[0.71875rem]">
                 {mailInitials(name || address)}
               </AvatarFallback>
             </Avatar>

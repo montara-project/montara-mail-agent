@@ -43,7 +43,7 @@ function blockSource(block: Models.IPBlock) {
 /** "Blocked 41 minutes ago · lifts in 19 minutes", the design's faint when line. */
 function BlockMeta({ block }: { block: Models.IPBlock }) {
   return (
-    <span className="text-ink-faint text-[10px] leading-[14px]">
+    <span className="text-ink-faint text-[0.71875rem] leading-[0.875rem]">
       Blocked {timeAgo(new Date(block.created_at))}
       {' · '}
       {block.expires_at ? `lifts ${timeAgo(new Date(block.expires_at))}` : 'until removed'}
@@ -57,37 +57,37 @@ function BlockRow({ block }: { block: Models.IPBlock }) {
   const auto = block.source === 'auto'
 
   return (
-    <li className="bg-muted hover:bg-popover hover:border-input flex flex-wrap items-center gap-x-[11px] gap-y-2 rounded-[9px] border border-transparent px-2.5 py-[9px] transition-colors duration-150 motion-reduce:transition-none">
+    <li className="bg-muted hover:bg-popover hover:border-input flex flex-wrap items-center gap-x-[0.6875rem] gap-y-2 rounded-[0.5625rem] border border-transparent px-2.5 py-[0.5625rem] transition-colors duration-150 motion-reduce:transition-none">
       <span
         className={cn(
-          'grid size-7 shrink-0 place-items-center rounded-[8px]',
+          'grid size-7 shrink-0 place-items-center rounded-[0.5rem]',
           auto ? 'bg-warning/12 text-warning-ink' : 'bg-destructive/12 text-danger-ink'
         )}
       >
-        <Ban className="size-[13px]" aria-hidden />
+        <Ban className="size-[0.8125rem]" aria-hidden />
       </span>
       <span className="grid min-w-0 flex-1 gap-px">
-        <span className="flex min-w-0 flex-wrap items-center gap-x-[7px] gap-y-1">
-          <span className="min-w-0 font-mono text-[11.5px] leading-4 font-semibold wrap-anywhere">
+        <span className="flex min-w-0 flex-wrap items-center gap-x-[0.4375rem] gap-y-1">
+          <span className="min-w-0 font-mono text-[0.78125rem] leading-4 font-semibold wrap-anywhere">
             {block.network}
           </span>
           <span
             className={cn(
-              'rounded-[4px] px-[5px] py-px font-mono text-[8.5px] leading-3 font-semibold tracking-[0.4px] uppercase',
+              'rounded-[0.25rem] px-[0.3125rem] py-px font-mono text-[0.6875rem] leading-3 font-semibold tracking-[0.025rem] uppercase',
               auto ? 'bg-warning/12 text-warning-ink' : 'bg-destructive/12 text-danger-ink'
             )}
           >
             {block.source}
           </span>
         </span>
-        <span className="text-ink-3 text-[10.5px] leading-[14px] text-pretty">
+        <span className="text-ink-3 text-[0.71875rem] leading-[0.875rem] text-pretty">
           {blockSource(block)}
         </span>
         <BlockMeta block={block} />
       </span>
       <Button
         variant="outline"
-        className="bg-muted border-border h-7 shrink-0 px-2.5 text-[10.5px] font-semibold shadow-none pointer-coarse:h-11"
+        className="bg-muted border-border h-7 shrink-0 px-2.5 text-[0.71875rem] font-semibold shadow-none pointer-coarse:h-11"
         aria-label={`Unblock ${block.network}`}
         disabled={remove.isPending}
         onClick={() => setConfirming(true)}
@@ -191,8 +191,8 @@ function Loading() {
   return (
     <div className="grid gap-0.5">
       {[0, 1].map((index) => (
-        <div key={index} className="flex items-center gap-[11px] px-2.5 py-[9px]">
-          <Skeleton className="size-7 rounded-[8px]" />
+        <div key={index} className="flex items-center gap-[0.6875rem] px-2.5 py-[0.5625rem]">
+          <Skeleton className="size-7 rounded-[0.5rem]" />
           <div className="grid flex-1 gap-1.5">
             <Skeleton className="h-3.5 w-36" />
             <Skeleton className="h-3 w-56" />
@@ -232,7 +232,7 @@ export default function IPBlockList() {
         action={
           <Button
             variant="outline"
-            className="bg-muted border-border h-7 gap-1.5 px-[11px] text-[11px] font-semibold shadow-none pointer-coarse:h-11 [&_svg]:size-[11px]"
+            className="bg-muted border-border h-7 gap-1.5 px-[0.6875rem] text-[0.75rem] font-semibold shadow-none pointer-coarse:h-11 [&_svg]:size-[0.6875rem]"
             onClick={() => setBlocking(true)}
           >
             <Plus />
@@ -241,16 +241,16 @@ export default function IPBlockList() {
         }
         footer={
           <>
-            <p className="text-ink-3 flex items-start gap-[5px] text-[10.5px] leading-[14px]">
-              <Info className="mt-px size-[11px] shrink-0" aria-hidden />
+            <p className="text-ink-3 flex items-start gap-[0.3125rem] text-[0.71875rem] leading-[0.875rem]">
+              <Info className="mt-px size-[0.6875rem] shrink-0" aria-hidden />
               Auto-blocks lift on their own · manual blocks stay until you remove them
             </p>
             <Link
               to="/settings/security"
-              className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 pointer-coarse:h-11 inline-flex items-center gap-1 rounded-[5px] text-[10.5px] leading-[14px] font-semibold transition-colors duration-150 outline-none focus-visible:ring-[3px] motion-reduce:transition-none"
+              className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 pointer-coarse:h-11 inline-flex items-center gap-1 rounded-[0.3125rem] text-[0.71875rem] leading-[0.875rem] font-semibold transition-colors duration-150 outline-none focus-visible:ring-[0.1875rem] motion-reduce:transition-none"
             >
               Block log
-              <ArrowUpRight className="size-[11px]" aria-hidden />
+              <ArrowUpRight className="size-[0.6875rem]" aria-hidden />
             </Link>
           </>
         }
@@ -264,11 +264,13 @@ export default function IPBlockList() {
           loading={<Loading />}
           empty={
             <div className="grid justify-items-center gap-2 py-6 text-center">
-              <span className="bg-muted grid size-9 place-items-center rounded-[10px]">
+              <span className="bg-muted grid size-9 place-items-center rounded-[0.625rem]">
                 <Ban className="text-ink-3 size-4" aria-hidden />
               </span>
-              <p className="text-[12.5px] leading-[17px] font-semibold">No blocked addresses</p>
-              <p className="text-ink-3 text-[11px] leading-[15px]">
+              <p className="text-[0.84375rem] leading-[1.0625rem] font-semibold">
+                No blocked addresses
+              </p>
+              <p className="text-ink-3 text-[0.75rem] leading-[0.9375rem]">
                 Addresses you block, and the ones the server blocks on its own, show here.
               </p>
             </div>

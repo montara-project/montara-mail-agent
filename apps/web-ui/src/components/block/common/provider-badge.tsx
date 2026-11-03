@@ -32,7 +32,7 @@ export default function ProviderBadge({
   return (
     <span
       className={cn(
-        'text-foreground inline-flex h-[21px] items-center rounded-chip px-2 text-[10.5px] font-semibold tracking-[0.2px] whitespace-nowrap capitalize',
+        'text-foreground inline-flex h-[1.3125rem] items-center rounded-chip px-2 text-[0.71875rem] font-semibold tracking-[0.0125rem] whitespace-nowrap capitalize',
         !color && 'bg-secondary text-muted-foreground',
         className
       )}

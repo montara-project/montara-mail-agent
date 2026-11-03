@@ -89,11 +89,11 @@ function StatusChip({ status }: { status: Models.MCPServerStatus }) {
   return (
     <span
       className={cn(
-        'inline-flex shrink-0 items-center gap-[5px] rounded-tag px-[7px] py-[3px] text-[10.5px] leading-[14px] font-semibold',
+        'inline-flex shrink-0 items-center gap-[0.3125rem] rounded-tag px-[0.4375rem] py-[0.1875rem] text-[0.71875rem] leading-[0.875rem] font-semibold',
         look.chip
       )}
     >
-      <span aria-hidden className={cn('size-[5px] shrink-0 rounded-full', look.dot)} />
+      <span aria-hidden className={cn('size-[0.3125rem] shrink-0 rounded-full', look.dot)} />
       {look.label}
     </span>
   )
@@ -123,7 +123,7 @@ function ToolRow({ tool }: { tool: Models.MCPTool }) {
         />
         <span className="grid min-w-0 flex-1 gap-px">
           <span className="truncate font-mono text-xs">{tool.name}</span>
-          <span className="text-ink-3 text-[10.5px] leading-[14px]">
+          <span className="text-ink-3 text-[0.71875rem] leading-[0.875rem]">
             {plural(params.length, 'param')} · {required.size} required
           </span>
         </span>
@@ -139,7 +139,7 @@ function ToolRow({ tool }: { tool: Models.MCPTool }) {
       {open && (
         <div id={id} className="grid gap-3 px-3 pb-3 ps-10">
           {tool.description && (
-            <p className="text-ink-2 max-w-prose text-[11.5px] leading-4 text-pretty">
+            <p className="text-ink-2 max-w-prose text-[0.78125rem] leading-4 text-pretty">
               {tool.description}
             </p>
           )}
@@ -148,9 +148,9 @@ function ToolRow({ tool }: { tool: Models.MCPTool }) {
               {params.map(([name, schema]) => (
                 <div key={name} className="grid gap-0.5">
                   <dt className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-[10.5px] leading-[14px]">{name}</span>
+                    <span className="font-mono text-[0.71875rem] leading-[0.875rem]">{name}</span>
                     {schema.type && (
-                      <span className="text-ink-3 text-[10.5px] leading-[14px]">
+                      <span className="text-ink-3 text-[0.71875rem] leading-[0.875rem]">
                         {[schema.type].flat().join(' | ')}
                       </span>
                     )}
@@ -161,7 +161,7 @@ function ToolRow({ tool }: { tool: Models.MCPTool }) {
                     )}
                   </dt>
                   {schema.description && (
-                    <dd className="text-ink-3 text-[11px] leading-[15px] text-pretty">
+                    <dd className="text-ink-3 text-[0.75rem] leading-[0.9375rem] text-pretty">
                       {schema.description}
                     </dd>
                   )}
@@ -241,13 +241,13 @@ function ServerRow({
 
   return (
     <li>
-      <div className="hover:border-input hover:bg-popover flex flex-wrap items-center gap-x-[11px] gap-y-2 rounded-[9px] border border-transparent px-2.5 py-[9px] transition-colors duration-150 motion-reduce:transition-none">
+      <div className="hover:border-input hover:bg-popover flex flex-wrap items-center gap-x-[0.6875rem] gap-y-2 rounded-[0.5625rem] border border-transparent px-2.5 py-[0.5625rem] transition-colors duration-150 motion-reduce:transition-none">
         <button
           type="button"
           aria-expanded={open}
           aria-controls={id}
           onClick={() => setOpen((o) => !o)}
-          className="focus-visible:ring-ring flex min-w-0 flex-1 basis-[calc(100%-40px)] items-center gap-[11px] rounded-[7px] text-start outline-none focus-visible:ring-2 focus-visible:ring-inset sm:basis-0"
+          className="focus-visible:ring-ring flex min-w-0 flex-1 basis-[calc(100%-2.5rem)] items-center gap-[0.6875rem] rounded-[0.4375rem] text-start outline-none focus-visible:ring-2 focus-visible:ring-inset sm:basis-0"
         >
           <ChevronRight
             className={cn(
@@ -257,29 +257,29 @@ function ServerRow({
           />
           <span
             className={cn(
-              'grid size-7 shrink-0 place-items-center rounded-[8px]',
+              'grid size-7 shrink-0 place-items-center rounded-[0.5rem]',
               STATUS_LOOK[server.status].tile
             )}
           >
-            <Plug className="size-[13px]" aria-hidden />
+            <Plug className="size-[0.8125rem]" aria-hidden />
           </span>
           <span className="grid min-w-0 flex-1 gap-px">
             <span className="flex min-w-0 items-center gap-1.5">
               <span className="truncate text-xs leading-4 font-semibold text-foreground">
                 {server.name}
               </span>
-              <span className="bg-muted text-ink-faint hidden shrink-0 rounded-[4px] px-[5px] py-px font-mono text-[8.5px] leading-3 font-semibold tracking-[0.4px] uppercase sm:inline">
+              <span className="bg-muted text-ink-faint hidden shrink-0 rounded-[0.25rem] px-[0.3125rem] py-px font-mono text-[0.6875rem] leading-3 font-semibold tracking-[0.025rem] uppercase sm:inline">
                 {KIND_LABELS[server.kind]}
               </span>
             </span>
             <span className="flex min-w-0 items-baseline gap-1.5">
               <span
                 title={endpoint}
-                className="text-ink-3 min-w-0 truncate font-mono text-[10px] leading-[14px]"
+                className="text-ink-3 min-w-0 truncate font-mono text-[0.71875rem] leading-[0.875rem]"
               >
                 {endpoint}
               </span>
-              <span className="text-ink-faint hidden shrink-0 text-[10.5px] leading-[14px] sm:inline">
+              <span className="text-ink-faint hidden shrink-0 text-[0.71875rem] leading-[0.875rem] sm:inline">
                 · <ServerNote server={server} />
               </span>
             </span>
@@ -290,7 +290,7 @@ function ServerRow({
           {!open && server.kind === 'hosted' && server.status === 'needs_auth' && (
             <Button
               variant="outline"
-              className="bg-muted h-7 gap-1.5 rounded-sm px-2 text-[10.5px] font-semibold shadow-none pointer-coarse:h-11 [&_svg]:size-3"
+              className="bg-muted h-7 gap-1.5 rounded-sm px-2 text-[0.71875rem] font-semibold shadow-none pointer-coarse:h-11 [&_svg]:size-3"
               disabled={busy}
               onClick={connect}
             >
@@ -366,7 +366,7 @@ function ServerRow({
           {server.status_message && server.status !== 'connected' && (
             <p
               className={cn(
-                'text-[11.5px] leading-4',
+                'text-[0.78125rem] leading-4',
                 server.status === 'error' ? 'text-destructive' : 'text-ink-3'
               )}
             >
@@ -375,13 +375,13 @@ function ServerRow({
           )}
 
           {server.tools.length > 0 ? (
-            <ul className="divide-border/60 overflow-hidden rounded-[8px] border border-border/60 divide-y">
+            <ul className="divide-border/60 overflow-hidden rounded-[0.5rem] border border-border/60 divide-y">
               {server.tools.map((tool) => (
                 <ToolRow key={tool.name} tool={tool} />
               ))}
             </ul>
           ) : (
-            <p className="text-ink-3 text-[11.5px] leading-4">
+            <p className="text-ink-3 text-[0.78125rem] leading-4">
               {server.status === 'connected'
                 ? 'The server offers no tools.'
                 : 'Its tools show here once it connects and syncs.'}
@@ -426,8 +426,8 @@ function Loading() {
   return (
     <div className="grid gap-0.5">
       {[0, 1, 2].map((index) => (
-        <div key={index} className="flex items-center gap-[11px] px-2.5 py-[9px]">
-          <Skeleton className="size-7 rounded-[8px]" />
+        <div key={index} className="flex items-center gap-[0.6875rem] px-2.5 py-[0.5625rem]">
+          <Skeleton className="size-7 rounded-[0.5rem]" />
           <div className="grid flex-1 gap-1.5">
             <Skeleton className="h-3.5 w-32" />
             <Skeleton className="h-3 w-44" />
@@ -471,13 +471,13 @@ export default function MCPServerList({ organizationId }: { organizationId: stri
           <div className="flex min-w-0 items-center gap-2.5">
             <code
               title={MCP_ENDPOINT}
-              className="bg-canvas flex h-9 min-w-0 flex-1 items-center overflow-hidden rounded-[8px] border px-3 font-mono text-[11.5px]"
+              className="bg-canvas flex h-9 min-w-0 flex-1 items-center overflow-hidden rounded-[0.5rem] border px-3 font-mono text-[0.78125rem]"
             >
               <span className="min-w-0 flex-1 truncate">{MCP_ENDPOINT}</span>
             </code>
             <Button
               variant="secondary"
-              className="h-9 shrink-0 rounded-[8px] border border-border bg-muted px-3 text-[11.5px] font-semibold shadow-none"
+              className="h-9 shrink-0 rounded-[0.5rem] border border-border bg-muted px-3 text-[0.78125rem] font-semibold shadow-none"
               aria-label="Copy the MCP endpoint"
               onClick={() => copy(MCP_ENDPOINT, 'Endpoint')}
             >
@@ -497,7 +497,7 @@ export default function MCPServerList({ organizationId }: { organizationId: stri
           action={
             <Button
               variant="outline"
-              className="bg-muted h-7.5 gap-1.5 rounded-sm px-3 text-[11.5px] font-semibold shadow-none pointer-coarse:h-11 [&_svg]:size-3"
+              className="bg-muted h-7.5 gap-1.5 rounded-sm px-3 text-[0.78125rem] font-semibold shadow-none pointer-coarse:h-11 [&_svg]:size-3"
               onClick={() => setOpenAdd(true)}
             >
               <Plus />
@@ -506,16 +506,16 @@ export default function MCPServerList({ organizationId }: { organizationId: stri
           }
           footer={
             <>
-              <p className="text-ink-3 flex items-start gap-[5px] text-[10.5px] leading-[14px]">
-                <Info className="mt-px size-[11px] shrink-0" aria-hidden />
+              <p className="text-ink-3 flex items-start gap-[0.3125rem] text-[0.71875rem] leading-[0.875rem]">
+                <Info className="mt-px size-[0.6875rem] shrink-0" aria-hidden />
                 Servers authenticate with an API key you can revoke anytime
               </p>
               <Link
                 to="/settings/api-keys"
-                className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 inline-flex items-center gap-1 rounded-[5px] text-[10.5px] leading-[14px] font-semibold outline-none transition-colors duration-150 focus-visible:ring-[3px] motion-reduce:transition-none"
+                className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 inline-flex items-center gap-1 rounded-[0.3125rem] text-[0.71875rem] leading-[0.875rem] font-semibold outline-none transition-colors duration-150 focus-visible:ring-[0.1875rem] motion-reduce:transition-none"
               >
                 Create an API key
-                <ArrowUpRight className="size-[11px]" aria-hidden />
+                <ArrowUpRight className="size-[0.6875rem]" aria-hidden />
               </Link>
             </>
           }

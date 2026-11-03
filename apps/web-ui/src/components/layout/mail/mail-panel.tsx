@@ -253,24 +253,24 @@ function UpgradeBanner() {
     : ''
 
   return (
-    <div className="flex flex-col gap-2 rounded-[10px] border border-accent-ink/20 bg-accent-ink/8 p-2.5">
+    <div className="flex flex-col gap-2 rounded-[0.625rem] border border-accent-ink/20 bg-accent-ink/8 p-2.5">
       <div className="flex items-center gap-2">
         <span className="grid size-6 shrink-0 place-items-center rounded-md bg-accent-ink/15">
-          <Sparkles className="size-[13px] text-accent-soft" />
+          <Sparkles className="size-[0.8125rem] text-accent-soft" />
         </span>
         <span className="grid min-w-0 flex-1 text-left">
           <span className="truncate text-xs leading-4 font-bold">Upgrade your plan</span>
-          <span className="text-ink-3 truncate text-[9.5px] leading-[13px]">
+          <span className="text-ink-3 truncate text-[0.6875rem] leading-[0.8125rem]">
             {[plan?.name ?? 'Free', meta].filter(Boolean).join(' · ')}
           </span>
         </span>
       </div>
-      <p className="text-muted-foreground text-[10.5px] leading-[15px]">
+      <p className="text-muted-foreground text-[0.71875rem] leading-[0.9375rem]">
         Unlimited mailboxes, 100M AI tokens a week and priority sync.
       </p>
       <Button
         asChild
-        className="h-7 w-full justify-center gap-1.5 rounded-[7px] bg-accent-ink text-[11.5px] font-bold text-[#0a0a0a] shadow-none hover:bg-accent-ink/90"
+        className="h-7 w-full justify-center gap-1.5 rounded-[0.4375rem] bg-accent-ink text-[0.78125rem] font-bold text-[#0a0a0a] shadow-none hover:bg-accent-ink/90"
       >
         <Link to="/settings/billing">
           <ArrowUpRight className="size-3" />
@@ -316,11 +316,11 @@ export default function MailPanel() {
             <SidebarMenu>
               <SidebarMenuItem className="mb-2 flex gap-2">
                 <Button
-                  className="h-8 flex-1 justify-center gap-[7px] rounded-[8px] bg-accent-ink text-xs font-semibold text-[#0a0a0a] hover:bg-accent-ink/90"
+                  className="h-8 flex-1 justify-center gap-[0.4375rem] rounded-[0.5rem] bg-accent-ink text-xs font-semibold text-[#0a0a0a] hover:bg-accent-ink/90"
                   onClick={() => setComposing(true)}
                   disabled={!accounts?.length}
                 >
-                  <PenLine className="size-[13px]" />
+                  <PenLine className="size-[0.8125rem]" />
                   Compose
                 </Button>
                 {/* Floating mode has its own button in the page's corner. */}
@@ -328,7 +328,7 @@ export default function MailPanel() {
                   <Button
                     variant={agent ? 'secondary' : 'outline'}
                     size="icon"
-                    className="size-8 rounded-[8px]"
+                    className="size-8 rounded-[0.5rem]"
                     aria-label="Toggle AI assistant"
                     title="AI assistant"
                     onClick={() =>
@@ -358,7 +358,7 @@ export default function MailPanel() {
                     {count > 0 && (
                       <SidebarMenuBadge
                         className={cn(
-                          'right-2 rounded-[4px] px-[5px] text-[9.5px]',
+                          'right-2 rounded-[0.25rem] px-[0.3125rem] text-[0.6875rem]',
                           item.id === 'inbox'
                             ? 'bg-accent-ink/20 text-accent-soft peer-data-active/menu-button:text-accent-soft'
                             : 'bg-muted text-ink-3'
@@ -383,7 +383,7 @@ export default function MailPanel() {
                   <SidebarMenuButton
                     asChild
                     isActive={label === item.id}
-                    className="gap-[11.5px] pl-[11.5px] text-[11.5px] font-normal"
+                    className="gap-[0.71875rem] pl-[0.71875rem] text-[0.78125rem] font-normal"
                   >
                     <Link
                       to="/mail"

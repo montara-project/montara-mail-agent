@@ -27,7 +27,7 @@ import { queries } from '@/lib/api/queries'
 import type { Connector } from './connector-list'
 
 const methodButtonClass =
-  'bg-card border-border/60 shadow-hairline hover:bg-accent/50 focus-visible:ring-ring/50 flex items-center gap-3 rounded-lg border p-4 text-left text-sm transition-colors outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50'
+  'bg-card border-border/60 shadow-hairline hover:bg-accent/50 focus-visible:ring-ring/50 flex items-center gap-3 rounded-lg border p-4 text-left text-sm transition-colors outline-none focus-visible:ring-[0.1875rem] disabled:pointer-events-none disabled:opacity-50'
 
 /**
  * Connecting a branded provider offers two ways in, picked in this dialog:

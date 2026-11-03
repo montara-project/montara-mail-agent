@@ -12,6 +12,7 @@ const resources = (): BillingResources => ({
   wallet: () => api.get(`${path}/wallet`),
   walletTopups: (params) => api.get(`${path}/wallet/topups`, { params }),
   walletTopup: (body) => api.post(`${path}/wallet/topup`, body),
+  walletTopupById: (id: string) => api.get(`${path}/wallet/topups/${id}`),
 })
 
 export const billingServices = resources()

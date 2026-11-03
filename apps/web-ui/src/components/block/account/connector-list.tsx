@@ -142,7 +142,7 @@ export function ProviderIcon({
 
 /** The bordered tile a provider's logo sits on, on the account and connect cards. */
 export const PROVIDER_TILE =
-  'border-border bg-muted rounded-[11px] border [&>svg]:text-ink-3 [&>svg]:size-5'
+  'border-border bg-muted rounded-[0.6875rem] border [&>svg]:text-ink-3 [&>svg]:size-5'
 
 /** Connects one provider's mailbox: signs in over IMAP first, so a wrong password is caught here. */
 function ConnectForm({ connector, onClose }: { connector: Connector; onClose: () => void }) {
@@ -312,19 +312,19 @@ export default function ConnectorList() {
             key={connector.id}
             type="button"
             onClick={() => setConnecting(connector)}
-            className="bg-card border-border/60 hover:bg-accent/50 shadow-hairline focus-visible:ring-ring/50 flex h-[76px] items-center gap-3 rounded-lg border p-[17px] text-left text-sm transition-colors outline-none focus-visible:ring-[3px]"
+            className="bg-card border-border/60 hover:bg-accent/50 shadow-hairline focus-visible:ring-ring/50 flex h-[4.75rem] items-center gap-3 rounded-lg border p-[1.0625rem] text-left text-sm transition-colors outline-none focus-visible:ring-[0.1875rem]"
           >
             <ProviderIcon
               provider={connector.id}
               tint={false}
-              className={cn(PROVIDER_TILE, '[&>img]:size-[22px]')}
+              className={cn(PROVIDER_TILE, '[&>img]:size-[1.375rem]')}
             />
             <div className="grid min-w-0 flex-1 gap-0.5">
-              <span className="truncate leading-[17px] font-semibold">
+              <span className="truncate leading-[1.0625rem] font-semibold">
                 <span className="sr-only">Connect </span>
                 {connector.name}
               </span>
-              <span className="text-ink-3 truncate text-xs leading-[15px]">
+              <span className="text-ink-3 truncate text-xs leading-[0.9375rem]">
                 {connector.description}
               </span>
             </div>

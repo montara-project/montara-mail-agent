@@ -414,7 +414,7 @@ export default function MailList({ className }: { className?: string }) {
     if (isPending && scope) {
       return Array.from({ length: 5 }, (_, i) => (
         <div key={i} className="flex items-start gap-2.5 border-b px-3.5 py-2.5">
-          <Skeleton className="size-6.5 shrink-0 rounded-[7px]" />
+          <Skeleton className="size-6.5 shrink-0 rounded-[0.4375rem]" />
           <div className="grid min-w-0 flex-1 gap-1.5">
             <Skeleton className="h-3.5 w-2/3" />
             <Skeleton className="h-3 w-3/4" />
@@ -459,7 +459,7 @@ export default function MailList({ className }: { className?: string }) {
             <span
               aria-hidden
               className={cn(
-                'absolute inset-0 flex items-center justify-center rounded-[7px] border text-[11px] font-bold transition-opacity',
+                'absolute inset-0 flex items-center justify-center rounded-[0.4375rem] border text-[0.75rem] font-bold transition-opacity',
                 !tint && 'border-border/60 bg-secondary text-muted-foreground',
                 'group-hover/row:opacity-0',
                 isSelected && 'opacity-0'
@@ -494,20 +494,20 @@ export default function MailList({ className }: { className?: string }) {
             to="/mail"
             search={(prev) => ({ ...prev, mail: mail.id })}
             aria-current={selectedId === mail.id ? 'page' : undefined}
-            className="flex min-w-0 items-start gap-2.5 outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px] focus-visible:after:ring-ring/50 focus-visible:after:ring-inset"
+            className="flex min-w-0 items-start gap-2.5 outline-none after:absolute after:inset-0 focus-visible:after:ring-[0.1875rem] focus-visible:after:ring-ring/50 focus-visible:after:ring-inset"
           >
             <span className="grid min-w-0 flex-1 self-start gap-0.5">
               {/* dir="auto": an Arabic or Hebrew mail reads right to left, punctuation included. */}
               <span dir="auto" className="flex min-w-0 items-baseline justify-between gap-2">
                 <span
                   className={cn(
-                    'min-w-0 truncate text-[11.5px]',
+                    'min-w-0 truncate text-[0.78125rem]',
                     mail.is_read ? 'font-medium' : 'font-bold'
                   )}
                 >
                   {mask(senderName(mail))}
                 </span>
-                <span className="text-ink-3 shrink-0 font-mono text-[10.5px] whitespace-nowrap tabular-nums">
+                <span className="text-ink-3 shrink-0 font-mono text-[0.71875rem] whitespace-nowrap tabular-nums">
                   {formatMailListDate(mail.received_at)}
                 </span>
               </span>
@@ -517,13 +517,13 @@ export default function MailList({ className }: { className?: string }) {
                   'min-w-0 truncate',
                   mail.is_read
                     ? 'text-muted-foreground font-medium'
-                    : 'text-ink-strong font-semibold text-[11.5px]'
+                    : 'text-ink-strong font-semibold text-[0.78125rem]'
                 )}
               >
                 {mail.subject || '(no subject)'}
               </span>
               {mail.teaser && (
-                <span dir="auto" className="text-ink-3 min-w-0 truncate text-[10.5px]">
+                <span dir="auto" className="text-ink-3 min-w-0 truncate text-[0.71875rem]">
                   {mail.teaser}
                 </span>
               )}
@@ -580,7 +580,7 @@ export default function MailList({ className }: { className?: string }) {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.18, ease: EASE_OUT }}
-                  className={`bg-secondary text-muted-foreground truncate rounded-tag px-1.5 py-0.5 text-[11px] font-semibold tabular-nums ${COUNT_VISIBILITY}`}
+                  className={`bg-secondary text-muted-foreground truncate rounded-tag px-1.5 py-0.5 text-[0.75rem] font-semibold tabular-nums ${COUNT_VISIBILITY}`}
                 >
                   {selectedMails.length} selected
                 </motion.span>
@@ -592,7 +592,7 @@ export default function MailList({ className }: { className?: string }) {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.18, ease: EASE_OUT }}
-                    className={`bg-accent-ink/15 text-accent-soft font-mono text-[10.5px] font-semibold truncate rounded-chip px-1.5 py-0.5 tabular-nums ${COUNT_VISIBILITY}`}
+                    className={`bg-accent-ink/15 text-accent-soft font-mono text-[0.71875rem] font-semibold truncate rounded-chip px-1.5 py-0.5 tabular-nums ${COUNT_VISIBILITY}`}
                   >
                     {unreadCount} new
                   </motion.span>

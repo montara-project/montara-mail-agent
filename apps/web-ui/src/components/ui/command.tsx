@@ -46,7 +46,7 @@ function CommandList({ className, ...props }: React.ComponentProps<typeof Comman
     <CommandPrimitive.List
       data-slot="command-list"
       className={cn(
-        'max-h-[300px] overflow-x-hidden overflow-y-auto overscroll-contain',
+        'max-h-[18.75rem] overflow-x-hidden overflow-y-auto overscroll-contain',
         className
       )}
       {...props}

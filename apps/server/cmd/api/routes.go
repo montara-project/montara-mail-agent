@@ -87,6 +87,7 @@ func routes(r *fiber.App, app *app.Application) {
 		me.Post("/billing/subscription/auto-renew", idempotent, h.Billing.AutoRenew)
 		me.Get("/billing/wallet", h.Billing.Wallet)
 		me.Get("/billing/wallet/topups", h.Billing.WalletTopups)
+		me.Get("/billing/wallet/topups/:id", h.Billing.WalletTopupByID)
 		me.Post("/billing/wallet/topup", slow, idempotent, h.Billing.WalletTopup)
 	}
 	// Not idempotent: a replay would serve the key itself from the cache. A

@@ -29,8 +29,8 @@ const EMPTY = { to: '', cc: '', subject: '' }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="border-border/60 grid grid-cols-[3.5rem_1fr] items-center gap-2.5 border-b px-[18px] py-[11px]">
-      <span className="text-ink-3 text-[11.5px] font-semibold">{label}</span>
+    <div className="border-border/60 grid grid-cols-[3.5rem_1fr] items-center gap-2.5 border-b px-[1.125rem] py-[0.6875rem]">
+      <span className="text-ink-3 text-[0.78125rem] font-semibold">{label}</span>
       {children}
     </div>
   )
@@ -38,7 +38,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 /** The design's borderless field: the row border does the framing. */
 const bareField =
-  'h-auto border-0 bg-transparent px-0 text-[12.5px] shadow-none focus-visible:ring-[3px] focus-visible:ring-ring/30 focus-visible:border-0'
+  'h-auto border-0 bg-transparent px-0 text-[0.84375rem] shadow-none focus-visible:ring-[0.1875rem] focus-visible:ring-ring/30 focus-visible:border-0'
 
 /**
  * A new mail from one of the organization's accounts. It closes only through
@@ -133,7 +133,7 @@ export default function ComposeSheet({
         onEscapeKeyDown={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
       >
-        <SheetHeader className="flex-row items-center justify-between border-b px-[18px] py-[13px]">
+        <SheetHeader className="flex-row items-center justify-between border-b px-[1.125rem] py-[0.8125rem]">
           <SheetTitle className="text-sm font-bold">New message</SheetTitle>
           <div className="flex items-center gap-1.5">
             <Hint label="Close and keep the draft">
@@ -167,7 +167,7 @@ export default function ComposeSheet({
               <Select value={fromId} onValueChange={setFrom} indicatorPosition="right">
                 <SelectTrigger
                   aria-label="From"
-                  className="h-auto w-full justify-start gap-2 border-0 bg-transparent p-0 text-[12.5px] shadow-none focus-visible:ring-[3px] focus-visible:ring-ring/30 [&>span]:min-w-0 [&>span]:flex-1 [&>span]:text-start [&>span]:break-all"
+                  className="h-auto w-full justify-start gap-2 border-0 bg-transparent p-0 text-[0.84375rem] shadow-none focus-visible:ring-[0.1875rem] focus-visible:ring-ring/30 [&>span]:min-w-0 [&>span]:flex-1 [&>span]:text-start [&>span]:break-all"
                 >
                   <SelectValue />
                 </SelectTrigger>
@@ -184,7 +184,7 @@ export default function ComposeSheet({
                 </SelectContent>
               </Select>
             ) : (
-              <span className="text-muted-foreground text-[12.5px]">
+              <span className="text-muted-foreground text-[0.84375rem]">
                 No email account connected
               </span>
             )}
@@ -202,7 +202,7 @@ export default function ComposeSheet({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-muted-foreground hover:text-foreground h-auto px-1 py-0.5 text-[11.5px] font-semibold"
+                  className="text-muted-foreground hover:text-foreground h-auto px-1 py-0.5 text-[0.78125rem] font-semibold"
                   onClick={() => setShowCc(true)}
                 >
                   Cc
@@ -225,7 +225,7 @@ export default function ComposeSheet({
           )}
         </div>
         {/* The editor takes the rest of the sheet; its text scrolls on its own. */}
-        <div className="min-h-0 flex-1 px-[18px] py-4">
+        <div className="min-h-0 flex-1 px-[1.125rem] py-4">
           <React.Suspense
             fallback={
               <div className="grid gap-2" aria-busy="true">

@@ -17,7 +17,7 @@ import { queries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
 
 const ROW =
-  'flex items-center gap-2.5 rounded-control px-[11px] py-[9px] outline-none transition-colors duration-150 focus-visible:ring-[3px] focus-visible:ring-ring/50 motion-reduce:transition-none'
+  'flex items-center gap-2.5 rounded-control px-[0.6875rem] py-[0.5625rem] outline-none transition-colors duration-150 focus-visible:ring-[0.1875rem] focus-visible:ring-ring/50 motion-reduce:transition-none'
 
 /** Icon, title and meta: what a row shows whether or not it opens a page. */
 function RowContent({ item, danger }: { item: SettingsItem; danger?: boolean }) {
@@ -25,24 +25,27 @@ function RowContent({ item, danger }: { item: SettingsItem; danger?: boolean }) 
     <>
       <span
         className={cn(
-          'grid size-[26px] shrink-0 place-items-center rounded-[7px]',
+          'grid size-[1.625rem] shrink-0 place-items-center rounded-[0.4375rem]',
           !danger && 'bg-secondary'
         )}
       >
         <item.icon
-          className={cn('size-[13px]', danger ? 'text-destructive' : 'text-muted-foreground')}
+          className={cn('size-[0.8125rem]', danger ? 'text-destructive' : 'text-muted-foreground')}
           aria-hidden
         />
       </span>
       <span className="grid min-w-0 flex-1 gap-px">
         <span
-          className={cn('text-[12.5px] leading-[17px] font-semibold', danger && 'text-danger-soft')}
+          className={cn(
+            'text-[0.84375rem] leading-[1.0625rem] font-semibold',
+            danger && 'text-danger-soft'
+          )}
         >
           {item.title}
         </span>
         <span
           className={cn(
-            'text-[10.5px] leading-[14px]',
+            'text-[0.71875rem] leading-[0.875rem]',
             danger ? 'text-muted-foreground' : 'text-ink-3'
           )}
         >
@@ -85,18 +88,18 @@ function SettingsSection({ group, danger }: { group: SettingsGroup; danger?: boo
         <h2
           id={id}
           className={cn(
-            'flex items-center gap-2 font-mono text-[10.5px] leading-[14px] font-semibold tracking-[1px] uppercase',
+            'flex items-center gap-2 font-mono text-[0.71875rem] leading-[0.875rem] font-semibold tracking-[0.0625rem] uppercase',
             danger ? 'text-danger-soft' : 'text-ink-faint'
           )}
         >
           <group.icon
-            className={cn('size-[13px]', danger ? 'text-destructive' : 'text-ink-3')}
+            className={cn('size-[0.8125rem]', danger ? 'text-destructive' : 'text-ink-3')}
             aria-hidden
           />
           {group.title}
         </h2>
         {!danger && (
-          <span className="bg-muted text-muted-foreground rounded-[4px] px-[5px] py-px font-mono text-[10.5px] leading-3 font-semibold tabular-nums">
+          <span className="bg-muted text-muted-foreground rounded-[0.25rem] px-[0.3125rem] py-px font-mono text-[0.71875rem] leading-3 font-semibold tabular-nums">
             {group.items.length}
           </span>
         )}
@@ -165,8 +168,8 @@ export default function SettingsNav() {
   return (
     <SettingsPage>
       <nav aria-label="Control Center" className="grid gap-3.5">
-        <label className="bg-card focus-within:ring-ring/50 flex items-center gap-2.25 rounded-[10px] border px-3 py-2 focus-within:ring-[3px]">
-          <Search className="text-ink-3 size-[13px] shrink-0" aria-hidden />
+        <label className="bg-card focus-within:ring-ring/50 flex items-center gap-2.25 rounded-[0.625rem] border px-3 py-2 focus-within:ring-[0.1875rem]">
+          <Search className="text-ink-3 size-[0.8125rem] shrink-0" aria-hidden />
           <span className="sr-only">Search settings</span>
           <input
             ref={inputRef}
@@ -177,9 +180,9 @@ export default function SettingsNav() {
               if (event.key === 'Escape') setQuery('')
             }}
             placeholder="Search settings, tools and providers"
-            className="placeholder:text-ink-3 min-w-0 flex-1 bg-transparent text-ellipsis text-[12.5px] leading-[17px] outline-none pointer-coarse:text-base"
+            className="placeholder:text-ink-3 min-w-0 flex-1 bg-transparent text-ellipsis text-[0.84375rem] leading-[1.0625rem] outline-none pointer-coarse:text-base"
           />
-          <kbd className="text-ink-3 bg-muted rounded-tag border px-[5px] py-0.5 font-mono text-[10.5px] leading-[11px] font-semibold pointer-coarse:hidden">
+          <kbd className="text-ink-3 bg-muted rounded-tag border px-[0.3125rem] py-0.5 font-mono text-[0.71875rem] leading-[0.6875rem] font-semibold pointer-coarse:hidden">
             {SEARCH_KEYS}
           </kbd>
         </label>

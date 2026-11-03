@@ -54,15 +54,15 @@ export default function OrganizationSwitcher() {
         <PopoverTrigger asChild>
           <Button
             variant="secondary"
-            className="h-11 w-full min-w-0 justify-between gap-2 rounded-[9px] bg-muted px-[7px] shadow-none"
+            className="h-11 w-full min-w-0 justify-between gap-2 rounded-[0.5625rem] bg-muted px-[0.4375rem] shadow-none"
           >
             <span className="flex min-w-0 items-center gap-2">
-              <span className="grid size-6 shrink-0 place-items-center rounded-[6px] bg-accent-tint text-[10.5px] font-bold text-accent-soft uppercase">
+              <span className="grid size-6 shrink-0 place-items-center rounded-[0.375rem] bg-accent-tint text-[0.71875rem] font-bold text-accent-soft uppercase">
                 {label.charAt(0).toUpperCase()}
               </span>
               <span className="grid min-w-0 flex-1 text-left leading-tight">
                 <span className="truncate text-xs font-semibold">{label}</span>
-                {meta && <span className="text-ink-3 truncate text-[10px]">{meta}</span>}
+                {meta && <span className="text-ink-3 truncate text-[0.71875rem]">{meta}</span>}
               </span>
             </span>
             <ChevronsUpDown className="text-ink-3 size-3 shrink-0" />

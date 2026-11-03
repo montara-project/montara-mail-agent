@@ -449,6 +449,15 @@ func (r *WalletRepository) MarkTopupPaidAndCredit(ctx context.Context, reference
 	return t, true, nil
 }
 
+// TopupByIDForUser returns one wallet top-up by id, only when it belongs to
+// userID — the invoice page's read.
+func (r *WalletRepository) TopupByIDForUser(ctx context.Context, id, userID uuid.UUID) (models.WalletTopup, error) {
+	return scanWalletTopup(r.queryRowContext(ctx, `
+		SELECT `+walletTopupColumns+` FROM wallet_topups WHERE id = $1 AND user_id = $2`,
+		id, userID,
+	))
+}
+
 // ListTopupsByUser returns one page of userID's wallet top-ups, newest first.
 func (r *WalletRepository) ListTopupsByUser(ctx context.Context, userID uuid.UUID, offset, limit int) ([]models.WalletTopup, error) {
 	rows, err := r.queryContext(ctx, `SELECT `+walletTopupColumns+` FROM wallet_topups

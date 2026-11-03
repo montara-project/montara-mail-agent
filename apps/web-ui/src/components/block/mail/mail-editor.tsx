@@ -99,10 +99,10 @@ function AttachmentList({ files, onChange }: { files: File[]; onChange: (files: 
           className="bg-muted flex h-7 max-w-64 items-center gap-2 rounded-lg border px-2.5 py-1.5"
         >
           <FileIcon className="text-accent-soft size-3.5 shrink-0" aria-hidden />
-          <span className="text-muted-foreground min-w-0 truncate font-mono text-[10.5px]">
+          <span className="text-muted-foreground min-w-0 truncate font-mono text-[0.71875rem]">
             {file.name}
           </span>
-          <span className="text-ink-3 shrink-0 font-mono text-[10.5px]">
+          <span className="text-ink-3 shrink-0 font-mono text-[0.71875rem]">
             {formatBytes(file.size)}
           </span>
           <Hint label="Remove">
@@ -246,7 +246,7 @@ function EditorBody({
       {/* The tools stay on one line and scroll sideways when the pane is
           narrow; Cancel and Send wrap below them instead of a lone icon. */}
       <div className="flex flex-wrap items-center gap-x-1 gap-y-2">
-        <div className="-m-[3px] flex max-w-[calc(100%+6px)] min-w-0 items-center gap-1 overflow-x-auto p-[3px] *:shrink-0 [scrollbar-width:none]">
+        <div className="-m-[0.1875rem] flex max-w-[calc(100%+0.375rem)] min-w-0 items-center gap-1 overflow-x-auto p-[0.1875rem] *:shrink-0 [scrollbar-width:none]">
           {leading && <div className="mr-2 shrink-0">{leading}</div>}
           {onAttachmentsChange && (
             <>
@@ -255,7 +255,7 @@ function EditorBody({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="text-muted-foreground bg-muted hover:bg-accent size-[26px] rounded-[7px] shadow-none [&_svg]:size-3"
+                  className="text-muted-foreground bg-muted hover:bg-accent size-[1.625rem] rounded-[0.4375rem] shadow-none [&_svg]:size-3"
                   aria-label="Attach files"
                   onClick={() => fileInput.current?.click()}
                 >
@@ -282,7 +282,7 @@ function EditorBody({
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  'text-muted-foreground bg-muted hover:bg-accent size-[26px] rounded-[7px] shadow-none [&_svg]:size-3',
+                  'text-muted-foreground bg-muted hover:bg-accent size-[1.625rem] rounded-[0.4375rem] shadow-none [&_svg]:size-3',
                   item.active && 'bg-accent text-foreground'
                 )}
                 aria-label={item.label}
@@ -298,7 +298,7 @@ function EditorBody({
           <Button
             type="button"
             variant="outline"
-            className="text-muted-foreground hover:text-foreground h-[30px] rounded-lg border-border bg-transparent px-3 text-[11.5px] font-semibold shadow-none"
+            className="text-muted-foreground hover:text-foreground h-[1.875rem] rounded-lg border-border bg-transparent px-3 text-[0.78125rem] font-semibold shadow-none"
             onClick={cancel}
             title="Esc"
           >
@@ -309,7 +309,7 @@ function EditorBody({
             title="Send (Ctrl+Enter)"
             aria-busy={sending}
             disabled={empty || sending}
-            className="h-[30px] gap-1.5 rounded-lg px-3.5 text-[11.5px] font-semibold"
+            className="h-[1.875rem] gap-1.5 rounded-lg px-3.5 text-[0.78125rem] font-semibold"
             onClick={send}
           >
             {sending ? (

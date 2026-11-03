@@ -76,8 +76,8 @@ function PlacementOption({
   return (
     <label
       className={cn(
-        'relative flex cursor-pointer items-center gap-3.5 px-[18px] py-4',
-        'has-[:focus-visible]:ring-ring/50 has-[:focus-visible]:z-10 has-[:focus-visible]:ring-[3px] has-[:focus-visible]:outline-none',
+        'relative flex cursor-pointer items-center gap-3.5 px-[1.125rem] py-4',
+        'has-[:focus-visible]:ring-ring/50 has-[:focus-visible]:z-10 has-[:focus-visible]:ring-[0.1875rem] has-[:focus-visible]:outline-none',
         'has-[:disabled]:cursor-default has-[:disabled]:opacity-60 has-[:disabled]:hover:bg-transparent',
         'transition-colors duration-150 motion-reduce:transition-none',
         selected ? 'bg-accent-ink/4' : 'hover:bg-popover'
@@ -94,20 +94,22 @@ function PlacementOption({
       />
       <span
         className={cn(
-          'grid size-[34px] shrink-0 place-items-center rounded-[9px]',
+          'grid size-[2.125rem] shrink-0 place-items-center rounded-[0.5625rem]',
           selected ? 'bg-accent-tint text-accent-soft' : 'bg-muted text-muted-foreground'
         )}
       >
         <option.icon className="size-4" aria-hidden />
       </span>
       <span className="grid min-w-0 flex-1 gap-0.5">
-        <span className="text-[12.5px] leading-[17px] font-semibold">{option.title}</span>
-        <span className="text-ink-3 text-[11.5px] leading-4 text-pretty">{option.description}</span>
+        <span className="text-[0.84375rem] leading-[1.0625rem] font-semibold">{option.title}</span>
+        <span className="text-ink-3 text-[0.78125rem] leading-4 text-pretty">
+          {option.description}
+        </span>
       </span>
       <span
         aria-hidden
         className={cn(
-          'grid size-[18px] shrink-0 place-items-center rounded-full border',
+          'grid size-[1.125rem] shrink-0 place-items-center rounded-full border',
           selected ? 'border-accent-ink bg-accent-ink' : 'border-input'
         )}
       >
@@ -132,12 +134,15 @@ function BehaviourRow({
   soon: boolean
 }) {
   return (
-    <div className="hover:border-input hover:bg-popover flex flex-wrap items-center gap-x-[11px] gap-y-2 rounded-[9px] border border-transparent px-[9px] py-2 transition-colors duration-150 motion-reduce:transition-none">
-      <div className="grid min-w-0 flex-1 basis-[calc(100%-47px)] gap-px sm:basis-0">
-        <Label htmlFor={id} className="text-[12px] leading-4 font-semibold">
+    <div className="hover:border-input hover:bg-popover flex flex-wrap items-center gap-x-[0.6875rem] gap-y-2 rounded-[0.5625rem] border border-transparent px-[0.5625rem] py-2 transition-colors duration-150 motion-reduce:transition-none">
+      <div className="grid min-w-0 flex-1 basis-[calc(100%-2.9375rem)] gap-px sm:basis-0">
+        <Label htmlFor={id} className="text-[0.8125rem] leading-4 font-semibold">
           {label}
         </Label>
-        <p id={`${id}-description`} className="text-ink-3 text-[10.5px] leading-[14px] text-pretty">
+        <p
+          id={`${id}-description`}
+          className="text-ink-3 text-[0.71875rem] leading-[0.875rem] text-pretty"
+        >
           {description}
         </p>
       </div>
@@ -153,7 +158,7 @@ function BehaviourRow({
         disabled
         aria-describedby={`${id}-description`}
         className={cn('w-9 disabled:cursor-default', !soon && 'disabled:opacity-100')}
-        thumbClassName="w-4 data-[state=checked]:translate-x-[18px] rtl:data-[state=checked]:-translate-x-[18px]"
+        thumbClassName="w-4 data-[state=checked]:translate-x-[1.125rem] rtl:data-[state=checked]:-translate-x-[1.125rem]"
       />
     </div>
   )

@@ -33,13 +33,13 @@ const lazyImages = (html: string) =>
  * any other email is inverted, with images inverted back, so dark text on a
  * white layout turns light on dark instead of vanishing.
  */
-function frameStyle(dark: boolean, ownDarkMode: boolean) {
+function frameStyle(dark: boolean, ownDarkMode: boolean, rootPx: number) {
   const invert = dark && !ownDarkMode
   return `
     :root { color-scheme: ${ownDarkMode ? 'light dark' : 'light'}; }
-    html { overflow: hidden; ${invert ? INVERT : ''} }
+    html { overflow: hidden; font-size: ${rootPx}px; ${invert ? INVERT : ''} }
     html, body { margin: 0; background: transparent; }
-    body { padding: 1px 0; color: CanvasText; font: 14px/1.5 system-ui, sans-serif; overflow-wrap: anywhere; overflow-x: auto; }
+    body { padding: 1px 0; color: CanvasText; font: 0.875rem/1.5 system-ui, sans-serif; overflow-wrap: anywhere; overflow-x: auto; }
     /* The frame is sized from the body, so an email's body { height: 100% } would pin it to the frame. */
     :root > body { height: auto !important; min-height: 0 !important; }
     img { max-width: 100%; height: auto; }
@@ -64,12 +64,21 @@ function HtmlBody({ html }: { html: string }) {
   }
   const dark = useTheme().resolvedTheme !== 'light'
   const ownDarkMode = OWN_DARK_MODE.test(html)
+  // The frame's base font tracks the app's root size, so wide-display scaling
+  // reaches the email too.
+  const [rootPx, setRootPx] = React.useState(16)
+  React.useEffect(() => {
+    const update = () => setRootPx(parseFloat(getComputedStyle(document.documentElement).fontSize))
+    update()
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
+  }, [])
 
   // Our head goes first so the CSP and base apply before the email's own markup.
   const srcDoc = React.useMemo(
     () =>
-      `<meta http-equiv="Content-Security-Policy" content="${CSP}"><base target="_blank"><style>${frameStyle(dark, ownDarkMode)}</style>${lazyImages(html)}`,
-    [html, dark, ownDarkMode]
+      `<meta http-equiv="Content-Security-Policy" content="${CSP}"><base target="_blank"><style>${frameStyle(dark, ownDarkMode, rootPx)}</style>${lazyImages(html)}`,
+    [html, dark, ownDarkMode, rootPx]
   )
 
   // The body's own box, not the document's: the document is never shorter
@@ -117,5 +126,5 @@ function HtmlBody({ html }: { html: string }) {
 /** The mail's HTML when it has some, else its plain text. */
 export default function MailBody({ html, text }: { html?: string | null; text?: string }) {
   if (html) return <HtmlBody html={html} />
-  return <div className="max-w-3xl text-[15px] leading-relaxed whitespace-pre-line">{text}</div>
+  return <div className="max-w-3xl text-[1rem] leading-relaxed whitespace-pre-line">{text}</div>
 }

@@ -30,8 +30,8 @@ function planName(plan: string, unlimited: boolean) {
 /** The green dot badge the design puts at the card's top right. */
 function ActiveBadge() {
   return (
-    <span className="flex items-center gap-[5px] rounded-[5px] bg-success/12 px-[7px] py-[3px] text-[10.5px] font-semibold text-success-text">
-      <span className="size-[5px] rounded-full bg-success" aria-hidden />
+    <span className="flex items-center gap-[0.3125rem] rounded-[0.3125rem] bg-success/12 px-[0.4375rem] py-[0.1875rem] text-[0.71875rem] font-semibold text-success-text">
+      <span className="size-[0.3125rem] rounded-full bg-success" aria-hidden />
       Active
     </span>
   )
@@ -133,25 +133,25 @@ export default function PlanWalletCard() {
   return (
     <>
       <Card className="w-full rounded-lg border-border/60 shadow-hairline">
-        <div className="flex flex-wrap items-center justify-between gap-2 px-[18px] py-[13px]">
-          <span className="flex min-w-0 items-center gap-[9px]">
-            <CreditCard className="size-[13px] shrink-0 text-ink-3" aria-hidden />
-            <span className="text-ink-faint font-mono text-[9.5px] font-semibold tracking-[1px] uppercase">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-[1.125rem] py-[0.8125rem]">
+          <span className="flex min-w-0 items-center gap-[0.5625rem]">
+            <CreditCard className="size-[0.8125rem] shrink-0 text-ink-3" aria-hidden />
+            <span className="text-ink-faint font-mono text-[0.6875rem] font-semibold tracking-[0.0625rem] uppercase">
               Subscription &amp; wallet
             </span>
           </span>
           {active && <ActiveBadge />}
         </div>
 
-        <div className="grid items-center gap-5 border-t border-input px-[18px] py-4 sm:grid-cols-[minmax(0,1fr)_1px_minmax(10rem,190px)]">
-          <div className="grid content-start gap-[7px]">
+        <div className="grid items-center gap-5 border-t border-input px-[1.125rem] py-4 sm:grid-cols-[minmax(0,1fr)_1px_minmax(10rem,11.875rem)]">
+          <div className="grid content-start gap-[0.4375rem]">
             {name === null ? (
               <Skeleton className="h-6 w-24" />
             ) : (
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[17px] font-bold tracking-[-0.2px]">{name}</span>
+                <span className="text-[1.125rem] font-bold tracking-[-0.0125rem]">{name}</span>
                 {active && sub?.billing_interval && (
-                  <span className="text-accent-soft dark:text-accent-ink rounded-[4px] bg-accent-ink/6 px-1.5 py-0.5 font-mono text-[8.5px] font-semibold tracking-[0.5px] uppercase">
+                  <span className="text-accent-soft dark:text-accent-ink rounded-[0.25rem] bg-accent-ink/6 px-1.5 py-0.5 font-mono text-[0.6875rem] font-semibold tracking-[0.03125rem] uppercase">
                     {sub.billing_interval === 'year' ? 'Yearly' : 'Monthly'}
                     {discountPercent > 0 && <span> · −{discountPercent}%</span>}
                   </span>
@@ -174,13 +174,13 @@ export default function PlanWalletCard() {
                 </Button>
               </div>
             ) : (
-              <div className="flex flex-wrap items-baseline gap-x-[5px] gap-y-0.5">
+              <div className="flex flex-wrap items-baseline gap-x-[0.3125rem] gap-y-0.5">
                 {price === null ? (
                   <Skeleton className="h-5 w-28" />
                 ) : (
                   <>
-                    <span className="text-[15px] font-bold tabular-nums">{price}</span>
-                    <span className="text-ink-3 text-[11px]">
+                    <span className="text-[1rem] font-bold tabular-nums">{price}</span>
+                    <span className="text-ink-3 text-[0.75rem]">
                       {price === 'Custom'
                         ? ''
                         : active && sub
@@ -193,14 +193,17 @@ export default function PlanWalletCard() {
             )}
 
             {active && periodPercent !== null && (
-              <div className="grid gap-[5px]">
-                <div aria-hidden="true" className="bg-secondary h-1 overflow-hidden rounded-[2px]">
+              <div className="grid gap-[0.3125rem]">
+                <div
+                  aria-hidden="true"
+                  className="bg-secondary h-1 overflow-hidden rounded-[0.125rem]"
+                >
                   <div
-                    className="bg-accent-ink h-full rounded-[2px]"
+                    className="bg-accent-ink h-full rounded-[0.125rem]"
                     style={{ width: `${periodPercent}%` }}
                   />
                 </div>
-                <p className="text-ink-3 text-[10.5px] tabular-nums">
+                <p className="text-ink-3 text-[0.71875rem] tabular-nums">
                   Billing period {periodPercent}% used
                   {sub?.auto_renew && sub.amount > 0 && (
                     <span> · next invoice {formatRupiah(sub.amount)}</span>
@@ -210,18 +213,20 @@ export default function PlanWalletCard() {
             )}
           </div>
 
-          {!superUser && <div className="hidden h-[72px] bg-border sm:block" aria-hidden="true" />}
+          {!superUser && (
+            <div className="hidden h-[4.5rem] bg-border sm:block" aria-hidden="true" />
+          )}
 
           {!superUser && (
-            <div className="grid content-start gap-[7px]">
+            <div className="grid content-start gap-[0.4375rem]">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-ink-faint font-mono text-[9px] font-semibold tracking-[1px] uppercase">
+                <span className="text-ink-faint font-mono text-[0.6875rem] font-semibold tracking-[0.0625rem] uppercase">
                   Wallet
                 </span>
                 <Wallet className="size-3 text-ink-3" aria-hidden />
               </div>
               {walletQuery.data ? (
-                <span className="text-[15px] font-bold tabular-nums">
+                <span className="text-[1rem] font-bold tabular-nums">
                   {formatRupiah(walletQuery.data.balance_idr)}
                 </span>
               ) : (
@@ -230,24 +235,24 @@ export default function PlanWalletCard() {
               <Button
                 size="xs"
                 variant="secondary"
-                className="h-[27px] gap-[5px] rounded-[7px] border border-border bg-muted px-[11px] text-[11px] font-semibold shadow-none w-full"
+                className="h-[1.6875rem] gap-[0.3125rem] rounded-[0.4375rem] border border-border bg-muted px-[0.6875rem] text-[0.75rem] font-semibold shadow-none w-full"
                 onClick={() => setOpen(true)}
               >
-                <Plus className="size-[11px]" aria-hidden />
+                <Plus className="size-[0.6875rem]" aria-hidden />
                 Top up
               </Button>
             </div>
           )}
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-t border-input px-[18px] py-[11px]">
-          <p className="text-ink-3 text-[10.5px]">{footNote}</p>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-t border-input px-[1.125rem] py-[0.6875rem]">
+          <p className="text-ink-3 text-[0.71875rem]">{footNote}</p>
           <div className="flex items-center gap-2">
             {!superUser && (
               <Button
                 size="xs"
                 variant="secondary"
-                className="h-[27px] gap-[5px] rounded-[7px] border border-border bg-muted px-[11px] text-[11px] font-semibold shadow-none"
+                className="h-[1.6875rem] gap-[0.3125rem] rounded-[0.4375rem] border border-border bg-muted px-[0.6875rem] text-[0.75rem] font-semibold shadow-none"
                 asChild
               >
                 <a href="#billing-plans">Manage plan</a>
@@ -257,7 +262,7 @@ export default function PlanWalletCard() {
               <Button
                 size="xs"
                 variant="dim"
-                className="h-[27px] px-[11px] text-[11px] font-medium"
+                className="h-[1.6875rem] px-[0.6875rem] text-[0.75rem] font-medium"
                 disabled={autoRenew.isPending}
                 onClick={() =>
                   autoRenew.mutate(
