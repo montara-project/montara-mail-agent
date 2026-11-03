@@ -13,7 +13,7 @@ import { formatRupiah, formatTokens } from '@/lib/string'
 import { cn } from '@/lib/utils'
 
 /** The card shows the latest movements only; the invoice page holds the rest. */
-const ROW_LIMIT = 5
+const ROW_LIMIT = 4
 
 type LedgerRow = {
   key: string
