@@ -1,9 +1,9 @@
-import { Link, useSearch } from '@tanstack/react-router'
+import { Link } from '@tanstack/react-router'
 import { Check, ChevronDown, Layers } from 'lucide-react'
 import React from 'react'
 
 import { ProviderIcon } from '@/components/block/account/connector-list'
-import { useMailAccounts } from '@/components/layout/mail/mail-panel'
+import { useMailAccount, useMailAccounts } from '@/components/layout/mail/mail-panel'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useHideEmails } from '@/hooks/use-hide-emails'
 import { cn } from '@/lib/utils'
@@ -15,11 +15,10 @@ import { cn } from '@/lib/utils'
  */
 export default function AccountFilter({ className }: { className?: string }) {
   const { data: accounts, isPending } = useMailAccounts()
-  const { account } = useSearch({ strict: false })
+  // The list's own account: the named one, or Split inbox's first.
+  const selected = useMailAccount()
   const { mask } = useHideEmails()
   const [open, setOpen] = React.useState(false)
-
-  const selected = accounts?.find((item) => item.id === account)
 
   const close = () => setOpen(false)
 

@@ -72,7 +72,8 @@ function useShownAccounts() {
   const account = useMailAccount()
   const { data: accounts } = useMailAccounts()
   if (split === undefined) return []
-  return split ? (account ? [account] : []) : (accounts ?? [])
+  if (account) return [account]
+  return split ? [] : (accounts ?? [])
 }
 
 /**

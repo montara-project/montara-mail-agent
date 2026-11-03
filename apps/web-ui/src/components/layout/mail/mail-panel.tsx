@@ -116,15 +116,17 @@ export function useAgentPanelPosition(): 'beside' | 'floating' {
 }
 
 /**
- * With Split inbox on, the account named by ?account=, falling back to the
- * first one. Undefined in the global inbox, while loading, or when none is connected.
+ * The account named by ?account=, in either mode, so a link to one mailbox
+ * opens it. Without one, Split inbox falls back to the first account and the
+ * global inbox shows them all (undefined). Undefined while loading too.
  */
 export function useMailAccount() {
   const split = useSplitInbox()
   const { account } = useSearch({ strict: false })
   const { data } = useMailAccounts()
-  if (!split) return undefined
-  return data?.find((item) => item.id === account) ?? data?.[0]
+  const named = data?.find((item) => item.id === account)
+  if (named) return named
+  return split ? data?.[0] : undefined
 }
 
 /**
