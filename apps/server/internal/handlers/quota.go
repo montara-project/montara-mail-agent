@@ -3,6 +3,8 @@ package handlers
 import (
 	"crypto/subtle"
 	"errors"
+	"math"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -15,6 +17,7 @@ import (
 	"montara-mail-agent/server/internal/lib/constant"
 	"montara-mail-agent/server/internal/lib/period"
 	"montara-mail-agent/server/internal/lib/validator"
+	"montara-mail-agent/server/internal/models"
 	"montara-mail-agent/server/internal/repositories"
 )
 
@@ -83,9 +86,10 @@ type topupView struct {
 	PayURL    string `json:"pay_url"`
 }
 
-// CreateTopup buys pay-as-you-go tokens straight from the IDR wallet at
-// Rp1.000 per 1M tokens: the design's presets and its custom field both post
-// a token count, the floor is 10M and the steps are 1M.
+// CreateTopup buys pay-as-you-go tokens at Rp1.000 per 1M tokens: the design's
+// presets and its custom field both post a token count, the floor is 10M and
+// the steps are 1M. The wallet pays at once; the gateway answers a pending
+// top-up with its QRIS checkout, which the BorderPay webhook credits.
 func (h *quotaHandler) CreateTopup(c fiber.Ctx) error {
 	uid, err := lib.ContextGetUID(c)
 	if err != nil {
@@ -101,7 +105,19 @@ func (h *quotaHandler) CreateTopup(c fiber.Ctx) error {
 	if body.Tokens%topupTokenStep != 0 {
 		return apperr.New(apperr.KindBadRequest, "Tokens come in steps of 1M")
 	}
-	t, err := h.app.Repositories.TokenTopup.BuyFromWallet(c.Context(), uid, body.Tokens, int(body.Tokens/topupTokenStep*topupIDRPerMillion))
+	// token_topups.amount_idr is an INTEGER.
+	amount := body.Tokens / topupTokenStep * topupIDRPerMillion
+	if amount > math.MaxInt32 {
+		return apperr.New(apperr.KindBadRequest, "This purchase is too large")
+	}
+	switch body.Method {
+	case "", "wallet":
+	case "gateway":
+		return h.topupThroughGateway(c, uid, body.Tokens, int(amount))
+	default:
+		return apperr.New(apperr.KindBadRequest, "Pay with the wallet or the gateway")
+	}
+	t, err := h.app.Repositories.TokenTopup.BuyFromWallet(c.Context(), uid, body.Tokens, int(amount))
 	if errors.Is(err, repositories.ErrInsufficientWalletBalance) {
 		return apperr.New(apperr.KindPaymentRequired, "Not enough wallet balance. Top up your wallet first.")
 	}
@@ -109,6 +125,33 @@ func (h *quotaHandler) CreateTopup(c fiber.Ctx) error {
 		return err
 	}
 	return dtos.OK(c, topupView{ID: t.ID.String(), Status: t.Status, AmountIDR: t.AmountIDR, Tokens: t.Tokens})
+}
+
+// topupThroughGateway records a pending top-up and opens its BorderPay QRIS
+// checkout; the webhook marks it paid and credits the tokens.
+func (h *quotaHandler) topupThroughGateway(c fiber.Ctx, uid uuid.UUID, tokens int64, amount int) error {
+	if h.app.Config.BorderPay.APIKey == "" {
+		return apperr.New(apperr.KindUnavailable, "Paying by QRIS is not available on this server")
+	}
+	id, err := uuid.NewV7()
+	if err != nil {
+		return err
+	}
+	t := models.TokenTopup{ID: id, UserID: uid, AmountIDR: amount, Tokens: tokens, ReferenceID: id.String()}
+	if err := h.app.Repositories.TokenTopup.Create(c.Context(), t); err != nil {
+		return err
+	}
+	returnURL := strings.TrimSuffix(h.app.Config.BorderPay.ReturnURL, "/")
+	payURL, err := borderPayCheckout(c.Context(), h.app, int64(amount), t.ReferenceID, returnURL)
+	if err != nil {
+		return err
+	}
+	if err := h.app.Repositories.TokenTopup.SetPayment(c.Context(), id, payURL); err != nil {
+		return err
+	}
+	return dtos.OK(c, topupView{
+		ID: id.String(), Status: models.TopupStatusPending, AmountIDR: amount, Tokens: tokens, PayURL: payURL,
+	})
 }
 
 // GetTopup returns one of the signed-in user's top-ups, for the invoice page.

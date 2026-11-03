@@ -5,17 +5,21 @@ import QueryState from '@/components/block/common/query-state'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { queries } from '@/lib/api/queries'
+import { clock } from '@/lib/date'
 import { formatTokens } from '@/lib/string'
 import { cn } from '@/lib/utils'
 
-// The allowance resets weekly; the next Monday 00:00, as the design's note.
-const RESET_NOTE = (() => {
-  const now = new Date()
+/**
+ * When the allowance resets: the server's week starts Monday 00:00 UTC, shown
+ * in the reader's own time (07:00 in Jakarta), so the day and hour are the
+ * real ones wherever they are.
+ */
+function resetNote(now: Date) {
   const next = new Date(now)
-  next.setDate(now.getDate() + ((8 - now.getDay()) % 7 || 7))
-  next.setHours(0, 0, 0, 0)
-  return `Resets ${next.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · 00:00`
-})()
+  next.setUTCDate(now.getUTCDate() + ((8 - now.getUTCDay()) % 7 || 7))
+  next.setUTCHours(0, 0, 0, 0)
+  return `Resets ${next.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · ${clock(next)}`
+}
 
 /** The week's spend as the design's 84px donut: a track, a fill, and the
  * percentage it leaves no doubt about. Decorative — the numbers sit beside it. */
@@ -61,8 +65,57 @@ function UsageRing({ percent }: { percent: number }) {
   )
 }
 
+/**
+ * One source of tokens, as the design's metric rows: its name and a note in
+ * mono, a bar of how much of it is gone, and what is left.
+ */
+function SourceRow({
+  label,
+  note,
+  percent,
+  bar,
+  value,
+}: {
+  label: string
+  note: string
+  /** Of this source, used; null draws no bar (unlimited). */
+  percent: number | null
+  /** The bar's hue, which matches the source's name in the total line. */
+  bar: string
+  value: string
+}) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <div className="grid w-28 shrink-0 gap-px">
+        <span className="text-muted-foreground text-[10.5px] leading-[14px] font-medium">
+          {label}
+        </span>
+        <span className="text-ink-faint font-mono text-[8.5px] leading-[11px] font-semibold">
+          {note}
+        </span>
+      </div>
+      <div
+        className="bg-secondary h-1 min-w-0 flex-1 overflow-hidden rounded-[2px]"
+        aria-hidden="true"
+      >
+        {percent !== null && (
+          <div
+            className={cn('h-full rounded-[2px]', bar)}
+            style={{ width: `${Math.min(100, percent)}%` }}
+          />
+        )}
+      </div>
+      <span className="text-ink-strong min-w-16 shrink-0 text-end text-[11px] font-semibold tabular-nums">
+        {value}
+      </span>
+    </div>
+  )
+}
+
 /** Control Center > Billing: this week's AI tokens against the plan's
- * allowance — the donut, the total, and the reset the design notes. */
+ * allowance — the donut, the total, and the reset the design notes — then the
+ * plan's allowance and the bought (pay-as-you-go) tokens as separate rows,
+ * since calls spend the allowance first and the bought tokens after. */
 export default function UsageCard() {
   const quotaQuery = useQuery(queries.quota.status())
   const { data: quota, isPending } = quotaQuery
@@ -71,6 +124,11 @@ export default function UsageCard() {
   const limit = quota?.limit_tokens ?? null
   const percent = limit ? Math.round((used / limit) * 100) : null
   const left = limit !== null ? Math.max(0, limit - used) : null
+  // Bought tokens: what AI calls draw from once the weekly allowance is spent,
+  // never expiring. This week's draw from them is whatever ran past the cap.
+  const payg = quota?.payg_balance_tokens ?? 0
+  const planUsed = limit !== null ? Math.min(used, limit) : used
+  const paygUsed = limit !== null ? Math.max(0, used - limit) : 0
   const planLabel =
     quota?.plan === 'pro'
       ? 'Pro plan'
@@ -89,7 +147,8 @@ export default function UsageCard() {
         </span>
         <span className="flex items-center gap-[5px] text-ink-3 text-[10.5px]">
           <RotateCcw className="size-[11px]" aria-hidden />
-          {RESET_NOTE}
+          {/* From the last fetch's time: render stays pure, and the poll keeps it current. */}
+          {quotaQuery.dataUpdatedAt > 0 && resetNote(new Date(quotaQuery.dataUpdatedAt))}
         </span>
       </div>
 
@@ -125,16 +184,36 @@ export default function UsageCard() {
                   </span>
                   <span className="text-ink-3 text-[10.5px]">
                     {limit !== null
-                      ? `of ${formatTokens(limit)} weekly cap · ${planLabel}`
-                      : `No weekly cap · ${planLabel}`}
+                      ? `used this week · the plan's ${formatTokens(limit)} first, then top-up tokens`
+                      : `used this week · No weekly cap · ${planLabel}`}
                   </span>
                 </div>
                 {left !== null && (
                   <span className="text-muted-foreground text-[11px] font-semibold tabular-nums">
-                    {formatTokens(left)} left
+                    {formatTokens(left + payg)} available
                   </span>
                 )}
               </div>
+              <SourceRow
+                label="Plan allowance"
+                note={`${planLabel} · weekly`}
+                percent={percent}
+                bar="bg-accent-ink"
+                value={
+                  limit !== null
+                    ? `${formatTokens(planUsed)} / ${formatTokens(limit)}`
+                    : `${formatTokens(planUsed)} used`
+                }
+              />
+              {limit !== null && (
+                <SourceRow
+                  label="Top-up (PAYG)"
+                  note={paygUsed > 0 ? `${formatTokens(paygUsed)} used this week` : 'never expires'}
+                  percent={payg + paygUsed > 0 ? (paygUsed / (payg + paygUsed)) * 100 : 0}
+                  bar="bg-info"
+                  value={`${formatTokens(payg)} left`}
+                />
+              )}
               {percent !== null && percent >= 100 && (
                 <p className="text-destructive text-xs">
                   The weekly allowance is spent; new AI calls draw from the pay-as-you-go balance.

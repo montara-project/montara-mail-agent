@@ -23,8 +23,16 @@ export interface TokenTopup {
  * lands already paid and carries no checkout URL. */
 export interface TopupCheckout {
   id: string
-  status: 'paid'
+  /** paid at once from the wallet; pending until the gateway checkout is paid. */
+  status: 'paid' | 'pending'
   amount_idr: number
   tokens: number
+  /** The QRIS checkout for a gateway purchase; empty for a wallet one. */
   pay_url: string
+}
+
+/** POST /me/quota/topups: the token count and how it is paid. */
+export interface TopupBody {
+  tokens: number
+  method: 'wallet' | 'gateway'
 }

@@ -52,8 +52,10 @@ export default function RecentTopupsLedger() {
       }`,
       amount: t.amount_idr,
       paid: t.status === 'paid',
-      // Every token top-up has an invoice page, legacy QRIS ones included.
-      href: `/settings/billing/invoice/${t.id}`,
+      // A gateway purchase still waiting leads back to its checkout; any other
+      // has an invoice page, legacy QRIS ones included.
+      href: t.status === 'pending' && t.pay_url ? t.pay_url : `/settings/billing/invoice/${t.id}`,
+      external: t.status === 'pending' && !!t.pay_url,
     }))
     const walletRows = (walletQuery.data?.data ?? []).map<LedgerRow>((t) => ({
       key: `wallet-${t.id}`,
