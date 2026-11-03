@@ -138,6 +138,44 @@ func testTokenQuota(t *testing.T, call callFunc, application *app.Application, d
 		t.Fatalf("balance after the replay: %d %v", status, out)
 	}
 
+	// A wallet purchase buys tokens straight from the IDR wallet at Rp1.000
+	// per 1M: a 10M floor in 1M steps, debited and credited in one go.
+	if _, err := db.Exec(`INSERT INTO wallet_balances (user_id, balance_idr) VALUES ($1, 50000)
+		ON CONFLICT (user_id) DO UPDATE SET balance_idr = 50000`, userID); err != nil {
+		t.Fatal(err)
+	}
+	if status, _ := call(http.MethodPost, "/api/v1/me/quota/topups", userToken, map[string]any{"tokens": 5_000_000}); status != http.StatusBadRequest {
+		t.Fatalf("a 5M purchase: %d, want 400", status)
+	}
+	if status, _ := call(http.MethodPost, "/api/v1/me/quota/topups", userToken, map[string]any{"tokens": 10_500_000}); status != http.StatusBadRequest {
+		t.Fatalf("a 10.5M purchase: %d, want 400", status)
+	}
+	if status, out := call(http.MethodPost, "/api/v1/me/quota/topups", userToken, map[string]any{"tokens": 25_000_000}); status != http.StatusOK ||
+		out["data"].(map[string]any)["status"] != "paid" || out["data"].(map[string]any)["amount_idr"].(float64) != 25000 {
+		t.Fatalf("a 25M purchase: %d %v", status, out)
+	}
+	status, out = call(http.MethodGet, "/api/v1/me/quota", userToken, nil)
+	if status != http.StatusOK || out["data"].(map[string]any)["payg_balance_tokens"].(float64) != 25_000_300 {
+		t.Fatalf("balance after the wallet purchase: %d %v", status, out)
+	}
+	var wallet int64
+	if err := db.QueryRow(`SELECT balance_idr FROM wallet_balances WHERE user_id = $1`, userID).Scan(&wallet); err != nil {
+		t.Fatal(err)
+	}
+	if wallet != 25000 {
+		t.Fatalf("wallet after the purchase: %d, want 25000", wallet)
+	}
+	if status, _ := call(http.MethodPost, "/api/v1/me/quota/topups", userToken, map[string]any{"tokens": 100_000_000}); status != http.StatusPaymentRequired {
+		t.Fatalf("a 100M purchase against Rp25.000: %d, want 402", status)
+	}
+	// Leave the wallet as testBilling expects it: untouched, balance-less.
+	if _, err := db.Exec(`DELETE FROM wallet_transactions WHERE user_id = $1 AND kind = 'token_purchase'`, userID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`DELETE FROM wallet_balances WHERE user_id = $1`, userID); err != nil {
+		t.Fatal(err)
+	}
+
 	// The free plan caps mailboxes per user across organizations.
 	for range 20 {
 		seedAccount(t, application, userOrg)

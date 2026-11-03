@@ -37,12 +37,14 @@ export default function OrganizationSwitcher() {
   }
 
   const label = active?.name ?? (isPending ? 'Loading...' : 'No organization')
-  // The design's meta line under the name: how many mailboxes the org connects.
+  // The design's meta line under the name: the org's accounts and their unread.
   const { data: stats } = useQuery({
     ...queries.organizations.stats(active?.id),
     refetchOnWindowFocus: false,
   })
-  const meta = stats ? `${stats.accounts} ${stats.accounts === 1 ? 'mailbox' : 'mailboxes'}` : ''
+  const meta = stats
+    ? `${stats.accounts} ${stats.accounts === 1 ? 'account' : 'accounts'} · ${stats.unread} unread`
+    : ''
 
   return (
     // Same height and bottom border as the page header (h-14), so the two lines meet;

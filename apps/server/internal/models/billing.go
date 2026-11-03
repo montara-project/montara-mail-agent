@@ -25,6 +25,7 @@ const (
 const (
 	WalletKindTopup              = "topup"
 	WalletKindSubscriptionCharge = "subscription_charge"
+	WalletKindTokenPurchase      = "token_purchase"
 )
 
 // Plan is one row of the pricing catalog: what a tier costs and what it

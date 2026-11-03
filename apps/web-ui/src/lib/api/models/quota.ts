@@ -19,10 +19,11 @@ export interface TokenTopup {
   paid_at: string | null
 }
 
-/** POST /me/quota/topups: the checkout the user finishes the payment at. */
+/** POST /me/quota/topups: a token purchase debited from the IDR wallet, so it
+ * lands already paid and carries no checkout URL. */
 export interface TopupCheckout {
   id: string
-  status: 'pending'
+  status: 'paid'
   amount_idr: number
   tokens: number
   pay_url: string

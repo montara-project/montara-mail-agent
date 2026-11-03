@@ -41,5 +41,12 @@ export function timeAgo(date: Date) {
   return relative.format(Math.trunc(seconds / size), unit)
 }
 
+/** How much of the span from `start` to `end` has run, as a whole percent from 0 to 100. */
+export function elapsedPercent(start: Date, end: Date) {
+  const span = end.getTime() - start.getTime()
+  if (span <= 0) return 100
+  return Math.min(100, Math.max(0, Math.round(((Date.now() - start.getTime()) / span) * 100)))
+}
+
 /** Whether `date` has already gone by. */
 export const isPast = (date: Date) => date.getTime() < Date.now()

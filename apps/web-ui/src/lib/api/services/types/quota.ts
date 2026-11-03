@@ -9,5 +9,5 @@ export type QuotaResources = {
     limit: number
   }) => Promise<AxiosListResponse<Models.TokenTopup>>
   topup: (id: string) => Promise<AxiosItemResponse<Models.TokenTopup>>
-  createTopup: () => Promise<AxiosItemResponse<Models.TopupCheckout>>
+  createTopup: (body: { tokens: number }) => Promise<AxiosItemResponse<Models.TopupCheckout>>
 }
