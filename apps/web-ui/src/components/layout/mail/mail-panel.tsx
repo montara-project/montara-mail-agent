@@ -236,28 +236,34 @@ function UpgradeBanner() {
     ...queries.organizations.stats(organization?.id),
     refetchOnWindowFocus: false,
   })
+  const { data: plans } = useQuery(queries.billing.plans())
   if (!subscription || subscription.plan_code !== 'free') return null
-  const meta = stats ? `${stats.accounts} ${stats.accounts === 1 ? 'mailbox' : 'mailboxes'}` : ''
+  const limit = plans?.find((plan) => plan.code === subscription.plan_code)?.max_email_accounts
+  const meta = stats
+    ? limit
+      ? `${stats.accounts} of ${limit} mailboxes`
+      : `${stats.accounts} ${stats.accounts === 1 ? 'mailbox' : 'mailboxes'}`
+    : ''
 
   return (
-    <div className="flex flex-col gap-2 rounded-[10px] border border-accent-ink/20 bg-accent-ink/10 p-2.5">
+    <div className="flex flex-col gap-2 rounded-[10px] border border-accent-ink/20 bg-accent-ink/8 p-2.5">
       <div className="flex items-center gap-2">
         <span className="grid size-6 shrink-0 place-items-center rounded-md bg-accent-ink/15">
-          <Sparkles className="size-3.5 text-accent-soft" />
+          <Sparkles className="size-[13px] text-accent-soft" />
         </span>
-        <span className="grid min-w-0 flex-1 text-left leading-tight">
-          <span className="truncate text-xs font-bold">Upgrade your plan</span>
-          <span className="text-ink-3 truncate text-[10.5px]">
+        <span className="grid min-w-0 flex-1 text-left">
+          <span className="truncate text-xs leading-4 font-bold">Upgrade your plan</span>
+          <span className="text-ink-3 truncate text-[9.5px] leading-[13px]">
             {meta ? `${subscription.plan_name} · ${meta}` : subscription.plan_name}
           </span>
         </span>
       </div>
-      <p className="text-muted-foreground text-[10.5px] leading-relaxed">
+      <p className="text-muted-foreground text-[10.5px] leading-[15px]">
         Unlimited mailboxes, 100M AI tokens a week and priority sync.
       </p>
       <Button
         asChild
-        className="h-8 w-full justify-center gap-1.5 rounded-[7px] bg-accent-ink text-[11.5px] font-bold text-[#0a0a0a] shadow-none hover:bg-accent-ink/90"
+        className="h-7 w-full justify-center gap-1.5 rounded-[7px] bg-accent-ink text-[11.5px] font-bold text-[#0a0a0a] shadow-none hover:bg-accent-ink/90"
       >
         <Link to="/settings/billing">
           <ArrowUpRight className="size-3" />
@@ -299,14 +305,14 @@ export default function MailPanel() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem className="mb-1.5 flex gap-2">
+            <SidebarMenu className="gap-1">
+              <SidebarMenuItem className="mb-2 flex gap-2">
                 <Button
-                  className="h-8 flex-1 justify-center rounded-[8px] bg-accent-ink text-xs font-semibold text-[#0a0a0a] hover:bg-accent-ink/90"
+                  className="h-8 flex-1 justify-center gap-[7px] rounded-[8px] bg-accent-ink text-xs font-semibold text-[#0a0a0a] hover:bg-accent-ink/90"
                   onClick={() => setComposing(true)}
                   disabled={!accounts?.length}
                 >
-                  <PenLine className="size-3.5" />
+                  <PenLine className="size-[13px]" />
                   Compose
                 </Button>
                 {/* Floating mode has its own button in the page's corner. */}
@@ -342,8 +348,9 @@ export default function MailPanel() {
                   {!!badges[item.id] && (
                     <SidebarMenuBadge
                       className={cn(
+                        'right-2 rounded-[4px] px-[5px] text-[9.5px]',
                         item.id === 'inbox'
-                          ? 'bg-accent-ink/20 text-accent-soft'
+                          ? 'bg-accent-ink/20 text-accent-soft peer-data-active/menu-button:text-accent-soft'
                           : 'bg-muted text-ink-3'
                       )}
                     >
@@ -355,13 +362,18 @@ export default function MailPanel() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarGroup>
+        <SidebarGroup className="pt-[13px]">
           <SidebarGroupLabel>Labels</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1">
               {MAIL_LABELS.map((item) => (
                 <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton asChild isActive={label === item.id}>
+                  {/* The dot's column lines its text up with the folder names above. */}
+                  <SidebarMenuButton
+                    asChild
+                    isActive={label === item.id}
+                    className="gap-[11.5px] pl-[11.5px] text-[11.5px] font-normal"
+                  >
                     <Link
                       to="/mail"
                       search={(prev) => ({
@@ -370,7 +382,7 @@ export default function MailPanel() {
                         mail: undefined,
                       })}
                     >
-                      <span className={`${item.color} size-2.5 shrink-0 rounded-sm`} />
+                      <span className={`${item.color} size-1.5 shrink-0 rounded-full`} />
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
