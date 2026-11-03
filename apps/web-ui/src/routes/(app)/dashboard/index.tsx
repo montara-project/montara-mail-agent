@@ -1,9 +1,11 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import {
   ArrowRight,
   ChevronRight,
   Inbox,
+  Loader2,
+  Plus,
   Search,
   ShieldCheck,
   ShieldX,
@@ -16,26 +18,35 @@ import type { Models } from '@/lib/api/models'
 import type { MailScope } from '@/lib/api/queries/mail'
 
 import { ProviderIcon } from '@/components/block/account/connector-list'
-import PageContainer from '@/components/block/common/page-container'
 import QueryState from '@/components/block/common/query-state'
 import SectionCard from '@/components/block/common/section-card'
+import { SettingsPage } from '@/components/block/common/settings-card'
 import MailStats from '@/components/block/dashboard/mail-stats'
 import ComposeSheet from '@/components/block/mail/compose-sheet'
-import { formatMailListDate, senderName } from '@/components/layout/mail/mail-data'
+import { senderName } from '@/components/layout/mail/mail-data'
 import { useMailAccounts, useSplitInbox } from '@/components/layout/mail/mail-panel'
-import { Badge } from '@/components/ui/badge'
+import { SEARCH_KEYS } from '@/components/layout/mail/mail-search'
 import { Button } from '@/components/ui/button'
 import { Input, InputWrapper } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useActiveOrganization } from '@/hooks/use-active-organization'
 import { useHideEmails } from '@/hooks/use-hide-emails'
+import { toastAxiosError } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
+import { shortDay } from '@/lib/date'
+import { cn } from '@/lib/utils'
 
 /** Rows shown per card; the cards link to Mail for the rest. */
-const RECENT_LIMIT = 5
+const RECENT_LIMIT = 6
 const QUARANTINE_LIMIT = 3
 
-// The search shortcut as the mail list writes it; Ctrl K works everywhere but a Mac.
+/** A card head's quiet link; the extra block padding keeps a 24px target. */
+const HEAD_LINK =
+  'text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 rounded-chip -my-1 flex items-center gap-1 py-1 text-[11.5px] font-medium outline-none focus-visible:ring-[3px] [&_svg]:size-3'
+/** An edge-to-edge row inside a card; the card clips its corners. */
+const ROW_LINK =
+  'hover:bg-accent/50 focus-visible:ring-ring/50 outline-none focus-visible:ring-[3px] focus-visible:ring-inset'
+
 /**
  * Deterministic per-sender avatar color from the design's palette, so each
  * sender keeps the same tint across visits.
@@ -47,9 +58,6 @@ function avatarColor(seed: string) {
   for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) | 0
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
 }
-
-const SEARCH_KEYS =
-  typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K'
 
 /** The scope both mail cards read: every account of the active organization. */
 function useOrgScope(): MailScope | undefined {
@@ -86,29 +94,38 @@ function DashboardToolbar() {
   return (
     <div className="flex flex-wrap items-center gap-3">
       <form onSubmit={submit} className="min-w-56 flex-1">
-        <InputWrapper className="rounded-lg bg-card border-border">
-          <Search />
+        <InputWrapper className="bg-card border-border gap-2 rounded-md">
+          <Search className="size-[15px]" />
           <Input
             ref={searchRef}
             placeholder="Search messages, senders or attachments"
             aria-label="Search mail"
             value={term}
             onChange={(event) => setTerm(event.target.value)}
+            className="text-[12.5px] pointer-coarse:text-base"
           />
-          <kbd className="bg-secondary rounded-tag px-1.5 py-0.5 text-[10.5px] font-semibold text-muted-foreground">
+          <kbd className="bg-secondary rounded-tag px-1.5 py-0.5 font-sans text-[10.5px] font-semibold text-muted-foreground">
             {SEARCH_KEYS}
           </kbd>
         </InputWrapper>
       </form>
       {/* The folder and label filters live on the mail page. */}
-      <Button asChild variant="ghost" className="text-muted-foreground">
+      <Button
+        asChild
+        variant="outline"
+        className="bg-card border-border text-muted-foreground text-[12.5px] shadow-none"
+      >
         <Link to="/mail">
-          <SlidersHorizontal />
+          <SlidersHorizontal className="size-3.5" />
           Filter
         </Link>
       </Button>
-      <Button onClick={() => setComposing(true)} disabled={!accounts?.length}>
-        <SquarePen />
+      <Button
+        onClick={() => setComposing(true)}
+        disabled={!accounts?.length}
+        className="gap-[7px] px-3.5 text-[12.5px] font-bold"
+      >
+        <SquarePen className="size-3.5" />
         Compose
       </Button>
       <ComposeSheet
@@ -130,10 +147,14 @@ function MessageRow({ mail }: { mail: Models.Mail }) {
     <Link
       to="/mail"
       search={{ mail: mail.id }}
-      className="hover:bg-accent/50 focus-visible:ring-ring/50 -mx-4 flex items-start gap-3 rounded-md px-4 py-[11px] outline-none focus-visible:ring-[3px]"
+      className={cn(
+        ROW_LINK,
+        'flex items-center gap-3 px-4 py-[11px]',
+        !mail.is_read && 'bg-muted'
+      )}
     >
       <span
-        className="mt-0.5 flex size-[34px] shrink-0 items-center justify-center rounded-full border text-[12.5px] font-bold uppercase"
+        className="flex size-[34px] shrink-0 items-center justify-center rounded-full border text-[12.5px] font-bold uppercase"
         style={{
           backgroundColor: `${color}1f`,
           borderColor: `${color}33`,
@@ -143,24 +164,45 @@ function MessageRow({ mail }: { mail: Models.Mail }) {
         {name.charAt(0).toUpperCase()}
       </span>
       <span className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)] gap-0.5">
-        <span className="flex items-baseline gap-1.5">
-          <span className="max-w-[60%] shrink-0 truncate text-sm font-medium">{mask(name)}</span>
+        <span className="flex items-baseline gap-[7px] text-[12.5px] leading-[17px]">
+          <span
+            className={cn(
+              'max-w-[60%] shrink-0 truncate',
+              mail.is_read ? 'text-ink-strong font-semibold' : 'font-bold'
+            )}
+          >
+            {mask(name)}
+          </span>
           {mail.subject && (
-            <span className="text-muted-foreground min-w-0 truncate text-sm">· {mail.subject}</span>
+            <span
+              className={cn(
+                'min-w-0 truncate',
+                mail.is_read ? 'text-muted-foreground font-medium' : 'text-ink-strong font-semibold'
+              )}
+            >
+              · {mail.subject}
+            </span>
           )}
         </span>
-        {mail.teaser && <span className="text-ink-3 truncate text-[11.5px]">{mail.teaser}</span>}
-      </span>
-      <span className="flex shrink-0 items-center gap-1.5 pt-0.5">
-        <span className="text-muted-foreground text-[11px] font-medium tabular-nums">
-          {formatMailListDate(mail.received_at)}
-        </span>
-        {!mail.is_read && (
-          <>
-            <span aria-hidden className="size-1.5 rounded-full bg-foreground" />
-            <span className="sr-only">Unread</span>
-          </>
+        {mail.teaser && (
+          <span className="text-ink-3 truncate text-[11.5px] leading-4">{mail.teaser}</span>
         )}
+      </span>
+      <span className="flex shrink-0 items-center gap-[9px]">
+        <span
+          className={cn(
+            'min-w-13 text-end text-[11px] font-medium tabular-nums',
+            mail.is_read ? 'text-ink-3' : 'text-muted-foreground'
+          )}
+        >
+          {shortDay(new Date(mail.received_at))}
+        </span>
+        {/* A read row keeps the dot's slot, so the times stay in one column. */}
+        <span
+          aria-hidden
+          className={cn('size-1.5 rounded-full', !mail.is_read && 'bg-foreground')}
+        />
+        {!mail.is_read && <span className="sr-only">Unread</span>}
       </span>
     </Link>
   )
@@ -178,20 +220,18 @@ function RecentMessages() {
   return (
     <SectionCard
       title="Recent messages"
+      badge={
+        unread > 0 && (
+          <span className="bg-secondary text-muted-foreground rounded-tag px-[7px] py-0.5 text-[10.5px] leading-[14px] font-semibold tabular-nums">
+            {unread} new
+          </span>
+        )
+      }
       toolbar={
-        <div className="flex items-center gap-2">
-          {unread > 0 && (
-            <Badge variant="secondary" size="sm">
-              {unread} new
-            </Badge>
-          )}
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/mail">
-              View all
-              <ArrowRight />
-            </Link>
-          </Button>
-        </div>
+        <Link to="/mail" className={HEAD_LINK}>
+          View all
+          <ArrowRight />
+        </Link>
       }
     >
       <QueryState
@@ -219,7 +259,7 @@ function RecentMessages() {
           </p>
         }
       >
-        <div className="divide-y">
+        <div className="-m-4 divide-y">
           {mails.map((mail) => (
             <MessageRow key={mail.id} mail={mail} />
           ))}
@@ -229,10 +269,29 @@ function RecentMessages() {
   )
 }
 
+/** The design's quiet Restore: moves the mail back to the inbox, where it
+ * lands as ordinary mail again. The row leaves the list when it lands. */
+function RestoreButton({ mailId, sender }: { mailId: string; sender: string }) {
+  const move = useMutation(queries.mails.move(mailId))
+  return (
+    <Button
+      variant="outline"
+      size="xs"
+      aria-label={`Restore mail from ${sender}`}
+      className="border-border text-ink-strong rounded-chip h-5 shrink-0 bg-transparent px-2 text-[10.5px] font-semibold shadow-none pointer-coarse:h-9"
+      disabled={move.isPending}
+      onClick={() => move.mutate('inbox', { onError: toastAxiosError })}
+    >
+      {move.isPending && <Loader2 className="size-3 animate-spin" aria-hidden />}
+      Restore
+    </Button>
+  )
+}
+
 /**
- * Mail the server held in spam. There is no restore action or per-mail reason
- * on the API, so a row shows what the mail is (its teaser) and links to the
- * spam folder, where "not spam" lives.
+ * Mail the server held in spam. The API carries no per-mail reason, so a row
+ * has no reason chip, only its sender and subject beside the Restore action;
+ * "not spam" verdicts live on the mail page.
  */
 function Quarantined() {
   const scope = useOrgScope()
@@ -246,20 +305,18 @@ function Quarantined() {
   return (
     <SectionCard
       title="Quarantined"
+      badge={
+        total > 0 && (
+          <span className="bg-warning/12 text-warning-ink rounded-tag px-1.5 py-0.5 text-[10.5px] leading-[14px] font-bold tabular-nums">
+            {total}
+          </span>
+        )
+      }
       toolbar={
-        <div className="flex items-center gap-2">
-          {total > 0 && (
-            <Badge variant="secondary" size="sm">
-              {total}
-            </Badge>
-          )}
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/mail" search={{ folder: 'spam' }}>
-              Review all
-              <ChevronRight />
-            </Link>
-          </Button>
-        </div>
+        <Link to="/mail" search={{ folder: 'spam' }} className={HEAD_LINK}>
+          Review all
+          <ChevronRight />
+        </Link>
       }
     >
       <QueryState
@@ -287,26 +344,29 @@ function Quarantined() {
           </p>
         }
       >
-        <div className="divide-y">
-          {mails.map((mail) => (
-            <div
-              key={mail.id}
-              className="-mx-4 flex items-start gap-3 border-t border-border px-4 py-[9px] first:border-t-0"
-            >
-              <span className="bg-warning/10 text-warning mt-0.5 flex size-[26px] shrink-0 items-center justify-center rounded-[7px]">
-                <ShieldX className="size-3" aria-hidden />
-              </span>
-              <div className="grid min-w-0 flex-1 gap-0.5">
-                <span className="truncate text-xs font-semibold text-ink-strong">
-                  {mask(mail.from_email || senderName(mail))}
+        <div className="-m-4">
+          {mails.map((mail) => {
+            const sender = mask(mail.from_email || senderName(mail))
+            return (
+              <div
+                key={mail.id}
+                className="hover:bg-accent/50 flex items-center gap-[11px] px-4 py-[9px]"
+              >
+                <span className="bg-warning/8 text-warning flex size-[26px] shrink-0 items-center justify-center rounded-[7px]">
+                  <ShieldX className="size-[13px]" aria-hidden />
                 </span>
-                <span className="text-ink-3 truncate text-[11.5px]">
-                  {mail.subject || '(no subject)'}
-                </span>
-                {mail.teaser && <span className="text-ink-3 truncate text-xs">{mail.teaser}</span>}
+                <div className="grid min-w-0 flex-1 gap-px">
+                  <span className="text-ink-strong truncate text-xs leading-4 font-semibold">
+                    {sender}
+                  </span>
+                  <span className="text-ink-3 truncate text-[11.5px] leading-4">
+                    {mail.subject || '(no subject)'}
+                  </span>
+                </div>
+                <RestoreButton mailId={mail.id} sender={sender} />
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </QueryState>
     </SectionCard>
@@ -324,7 +384,7 @@ function Mailboxes() {
       title="Mailboxes"
       toolbar={
         accounts ? (
-          <span className="text-muted-foreground text-xs">{accounts.length} connected</span>
+          <span className="text-ink-3 text-[11px]">{accounts.length} connected</span>
         ) : null
       }
     >
@@ -356,59 +416,96 @@ function Mailboxes() {
           </p>
         }
       >
-        <div className="divide-y">
+        <div className="-m-4 divide-y">
           {accounts?.map((account) => (
             <Link
               key={account.id}
               to="/mail"
               search={split ? { account: account.id } : {}}
-              className="hover:bg-accent/50 focus-visible:ring-ring/50 -mx-2 flex items-center gap-3 rounded-md px-2 py-2.5 outline-none focus-visible:ring-[3px]"
+              className={cn(ROW_LINK, 'flex items-center gap-2.5 px-4 py-[13px]')}
             >
-              <span className="grid size-7 shrink-0 place-items-center rounded-[8px] bg-muted">
+              <span className="bg-muted grid size-7 shrink-0 place-items-center rounded-[8px]">
                 <ProviderIcon provider={account.provider} className="size-4" />
               </span>
-              <span className="grid min-w-0 flex-1">
-                <span className="truncate text-xs font-semibold text-ink-strong">
+              <span className="grid min-w-0 flex-1 gap-px">
+                <span className="text-ink-strong truncate text-xs leading-4 font-semibold">
                   {mask(account.label)}
                 </span>
-                <span className="text-ink-3 truncate text-[10.5px]">{mask(account.email)}</span>
-              </span>
-              {account.unread > 0 && (
-                <span className="bg-secondary h-[18px] shrink-0 rounded-chip px-1.5 text-[10.5px] font-bold text-muted-foreground leading-[18px] tabular-nums">
-                  {account.unread}
+                <span className="text-ink-3 truncate text-[10.5px] leading-[14px]">
+                  {mask(account.email)}
                 </span>
-              )}
+              </span>
+              <span
+                className={cn(
+                  'rounded-chip h-[18px] min-w-5 shrink-0 px-1.5 text-center text-[10.5px] leading-[18px] font-bold tabular-nums',
+                  account.unread > 0 ? 'bg-secondary text-muted-foreground' : 'text-ink-3'
+                )}
+              >
+                {account.unread}
+              </span>
             </Link>
           ))}
+
+          {/* The design's connect row: the connectors live on the Account page. */}
+          <Link to="/account" className={cn(ROW_LINK, 'flex items-center gap-2.5 px-4 py-[13px]')}>
+            <span className="text-muted-foreground border-border grid size-7 shrink-0 place-items-center rounded-[8px] border">
+              <Plus className="size-3.5" aria-hidden />
+            </span>
+            <span className="grid min-w-0 flex-1 gap-px">
+              <span className="text-ink-strong truncate text-xs leading-4 font-semibold">
+                Connect a mailbox
+              </span>
+              <span className="text-ink-3 truncate text-[10.5px] leading-[14px]">
+                Gmail, Outlook, Proton and more
+              </span>
+            </span>
+          </Link>
         </div>
       </QueryState>
     </SectionCard>
   )
 }
 
-/** Keyboard routes into the mailbox; the hints render in the mono font. */
+const SHORTCUTS = [
+  { folder: 'inbox', label: 'Open unified inbox', icon: Inbox, digit: '1' },
+  { folder: 'spam', label: 'Spam & blocked', icon: ShieldCheck, digit: '3' },
+] as const
+
+/** Keyboard routes into the mailbox: ⌘ or Ctrl with the row's digit. */
 function Shortcuts() {
+  const navigate = useNavigate()
+
+  React.useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!event.metaKey && !event.ctrlKey) return
+      const shortcut = SHORTCUTS.find((item) => item.digit === event.key)
+      if (!shortcut) return
+      event.preventDefault()
+      navigate({ to: '/mail', search: { folder: shortcut.folder } })
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [navigate])
+
   return (
     <SectionCard title="Shortcuts">
-      <nav aria-label="Shortcuts" className="grid">
-        <Link
-          to="/mail"
-          search={{ folder: 'inbox' }}
-          className="hover:bg-accent/50 focus-visible:ring-ring/50 flex items-center gap-2.5 rounded-[8px] bg-muted px-2 py-[7px] text-xs font-medium text-ink-strong outline-none focus-visible:ring-[3px]"
-        >
-          <Inbox className="text-muted-foreground size-4 shrink-0" aria-hidden />
-          <span className="flex-1">Open unified inbox</span>
-          <kbd className="text-[10.5px] font-semibold text-ink-3">⌘1</kbd>
-        </Link>
-        <Link
-          to="/mail"
-          search={{ folder: 'spam' }}
-          className="hover:bg-accent/50 focus-visible:ring-ring/50 flex items-center gap-2.5 rounded-[8px] bg-muted px-2 py-[7px] text-xs font-medium text-ink-strong outline-none focus-visible:ring-[3px]"
-        >
-          <ShieldCheck className="text-muted-foreground size-4 shrink-0" aria-hidden />
-          <span className="flex-1">Spam &amp; blocked</span>
-          <kbd className="text-[10.5px] font-semibold text-ink-3">⌘3</kbd>
-        </Link>
+      <nav aria-label="Shortcuts" className="-m-4 grid">
+        {SHORTCUTS.map((item) => (
+          <Link
+            key={item.folder}
+            to="/mail"
+            search={{ folder: item.folder }}
+            className={cn(ROW_LINK, 'flex items-center gap-[11px] px-4 py-[12.5px]')}
+          >
+            <span className="bg-muted grid size-[26px] shrink-0 place-items-center rounded-[7px]">
+              <item.icon className="text-muted-foreground size-3.5" aria-hidden />
+            </span>
+            <span className="text-ink-strong flex-1 text-xs font-medium">{item.label}</span>
+            <kbd className="text-ink-3 font-sans text-[10.5px] font-semibold">
+              {SEARCH_KEYS.replace('K', item.digit)}
+            </kbd>
+          </Link>
+        ))}
       </nav>
     </SectionCard>
   )
@@ -420,20 +517,22 @@ export const Route = createFileRoute('/(app)/dashboard/')({
 
 function RouteComponent() {
   return (
-    <PageContainer className="gap-3">
-      <DashboardToolbar />
-      <MailStats />
-      {/* minmax(0,1fr) on every level: an implicit grid track grows to fit a row's nowrap text. */}
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-3 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="grid grid-cols-[minmax(0,1fr)] content-start gap-3">
-          <RecentMessages />
-          <Quarantined />
-        </div>
-        <div className="grid grid-cols-[minmax(0,1fr)] content-start gap-3">
-          <Mailboxes />
-          <Shortcuts />
+    <SettingsPage>
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
+        <DashboardToolbar />
+        <MailStats />
+        {/* minmax(0,1fr) on every level: an implicit grid track grows to fit a row's nowrap text. */}
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
+          <div className="grid grid-cols-[minmax(0,1fr)] content-start gap-4">
+            <RecentMessages />
+            <Quarantined />
+          </div>
+          <div className="grid grid-cols-[minmax(0,1fr)] content-start gap-4">
+            <Mailboxes />
+            <Shortcuts />
+          </div>
         </div>
       </div>
-    </PageContainer>
+    </SettingsPage>
   )
 }

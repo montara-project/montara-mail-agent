@@ -3,7 +3,7 @@ import type { LucideIcon } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
-/** The centered column of one Control Center page: its heading above its cards. */
+/** The centered column of a Control Center, Dashboard or Account page. */
 export function SettingsPage({ children }: { children: React.ReactNode }) {
   return (
     <div className="mx-auto grid w-full max-w-[880px] grid-cols-[minmax(0,1fr)] gap-7 pt-2 pb-6">

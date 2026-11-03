@@ -12,24 +12,37 @@ import { cn } from '@/lib/utils'
 interface SectionCardProps {
   /** Without one the card has no header, for content labelled from outside. */
   title?: string
+  /** Sits right after the title, such as a count. */
+  badge?: React.ReactNode
   description?: string
   toolbar?: React.ReactNode
   children: React.ReactNode
 }
 
 /** One design card on the page: a single surface, no wrapper around it. */
-export default function SectionCard({ title, description, toolbar, children }: SectionCardProps) {
+export default function SectionCard({
+  title,
+  badge,
+  description,
+  toolbar,
+  children,
+}: SectionCardProps) {
   return (
-    <Card className="w-full rounded-lg border-border/60 shadow-hairline">
+    <Card className="w-full overflow-hidden rounded-lg border-border/60 shadow-hairline">
       {title && (
         <CardHeader
           className={cn('flex items-center px-4 py-3', description ? 'min-h-22' : 'min-h-11')}
         >
           <CardHeading className={cn('min-w-0 flex-1', description ? 'basis-56' : 'basis-auto')}>
-            <CardTitle className="text-[13.5px] font-bold leading-snug">{title}</CardTitle>
-            <CardDescription className={cn('text-ink-3 text-sm', !description && 'sr-only')}>
-              {description}
-            </CardDescription>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-[13.5px] leading-[18px] font-bold tracking-normal">
+                {title}
+              </CardTitle>
+              {badge}
+            </div>
+            {description && (
+              <CardDescription className="text-ink-3 text-sm">{description}</CardDescription>
+            )}
           </CardHeading>
 
           {toolbar && <CardToolbar className="shrink-0">{toolbar}</CardToolbar>}

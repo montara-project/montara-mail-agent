@@ -12,6 +12,17 @@ export const clock = (date: Date, separator = ':') =>
     .toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
     .replace(':', separator)
 
+/** "14:21" today, then "Yesterday", a weekday within the week, and "Oct 30" after that. */
+export function shortDay(date: Date) {
+  const midnight = (day: Date) =>
+    new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime()
+  const days = Math.round((midnight(new Date()) - midnight(date)) / 86400000)
+  if (days === 0) return clock(date)
+  if (days === 1) return 'Yesterday'
+  if (days > 1 && days < 7) return date.toLocaleDateString('en-US', { weekday: 'short' })
+  return monthDay(date)
+}
+
 const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
   ['year', 365 * 86400],
   ['month', 30 * 86400],
