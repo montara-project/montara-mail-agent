@@ -55,7 +55,7 @@ export default function MailStats() {
   )
   // The accounts themselves, so the note can tell healthy from failing ones.
   const { data: accounts } = useMailAccounts()
-  const failing = accounts?.filter((account) => account.sync_error).length ?? 0
+  const failing = accounts?.filter((account) => account.sync_error).length
   const withUnread = accounts?.filter((account) => account.unread > 0).length ?? 0
 
   if (isError) {
@@ -87,10 +87,18 @@ export default function MailStats() {
       />
       <StatCard
         label="Accounts"
-        icon={failing > 0 ? CircleAlert : CircleCheck}
-        mark={failing > 0 ? 'text-warning' : 'text-success'}
+        icon={failing ? CircleAlert : CircleCheck}
+        mark={failing ? 'text-warning' : 'text-success'}
         value={data?.accounts}
-        note={failing > 0 ? `${failing} need attention` : 'all connections healthy'}
+        note={
+          failing === undefined ? (
+            <Skeleton className="h-3 w-28" />
+          ) : failing > 0 ? (
+            `${failing} need attention`
+          ) : (
+            'all connections healthy'
+          )
+        }
       />
     </section>
   )

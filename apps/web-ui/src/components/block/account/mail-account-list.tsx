@@ -334,18 +334,21 @@ export default function MailAccountList() {
             ))}
           </div>
         )}
-        <StatusDot
-          className={cn(
-            'text-ink-3 gap-2',
-            labels.length === 0 && 'bg-card border-border/60 rounded-[10px] border p-2'
-          )}
-          status={failing > 0 ? 'failed' : 'healthy'}
-          label={
-            failing > 0
-              ? `${failing} connection${failing === 1 ? '' : 's'} need attention`
-              : 'All connections healthy'
-          }
-        />
+        {/* Only a loaded, non-empty list can vouch for its connections. */}
+        {!!accounts?.length && (
+          <StatusDot
+            className={cn(
+              'text-ink-3 gap-2',
+              labels.length === 0 && 'bg-card border-border/60 rounded-[10px] border p-2'
+            )}
+            status={failing > 0 ? 'failed' : 'healthy'}
+            label={
+              failing > 0
+                ? `${failing} connection${failing === 1 ? '' : 's'} need attention`
+                : 'All connections healthy'
+            }
+          />
+        )}
       </div>
       {content()}
       <p className="text-ink-3 text-[11.5px] leading-4">
