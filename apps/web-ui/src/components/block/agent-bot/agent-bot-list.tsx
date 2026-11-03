@@ -16,7 +16,7 @@ import type { Models } from '@/lib/api/models'
 
 import { AddAgentBotForm, EditAgentBotForm } from '@/components/block/agent-bot/agent-bot-form'
 import SectionHeading from '@/components/block/common/section-heading'
-import { SettingsListCard, SettingsPage } from '@/components/block/common/settings-card'
+import { SettingsCard, SettingsPage } from '@/components/block/common/settings-card'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -193,8 +193,9 @@ export default function AgentBotList({ organizationId }: { organizationId: strin
       />
 
       <div className="grid gap-5">
-        <SettingsListCard
+        <SettingsCard
           icon={Bot}
+          tone="ai"
           title="Your agent bots"
           description="Personas the AI assistant can speak as"
           count={bots.length || undefined}
@@ -229,10 +230,11 @@ export default function AgentBotList({ organizationId }: { organizationId: strin
               ))}
             </ul>
           )}
-        </SettingsListCard>
+        </SettingsCard>
 
-        <SettingsListCard
+        <SettingsCard
           icon={Bot}
+          tone="ai"
           title="What a bot will do"
           description="The shape of the feature, so you know what to expect"
           count={STEPS.length}
@@ -255,7 +257,7 @@ export default function AgentBotList({ organizationId }: { organizationId: strin
           }
         >
           <WhatABotDoes />
-        </SettingsListCard>
+        </SettingsCard>
       </div>
 
       <AddAgentBotForm organizationId={organizationId} open={openAdd} onOpenChange={setOpenAdd} />

@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Copy, KeyRound, Link, Plus, Trash2 } from 'lucide-react'
+import { Copy, KeyRound, Link, Plug, Plus, Trash2 } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
@@ -352,7 +352,7 @@ export default function APIKeyList() {
 
       <div className="grid gap-5">
         <GroupLabel>Connection</GroupLabel>
-        <SettingsCard dense title="MCP endpoint">
+        <SettingsCard icon={Plug} tone="info" body="form" title="MCP endpoint">
           <div className="flex min-w-0 items-center gap-2.5">
             <code
               title={MCP_ENDPOINT}
@@ -378,7 +378,9 @@ export default function APIKeyList() {
 
         <GroupLabel>Keys</GroupLabel>
         <SettingsCard
-          dense
+          icon={KeyRound}
+          tone="info"
+          body="form"
           title="Active keys"
           description="One key per app, so you can revoke each one alone."
           action={

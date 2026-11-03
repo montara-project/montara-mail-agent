@@ -23,7 +23,7 @@ import React from 'react'
 import type { Models } from '@/lib/api/models'
 
 import EmptyState from '@/components/block/common/empty-state'
-import { SettingsListCard } from '@/components/block/common/settings-card'
+import { SettingsCard } from '@/components/block/common/settings-card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useHideEmails } from '@/hooks/use-hide-emails'
@@ -242,8 +242,9 @@ export default function ActivityLogList({
   }
 
   return (
-    <SettingsListCard
+    <SettingsCard
       icon={History}
+      tone="success"
       title={title}
       description={description}
       count={audit ? total : entries.length}
@@ -264,6 +265,6 @@ export default function ActivityLogList({
       }
     >
       {content()}
-    </SettingsListCard>
+    </SettingsCard>
   )
 }

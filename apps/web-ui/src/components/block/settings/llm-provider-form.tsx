@@ -25,11 +25,10 @@ import type {
 import EmptyState from '@/components/block/common/empty-state'
 import Hint from '@/components/block/common/hint'
 import SectionHeading from '@/components/block/common/section-heading'
-import { SettingsPage } from '@/components/block/common/settings-card'
+import { SettingsCard, SettingsPage } from '@/components/block/common/settings-card'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import SimpleAlertScrollableDialogForm from '@/components/block/common/simple-alert-scrollable-dialog-form'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -581,18 +580,16 @@ export default function LLMProviderSettings() {
         description={`Endpoints and models for your AI features. ${organization?.name ?? 'This workspace'} falls back to the platform router.`}
       />
 
-      <Card className="overflow-hidden rounded-lg shadow-none">
-        <div className="flex items-center justify-between gap-2.5 px-4 py-3.5">
-          <div className="flex min-w-0 flex-1 items-center gap-[9px]">
-            <Cpu className="text-ink-3 size-[13px] shrink-0" aria-hidden />
-            <div className="grid min-w-0 gap-1">
-              <h2 className="text-[13.5px] leading-[18px] font-bold">Configured providers</h2>
-              <p className="text-ink-3 text-[11px] leading-[15px] text-pretty">
-                {providerStatus(organization, data) ??
-                  'Every provider this account can reach, and where each one runs.'}
-              </p>
-            </div>
-          </div>
+      <SettingsCard
+        icon={Cpu}
+        tone="ai"
+        body="flush"
+        title="Configured providers"
+        description={
+          providerStatus(organization, data) ??
+          'Every provider this account can reach, and where each one runs.'
+        }
+        action={
           <Button
             variant="secondary"
             className="border-border bg-muted hover:bg-accent h-[27px] shrink-0 gap-1.5 rounded-[7px]! border px-[11px] text-[11px] leading-[15px] font-semibold shadow-none [&_svg]:size-[11px] pointer-coarse:h-11"
@@ -601,21 +598,19 @@ export default function LLMProviderSettings() {
             <Plus />
             <span>Add provider</span>
           </Button>
-        </div>
-
-        <div className="bg-input h-px" aria-hidden />
-
+        }
+        footer={
+          <div className="flex items-center gap-2">
+            <Info className="text-ink-faint size-[11px] shrink-0" aria-hidden />
+            <p className="text-ink-3 text-[10.5px] leading-[14px] text-pretty">
+              Requests route to the first provider with a valid key, then fall back to the platform
+              router.
+            </p>
+          </div>
+        }
+      >
         {content()}
-
-        <div className="bg-input h-px" aria-hidden />
-        <div className="flex items-center gap-2 px-4 py-[11px]">
-          <Info className="text-ink-faint size-[11px] shrink-0" aria-hidden />
-          <p className="text-ink-3 text-[10.5px] leading-[14px] text-pretty">
-            Requests route to the first provider with a valid key, then fall back to the platform
-            router.
-          </p>
-        </div>
-      </Card>
+      </SettingsCard>
 
       {openAdd && <ProviderDialog open onOpenChange={setOpenAdd} scopeOptions={scopeOptions} />}
     </SettingsPage>

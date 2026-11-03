@@ -8,7 +8,7 @@ import type { Models } from '@/lib/api/models'
 
 import QueryState from '@/components/block/common/query-state'
 import SectionHeading from '@/components/block/common/section-heading'
-import { SettingsListCard, SettingsPage } from '@/components/block/common/settings-card'
+import { SettingsCard, SettingsPage } from '@/components/block/common/settings-card'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import SimpleAlertScrollableDialogForm from '@/components/block/common/simple-alert-scrollable-dialog-form'
 import { Button } from '@/components/ui/button'
@@ -224,8 +224,9 @@ export default function IPBlockList() {
         }
       />
 
-      <SettingsListCard
+      <SettingsCard
         icon={Ban}
+        tone="warning"
         title="Blocked addresses"
         description="Addresses and ranges that cannot reach your mail"
         action={
@@ -279,7 +280,7 @@ export default function IPBlockList() {
             ))}
           </ul>
         </QueryState>
-      </SettingsListCard>
+      </SettingsCard>
 
       {blocking && (
         <BlockDialog yourIP={data?.metadata.your_ip} onClose={() => setBlocking(false)} />

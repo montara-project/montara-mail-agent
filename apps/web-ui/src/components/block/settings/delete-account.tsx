@@ -78,7 +78,9 @@ export default function DeleteAccountSettings() {
         <PermanentNotice />
 
         <SettingsCard
-          dense
+          icon={Trash2}
+          tone="danger"
+          body="form"
           title="Confirm deletion"
           description="Type your account email to enable the button."
         >

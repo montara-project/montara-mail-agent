@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
+import { EyeOff, Inbox } from 'lucide-react'
 import React from 'react'
 
 import SectionHeading from '@/components/block/common/section-heading'
@@ -105,7 +106,12 @@ export default function MailSettings() {
         description="Inbox layout and what this browser shows on screen."
       />
       <div className="grid gap-5">
-        <SettingsCard rows title="Inbox" description="How your connected accounts show up in Mail.">
+        <SettingsCard
+          icon={Inbox}
+          tone="info"
+          title="Inbox"
+          description="How your connected accounts show up in Mail."
+        >
           <SplitInboxRow />
           <ToggleRow
             soon
@@ -114,7 +120,12 @@ export default function MailSettings() {
             description="Group replies into a single thread instead of separate messages."
           />
         </SettingsCard>
-        <SettingsCard rows title="Privacy" description="What this browser shows on screen.">
+        <SettingsCard
+          icon={EyeOff}
+          tone="info"
+          title="Privacy"
+          description="What this browser shows on screen."
+        >
           <HideEmailsRow />
           <ToggleRow
             soon

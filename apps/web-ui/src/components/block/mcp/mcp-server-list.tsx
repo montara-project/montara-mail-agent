@@ -12,6 +12,7 @@ import {
   RefreshCw,
   Server,
   Trash2,
+  Link2,
 } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
@@ -21,12 +22,11 @@ import type { Models } from '@/lib/api/models'
 import EmptyState from '@/components/block/common/empty-state'
 import QueryState from '@/components/block/common/query-state'
 import SectionHeading from '@/components/block/common/section-heading'
-import { SettingsListCard, SettingsPage } from '@/components/block/common/settings-card'
+import { SettingsCard, SettingsPage } from '@/components/block/common/settings-card'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import MCPServerDialog from '@/components/block/mcp/mcp-server-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { toastAxiosError } from '@/lib/api/axios-error'
@@ -458,10 +458,13 @@ export default function MCPServerList({ organizationId }: { organizationId: stri
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
         {/* The one value every client config needs, with the copy that saves typing it. */}
-        <Card className="gap-3 rounded-lg p-[18px] shadow-none">
-          <p className="text-ink-faint font-mono text-[9.5px] leading-3 font-semibold tracking-[1px] uppercase">
-            Endpoint
-          </p>
+        <SettingsCard
+          icon={Link2}
+          tone="ai"
+          body="form"
+          title="Endpoint"
+          description="Streamable HTTP only. Keys are scoped to this endpoint and can be revoked at any time."
+        >
           <div className="flex min-w-0 items-center gap-2.5">
             <code
               title={MCP_ENDPOINT}
@@ -479,13 +482,11 @@ export default function MCPServerList({ organizationId }: { organizationId: stri
               Copy
             </Button>
           </div>
-          <p className="text-ink-3 text-[11px] leading-[15px] text-pretty">
-            Streamable HTTP only. Keys are scoped to this endpoint and can be revoked at any time.
-          </p>
-        </Card>
+        </SettingsCard>
 
-        <SettingsListCard
+        <SettingsCard
           icon={Server}
+          tone="ai"
           title="Registered servers"
           description="Their tools are offered to the assistant chat, never to automatic drafts"
           count={connected}
@@ -547,7 +548,7 @@ export default function MCPServerList({ organizationId }: { organizationId: stri
               ))}
             </ul>
           </QueryState>
-        </SettingsListCard>
+        </SettingsCard>
       </div>
 
       {openAdd && (

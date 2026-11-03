@@ -134,7 +134,7 @@ function Setup({ setup, onClose }: { setup: Models.TOTPSetup; onClose: () => voi
         <h3 className="font-medium">3. Enter a code</h3>
         <Field>
           <FieldLabel htmlFor="totp-confirm">Code from the app</FieldLabel>
-          <OTPCodeInput id="totp-confirm" value={code} onChange={setCode} />
+          <OTPCodeInput id="totp-confirm" size="sm" value={code} onChange={setCode} />
         </Field>
         <div className="flex gap-2">
           <Button type="submit" disabled={verifying || !code.trim()}>
@@ -266,6 +266,9 @@ export default function TOTPSettings() {
 
   return (
     <SettingsCard
+      icon={ShieldCheck}
+      tone="success"
+      body="form"
       title="Two-factor authentication"
       description="A code from your phone on top of the password."
     >

@@ -1,10 +1,9 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { type LucideIcon, MessageSquare, PanelRight } from 'lucide-react'
+import { type LucideIcon, MessageSquare, PanelRight, SlidersHorizontal } from 'lucide-react'
 
 import SectionHeading from '@/components/block/common/section-heading'
 import { SettingsCard, SettingsPage } from '@/components/block/common/settings-card'
 import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { toastAxiosError } from '@/lib/api/axios-error'
@@ -182,32 +181,38 @@ export default function AgentPanelSettings() {
       />
 
       <div className="grid gap-5">
-        <div className="grid gap-5">
-          <h2 className="text-ink-faint font-mono text-[9.5px] leading-[13px] font-semibold tracking-[1px] uppercase">
-            Placement
-          </h2>
-          <Card className="overflow-hidden rounded-lg shadow-none">
-            <div
-              role="radiogroup"
-              aria-label="Where the assistant sits in Mail"
-              className="divide-border divide-y"
-            >
-              {OPTIONS.map((option) => (
-                <PlacementOption
-                  key={option.value}
-                  option={option}
-                  selected={value === option.value}
-                  disabled={isPending || update.isPending}
-                  onSelect={(next) =>
-                    update.mutate({ agent_panel: next }, { onError: toastAxiosError })
-                  }
-                />
-              ))}
-            </div>
-          </Card>
-        </div>
+        <SettingsCard
+          icon={PanelRight}
+          tone="ai"
+          body="flush"
+          title="Placement"
+          description="Where the assistant sits in Mail."
+        >
+          <div
+            role="radiogroup"
+            aria-label="Where the assistant sits in Mail"
+            className="divide-border divide-y"
+          >
+            {OPTIONS.map((option) => (
+              <PlacementOption
+                key={option.value}
+                option={option}
+                selected={value === option.value}
+                disabled={isPending || update.isPending}
+                onSelect={(next) =>
+                  update.mutate({ agent_panel: next }, { onError: toastAxiosError })
+                }
+              />
+            ))}
+          </div>
+        </SettingsCard>
 
-        <SettingsCard rows title="Behaviour" description="Defaults for every new conversation.">
+        <SettingsCard
+          icon={SlidersHorizontal}
+          tone="ai"
+          title="Behaviour"
+          description="Defaults for every new conversation."
+        >
           {BEHAVIOUR.map((item) => (
             <BehaviourRow key={item.id} {...item} />
           ))}

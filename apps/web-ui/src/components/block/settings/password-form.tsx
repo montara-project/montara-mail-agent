@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
+import { KeyRound, LogIn } from 'lucide-react'
 import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
@@ -101,7 +102,13 @@ function SignInMethod({ security }: { security: Models.UserSecurity }) {
   const { mask } = useHideEmails()
 
   return (
-    <SettingsCard title="Sign-in method" description="How you sign in to Montara.">
+    <SettingsCard
+      icon={LogIn}
+      tone="success"
+      body="form"
+      title="Sign-in method"
+      description="How you sign in to Montara."
+    >
       {security.has_google ? (
         <div className="grid gap-3">
           <div className="flex items-center gap-3 text-sm">
@@ -133,7 +140,13 @@ export default function PasswordSettings() {
   if (isPending) return <Skeleton className="h-40" />
   if (isError) {
     return (
-      <SettingsCard title="Sign-in method" description="How you sign in to Montara.">
+      <SettingsCard
+        icon={LogIn}
+        tone="success"
+        body="form"
+        title="Sign-in method"
+        description="How you sign in to Montara."
+      >
         <p className="text-destructive text-sm">{axiosErrorMessage(error)}</p>
       </SettingsCard>
     )
@@ -144,6 +157,9 @@ export default function PasswordSettings() {
       {(data.has_google || !data.has_password) && <SignInMethod security={data} />}
       {data.has_password && (
         <SettingsCard
+          icon={KeyRound}
+          tone="success"
+          body="form"
           title="Change password"
           description="Use a password you don't use anywhere else."
         >

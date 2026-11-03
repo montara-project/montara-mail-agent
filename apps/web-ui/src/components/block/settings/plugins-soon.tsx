@@ -1,7 +1,7 @@
 import { ArrowUpRight, Blocks, Info, Puzzle } from 'lucide-react'
 
 import SectionHeading from '@/components/block/common/section-heading'
-import { SettingsListCard, SettingsPage } from '@/components/block/common/settings-card'
+import { SettingsCard, SettingsPage } from '@/components/block/common/settings-card'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 
@@ -63,8 +63,9 @@ export default function PluginsSoon() {
           </div>
         </Card>
 
-        <SettingsListCard
+        <SettingsCard
           icon={Blocks}
+          tone="ai"
           title="Coming to the registry"
           description="Placeholder listings showing the shape of each plugin"
           count={PLANNED.length}
@@ -114,7 +115,7 @@ export default function PluginsSoon() {
               </li>
             ))}
           </ul>
-        </SettingsListCard>
+        </SettingsCard>
       </div>
     </SettingsPage>
   )

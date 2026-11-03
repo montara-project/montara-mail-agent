@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import {
+  Construction,
   FileText,
   Handshake,
   Languages,
@@ -9,6 +10,7 @@ import {
   RefreshCw,
   Reply,
   Send,
+  Sparkles,
   SpellCheck,
   SquarePen,
   Tags,
@@ -20,9 +22,8 @@ import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
 
-import EmptyState from '@/components/block/common/empty-state'
-import SectionCard from '@/components/block/common/section-card'
 import SectionHeading from '@/components/block/common/section-heading'
+import { SettingsCard, SettingsPage } from '@/components/block/common/settings-card'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -41,15 +42,6 @@ import { queries } from '@/lib/api/queries'
 import { botOptions, fromBotSelect, toBotSelect } from './skill-bot'
 import { AddSkillForm, EditSkillForm } from './skill-form'
 
-/** The tile tint each built-in skill carries, per the design's per-skill hues. */
-const SKILL_TINTS: Record<string, string> = {
-  summarize: 'var(--accent-ink)',
-  draft_reply: 'var(--success)',
-  organize: 'var(--warning)',
-  translate: 'var(--info)',
-  translate_reply: 'var(--info)',
-}
-
 /**
  * The built-in skills' icons, also used by the reader's Skills menu. */
 export const SKILL_ICONS: Record<string, typeof Wand2> = {
@@ -65,6 +57,15 @@ export const SKILL_ICONS: Record<string, typeof Wand2> = {
   translate_reply: Languages,
 }
 
+/** The design's tiny mono tag, on the skills whose output lands in your draft. */
+function DraftBadge() {
+  return (
+    <span className="bg-muted text-ink-faint rounded-[4px] px-[5px] py-px font-mono text-[8.5px] leading-3 font-semibold tracking-[0.4px] uppercase">
+      Your draft
+    </span>
+  )
+}
+
 /** A built-in skill: switch it on or off and pick the bot that runs it. */
 function BuiltinSkillRow({
   organizationId,
@@ -77,7 +78,6 @@ function BuiltinSkillRow({
 }) {
   const save = useMutation(queries.agentSkills.setBuiltin(organizationId, skill.key))
   const Icon = SKILL_ICONS[skill.key] ?? Wand2
-  const tint = SKILL_TINTS[skill.key] ?? 'var(--accent-ink)'
 
   const change = (next: { is_enabled?: boolean; agent_bot_id?: string }) =>
     save.mutate(
@@ -90,35 +90,28 @@ function BuiltinSkillRow({
 
   return (
     <li
-      className="bg-muted flex flex-wrap items-center gap-3 rounded-[10px] p-3"
+      className="hover:border-input hover:bg-popover flex flex-wrap items-center gap-x-[11px] gap-y-2 rounded-[9px] border border-transparent px-[9px] py-2 transition-colors duration-150 motion-reduce:transition-none"
       aria-busy={save.isPending}
     >
-      <div
-        className="flex size-[30px] shrink-0 items-center justify-center rounded-lg"
-        style={{ color: tint, backgroundColor: `color-mix(in srgb, ${tint} 12%, transparent)` }}
-      >
-        <Icon className="size-3.5" aria-hidden />
-      </div>
-      <div className="min-w-48 flex-1">
-        <p className="flex items-center gap-2 text-xs font-semibold">
+      <span className="bg-muted text-ink-2 grid size-7 shrink-0 place-items-center rounded-[8px]">
+        <Icon className="size-[13px]" aria-hidden />
+      </span>
+      <div className="grid min-w-0 flex-1 basis-[calc(100%-39px)] gap-px sm:basis-0">
+        <p className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] leading-4 font-semibold">
           {skill.name}
-          {skill.target === 'draft' && (
-            <Badge variant="secondary" appearance="light" size="sm">
-              Your draft
-            </Badge>
-          )}
+          {skill.target === 'draft' && <DraftBadge />}
         </p>
-        <p className="text-ink-3 text-[11px]">{skill.description}</p>
+        <p className="text-ink-3 text-[10.5px] leading-[14px] text-pretty">{skill.description}</p>
       </div>
       {/* On a phone the controls wrap under the text, not the icon. */}
-      <div className="ms-11 flex basis-full items-center gap-3 sm:ms-0 sm:basis-auto">
+      <div className="ms-11 flex basis-full items-center gap-[11px] sm:ms-0 sm:basis-auto">
         <Select
           value={toBotSelect(skill.agent_bot_id)}
           onValueChange={(value) => change({ agent_bot_id: fromBotSelect(value) })}
           indicatorPosition="right"
         >
           <SelectTrigger
-            className="h-8 flex-1 sm:w-52 sm:flex-none"
+            className="bg-muted border-border h-7 w-full flex-1 rounded-[7px] px-2 text-[10.5px] font-medium text-muted-foreground shadow-none pointer-coarse:h-11 sm:w-52 sm:max-w-52 sm:flex-none"
             aria-label={`Agent bot for ${skill.name}`}
             disabled={save.isPending}
           >
@@ -172,21 +165,23 @@ function CustomSkillRow({
   }
 
   return (
-    <li className="bg-muted flex items-center gap-3 rounded-[10px] p-3">
-      <div className="bg-accent-ink/12 text-accent-ink flex size-[30px] shrink-0 items-center justify-center rounded-lg">
-        <Wand2 className="size-3.5" aria-hidden />
+    <li className="hover:border-input hover:bg-popover flex flex-wrap items-center gap-x-[11px] gap-y-2 rounded-[9px] border border-transparent px-[9px] py-2 transition-colors duration-150 motion-reduce:transition-none">
+      <div className="bg-muted text-ink-2 grid size-7 shrink-0 place-items-center rounded-[8px]">
+        <Wand2 className="size-[13px]" aria-hidden />
       </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-xs font-semibold">{skill.name}</p>
-        <p className="text-ink-3 truncate text-[11px]">{skill.description || skill.instruction}</p>
+      <div className="grid min-w-0 flex-1 basis-[calc(100%-39px)] gap-px sm:basis-0">
+        <p className="text-[12px] leading-4 font-semibold wrap-anywhere">{skill.name}</p>
+        <p className="text-ink-3 text-[10.5px] leading-[14px] truncate">
+          {skill.description || skill.instruction}
+        </p>
       </div>
       {botName && (
-        <Badge variant="secondary" appearance="light" size="sm" className="max-w-32">
+        <Badge variant="secondary" appearance="light" size="sm" className="max-w-32 shrink-0">
           <span className="truncate">{botName}</span>
         </Badge>
       )}
       {!skill.is_enabled && (
-        <Badge variant="secondary" appearance="outline" size="sm">
+        <Badge variant="secondary" appearance="outline" size="sm" className="shrink-0">
           Off
         </Badge>
       )}
@@ -194,6 +189,7 @@ function CustomSkillRow({
         variant="ghost"
         mode="icon"
         size="sm"
+        className="shrink-0"
         aria-label={`Edit ${skill.name}`}
         onClick={() => setOpenEdit(true)}
       >
@@ -203,6 +199,7 @@ function CustomSkillRow({
         variant="destructive"
         mode="icon"
         size="sm"
+        className="shrink-0"
         aria-label={`Delete ${skill.name}`}
         onClick={() => setOpenDelete(true)}
       >
@@ -228,6 +225,23 @@ function CustomSkillRow({
   )
 }
 
+/** Shaped like the rows it stands in for, so the list doesn't jump when it lands. */
+function Loading({ rows }: { rows: number }) {
+  return (
+    <div className="grid gap-0.5">
+      {Array.from({ length: rows }, (_, index) => (
+        <div key={index} className="flex items-center gap-x-[11px] px-[9px] py-2">
+          <Skeleton className="size-7 rounded-[8px]" />
+          <div className="grid flex-1 gap-1.5">
+            <Skeleton className="h-3.5 w-40" />
+            <Skeleton className="h-3 w-3/5" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 /** An organization's skills: the built-in ones to switch and staff, and its custom ones. */
 export default function SkillList({ organizationId }: { organizationId: string }) {
   const [openAdd, setOpenAdd] = React.useState(false)
@@ -239,23 +253,8 @@ export default function SkillList({ organizationId }: { organizationId: string }
   const builtin = skills.filter((skill) => skill.builtin)
   const custom = skills.filter((skill) => !skill.builtin)
 
-  // Shaped like the rows it stands in for, so the list doesn't jump when it lands.
-  const loading = (rows: number) => (
-    <div className="grid gap-5 py-3">
-      {Array.from({ length: rows }, (_, index) => (
-        <div key={index} className="flex items-center gap-3">
-          <Skeleton className="size-8 rounded-lg" />
-          <div className="grid flex-1 gap-1.5">
-            <Skeleton className="h-4 w-40" />
-            <Skeleton className="h-3 w-3/5" />
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-
   const builtinContent = () => {
-    if (isPending) return loading(5)
+    if (isPending) return <Loading rows={5} />
     if (isError) {
       return (
         <div role="alert" className="grid justify-items-center gap-3 p-6 text-center text-sm">
@@ -268,7 +267,7 @@ export default function SkillList({ organizationId }: { organizationId: string }
       )
     }
     return (
-      <ul className="grid gap-1.5">
+      <ul className="grid gap-0.5">
         {builtin.map((skill) => (
           <BuiltinSkillRow
             key={skill.key}
@@ -282,17 +281,31 @@ export default function SkillList({ organizationId }: { organizationId: string }
   }
 
   const customContent = () => {
-    if (isPending) return loading(2)
+    if (isPending) return <Loading rows={2} />
     if (custom.length === 0) {
+      // The design's empty state: a tile, the invitation, and its button.
       return (
-        <EmptyState
-          title="No custom skills yet"
-          description="Add one to have the AI extract dates, translate, list tasks, or anything else you do often."
-        />
+        <div className="grid justify-items-center gap-2 py-6 text-center">
+          <span className="bg-muted text-ink-2 grid size-11 place-items-center rounded-[11px]">
+            <Construction className="size-5" aria-hidden />
+          </span>
+          <p className="text-[13px] leading-[18px] font-semibold">No custom skills yet</p>
+          <p className="text-ink-3 max-w-96 text-[11.5px] leading-4 text-pretty">
+            Add one to have the AI extract dates, translate, list tasks, or anything else you keep
+            doing by hand.
+          </p>
+          <Button
+            className="mt-1.5 h-7 gap-1.5 rounded-lg bg-foreground px-3 text-[11.5px] font-semibold text-background shadow-none hover:bg-foreground/90 pointer-coarse:h-11 [&_svg]:size-3"
+            onClick={() => setOpenAdd(true)}
+          >
+            <Plus />
+            <span>Create a skill</span>
+          </Button>
+        </div>
       )
     }
     return (
-      <ul className="grid gap-1.5">
+      <ul className="grid gap-0.5">
         {custom.map((skill) => (
           <CustomSkillRow
             key={skill.key}
@@ -306,21 +319,24 @@ export default function SkillList({ organizationId }: { organizationId: string }
   }
 
   return (
-    <div className="grid gap-5">
-      <div className="grid gap-1.5">
-        <h1 className="text-2xl font-bold">Skills</h1>
-        <p className="text-muted-foreground text-[13px]">
-          Reusable abilities the assistant can call. Enable only what you allow.
-        </p>
-      </div>
-      <section className="grid gap-3">
-        <SectionCard
+    <SettingsPage>
+      <SectionHeading
+        title="Skills"
+        description="Reusable abilities the assistant can call. Enable only what you allow."
+      />
+
+      <div className="grid gap-5">
+        <SettingsCard
+          icon={Sparkles}
+          tone="ai"
           title="Installed skills"
-          description="Each skill runs under your own permissions. A skill with no bot of its own runs as the bot the user picked; only the organization's owner can change them."
+          description="Each skill runs under your own permissions"
+          count={builtin.length || undefined}
+          noun="built-in"
         >
           {builtinContent()}
           {!isError && (
-            <p className="text-ink-3 mt-3 text-xs">
+            <p className="text-ink-faint mt-2 px-2.5 pb-1 text-[11px] leading-[15px] text-pretty">
               Humanize is adapted from{' '}
               <a
                 className="underline underline-offset-2"
@@ -343,31 +359,34 @@ export default function SkillList({ organizationId }: { organizationId: string }
               by Corey Haines. Both are MIT licensed.
             </p>
           )}
-        </SectionCard>
-      </section>
+        </SettingsCard>
 
-      {/* With the list failed, the error above stands for both sections. */}
-      {!isError && (
-        <section className="grid gap-3">
-          <SectionHeading
-            title="Custom Skills"
+        {/* With the list failed, the error above stands for both sections. */}
+        {!isError && (
+          <SettingsCard
+            icon={Wand2}
+            tone="ai"
+            title="Custom skills"
             description="Your own instructions, run on one email at a time."
+            count={custom.length}
+            noun={custom.length === 1 ? 'skill' : 'skills'}
             action={
               <Button
-                variant="secondary"
-                className="h-[30px] rounded-lg border-border bg-muted px-3 text-[11.5px] font-semibold shadow-none [&_svg]:size-3"
+                variant="outline"
+                className="bg-muted border-border h-7 gap-1.5 rounded-lg px-3 text-[11.5px] font-semibold shadow-none pointer-coarse:h-11 [&_svg]:size-3"
                 onClick={() => setOpenAdd(true)}
               >
                 <Plus />
                 <span>Add skill</span>
               </Button>
             }
-          />
-          <SectionCard>{customContent()}</SectionCard>
-        </section>
-      )}
+          >
+            {customContent()}
+          </SettingsCard>
+        )}
+      </div>
 
       <AddSkillForm organizationId={organizationId} open={openAdd} onOpenChange={setOpenAdd} />
-    </div>
+    </SettingsPage>
   )
 }

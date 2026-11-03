@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import type { Models } from '@/lib/api/models'
 
 import EmptyState from '@/components/block/common/empty-state'
-import { SettingsListCard } from '@/components/block/common/settings-card'
+import { SettingsCard } from '@/components/block/common/settings-card'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import { OrganizationsError } from '@/components/block/settings/no-organization'
 import {
@@ -172,8 +172,9 @@ export default function OrganizationList() {
   }
 
   return (
-    <SettingsListCard
+    <SettingsCard
       icon={Building2}
+      tone="info"
       title="Your organizations"
       description={`Control center scope: ${count} ${noun}`}
       count={count}
@@ -214,6 +215,6 @@ export default function OrganizationList() {
       {content()}
 
       <AddOrganizationForm open={openAdd} onOpenChange={setOpenAdd} />
-    </SettingsListCard>
+    </SettingsCard>
   )
 }
