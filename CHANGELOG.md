@@ -3,6 +3,36 @@
 All notable changes to this project are documented in this file. Versions follow the git tags (`v*`); Docker images are published to ghcr.io with the same version.
 
 
+## [1.2.0](https://github.com/montara-project/montara-mail-agent/compare/v1.1.0...v1.2.0) (2026-11-03)
+
+### Features
+
+* add design file ([86f4794](https://github.com/montara-project/montara-mail-agent/commit/86f4794fd7fe971459bde78e24760d26d3d6ced8))
+* **web-ui:** add a compact size to the OTP code input ([6ceca42](https://github.com/montara-project/montara-mail-agent/commit/6ceca42c7b25df7daba94a8a83698df2aa767250))
+* **web-ui:** align the account page with its design ([5db4cb3](https://github.com/montara-project/montara-mail-agent/commit/5db4cb38ea48ec06b00bfac523649bf75da554dc))
+* **web-ui:** rework base palette tokens to dark-first design system ([60ab15d](https://github.com/montara-project/montara-mail-agent/commit/60ab15d69f7edfbe66cdd879e289322c1513723d))
+
+### Bug Fixes
+
+* update billing page ([160d80d](https://github.com/montara-project/montara-mail-agent/commit/160d80d9c646e64e20b32ec0bc9c6ef8e7287fd9))
+* update design ([fce7f84](https://github.com/montara-project/montara-mail-agent/commit/fce7f84c3b1e0d4a79982afb8810398987a94b49))
+* update minor ui and light theme ([e911a24](https://github.com/montara-project/montara-mail-agent/commit/e911a240db9b0db03230fa9886f4f88a30f5a01e))
+* update polish UI ([3335749](https://github.com/montara-project/montara-mail-agent/commit/3335749a3a66d8d42987c1ae528c6ec806a2332d))
+* **web-ui:** align the dashboard with its design ([bb94e6b](https://github.com/montara-project/montara-mail-agent/commit/bb94e6b7b202e283fdfcc53db7e8afccada77ac2))
+* **web-ui:** align the floating assistant and move toasts off its corner ([66d0de4](https://github.com/montara-project/montara-mail-agent/commit/66d0de4a3bd4f446704d9f797b122c5c2615eb14))
+* **web-ui:** align the mail sidebar with its design ([0997e97](https://github.com/montara-project/montara-mail-agent/commit/0997e970aaefd2d9effc84a3fd20bc7eda136b26))
+* **web-ui:** claim healthy connections only once the accounts load ([e26273c](https://github.com/montara-project/montara-mail-agent/commit/e26273c6cdb9f54993d7e2b47aa5915de0430cde))
+* **web-ui:** fit the sign-in card to narrow screens and word the backup step ([e01d045](https://github.com/montara-project/montara-mail-agent/commit/e01d045e9c6d79ed364acdbc1d605ae2f2faa635))
+* **web-ui:** focus the subject once loaded and leave archived mail on E ([2e0a691](https://github.com/montara-project/montara-mail-agent/commit/2e0a6919dbb9c21afd8d3fd34c398001864f619f))
+* **web-ui:** inset settings toggle rows like the skills list ([9cd35d0](https://github.com/montara-project/montara-mail-agent/commit/9cd35d0516a891a8152aab18fd33db59be633b29))
+* **web-ui:** keep rail buttons one size when the sidebar collapses ([1e838ca](https://github.com/montara-project/montara-mail-agent/commit/1e838ca82506f11357023e2ac0be84925e47a274))
+* **web-ui:** keep sidebar and header stable and polish accounts panel ([61d6406](https://github.com/montara-project/montara-mail-agent/commit/61d64061bcc7acff616a116a3089888f86187652))
+* **web-ui:** keep the compose draft on Minus and drop a duplicate file name ([625c030](https://github.com/montara-project/montara-mail-agent/commit/625c030ca03bb9ad1deef1eaa562e6da0653c43b))
+* **web-ui:** match sidebar spacing and footers to the design ([d01462e](https://github.com/montara-project/montara-mail-agent/commit/d01462ea27fa6f2d90b80ba5deb7977576313701))
+* **web-ui:** open the named mailbox from ?account= in either inbox mode ([83aee4c](https://github.com/montara-project/montara-mail-agent/commit/83aee4cc79d4252aff59f0bc7a6679cd49a39ffb))
+* **web-ui:** put the settings index in the settings column ([1aed478](https://github.com/montara-project/montara-mail-agent/commit/1aed478596efb065293289eaf8dbc8a260bb371c))
+* **web-ui:** toast a missing clipboard and name the avatar URL control ([e9b164d](https://github.com/montara-project/montara-mail-agent/commit/e9b164d769ac8b7acea25917e5e23c6fd1881fa7))
+
 ## [1.1.0](https://github.com/montara-project/montara-mail-agent/compare/v1.0.0...v1.1.0) (2026-10-31)
 
 ### Features
