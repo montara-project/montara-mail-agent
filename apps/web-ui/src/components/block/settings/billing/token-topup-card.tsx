@@ -306,7 +306,7 @@ export default function TokenTopUpCard() {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-t border-input px-[1.125rem] py-[0.6875rem]">
-        <p className="text-ink-3 text-[0.71875rem]">
+        <div className="text-ink-3 text-[0.71875rem]">
           Wallet ·{' '}
           {walletQuery.data ? (
             <span className="tabular-nums">{formatRupiah(walletQuery.data.balance_idr)}</span>
@@ -314,7 +314,7 @@ export default function TokenTopUpCard() {
             <Skeleton className="inline-block h-3.5 w-16 align-middle" />
           )}{' '}
           available
-        </p>
+        </div>
         <div className="flex items-center gap-3">
           <span className="flex items-baseline gap-[0.3125rem]">
             <span className="text-ink-3 text-[0.71875rem]">Total</span>
