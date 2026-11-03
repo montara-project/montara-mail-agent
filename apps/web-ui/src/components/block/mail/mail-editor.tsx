@@ -85,6 +85,8 @@ type MailEditorProps = {
   /** Files to send along; with onAttachmentsChange, the bar gets an attach button. */
   attachments?: File[]
   onAttachmentsChange?: (files: File[]) => void
+  /** Set to a function that reads what was written so far, for a parent that closes the editor itself. */
+  snapshotRef?: React.RefObject<(() => Draft | null) | null>
 }
 
 /** The files picked so far, each removable. */
@@ -103,7 +105,6 @@ function AttachmentList({ files, onChange }: { files: File[]; onChange: (files: 
           <span className="text-ink-3 shrink-0 font-mono text-[10.5px]">
             {formatBytes(file.size)}
           </span>
-          <span className="truncate font-medium">{file.name}</span>
           <Hint label="Remove">
             <button
               type="button"
@@ -133,6 +134,7 @@ function EditorBody({
   fill,
   attachments = [],
   onAttachmentsChange,
+  snapshotRef,
 }: MailEditorProps) {
   const fileInput = React.useRef<HTMLInputElement>(null)
   const attach = (picked: FileList | null) => {
@@ -164,12 +166,15 @@ function EditorBody({
     )
   }, [editor, initial])
 
-  const cancel = () => {
-    if (!editor) return onCancel(null)
+  const snapshot = (): Draft | null => {
+    if (!editor) return null
     const state = editor.getEditorState()
     const preview = state.read(() => $getRoot().getTextContent().trim())
-    onCancel(preview ? { state: JSON.stringify(state.toJSON()), preview } : null)
+    return preview ? { state: JSON.stringify(state.toJSON()), preview } : null
   }
+  React.useImperativeHandle(snapshotRef, () => snapshot)
+
+  const cancel = () => onCancel(snapshot())
 
   const send = () => {
     if (!empty && !sending)

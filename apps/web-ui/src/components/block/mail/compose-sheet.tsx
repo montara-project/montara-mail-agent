@@ -65,6 +65,13 @@ export default function ComposeSheet({
   const [problem, setProblem] = React.useState<string | null>(null)
   const [attachments, setAttachments] = React.useState<File[]>([])
   const send = useMutation(queries.emailAccounts.send())
+  // Reads the editor's text, so Minus keeps the draft as Save draft does.
+  const snapshot = React.useRef<(() => Draft | null) | null>(null)
+  const close = () => {
+    // The editor may still be loading; then there is nothing new to keep.
+    if (snapshot.current) setDraft(snapshot.current())
+    onOpenChange(false)
+  }
   const { mask } = useHideEmails()
 
   const fromId = from ?? defaultAccountId
@@ -135,7 +142,7 @@ export default function ComposeSheet({
                 size="icon"
                 className="bg-muted hover:bg-accent size-6 rounded-md shadow-none [&_svg]:size-3"
                 aria-label="Close and keep the draft"
-                onClick={() => onOpenChange(false)}
+                onClick={close}
               >
                 <Minus />
               </Button>
@@ -240,6 +247,7 @@ export default function ComposeSheet({
               sending={send.isPending}
               attachments={attachments}
               onAttachmentsChange={setAttachments}
+              snapshotRef={snapshot}
             />
           </React.Suspense>
         </div>
