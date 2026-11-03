@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 
 import SectionHeading from '@/components/block/common/section-heading'
 import { SettingsPage } from '@/components/block/common/settings-card'
+import PendingPayments from '@/components/block/settings/billing/pending-payments'
 import PlanWalletCard from '@/components/block/settings/billing/plan-wallet-card'
 import PlansComparison from '@/components/block/settings/billing/plans-comparison'
 import RecentTopupsLedger from '@/components/block/settings/billing/recent-topups-ledger'
@@ -23,6 +24,8 @@ export default function QuotaSettings() {
         description="Your plan, the wallet it renews from, and this week's AI usage."
       />
       <div className="grid gap-5">
+        {/* First on the page: an unpaid checkout is the one thing left to do here. */}
+        {showPurchases && <PendingPayments />}
         <PlanWalletCard />
 
         <p className="text-ink-faint font-mono text-[9.5px] font-semibold tracking-[1px] uppercase">

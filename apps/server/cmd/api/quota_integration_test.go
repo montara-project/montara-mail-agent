@@ -168,6 +168,17 @@ func testTokenQuota(t *testing.T, call callFunc, application *app.Application, d
 	if status, _ := call(http.MethodPost, "/api/v1/me/quota/topups", userToken, map[string]any{"tokens": 100_000_000}); status != http.StatusPaymentRequired {
 		t.Fatalf("a 100M purchase against Rp25.000: %d, want 402", status)
 	}
+	// The gateway needs BorderPay, which the test server has no key for; an
+	// unknown method and an amount past the INTEGER column are refused.
+	if status, _ := call(http.MethodPost, "/api/v1/me/quota/topups", userToken, map[string]any{"tokens": 10_000_000, "method": "gateway"}); status != http.StatusServiceUnavailable {
+		t.Fatalf("a gateway purchase without BorderPay: %d, want 503", status)
+	}
+	if status, _ := call(http.MethodPost, "/api/v1/me/quota/topups", userToken, map[string]any{"tokens": 10_000_000, "method": "card"}); status != http.StatusBadRequest {
+		t.Fatalf("an unknown payment method: %d, want 400", status)
+	}
+	if status, _ := call(http.MethodPost, "/api/v1/me/quota/topups", userToken, map[string]any{"tokens": int64(3_000_000) * 1_000_000}); status != http.StatusBadRequest {
+		t.Fatalf("a purchase past the column: %d, want 400", status)
+	}
 	// Leave the wallet as testBilling expects it: untouched, balance-less.
 	if _, err := db.Exec(`DELETE FROM wallet_transactions WHERE user_id = $1 AND kind = 'token_purchase'`, userID); err != nil {
 		t.Fatal(err)

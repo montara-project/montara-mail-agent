@@ -3,10 +3,17 @@ import { isAxiosError } from 'axios'
 
 import { getQueryClient } from '@/lib/providers/react-query'
 
+import type { Models } from '../models'
+
 import { services } from '../services'
 
 const QUOTA_QUERY_KEY = 'quota'
 
+/**
+ * The week's usage and the balances. The server meters each AI call
+ * asynchronously after it answers, so no mutation can know when to refetch:
+ * the bars poll instead, while the page is visible.
+ */
 const status = () =>
   queryOptions({
     queryKey: [QUOTA_QUERY_KEY],
@@ -14,6 +21,7 @@ const status = () =>
       const res = await services.quota.status()
       return res.data.data
     },
+    refetchInterval: 30_000,
   })
 
 /** One page of the top-up history; the last page stays while the next loads. */
@@ -44,7 +52,7 @@ const topup = (id: string) =>
 const createTopup = () => {
   const qc = getQueryClient()
   return mutationOptions({
-    mutationFn: async (body: { tokens: number }) => {
+    mutationFn: async (body: Models.TopupBody) => {
       const res = await services.quota.createTopup(body)
       return res.data.data
     },

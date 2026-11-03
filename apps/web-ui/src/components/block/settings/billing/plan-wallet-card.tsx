@@ -4,11 +4,11 @@ import React from 'react'
 
 import type { Models } from '@/lib/api/models'
 
+import { NumberInput } from '@/components/block/common/number-input'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toastAxiosError } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
@@ -298,16 +298,16 @@ export default function PlanWalletCard() {
               </div>
               <Field>
                 <FieldLabel htmlFor="wallet-topup-amount">Amount in rupiah</FieldLabel>
-                <Input
+                <NumberInput
                   id="wallet-topup-amount"
-                  type="number"
-                  inputMode="numeric"
-                  min={MIN_TOPUP_IDR}
-                  step={1000}
+                  prefix="Rp"
+                  thousandSeparator="."
+                  decimalSeparator=","
+                  decimalScale={0}
+                  allowNegative={false}
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="10000"
-                  className="tabular-nums"
+                  onValueChange={setAmount}
+                  placeholder="Rp10.000"
                 />
                 <FieldDescription>You will be taken to BorderPay's QRIS checkout.</FieldDescription>
               </Field>

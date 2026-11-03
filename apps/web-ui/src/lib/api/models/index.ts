@@ -5,6 +5,7 @@ export namespace Models {
   export type QuotaStatus = import('./quota').QuotaStatus
   export type TokenTopup = import('./quota').TokenTopup
   export type TopupCheckout = import('./quota').TopupCheckout
+  export type TopupBody = import('./quota').TopupBody
   export type BillingPlan = import('./billing').BillingPlan
   export type Subscription = import('./billing').Subscription
   export type WalletBalance = import('./billing').WalletBalance

@@ -231,7 +231,16 @@ function ConnectForm({ connector, onClose }: { connector: Connector; onClose: ()
               />
               <form.AppField
                 name="imap_port"
-                children={(field) => <field.TextField asterisk label="Port" inputMode="numeric" />}
+                children={(field) => (
+                  <field.NumberField
+                    asterisk
+                    label="Port"
+                    decimalScale={0}
+                    thousandSeparator={false}
+                    allowNegative={false}
+                    maxLength={5}
+                  />
+                )}
               />
             </div>
             <div className="grid grid-cols-[1fr_6rem] gap-3">
@@ -243,7 +252,15 @@ function ConnectForm({ connector, onClose }: { connector: Connector; onClose: ()
               />
               <form.AppField
                 name="smtp_port"
-                children={(field) => <field.TextField label="Port" inputMode="numeric" />}
+                children={(field) => (
+                  <field.NumberField
+                    label="Port"
+                    decimalScale={0}
+                    thousandSeparator={false}
+                    allowNegative={false}
+                    maxLength={5}
+                  />
+                )}
               />
             </div>
           </>
