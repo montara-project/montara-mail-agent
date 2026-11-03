@@ -92,8 +92,8 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
     >
       {/* Icon rail: not collapsible, fixed to the icon width. */}
       <Sidebar collapsible="none" className="w-[52px]! shrink-0 border-r">
-        {/* Rail buttons are a fixed centered 2rem square, the same size the collapsed
-        state forces, so nothing moves or resizes when the sidebar toggles. */}
+        {/* Each rail button sets its own centered size from md up, and the menu button
+        no longer resizes in the collapsed state, so nothing moves when the sidebar toggles. */}
         <SidebarHeader className="p-2.5 pb-0 md:items-center">
           <SidebarMenu>
             <SidebarMenuItem>

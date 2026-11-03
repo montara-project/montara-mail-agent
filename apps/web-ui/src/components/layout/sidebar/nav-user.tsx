@@ -69,7 +69,7 @@ export default function NavUser({ user, userError, onRetryUser }: NavUserProps) 
         <SidebarMenuItem>
           <SidebarMenuButton
             size="lg"
-            className="text-destructive md:mx-auto md:size-8 md:p-2 group-data-[collapsible=icon]:p-2!"
+            className="text-destructive md:mx-auto md:size-8 md:p-2"
             tooltip={{ children: "Couldn't load your profile. Try again", hidden: false }}
             onClick={onRetryUser}
           >
