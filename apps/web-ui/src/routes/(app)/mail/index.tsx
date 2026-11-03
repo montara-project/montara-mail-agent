@@ -121,17 +121,27 @@ function RouteComponent() {
   const { data: page } = useMailPage()
   const mails = page?.data ?? []
   const bulk = useMutation(queries.mails.bulk())
+  // The mail a J/K step opened: its reader takes the focus once it loads.
+  const [focusMailId, setFocusMailId] = React.useState<string>()
   const moveArchive = React.useEffectEvent(async (id: string) => {
+    // The neighbour to open once the mail leaves the folder, as the reader's own Archive does.
+    const index = mails.findIndex((item) => item.id === id)
+    const neighbour = index === -1 ? undefined : (mails[index + 1] ?? mails[index - 1])
     const progress = toastProgress('Archiving 1 mail...')
     try {
       const res = await bulk.mutateAsync({ action: 'move', folder: 'archive', ids: [id] })
       progress.success(res.message ?? 'Done')
+      // Only while it is still the open mail: the user may have moved on meanwhile.
+      await navigate({
+        to: '/mail',
+        search: (prev) => (prev.mail === id ? { ...prev, mail: neighbour?.id } : prev),
+      })
     } catch (error) {
       progress.error(error)
     }
   })
   const onKey = React.useEffectEvent(async (event: KeyboardEvent) => {
-    if (event.metaKey || event.ctrlKey || event.altKey) return
+    if (event.metaKey || event.ctrlKey || event.altKey || event.repeat) return
     const key = event.key.toLowerCase()
     if (key !== 'j' && key !== 'k' && key !== 'e') return
     const target = event.target as HTMLElement | null
@@ -144,7 +154,10 @@ function RouteComponent() {
     )
       return
     if (key === 'e') {
-      if (mailId) void moveArchive(mailId)
+      if (mailId && !bulk.isPending) {
+        event.preventDefault()
+        void moveArchive(mailId)
+      }
       return
     }
     if (!mails.length) return
@@ -160,12 +173,11 @@ function RouteComponent() {
           ? undefined
           : mails[index - 1]
     if (next) {
-      await navigate({ to: '/mail', search: (prev) => ({ ...prev, mail: next.id }) })
+      event.preventDefault()
       // Move focus with the selection: screen readers announce the new subject
       // heading, and sighted keyboard users see the reader is the focus target.
-      requestAnimationFrame(() =>
-        document.querySelector<HTMLElement>('[data-mail-subject]')?.focus()
-      )
+      setFocusMailId(next.id)
+      await navigate({ to: '/mail', search: (prev) => ({ ...prev, mail: next.id }) })
     }
   })
   React.useEffect(() => {
@@ -200,7 +212,7 @@ function RouteComponent() {
           className={cn('w-full md:w-80 lg:w-96 bg-background', mailId && 'hidden md:flex')}
         />
         {mailId ? (
-          <MailReader key={mailId} mailId={mailId} />
+          <MailReader key={mailId} mailId={mailId} focusSubject={focusMailId === mailId} />
         ) : (
           <div className="bg-background text-foreground relative hidden flex-1 md:block">
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 px-6 text-center">

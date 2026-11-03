@@ -92,7 +92,14 @@ const MOVE_TARGETS: Models.MailMoveTarget[] = ['inbox', 'archive', 'spam', 'tras
 const folderTitle = (id: Models.MailFolder) => MAIL_FOLDERS.find((f) => f.id === id)?.title ?? id
 
 /** Reading pane for one mail: toolbar, header, AI importance and summary, body and reply box. */
-export default function MailReader({ mailId }: { mailId: string }) {
+export default function MailReader({
+  mailId,
+  focusSubject,
+}: {
+  mailId: string
+  /** Moves focus to the subject once the mail has loaded (the J/K shortcuts). */
+  focusSubject?: boolean
+}) {
   const navigate = useNavigate()
   const { data: mail, isPending, isError, error, refetch } = useQuery(queries.mails.get(mailId))
   const patch = useMutation(queries.mails.patch(mailId))
@@ -200,6 +207,13 @@ export default function MailReader({ mailId }: { mailId: string }) {
   }
   const update = (body: Parameters<typeof patch.mutate>[0], then?: () => void) =>
     patch.mutate(body, { onSuccess: then, onError: toastAxiosError })
+
+  // The subject exists only once the mail loads, so the focus waits for it.
+  const subjectRef = React.useRef<HTMLHeadingElement>(null)
+  const loaded = !!mail
+  React.useEffect(() => {
+    if (focusSubject && loaded) subjectRef.current?.focus()
+  }, [focusSubject, loaded])
 
   if (isPending || isError || !mail) {
     return (
@@ -449,6 +463,7 @@ export default function MailReader({ mailId }: { mailId: string }) {
         </div>
 
         <h1
+          ref={subjectRef}
           dir="auto"
           tabIndex={-1}
           data-mail-subject
