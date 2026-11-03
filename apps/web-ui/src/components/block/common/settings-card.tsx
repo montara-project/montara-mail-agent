@@ -18,6 +18,7 @@ export function SettingsCard({
   description,
   action,
   dense,
+  rows,
   children,
 }: {
   title: string
@@ -25,6 +26,8 @@ export function SettingsCard({
   action?: React.ReactNode
   /** The tighter head and body some pages' cards use. */
   dense?: boolean
+  /** A body of hoverable rows, inset like the list cards' rows (Installed skills). */
+  rows?: boolean
   children: React.ReactNode
 }) {
   return (
@@ -41,7 +44,14 @@ export function SettingsCard({
         </div>
         {action && <div className="shrink-0">{action}</div>}
       </div>
-      <div className={cn('grid p-[18px]', dense ? 'gap-3' : 'gap-3.5')}>{children}</div>
+      <div
+        className={cn(
+          'grid',
+          rows ? 'gap-0.5 px-2.5 pt-3 pb-2.5' : cn('p-[18px]', dense ? 'gap-3' : 'gap-3.5')
+        )}
+      >
+        {children}
+      </div>
     </Card>
   )
 }

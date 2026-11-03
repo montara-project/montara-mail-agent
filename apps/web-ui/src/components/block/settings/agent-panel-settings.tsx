@@ -133,12 +133,12 @@ function BehaviourRow({
   soon: boolean
 }) {
   return (
-    <div className="hover:border-input hover:bg-popover flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[9px] border border-transparent px-[9px] py-[7px] transition-colors duration-150 motion-reduce:transition-none">
-      <div className="grid min-w-0 flex-1 basis-[calc(100%-52px)] gap-0.5 sm:basis-0">
-        <Label htmlFor={id} className="text-[12.5px] leading-[17px] font-semibold">
+    <div className="hover:border-input hover:bg-popover flex flex-wrap items-center gap-x-[11px] gap-y-2 rounded-[9px] border border-transparent px-[9px] py-2 transition-colors duration-150 motion-reduce:transition-none">
+      <div className="grid min-w-0 flex-1 basis-[calc(100%-47px)] gap-px sm:basis-0">
+        <Label htmlFor={id} className="text-[12px] leading-4 font-semibold">
           {label}
         </Label>
-        <p id={`${id}-description`} className="text-ink-3 text-[11.5px] leading-4 text-pretty">
+        <p id={`${id}-description`} className="text-ink-3 text-[10.5px] leading-[14px] text-pretty">
           {description}
         </p>
       </div>
@@ -207,7 +207,7 @@ export default function AgentPanelSettings() {
           </Card>
         </div>
 
-        <SettingsCard dense title="Behaviour" description="Defaults for every new conversation.">
+        <SettingsCard rows title="Behaviour" description="Defaults for every new conversation.">
           {BEHAVIOUR.map((item) => (
             <BehaviourRow key={item.id} {...item} />
           ))}

@@ -24,22 +24,22 @@ function ToggleRow({ id, label, description, soon, disabled, ...props }: ToggleR
     <div
       className={
         soon
-          ? 'flex items-center gap-4 rounded-md border border-transparent px-[9px] py-[7px]'
-          : 'hover:border-input hover:bg-popover relative flex items-center gap-4 rounded-md border border-transparent px-[9px] py-[7px] transition-colors duration-150 motion-reduce:transition-none'
+          ? 'flex items-center gap-[11px] rounded-[9px] border border-transparent px-[9px] py-2'
+          : 'hover:border-input hover:bg-popover relative flex items-center gap-[11px] rounded-[9px] border border-transparent px-[9px] py-2 transition-colors duration-150 motion-reduce:transition-none'
       }
     >
-      <div className="grid min-w-0 flex-1 gap-0.5">
+      <div className="grid min-w-0 flex-1 gap-px">
         <Label
           htmlFor={id}
           className={
             soon
-              ? 'text-[12.5px] leading-[17px] font-semibold'
-              : 'cursor-pointer text-[12.5px] leading-[17px] font-semibold after:absolute after:inset-0'
+              ? 'text-[12px] leading-4 font-semibold'
+              : 'cursor-pointer text-[12px] leading-4 font-semibold after:absolute after:inset-0'
           }
         >
           {label}
         </Label>
-        <p id={`${id}-description`} className="text-ink-3 text-[11.5px] leading-4">
+        <p id={`${id}-description`} className="text-ink-3 text-[10.5px] leading-[14px] text-pretty">
           {description}
         </p>
       </div>
@@ -105,7 +105,7 @@ export default function MailSettings() {
         description="Inbox layout and what this browser shows on screen."
       />
       <div className="grid gap-5">
-        <SettingsCard title="Inbox" description="How your connected accounts show up in Mail.">
+        <SettingsCard rows title="Inbox" description="How your connected accounts show up in Mail.">
           <SplitInboxRow />
           <ToggleRow
             soon
@@ -114,7 +114,7 @@ export default function MailSettings() {
             description="Group replies into a single thread instead of separate messages."
           />
         </SettingsCard>
-        <SettingsCard title="Privacy" description="What this browser shows on screen.">
+        <SettingsCard rows title="Privacy" description="What this browser shows on screen.">
           <HideEmailsRow />
           <ToggleRow
             soon
