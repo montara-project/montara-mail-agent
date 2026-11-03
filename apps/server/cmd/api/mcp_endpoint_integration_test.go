@@ -111,29 +111,41 @@ func testMCPEndpoint(t *testing.T, call callFunc, server *fiber.App, application
 		t.Fatalf("list_accounts shows an organization the user is not in: %+v", orgs)
 	}
 
-	// A super user reaches every organization over MCP, as in the app: one
-	// they are not a member of too, listed even without a mailbox.
+	// A super user's key reaches only the organizations they are a member of,
+	// listed even without a mailbox: the reach the app gives them over other
+	// users' organizations stays out of /mcp.
 	_, out = call(http.MethodPost, "/api/v1/me/api-keys", superToken, map[string]any{"name": "Super"})
 	superKey, _ := data(out)["key"].(string)
 	_, out = call(http.MethodPost, "/api/v1/organizations", superToken, map[string]any{"name": "Empty"})
 	emptyOrg := data(out)["id"].(string)
 	superOrgs := listAccounts(t, call, superKey)
-	if org := superOrgs[userOrg]; org.Role != "super_user" || len(org.Accounts) == 0 {
-		t.Fatalf("super user's list_accounts misses another's organization: %+v", superOrgs)
+	if _, ok := superOrgs[userOrg]; ok {
+		t.Fatalf("super user's list_accounts shows another user's organization: %+v", superOrgs)
 	}
-	if org, ok := superOrgs[emptyOrg]; !ok || len(org.Accounts) != 0 {
-		t.Fatalf("super user's list_accounts misses an organization without a mailbox: %+v", superOrgs)
+	if org, ok := superOrgs[emptyOrg]; !ok || org.Role != "owner" || len(org.Accounts) != 0 {
+		t.Fatalf("super user's list_accounts misses their own organization without a mailbox: %+v", superOrgs)
 	}
-	if text, isError := mcpTool(t, call, superKey, "search_mails", map[string]any{"account_id": account.ID}); isError || !strings.Contains(text, "Quote 42") {
-		t.Fatalf("super user's search_mails in another's organization: %v %s", isError, text)
+	for name, args := range map[string]map[string]any{
+		"search_mails":  {"account_id": account.ID},
+		"mailbox_stats": {"account_id": account.ID},
+		"get_mail":      {"mail_id": mine[0].ID},
+		"propose_reply": {"mail_id": mine[0].ID, "text": "Not mine to answer."},
+	} {
+		if text, isError := mcpTool(t, call, superKey, name, args); !isError || strings.Contains(text, "Quote 42") || strings.Contains(text, "Here is the quote") {
+			t.Fatalf("super user's %s in another user's organization: %v %s", name, isError, text)
+		}
 	}
 
-	// A key scoped to one organization reaches it alone, even a super user's.
+	// A key scoped to one organization reaches it alone, and only one its
+	// owner is a member of: a super user can't scope one to someone else's.
 	status, out = call(http.MethodPost, "/api/v1/me/api-keys", userToken, map[string]any{"name": "Elsewhere", "organization_id": otherOrg})
 	if status != http.StatusNotFound {
 		t.Fatalf("a key scoped to an organization the user is not in: %d %v, want 404", status, out)
 	}
-	status, out = call(http.MethodPost, "/api/v1/me/api-keys", superToken, map[string]any{"name": "Scoped", "organization_id": userOrg})
+	if status, out := call(http.MethodPost, "/api/v1/me/api-keys", superToken, map[string]any{"name": "Theirs", "organization_id": userOrg}); status != http.StatusNotFound {
+		t.Fatalf("a super user's key scoped to another user's organization: %d %v, want 404", status, out)
+	}
+	status, out = call(http.MethodPost, "/api/v1/me/api-keys", userToken, map[string]any{"name": "Scoped", "organization_id": userOrg})
 	scopedKey, _ := data(out)["key"].(string)
 	if view, _ := data(out)["api_key"].(map[string]any); status != http.StatusCreated || view["organization_id"] != userOrg || view["organization_name"] == "" {
 		t.Fatalf("create a scoped key: %d %v", status, out)

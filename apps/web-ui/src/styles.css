@@ -1,4 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+/* Self-hosted: the API's CSP (style-src 'self') blocks a stylesheet from Google Fonts. */
+@import '@fontsource-variable/nunito-sans/opsz.css';
+@import '@fontsource-variable/nunito-sans/opsz-italic.css';
+@import '@fontsource-variable/jetbrains-mono/wght.css';
+@import '@fontsource-variable/jetbrains-mono/wght-italic.css';
 
 @import 'tailwindcss';
 @import 'tw-animate-css';
@@ -136,8 +140,8 @@
 }
 
 @theme inline {
-  --font-mono: 'JetBrains Mono', monospace;
-  --font-sans: 'Nunito Sans', sans-serif;
+  --font-mono: 'JetBrains Mono Variable', monospace;
+  --font-sans: 'Nunito Sans Variable', sans-serif;
 
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);

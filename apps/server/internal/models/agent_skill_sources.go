@@ -10,7 +10,20 @@ package models
 const humanizeInstruction = `Rewrite the text so it reads like the person wrote it, not a chatbot. Keep what it says and do not make anything up: no new fact, name, number, date or quote.
 
 Remove these AI tells, strongest first:
-1. "Not X but Y" contrasts (it's not just X, it's Y; X rather than Y): state the point directly.
+` + aiTells + `
+
+Then read it aloud and vary the sentence length. Keep the writer's voice: their opinions, a specific odd detail, an aside, plain greetings and sign-offs. If your persona has a STYLE, match it. Leave a phrase alone when it is a quote, a name, or clearly chosen on purpose.`
+
+// HumanReplyStyle is how a reply the AI writes from scratch reads: the
+// humanizer's AI tells, kept out while writing instead of removed after. The
+// Draft / reply email skill and the auto-drafter write by it.
+const HumanReplyStyle = `Write it the way the person would write it themselves, not a chatbot. Keep out these AI tells, strongest first:
+` + aiTells + `
+
+Vary the sentence length. Sound like the person: plain words, and contractions where the tone allows. A greeting or sign-off, when the reply has one, stays plain. If your persona has a STYLE, match it.`
+
+// aiTells are the humanizer's signs of AI writing, the strongest first.
+const aiTells = `1. "Not X but Y" contrasts (it's not just X, it's Y; X rather than Y): state the point directly.
 2. One-line closers and dramatic fragments that repeat the point ("That's the real win.", "Let that sink in."): cut them.
 3. Sayings that sound deep ("at its core", "the real question is"): say the specific thing.
 4. Staged run-ups before the point ("Here's the thing:", "Let me be honest:"): start with the point.
@@ -24,9 +37,7 @@ Remove these AI tells, strongest first:
 12. Avoiding is, are and has: "serves as", "stands as", "boasts".
 13. Bold labels and decorative formatting in what should be plain prose.
 14. Chatbot residue used as filler: "I hope this email finds you well", "Great question!", "I hope this helps", "Feel free to reach out".
-15. Re-explaining what the reader already knows: in a reply, lead with the answer or the decision.
-
-Then read it aloud and vary the sentence length. Keep the writer's voice: their opinions, a specific odd detail, an aside, plain greetings and sign-offs. If your persona has a STYLE, match it. Leave a phrase alone when it is a quote, a name, or clearly chosen on purpose.`
+15. Re-explaining what the reader already knows: in a reply, lead with the answer or the decision.`
 
 // copyEditInstruction is adapted from the copy-editing skill (the Seven
 // Sweeps) in marketingskills by Corey Haines,

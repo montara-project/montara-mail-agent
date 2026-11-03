@@ -292,11 +292,12 @@ export default function MailPanel() {
   const { agent } = useSearch({ strict: false })
   const position = useAgentPanelPosition()
   // The open account's counts, or in the global inbox every account's.
-  const counted = split === false ? (accounts ?? []) : account ? [account] : []
-  const badges: Partial<Record<Models.MailFolder, number>> = {
-    inbox: counted.reduce((sum, item) => sum + item.unread, 0),
-    spam: counted.reduce((sum, item) => sum + item.spam, 0),
-  }
+  const counted = account ? [account] : split === false ? (accounts ?? []) : []
+  const badge = (id: Models.MailFolder) =>
+    counted.reduce(
+      (sum, item) => sum + (id === 'inbox' ? item.unread : (item.folder_counts?.[id] ?? 0)),
+      0
+    )
 
   return (
     <Sidebar collapsible="none" className="hidden flex-1 md:flex">
@@ -341,31 +342,34 @@ export default function MailPanel() {
                   </Button>
                 )}
               </SidebarMenuItem>
-              {MAIL_FOLDERS.map((item) => (
-                <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton asChild isActive={folder.id === item.id}>
-                    <Link
-                      to="/mail"
-                      search={(prev) => ({ account: prev.account, folder: item.id })}
-                    >
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                  {!!badges[item.id] && (
-                    <SidebarMenuBadge
-                      className={cn(
-                        'right-2 rounded-[4px] px-[5px] text-[9.5px]',
-                        item.id === 'inbox'
-                          ? 'bg-accent-ink/20 text-accent-soft peer-data-active/menu-button:text-accent-soft'
-                          : 'bg-muted text-ink-3'
-                      )}
-                    >
-                      {badges[item.id]}
-                    </SidebarMenuBadge>
-                  )}
-                </SidebarMenuItem>
-              ))}
+              {MAIL_FOLDERS.map((item) => {
+                const count = badge(item.id)
+                return (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton asChild isActive={folder.id === item.id}>
+                      <Link
+                        to="/mail"
+                        search={(prev) => ({ account: prev.account, folder: item.id })}
+                      >
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                    {count > 0 && (
+                      <SidebarMenuBadge
+                        className={cn(
+                          'right-2 rounded-[4px] px-[5px] text-[9.5px]',
+                          item.id === 'inbox'
+                            ? 'bg-accent-ink/20 text-accent-soft peer-data-active/menu-button:text-accent-soft'
+                            : 'bg-muted text-ink-3'
+                        )}
+                      >
+                        {count > 99 ? '99+' : count}
+                      </SidebarMenuBadge>
+                    )}
+                  </SidebarMenuItem>
+                )
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

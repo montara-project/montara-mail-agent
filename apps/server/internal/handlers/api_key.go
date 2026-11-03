@@ -133,16 +133,22 @@ func (h *apiKeyHandler) Create(c fiber.Ctx) error {
 	}
 	expires := time.Now().UTC().AddDate(0, 0, days)
 
-	// A scoped key names an organization its owner reaches today: a member's,
-	// or any live one for a super user. /mcp checks the owner's reach again on
-	// every call, so leaving the organization ends the key's access too.
+	// A scoped key names a live organization its owner is a member of; a super
+	// user can't scope one to someone else's. /mcp checks the membership again
+	// on every call, so leaving the organization ends the key's access too.
 	orgID, orgName, metadata := uuid.Nil, "", map[string]any(nil)
 	if body.OrganizationID != "" {
 		orgID = uuid.MustParse(body.OrganizationID)
-		if _, err := member(c, h.app, orgID); err != nil {
+		if _, err := h.app.Repositories.Organization.MemberRole(c.Context(), orgID, uid); err != nil {
+			if apperr.IsNotFound(err) {
+				return errOrganizationNotFound
+			}
 			return err
 		}
 		org, err := h.app.Repositories.Organization.Get(c.Context(), orgID)
+		if apperr.IsNotFound(err) {
+			return errOrganizationNotFound
+		}
 		if err != nil {
 			return err
 		}

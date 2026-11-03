@@ -82,27 +82,72 @@ func (r *EmailAccountRepository) UpdateOrganization(ctx context.Context, id, org
 }
 
 // ListByOrganization returns an organization's accounts, oldest first, each
-// with its unread inbox and spam counts.
+// with its unread inbox count and how many mails each of its folders holds.
 func (r *EmailAccountRepository) ListByOrganization(ctx context.Context, organizationID uuid.UUID) ([]models.EmailAccount, error) {
 	query := fmt.Sprintf(`
 		SELECT %s,
-			(SELECT count(*) FROM mails m WHERE m.email_account_id = a.id AND m.folder = $2 AND NOT m.is_read),
-			(SELECT count(*) FROM mails m WHERE m.email_account_id = a.id AND m.folder = $3)
+			(SELECT count(*) FROM mails m WHERE m.email_account_id = a.id AND m.folder = $2 AND NOT m.is_read)
 		FROM email_accounts a
 		WHERE a.organization_id = $1
 		ORDER BY a.created_at`, emailAccountColumns)
 
-	rows, err := r.queryContext(ctx, query, organizationID, constant.FolderInbox, constant.FolderSpam)
+	rows, err := r.queryContext(ctx, query, organizationID, constant.FolderInbox)
 	if err != nil {
 		return nil, err
 	}
-	return collectRows(rows, func(row rowScanner) (models.EmailAccount, error) {
+	accounts, err := collectRows(rows, func(row rowScanner) (models.EmailAccount, error) {
 		var a models.EmailAccount
 		err := row.Scan(&a.ID, &a.CreatedAt, &a.UpdatedAt, &a.OrganizationID, &a.Provider, &a.Label, &a.Email,
 			&a.IMAPHost, &a.IMAPPort, &a.Username, &a.Password, &a.OAuthAccessToken, &a.OAuthRefreshToken,
-			&a.OAuthTokenExpiry, &a.SyncedAt, &a.SyncError, &a.SMTPHost, &a.SMTPPort, &a.Unread, &a.Spam)
+			&a.OAuthTokenExpiry, &a.SyncedAt, &a.SyncError, &a.SMTPHost, &a.SMTPPort, &a.Unread)
 		return a, err
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	counts, err := r.folderCounts(ctx, organizationID)
+	if err != nil {
+		return nil, err
+	}
+	for i := range accounts {
+		a := &accounts[i]
+		a.FolderCounts = counts[a.ID]
+		if a.FolderCounts == nil {
+			a.FolderCounts = map[string]int{}
+		}
+		a.Spam = a.FolderCounts[constant.FolderSpam]
+	}
+	return accounts, nil
+}
+
+// folderCounts counts the mails of an organization's accounts, per account
+// and folder, in one pass over the (account, folder) index.
+func (r *EmailAccountRepository) folderCounts(ctx context.Context, organizationID uuid.UUID) (map[uuid.UUID]map[string]int, error) {
+	rows, err := r.queryContext(ctx, `
+		SELECT m.email_account_id, m.folder, count(*)
+		FROM mails m JOIN email_accounts a ON a.id = m.email_account_id
+		WHERE a.organization_id = $1
+		GROUP BY m.email_account_id, m.folder`, organizationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	counts := map[uuid.UUID]map[string]int{}
+	for rows.Next() {
+		var id uuid.UUID
+		var folder string
+		var n int
+		if err := rows.Scan(&id, &folder, &n); err != nil {
+			return nil, err
+		}
+		if counts[id] == nil {
+			counts[id] = map[string]int{}
+		}
+		counts[id][folder] = n
+	}
+	return counts, rows.Err()
 }
 
 // All returns every account, for the background sync.

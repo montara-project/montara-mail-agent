@@ -156,7 +156,7 @@ function CreateKeyDialog({
   onCreated: (created: Models.CreatedAPIKey) => void
 }) {
   const create = useMutation(queries.apiKeys.create())
-  // The organizations the switcher lists: every one for a super user.
+  // The organizations the switcher lists: the user's own memberships, the only ones a key reaches.
   const { organization, organizations } = useActiveOrganization()
   const scopeOptions = [
     { value: GLOBAL_SCOPE, label: 'All organizations' },
@@ -215,8 +215,8 @@ function CreateKeyDialog({
             children={(field) => <field.SelectField label="Access" options={scopeOptions} />}
           />
           <FieldDescription>
-            One organization's mailboxes, or every organization you can open, including ones added
-            later. Give each app only what it needs.
+            One organization's mailboxes, or every organization you are a member of, including ones
+            you join later. Give each app only what it needs.
           </FieldDescription>
         </div>
         <div className="grid gap-2">

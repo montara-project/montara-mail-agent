@@ -129,6 +129,10 @@ func testMailFlow(t *testing.T, call callFunc, application *app.Application, tok
 	if a := list(out)[0].(map[string]any); a["unread"] != float64(2) || a["spam"] != float64(1) || a["password"] != nil {
 		t.Fatalf("account row: %v", a)
 	}
+	if counts := list(out)[0].(map[string]any)["folder_counts"].(map[string]any); len(counts) != 2 ||
+		counts[constant.FolderInbox] != float64(3) || counts[constant.FolderSpam] != float64(1) {
+		t.Fatalf("folder counts: %v", counts)
+	}
 
 	status, out = call(http.MethodGet, accountPath+"/mails", token, nil)
 	if status != http.StatusOK || len(list(out)) != 3 || out["metadata"].(map[string]any)["unread"] != float64(2) {
