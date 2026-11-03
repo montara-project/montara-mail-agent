@@ -12,6 +12,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource-variable/jetbrains-mono": "5.3.0",
+    "@fontsource-variable/nunito-sans": "5.3.0",
     "@heroui/react": "3.2.7",
     "@lexical/code": "^0.52.0",
     "@lexical/html": "^0.52.0",
