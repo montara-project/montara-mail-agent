@@ -1,7 +1,9 @@
+import { Clock, Globe, Sun } from 'lucide-react'
 import React from 'react'
 
 import { useTimezone } from '@/hooks/use-timezone'
 import { timezoneOffset } from '@/lib/constants/timezones'
+import { cn } from '@/lib/utils'
 
 /** Formats a moment in a zone, in UTC when this browser doesn't know the zone. */
 function format(now: Date, timeZone: string, options: Intl.DateTimeFormatOptions) {
@@ -10,6 +12,29 @@ function format(now: Date, timeZone: string, options: Intl.DateTimeFormatOptions
   } catch {
     return new Intl.DateTimeFormat('en-GB', { ...options, timeZone: 'UTC' }).format(now)
   }
+}
+
+/** A quiet chip of the topbar's right side: a hairline, faint fill, muted mono text. */
+function ClockChip({
+  icon: Icon,
+  className,
+  children,
+}: {
+  icon: typeof Sun
+  className?: string
+  children: React.ReactNode
+}) {
+  return (
+    <span
+      className={cn(
+        'bg-muted text-muted-foreground hidden h-[19px] shrink-0 items-center gap-[5px] rounded-chip px-[7px] font-mono text-[9.5px] leading-none whitespace-nowrap',
+        className
+      )}
+    >
+      <Icon className="text-ink-3 size-2.5 shrink-0" aria-hidden />
+      {children}
+    </span>
+  )
 }
 
 /**
@@ -31,7 +56,6 @@ export default function HeaderClock() {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
-    year: 'numeric',
   })
   const time = format(now, timeZone, {
     hour: '2-digit',
@@ -42,16 +66,21 @@ export default function HeaderClock() {
 
   return (
     <div
-      className="ms-auto flex items-center gap-2 rounded-full border py-1 ps-3 pe-1 text-sm"
+      className="ms-auto flex items-center gap-2"
       aria-label={`${date}, ${time}, ${timeZone}`}
       role="timer"
       aria-live="off"
     >
-      <span className="text-muted-foreground hidden sm:inline">{date}</span>
-      <span className="font-medium tabular-nums">{time}</span>
-      <span className="bg-muted text-muted-foreground hidden rounded-full px-2 py-0.5 text-xs md:inline">
-        {timeZone} | {timezoneOffset(timeZone, now)}
-      </span>
+      <ClockChip icon={Sun} className="sm:flex">
+        {date}
+      </ClockChip>
+      <ClockChip icon={Clock} className="sm:flex">
+        <span className="tabular-nums">{time}</span>
+      </ClockChip>
+      <ClockChip icon={Globe} className="xl:flex">
+        <span className="truncate">{timeZone}</span>
+        <span className="text-ink-3 tabular-nums">{timezoneOffset(timeZone, now)}</span>
+      </ClockChip>
     </div>
   )
 }

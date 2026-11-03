@@ -1,6 +1,17 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { Inbox, Mail, Plus, Sparkles, X } from 'lucide-react'
+import {
+  AlignLeft,
+  FileText,
+  Inbox,
+  Link2,
+  Mail,
+  PenLine,
+  Plus,
+  Search,
+  Sparkles,
+  X,
+} from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
@@ -62,9 +73,17 @@ const TABS = [
 ] as const
 
 /** Starting points for an empty chat; a click fills the composer, it does not send. */
-const STARTERS = ['Find an email', 'Summarize a thread', 'Draft a reply']
+const STARTERS: { label: string; icon: typeof Search }[] = [
+  { label: 'Find an email', icon: Search },
+  { label: 'Summarize a thread', icon: AlignLeft },
+  { label: 'Draft a reply', icon: PenLine },
+]
 /** The same, once an email is attached. */
-const EMAIL_STARTERS = ['Summarize this email', 'Draft a reply to it', 'List what it asks of me']
+const EMAIL_STARTERS: { label: string; icon: typeof Search }[] = [
+  { label: 'Summarize this email', icon: FileText },
+  { label: 'Draft a reply to it', icon: PenLine },
+  { label: 'List what it asks of me', icon: AlignLeft },
+]
 
 /** The composer's / menu: each fills in a prompt to finish and send. The skills join it. */
 const QUICK_PROMPTS: PromptCommand[] = [
@@ -339,14 +358,22 @@ export default function AgentPanel({
   return (
     <div className={cn('flex min-w-0 flex-col', className)} data-agent-panel>
       {/* Header: the same 3.5rem as the list and reader toolbars, so the borders line up. */}
-      <div className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
-        <Sparkles className="size-4 text-accent-ink" aria-hidden />
-        <h2 className="flex-1 text-sm font-semibold">AI Assistant</h2>
+      <div className="flex h-14 shrink-0 items-center gap-2.5 border-b px-3">
+        <span className="grid size-[26px] shrink-0 place-items-center rounded-[7px] border border-accent-ink/25 bg-accent-tint">
+          <Sparkles className="size-3.5 text-accent-soft" aria-hidden />
+        </span>
+        <div className="grid min-w-0 flex-1 leading-tight">
+          <h2 className="text-[12.5px] font-bold">Assistant</h2>
+          <p className="text-ink-3 flex items-center gap-1 font-mono text-[8.5px] font-semibold">
+            <span className="size-1 rounded-full bg-success" aria-hidden />
+            {activeBot?.name ?? 'Assistant'} · ready
+          </p>
+        </div>
         <Hint label="New chat">
           <Button
             variant="ghost"
             size="icon"
-            className="size-8"
+            className="bg-muted hover:bg-accent size-6 rounded-md shadow-none [&_svg]:size-3"
             aria-label="New chat"
             disabled={streaming || (empty && !turnError)}
             onClick={startNewChat}
@@ -359,7 +386,7 @@ export default function AgentPanel({
             <Button
               variant="ghost"
               size="icon"
-              className="size-8"
+              className="bg-muted hover:bg-accent size-6 rounded-md shadow-none [&_svg]:size-3"
               aria-label="Close AI assistant"
               onClick={onClose}
             >
@@ -422,6 +449,48 @@ export default function AgentPanel({
           aria-labelledby="agent-tab-chat"
           className="flex min-h-0 flex-1 flex-col"
         >
+          {/* The context the chat is bound to, per the design's context strip. */}
+          <div className="bg-muted/50 flex shrink-0 items-center gap-2 border-b px-3 py-2">
+            <Link2 className="text-ink-faint size-2.5 shrink-0" aria-hidden />
+            <span className="text-ink-faint font-mono text-[8px] font-semibold">CONTEXT</span>
+            {about ? (
+              <span className="bg-secondary flex min-w-0 items-center gap-1.5 rounded-[5px] px-[7px] py-[3px]">
+                <Mail className="size-2.5 shrink-0 text-accent-soft" aria-hidden />
+                <span
+                  className="min-w-0 truncate text-[10px] font-semibold"
+                  title={aboutMail?.subject}
+                >
+                  {aboutMail ? aboutMail.subject || '(no subject)' : 'this email'}
+                </span>
+                <Hint label="Remove">
+                  <button
+                    type="button"
+                    aria-label="Remove the attached email"
+                    className="text-muted-foreground hover:text-foreground rounded p-0.5"
+                    onClick={detach}
+                  >
+                    <X className="size-2.5" aria-hidden />
+                  </button>
+                </Hint>
+              </span>
+            ) : mailbox ? (
+              <span className="bg-secondary flex min-w-0 items-center gap-1.5 rounded-[5px] px-[7px] py-[3px]">
+                <Inbox className="size-2.5 shrink-0 text-accent-soft" aria-hidden />
+                <span className="min-w-0 truncate text-[10px] font-semibold">
+                  {mask(mailbox.email)}
+                </span>
+              </span>
+            ) : null}
+            {(about || conversationId) && (
+              <button
+                type="button"
+                className="text-ink-faint hover:text-foreground ms-auto shrink-0 text-[10px] font-semibold outline-none"
+                onClick={about ? detach : startNewChat}
+              >
+                Clear
+              </button>
+            )}
+          </div>
           {/* Conversation */}
           <div
             ref={scrollRef}
@@ -441,16 +510,16 @@ export default function AgentPanel({
                 </p>
                 {emailAccountId && (
                   <div className="flex flex-wrap justify-center gap-1.5">
-                    {(about ? EMAIL_STARTERS : STARTERS).map((prompt) => (
-                      <Button
-                        key={prompt}
-                        variant="outline"
-                        size="sm"
-                        className="h-7 rounded-full text-xs font-normal"
-                        onClick={() => ask(prompt)}
+                    {(about ? EMAIL_STARTERS : STARTERS).map((starter) => (
+                      <button
+                        key={starter.label}
+                        type="button"
+                        className="bg-muted hover:bg-accent focus-visible:ring-ring/50 flex h-6 items-center gap-1.5 rounded-md px-2 text-[10.5px] font-semibold text-muted-foreground outline-none focus-visible:ring-2"
+                        onClick={() => ask(starter.label)}
                       >
-                        {prompt}
-                      </Button>
+                        <starter.icon className="text-accent-soft size-2.5 shrink-0" aria-hidden />
+                        {starter.label}
+                      </button>
                     ))}
                   </div>
                 )}
@@ -514,26 +583,6 @@ export default function AgentPanel({
 
           {/* Composer */}
           <div className="shrink-0 border-t p-3">
-            {about && (
-              <div className="mb-2 flex items-center gap-2 rounded-md border bg-accent-ink/6 py-1 pr-1 pl-2 text-xs">
-                <Mail className="size-3.5 shrink-0 text-accent-ink" aria-hidden />
-                <span className="text-muted-foreground shrink-0">About</span>
-                <span className="min-w-0 flex-1 truncate font-medium" title={aboutMail?.subject}>
-                  {aboutMail ? aboutMail.subject || '(no subject)' : 'this email'}
-                </span>
-                <Hint label="Remove">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-6"
-                    aria-label="Remove the attached email"
-                    onClick={detach}
-                  >
-                    <X className="size-3.5" />
-                  </Button>
-                </Hint>
-              </div>
-            )}
             <PromptBar
               value={input}
               onChange={setInput}
@@ -662,14 +711,14 @@ function AgentMessageRow({
   if (message.role === 'user') {
     return (
       <div className="flex justify-end">
-        <div className="bg-primary text-primary-foreground max-w-[85%] rounded-2xl rounded-br-sm px-3.5 py-2 text-sm">
+        <div className="border-accent-ink/25 bg-accent-ink/8 max-w-[85%] rounded-[10px] rounded-br-sm border px-[11px] py-2 text-[11px] text-foreground">
           {message.content}
         </div>
       </div>
     )
   }
   return (
-    <div className="max-w-[92%] rounded-2xl rounded-bl-sm bg-accent-ink/6 px-3.5 py-2.5 text-sm">
+    <div className="bg-card border-border/60 max-w-[92%] rounded-[10px] rounded-bl-sm border px-[11px] py-2.5 text-[11px]">
       <StreamingText
         text={message.content}
         animate={reveal}

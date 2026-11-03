@@ -6,6 +6,7 @@ const (
 	ActivityAuthSignIn              = "auth.sign_in"
 	ActivityProfileUpdated          = "profile.updated"
 	ActivityPasswordChanged         = "password.changed"
+	ActivityAccountDeleted          = "account.deleted"
 	ActivityOrganizationCreated     = "organization.created"
 	ActivityOrganizationUpdated     = "organization.updated"
 	ActivityOrganizationDeleted     = "organization.deleted"

@@ -137,7 +137,7 @@ export default function ReplyComposer({
   return (
     <div
       ref={cardRef}
-      className="bg-card animate-in fade-in slide-in-from-bottom-2 mt-6 rounded-xl border p-4 shadow-sm duration-200 ease-out motion-reduce:animate-none"
+      className="bg-card border-border/60 shadow-hairline animate-in fade-in slide-in-from-bottom-2 mt-6 rounded-lg border p-4 duration-200 ease-out motion-reduce:animate-none"
     >
       <React.Suspense
         fallback={
@@ -166,7 +166,7 @@ export default function ReplyComposer({
               onClick={() => setAiOpen(!aiOpen)}
               className={cn(
                 'border-accent-ink/40 text-accent-ink hover:text-accent-ink',
-                aiOpen && 'bg-accent-ink/10 hover:bg-accent-ink/15'
+                aiOpen && 'bg-accent-tint hover:bg-accent-ink/15'
               )}
             >
               <Sparkles />

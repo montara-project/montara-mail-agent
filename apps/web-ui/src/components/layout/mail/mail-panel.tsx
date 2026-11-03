@@ -1,17 +1,17 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link, useSearch, useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import {
   Archive,
-  Check,
-  ChevronsUpDown,
+  ArrowUpRight,
   File,
   Inbox,
   OctagonAlert,
-  Plus,
+  PenLine,
   Send,
+  SlidersHorizontal,
+  Sparkles,
   SquarePen,
   Trash2,
-  Sparkles,
 } from 'lucide-react'
 import React from 'react'
 
@@ -21,16 +21,7 @@ import { ProviderIcon } from '@/components/block/account/connector-list'
 import ComposeSheet from '@/components/block/mail/compose-sheet'
 import TokenUsageCard from '@/components/block/settings/billing/token-usage-card'
 import OrganizationSwitcher from '@/components/layout/organization/organization-switcher'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import {
   Sidebar,
   SidebarContent,
@@ -55,9 +46,9 @@ import { IMPORTANCE_LABELS } from './mail-data'
 // The folders the server syncs; IMAP has one junk folder, shown as Spam.
 export const MAIL_FOLDERS: { id: Models.MailFolder; title: string; icon: typeof Inbox }[] = [
   { id: 'inbox', title: 'Inbox', icon: Inbox },
-  { id: 'archive', title: 'Archive', icon: Archive },
   { id: 'drafts', title: 'Drafts', icon: File },
   { id: 'sent', title: 'Sent', icon: Send },
+  { id: 'archive', title: 'Archive', icon: Archive },
   { id: 'spam', title: 'Spam', icon: OctagonAlert },
   { id: 'trash', title: 'Trash', icon: Trash2 },
 ]
@@ -125,15 +116,17 @@ export function useAgentPanelPosition(): 'beside' | 'floating' {
 }
 
 /**
- * With Split inbox on, the account named by ?account=, falling back to the
- * first one. Undefined in the global inbox, while loading, or when none is connected.
+ * The account named by ?account=, in either mode, so a link to one mailbox
+ * opens it. Without one, Split inbox falls back to the first account and the
+ * global inbox shows them all (undefined). Undefined while loading too.
  */
 export function useMailAccount() {
   const split = useSplitInbox()
   const { account } = useSearch({ strict: false })
   const { data } = useMailAccounts()
-  if (!split) return undefined
-  return data?.find((item) => item.id === account) ?? data?.[0]
+  const named = data?.find((item) => item.id === account)
+  if (named) return named
+  return split ? data?.[0] : undefined
 }
 
 /**
@@ -173,128 +166,17 @@ export function AccountFlag({
       className={cn('chip chip--sm chip--account', className)}
       style={{ '--chip-hue': accountHue(index) } as React.CSSProperties}
     >
-      <ProviderIcon provider={account.provider} className="size-3.5 bg-transparent" />
+      <ProviderIcon provider={account.provider} className="size-3.5 bg-transparent" tint={false} />
       <span className="chip__label">{mask(account.email)}</span>
     </span>
-  )
-}
-
-/** Shows the open account and switches to another one; the global inbox has none to switch. */
-function AccountSwitcher() {
-  const { data: accounts, isPending } = useMailAccounts()
-  const split = useSplitInbox()
-  const account = useMailAccount()
-  const { mask } = useHideEmails()
-  const loading = isPending || split === undefined
-
-  if (split === false && accounts?.length) {
-    const only = accounts.length === 1 ? accounts[0] : undefined
-    // One tile per provider, so three Gmail accounts read as Gmail, not as three
-    // of the same logo. A fourth provider turns the third tile into a count.
-    const providers = [...new Set(accounts.map((item) => item.provider))]
-    const shown = providers.length > 3 ? providers.slice(0, 2) : providers
-    const stacked = 'ring-sidebar group-hover:ring-sidebar-accent size-8 rounded-md ring-2'
-    return (
-      <Link
-        to="/account"
-        title="Manage email accounts"
-        className="group hover:bg-sidebar-accent focus-visible:ring-ring/50 flex w-full items-center gap-2.5 rounded-lg border p-2 text-left text-sm outline-none focus-visible:ring-[3px]"
-      >
-        {/* Overlap plus ring stay inside a tile's padding, so no logo is cut. */}
-        <span className="flex shrink-0 -space-x-1">
-          {shown.map((provider) => (
-            <ProviderIcon key={provider} provider={provider} className={stacked} />
-          ))}
-          {shown.length < providers.length && (
-            <span
-              className={cn(
-                stacked,
-                'bg-muted text-muted-foreground flex items-center justify-center text-xs font-medium tabular-nums'
-              )}
-            >
-              +{providers.length - shown.length}
-            </span>
-          )}
-        </span>
-        <span className="grid min-w-0 flex-1 leading-tight">
-          <span className="truncate font-medium">{only ? mask(only.label) : 'All accounts'}</span>
-          <span className="text-muted-foreground truncate text-xs">
-            {only ? mask(only.email) : `${accounts.length} connected`}
-          </span>
-        </span>
-      </Link>
-    )
-  }
-
-  if (!account) {
-    return (
-      <Button variant="outline" className="w-full" asChild={!loading} disabled={loading}>
-        {loading ? (
-          <span>Loading accounts...</span>
-        ) : (
-          <Link to="/account">
-            <Plus />
-            Connect an email account
-          </Link>
-        )}
-      </Button>
-    )
-  }
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          aria-label="Switch email account"
-          className="hover:bg-sidebar-accent focus-visible:ring-ring/50 flex w-full items-center gap-2.5 rounded-lg border p-2 text-left text-sm outline-none focus-visible:ring-[3px]"
-        >
-          <ProviderIcon provider={account.provider} className="size-8 rounded-md" />
-          <span className="grid min-w-0 flex-1 leading-tight">
-            <span className="truncate font-medium">{mask(account.label)}</span>
-            <span className="text-muted-foreground truncate text-xs">{mask(account.email)}</span>
-          </span>
-          <ChevronsUpDown className="text-muted-foreground size-4" />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-(--radix-dropdown-menu-trigger-width)">
-        <DropdownMenuLabel className="text-muted-foreground text-xs">
-          Email accounts
-        </DropdownMenuLabel>
-        {accounts?.map((item) => (
-          <DropdownMenuItem key={item.id} asChild>
-            <Link to="/mail" search={{ account: item.id }}>
-              <ProviderIcon provider={item.provider} className="size-7 shrink-0 rounded-md" />
-              <span className="grid min-w-0 flex-1 leading-tight">
-                <span className="truncate">{mask(item.label)}</span>
-                <span className="text-muted-foreground truncate text-xs">{mask(item.email)}</span>
-              </span>
-              {item.unread > 0 && (
-                <Badge size="sm" aria-label={`${item.unread} unread`}>
-                  {item.unread}
-                </Badge>
-              )}
-              {item.id === account.id && <Check />}
-            </Link>
-          </DropdownMenuItem>
-        ))}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link to="/account">
-            <Plus />
-            Connect an account
-          </Link>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
   )
 }
 
 /** Second panel of the sidebar-09 shell on /mail: compose, folders and labels. */
 /**
  * Phones only: the folder panel is hidden there (the rail lists the folders),
- * so the list gets what else lives in it: the account switcher, the labels as
- * a scrolling row of chips, and Compose as a floating button.
+ * so the list gets what else lives in it: the labels as a scrolling row of
+ * chips, and Compose as a floating button.
  */
 export function MobileMailBar() {
   const { data: accounts } = useMailAccounts()
@@ -304,7 +186,6 @@ export function MobileMailBar() {
 
   return (
     <div className="grid gap-2 border-b p-3 md:hidden">
-      <AccountSwitcher />
       <nav aria-label="Labels" className="no-scrollbar -mx-3 flex gap-1.5 overflow-x-auto px-3">
         {MAIL_LABELS.map((item) => {
           const active = label === item.id
@@ -349,6 +230,57 @@ export function MobileMailBar() {
   )
 }
 
+/**
+ * The design's upgrade banner: shown while the user is on the Free plan. The
+ * plan comes from the quota, because a Free user has no subscription at all.
+ */
+function UpgradeBanner() {
+  const { organization } = useActiveOrganization()
+  const { data: quota } = useQuery(queries.quota.status())
+  const { data: stats } = useQuery({
+    ...queries.organizations.stats(organization?.id),
+    refetchOnWindowFocus: false,
+  })
+  const { data: plans } = useQuery(queries.billing.plans())
+  // Unlimited means an enterprise tier or a super user: nothing to upgrade to.
+  if (quota?.plan !== 'free' || quota.limit_tokens === null) return null
+  const plan = plans?.find((item) => item.code === 'free')
+  const limit = plan?.max_email_accounts
+  const meta = stats
+    ? limit
+      ? `${stats.accounts} of ${limit} mailboxes`
+      : `${stats.accounts} ${stats.accounts === 1 ? 'mailbox' : 'mailboxes'}`
+    : ''
+
+  return (
+    <div className="flex flex-col gap-2 rounded-[10px] border border-accent-ink/20 bg-accent-ink/8 p-2.5">
+      <div className="flex items-center gap-2">
+        <span className="grid size-6 shrink-0 place-items-center rounded-md bg-accent-ink/15">
+          <Sparkles className="size-[13px] text-accent-soft" />
+        </span>
+        <span className="grid min-w-0 flex-1 text-left">
+          <span className="truncate text-xs leading-4 font-bold">Upgrade your plan</span>
+          <span className="text-ink-3 truncate text-[9.5px] leading-[13px]">
+            {[plan?.name ?? 'Free', meta].filter(Boolean).join(' · ')}
+          </span>
+        </span>
+      </div>
+      <p className="text-muted-foreground text-[10.5px] leading-[15px]">
+        Unlimited mailboxes, 100M AI tokens a week and priority sync.
+      </p>
+      <Button
+        asChild
+        className="h-7 w-full justify-center gap-1.5 rounded-[7px] bg-accent-ink text-[11.5px] font-bold text-[#0a0a0a] shadow-none hover:bg-accent-ink/90"
+      >
+        <Link to="/settings/billing">
+          <ArrowUpRight className="size-3" />
+          Upgrade to Pro
+        </Link>
+      </Button>
+    </div>
+  )
+}
+
 export default function MailPanel() {
   const folder = useMailFolder()
   const account = useMailAccount()
@@ -368,35 +300,8 @@ export default function MailPanel() {
 
   return (
     <Sidebar collapsible="none" className="hidden flex-1 md:flex">
-      <SidebarHeader className="gap-3.5 p-4 pb-2">
+      <SidebarHeader className="gap-3.5 p-4 pb-0">
         <OrganizationSwitcher />
-        <AccountSwitcher />
-        <div className="flex w-full gap-2">
-          <Button
-            className="flex-1"
-            onClick={() => setComposing(true)}
-            disabled={!accounts?.length}
-          >
-            <SquarePen />
-            Compose
-          </Button>
-          {/* Floating mode has its own button in the page's corner. */}
-          {position !== 'floating' && (
-            <Button
-              variant={agent ? 'secondary' : 'outline'}
-              aria-label="Toggle AI assistant"
-              title="AI assistant"
-              onClick={() =>
-                navigate({
-                  to: '/mail',
-                  search: (prev: Record<string, unknown>) => ({ ...prev, agent: !agent }),
-                })
-              }
-            >
-              <Sparkles />
-            </Button>
-          )}
-        </div>
         <ComposeSheet
           open={composing}
           onOpenChange={setComposing}
@@ -408,6 +313,34 @@ export default function MailPanel() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem className="mb-2 flex gap-2">
+                <Button
+                  className="h-8 flex-1 justify-center gap-[7px] rounded-[8px] bg-accent-ink text-xs font-semibold text-[#0a0a0a] hover:bg-accent-ink/90"
+                  onClick={() => setComposing(true)}
+                  disabled={!accounts?.length}
+                >
+                  <PenLine className="size-[13px]" />
+                  Compose
+                </Button>
+                {/* Floating mode has its own button in the page's corner. */}
+                {position !== 'floating' && (
+                  <Button
+                    variant={agent ? 'secondary' : 'outline'}
+                    size="icon"
+                    className="size-8 rounded-[8px]"
+                    aria-label="Toggle AI assistant"
+                    title="AI assistant"
+                    onClick={() =>
+                      navigate({
+                        to: '/mail',
+                        search: (prev: Record<string, unknown>) => ({ ...prev, agent: !agent }),
+                      })
+                    }
+                  >
+                    <Sparkles />
+                  </Button>
+                )}
+              </SidebarMenuItem>
               {MAIL_FOLDERS.map((item) => (
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton asChild isActive={folder.id === item.id}>
@@ -419,7 +352,18 @@ export default function MailPanel() {
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
-                  {!!badges[item.id] && <SidebarMenuBadge>{badges[item.id]}</SidebarMenuBadge>}
+                  {!!badges[item.id] && (
+                    <SidebarMenuBadge
+                      className={cn(
+                        'right-2 rounded-[4px] px-[5px] text-[9.5px]',
+                        item.id === 'inbox'
+                          ? 'bg-accent-ink/20 text-accent-soft peer-data-active/menu-button:text-accent-soft'
+                          : 'bg-muted text-ink-3'
+                      )}
+                    >
+                      {badges[item.id]}
+                    </SidebarMenuBadge>
+                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
@@ -431,7 +375,12 @@ export default function MailPanel() {
             <SidebarMenu>
               {MAIL_LABELS.map((item) => (
                 <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton asChild isActive={label === item.id}>
+                  {/* The dot's column lines its text up with the folder names above. */}
+                  <SidebarMenuButton
+                    asChild
+                    isActive={label === item.id}
+                    className="gap-[11.5px] pl-[11.5px] text-[11.5px] font-normal"
+                  >
                     <Link
                       to="/mail"
                       search={(prev) => ({
@@ -440,7 +389,7 @@ export default function MailPanel() {
                         mail: undefined,
                       })}
                     >
-                      <span className={`${item.color} size-2.5 shrink-0 rounded-sm`} />
+                      <span className={`${item.color} size-1.5 shrink-0 rounded-full`} />
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -449,10 +398,28 @@ export default function MailPanel() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        {/* The design pins the Free-plan banner to the bottom of the panel body. */}
+        {!COMMUNITY && (
+          <SidebarGroup className="mt-auto">
+            <SidebarGroupContent>
+              <UpgradeBanner />
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
       {!COMMUNITY && (
-        <SidebarFooter className="p-4">
+        <SidebarFooter className="gap-2 border-t p-2.5">
           <TokenUsageCard />
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <Link to="/settings">
+                  <SlidersHorizontal />
+                  <span>Control Center</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
         </SidebarFooter>
       )}
     </Sidebar>

@@ -1,11 +1,12 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
+import { KeyRound, LogIn } from 'lucide-react'
 import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
 
 import googleLogo from '@/assets/brands/google.svg'
-import SectionCard from '@/components/block/common/section-card'
+import { SettingsCard } from '@/components/block/common/settings-card'
 import { FieldDescription } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAppForm } from '@/hooks/form'
@@ -16,6 +17,11 @@ import { UpdatePasswordSchema } from '@/lib/api/dtos/settings/profile/schema'
 import { queries } from '@/lib/api/queries'
 import { clearAuthTokens } from '@/lib/auth/token-storage'
 import { getQueryClient } from '@/lib/providers/react-query'
+
+// The design's denser fields, for this form only: the shared field stays as it is
+// elsewhere, and touch screens keep their larger targets and 16px text.
+const FIELDS =
+  'grid gap-3.5 [&_[data-slot=field]]:gap-[5px] [&_[data-slot=field-label]]:text-[11.5px] [&_[data-slot=field-label]]:leading-4 [&_[data-slot=field-label]]:font-semibold pointer-fine:[&_[data-slot=input-wrapper]]:h-9.5 pointer-fine:[&_[data-slot=input-wrapper]_svg]:size-3.5 pointer-fine:[&_input]:text-[12.5px]'
 
 function PasswordForm() {
   const change = useMutation(queries.profile.changePassword())
@@ -41,7 +47,7 @@ function PasswordForm() {
 
   return (
     <form
-      className="grid gap-4"
+      className={FIELDS}
       onSubmit={(e) => {
         e.preventDefault()
         form.handleSubmit()
@@ -49,22 +55,41 @@ function PasswordForm() {
     >
       <form.AppField
         name="current_password"
-        children={(field) => <field.PasswordField asterisk label="Current password" />}
+        children={(field) => (
+          <field.PasswordField asterisk label="Current password" autoComplete="current-password" />
+        )}
       />
       <form.AppField
         name="new_password"
-        children={(field) => <field.PasswordField asterisk label="New password" />}
+        children={(field) => (
+          <field.PasswordField
+            asterisk
+            label="New password"
+            placeholder="At least 8 characters"
+            autoComplete="new-password"
+          />
+        )}
       />
       <form.AppField
         name="confirm_password"
-        children={(field) => <field.PasswordField asterisk label="Confirm new password" />}
+        children={(field) => (
+          <field.PasswordField
+            asterisk
+            label="Confirm new password"
+            placeholder="Repeat the new password"
+            autoComplete="new-password"
+          />
+        )}
       />
-      <FieldDescription>
-        At least 8 characters. Changing it signs you out everywhere, this browser included.
+      <FieldDescription className="text-ink-3 text-[10.5px] leading-[14px]">
+        Changing your password signs you out everywhere, this browser included.
       </FieldDescription>
       <div>
         <form.AppForm>
-          <form.SubmitButton label="Change password" />
+          <form.SubmitButton
+            label="Change password"
+            className="h-8.5 px-3.5 text-xs font-semibold pointer-coarse:h-11"
+          />
         </form.AppForm>
       </div>
     </form>
@@ -77,7 +102,13 @@ function SignInMethod({ security }: { security: Models.UserSecurity }) {
   const { mask } = useHideEmails()
 
   return (
-    <SectionCard title="Sign-in method" description="How you sign in to Montara.">
+    <SettingsCard
+      icon={LogIn}
+      tone="success"
+      body="form"
+      title="Sign-in method"
+      description="How you sign in to Montara."
+    >
       {security.has_google ? (
         <div className="grid gap-3">
           <div className="flex items-center gap-3 text-sm">
@@ -98,7 +129,7 @@ function SignInMethod({ security }: { security: Models.UserSecurity }) {
           This account signs in with an email link, so it has no password to change.
         </FieldDescription>
       )}
-    </SectionCard>
+    </SettingsCard>
   )
 }
 
@@ -109,9 +140,15 @@ export default function PasswordSettings() {
   if (isPending) return <Skeleton className="h-40" />
   if (isError) {
     return (
-      <SectionCard title="Sign-in method" description="How you sign in to Montara.">
+      <SettingsCard
+        icon={LogIn}
+        tone="success"
+        body="form"
+        title="Sign-in method"
+        description="How you sign in to Montara."
+      >
         <p className="text-destructive text-sm">{axiosErrorMessage(error)}</p>
-      </SectionCard>
+      </SettingsCard>
     )
   }
 
@@ -119,12 +156,15 @@ export default function PasswordSettings() {
     <>
       {(data.has_google || !data.has_password) && <SignInMethod security={data} />}
       {data.has_password && (
-        <SectionCard
+        <SettingsCard
+          icon={KeyRound}
+          tone="success"
+          body="form"
           title="Change password"
           description="Use a password you don't use anywhere else."
         >
           <PasswordForm />
-        </SectionCard>
+        </SettingsCard>
       )}
     </>
   )

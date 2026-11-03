@@ -1,13 +1,16 @@
 import { Link, useLocation } from '@tanstack/react-router'
+import { Mail } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import React from 'react'
 
 import type { Models } from '@/lib/api/models'
 import type { UserInfo } from '@/types/menu'
 
+import { AnimatedThemeToggler } from '#/components/ui/animated-theme-toggler'
 import MailPanel, { MAIL_FOLDERS, useMailFolder } from '@/components/layout/mail/mail-panel'
-import PlatformPanel from '@/components/layout/platform/platform-panel'
-import { AnimatedThemeToggler } from '@/components/ui/animated-theme-toggler'
+import AccountsPanel from '@/components/layout/platform/accounts-panel'
+import DashboardPanel from '@/components/layout/platform/dashboard-panel'
+import SettingsPanel from '@/components/layout/settings/settings-panel'
 import {
   Sidebar,
   SidebarContent,
@@ -35,7 +38,7 @@ function ThemeToggle() {
       theme={resolvedTheme === 'light' ? 'light' : 'dark'}
       onThemeChange={setTheme}
       title="Toggle theme"
-      className="self-center hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-sidebar-ring flex size-8 items-center justify-center rounded-md outline-none focus-visible:ring-2 [&_svg]:size-4"
+      className="self-center hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-sidebar-ring flex size-[34px] items-center justify-center rounded-[8px] outline-none focus-visible:ring-2 [&_svg]:size-4"
     />
   )
 }
@@ -43,8 +46,9 @@ function ThemeToggle() {
 /** The second panel shown next to the rail for a path, if any. */
 function sidebarPanel(pathname: string) {
   if (pathname.startsWith('/mail')) return <MailPanel />
-  if (['/dashboard', '/account', '/settings'].some((path) => pathname.startsWith(path)))
-    return <PlatformPanel />
+  if (pathname.startsWith('/dashboard')) return <DashboardPanel />
+  if (pathname.startsWith('/account')) return <AccountsPanel />
+  if (pathname.startsWith('/settings')) return <SettingsPanel />
   return null
 }
 
@@ -87,17 +91,20 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
       {...props}
     >
       {/* Icon rail: not collapsible, fixed to the icon width. */}
-      <Sidebar collapsible="none" className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r">
-        <SidebarHeader>
+      <Sidebar collapsible="none" className="w-[52px]! shrink-0 border-r">
+        {/* Each rail button sets its own centered size from md up, and the menu button
+        no longer resizes in the collapsed state, so nothing moves when the sidebar toggles. */}
+        <SidebarHeader className="p-2.5 pb-0 md:items-center">
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
+              <SidebarMenuButton size="lg" asChild className="md:mx-auto md:size-[30px] md:p-0">
                 <Link to="/dashboard">
-                  <img
-                    src="/images/mail-agent-logo.png"
-                    alt="Montara"
-                    className="aspect-square size-8 shrink-0"
-                  />
+                  <span
+                    aria-hidden
+                    className="grid size-[30px] shrink-0 place-items-center rounded-[8px] bg-accent-ink/15 ring-1 ring-accent-ink/25"
+                  >
+                    <Mail className="size-[15px] text-accent-soft" />
+                  </span>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">Montara</span>
                     <span className="truncate text-xs">{COMMUNITY ? 'Community' : 'Mail'}</span>
@@ -107,25 +114,28 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarHeader>
-        <SidebarContent>
-          <SidebarGroup>
+        <SidebarContent className="gap-1 p-0 pt-1.5">
+          <SidebarGroup className="p-0">
             <SidebarGroupContent className="px-1.5 md:px-0">
-              <SidebarMenu>
-                {NAV_ITEMS.map((item) => (
-                  <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton
-                      asChild
-                      tooltip={{ children: item.title, hidden: false }}
-                      isActive={pathname.startsWith(item.url)}
-                      className="px-2.5 md:px-2"
-                    >
-                      <Link to={item.url}>
-                        {item.icon && <item.icon />}
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+              <SidebarMenu className="md:gap-1.5">
+                {NAV_ITEMS.map((item) => {
+                  const className = `rounded-[8px] px-2.5 md:mx-auto md:size-8.5 md:rounded-[8px] md:p-2.25 [&_svg]:size-4`
+                  return (
+                    <SidebarMenuItem key={item.url}>
+                      <SidebarMenuButton
+                        asChild
+                        tooltip={{ children: item.title, hidden: false }}
+                        isActive={pathname.startsWith(item.url)}
+                        className={className}
+                      >
+                        <Link to={item.url}>
+                          {item.icon && <item.icon />}
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -157,13 +167,15 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter>
+        <SidebarFooter className="gap-3 p-2.5">
           <ThemeToggle />
           <NavUser user={userInfo} userError={userError} onRetryUser={onRetryUser} />
         </SidebarFooter>
       </Sidebar>
 
-      {sidebarPanel(pathname)}
+      {/* The second panel is hidden, not clipped, once the rail collapses: while
+      it stays laid out it keeps its min-content width and squeezes the rail.*/}
+      <div className="contents group-data-[collapsible=icon]:hidden">{sidebarPanel(pathname)}</div>
     </Sidebar>
   )
 }

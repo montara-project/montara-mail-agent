@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
 
 @import 'tailwindcss';
 @import 'tw-animate-css';
@@ -6,68 +6,69 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --background: #fafafa;
+  --foreground: #18181b;
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --popover: #ffffff;
+  --popover-foreground: #18181b;
+  --primary: #18181b;
+  --primary-foreground: #fafafa;
+  --secondary: #18181b0f;
+  --secondary-foreground: #18181b;
+  --muted: #18181b08;
+  --muted-foreground: #52525b;
+  --accent: #18181b0f;
+  --accent-foreground: #18181b;
   /* Skeleton pulse stays neutral: palettes override --accent, which the
      Skeleton used to inherit. */
-  --skeleton: oklch(0.97 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --radius: 0.625rem;
-  --sidebar-background: 0 0% 98%;
-  --sidebar-foreground: 240 5.3% 26.1%;
-  --sidebar-primary: 240 5.9% 10%;
-  --sidebar-primary-foreground: 0 0% 98%;
-  --sidebar-accent: 240 4.8% 95.9%;
-  --sidebar-accent-foreground: 240 5.9% 10%;
-  --sidebar-border: 220 13% 91%;
-  --sidebar-ring: 217.2 91.2% 59.8%;
+  --skeleton: #18181b0d;
+  --destructive: #dc2626;
+  --destructive-foreground: #fafafa;
+  --border: #18181b1a;
+  --input: #18181b26;
+  --ring: #7c7cff;
+  --radius: 14px;
+  --sidebar-background: #fafafa;
+  --sidebar-foreground: #18181b;
+  --sidebar-primary: #18181b;
+  --sidebar-primary-foreground: #fafafa;
+  --sidebar-accent: #18181b0f;
+  --sidebar-accent-foreground: #18181b;
+  --sidebar-border: #18181b1a;
+  --sidebar-ring: #7c7cff;
 }
 
+/* The approved dark redesign palette, applied when next-themes adds .dark. */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.269 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.371 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --skeleton: oklch(0.371 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --sidebar-background: 240 5.9% 10%;
-  --sidebar-foreground: 240 4.8% 95.9%;
-  --sidebar-primary: 0 0% 98%;
-  --sidebar-primary-foreground: 240 5.9% 10%;
-  --sidebar-accent: 240 3.7% 15.9%;
-  --sidebar-accent-foreground: 240 4.8% 95.9%;
-  --sidebar-border: 240 3.7% 15.9%;
-  --sidebar-ring: 217.2 91.2% 59.8%;
+  --background: #0a0a0a;
+  --foreground: #fafafa;
+  --card: #18181b;
+  --card-foreground: #fafafa;
+  --popover: #1f1f23;
+  --popover-foreground: #fafafa;
+  --primary: #fafafa;
+  --primary-foreground: #0a0a0a;
+  --secondary: #ffffff14;
+  --secondary-foreground: #fafafa;
+  --muted: #ffffff08;
+  --muted-foreground: #a1a1a1;
+  --accent: #ffffff14;
+  --accent-foreground: #fafafa;
+  --skeleton: #ffffff0d;
+  --destructive: #ef4444;
+  --destructive-foreground: #fafafa;
+  --border: #ffffff1a;
+  --input: #ffffff26;
+  --ring: #7c7cff;
+  --sidebar-background: #0a0a0a;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #fafafa;
+  --sidebar-primary-foreground: #0a0a0a;
+  --sidebar-accent: #ffffff14;
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: #ffffff1a;
+  --sidebar-ring: #7c7cff;
 }
 
 /* AI surface tokens (the prompt bar, thinking trace and streamed answers),
@@ -75,38 +76,76 @@
    ink is text from strongest to faintest; the AI accent is the app's violet. */
 :root {
   --ink: var(--foreground);
-  --ink-2: color-mix(in oklch, var(--foreground) 72%, var(--background));
-  --ink-3: var(--muted-foreground);
+  --ink-2: var(--muted-foreground);
+  --ink-3: #71717a;
   --canvas: var(--background);
-  --surface: var(--popover);
+  --surface: var(--card);
   --inset: var(--muted);
   --field: var(--muted);
   --line: var(--border);
-  --line-strong: color-mix(in oklch, var(--foreground) 22%, var(--background));
-  --hover: var(--muted);
-  --hover-2: color-mix(in oklch, var(--muted) 70%, transparent);
-  --accent-ink: oklch(0.541 0.281 293.009);
-  --accent-tint: oklch(0.606 0.25 292.717 / 12%);
-  /* Mail importance labels: their own hues, so violet means only "AI". */
-  --label-important: oklch(0.646 0.222 41.116);
-  --label-low-priority: oklch(0.554 0.046 257.417);
-  --label-broadcast: oklch(0.588 0.158 241.966);
+  --line-strong: var(--input);
+  --hover: var(--accent);
+  --hover-2: #18181b0d;
+  --accent-ink: #7c7cff;
+  --accent-tint: #7c7cff1f;
+  --accent-soft: #6d28d9;
+  --danger-soft: #dc2626;
+  --ink-strong: #3f3f46;
+  --ink-faint: #71717a;
+  /* Mail importance labels: their own hues (red = important, gray = low
+     priority, amber = broadcast), so violet means only the AI. The light
+     values are text-safe on white surfaces; .dark re-brightens for dark. */
+  --label-important: #b91c1c;
+  --label-low-priority: #52525b;
+  --label-broadcast: #92400e;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --info: #2c8bef;
+  --success-text: #15803d;
+  --warning-text: #a16207;
+  /* Ink pair for text on the soft success/warning/destructive 
+     tints, where --*-text falls short of AA. */
+  --success-ink: #166534;
+  --warning-ink: #854d0e;
+  --danger-ink: #b91c1c;
+  /* Provider brand colors: logo tile, badge and status only — never on primary actions. */
+  --brand-gmail: #ea4335;
+  --brand-outlook: #2c8bef;
+  --brand-proton: #6d4aff;
+  --brand-yahoo: #5f01d1;
+  --brand-icloud: #3693f3;
 }
 
 .dark {
-  --accent-ink: oklch(0.702 0.183 293.541);
-  --accent-tint: oklch(0.702 0.183 293.541 / 16%);
-  --label-important: oklch(0.75 0.183 55.934);
-  --label-low-priority: oklch(0.704 0.04 256.788);
-  --label-broadcast: oklch(0.746 0.16 232.661);
+  --hover-2: #ffffff0d;
+  --accent-soft: #c7c7ff;
+  --danger-soft: #f87171;
+  --ink-3: #8b8b94;
+  --ink-strong: #e4e4e7;
+  --ink-faint: #8b8b94;
+  /* The light label values are tuned for white surfaces; dark surfaces get
+     the bright hues back, which pass AA against the dark tints. */
+  --label-important: #ef4444;
+  --label-low-priority: #a1a1a1;
+  --label-broadcast: #f59e0b;
+  --success-text: #22c55e;
+  --warning-text: #f59e0b;
+  --success-ink: #22c55e;
+  --warning-ink: #f59e0b;
+  --danger-ink: #f87171;
 }
 
 @theme inline {
+  --font-mono: 'JetBrains Mono', monospace;
   --font-sans: 'Nunito Sans', sans-serif;
 
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
   --color-ink-3: var(--ink-3);
+  --color-ink-strong: var(--ink-strong);
+  --color-ink-faint: var(--ink-faint);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger-soft: var(--danger-soft);
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
   --color-inset: var(--inset);
@@ -120,16 +159,30 @@
   --color-label-important: var(--label-important);
   --color-label-low-priority: var(--label-low-priority);
   --color-label-broadcast: var(--label-broadcast);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-success-text: var(--success-text);
+  --color-warning-text: var(--warning-text);
+  --color-success-ink: var(--success-ink);
+  --color-warning-ink: var(--warning-ink);
+  --color-danger-ink: var(--danger-ink);
+  --color-info: var(--info);
+  --color-brand-gmail: var(--brand-gmail);
+  --color-brand-outlook: var(--brand-outlook);
+  --color-brand-proton: var(--brand-proton);
+  --color-brand-yahoo: var(--brand-yahoo);
+  --color-brand-icloud: var(--brand-icloud);
   --shadow-hairline: 0 0 0 1px var(--line);
   --shadow-card: 0 1px 2px oklch(0 0 0 / 5%), 0 0 0 1px var(--line);
   --shadow-raised: 0 10px 28px -8px oklch(0 0 0 / 22%), 0 0 0 1px var(--line);
-  --radius-control: 8px;
+  --radius-control: 9px;
   --radius-chip: 6px;
+  --radius-tag: 5px;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-card: hsl(var(--sidebar-background));
-  --color-card-foreground: hsl(var(--sidebar-foreground));
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
@@ -146,18 +199,18 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-sidebar: hsl(var(--sidebar-background));
-  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
-  --color-sidebar-primary: hsl(var(--sidebar-primary));
-  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
-  --color-sidebar-accent: hsl(var(--sidebar-accent));
-  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
-  --color-sidebar-border: hsl(var(--sidebar-border));
-  --color-sidebar-ring: hsl(var(--sidebar-ring));
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --color-sidebar: var(--sidebar-background);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --radius-sm: 6px;
+  --radius-md: 9px;
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: 18px;
 }
 
 @layer base {
@@ -206,7 +259,7 @@
 /* The chip that names a mail's account. */
 @layer components {
   .chip {
-    @apply border-border bg-muted text-muted-foreground inline-flex max-w-full min-w-0 items-center gap-1 rounded-full border text-xs;
+    @apply border-border bg-secondary text-muted-foreground inline-flex max-w-full min-w-0 items-center gap-1 rounded-full border text-xs;
   }
   .chip--sm {
     @apply h-5 px-1.5;
@@ -234,13 +287,13 @@
     @apply relative flex w-full items-center gap-2;
   }
   .input-otp__group {
-    @apply flex min-w-0 items-center gap-2;
+    @apply flex min-w-0 flex-1 items-center gap-2;
   }
   .input-otp__slot {
-    @apply border-input bg-background text-foreground relative flex h-10 w-9.5 min-w-0 flex-1 items-center justify-center rounded-md border text-lg font-semibold shadow-xs shadow-black/5 transition-[border-color,box-shadow] motion-reduce:transition-none pointer-coarse:h-11;
+    @apply border-border bg-muted text-foreground relative flex h-14 min-w-0 flex-1 items-center justify-center rounded-[10px] border font-mono text-[21px] font-bold transition-[border-color,box-shadow] motion-reduce:transition-none pointer-coarse:h-14;
 
     &[data-active='true'] {
-      @apply border-ring ring-ring/30 z-10 ring-[3px];
+      @apply border-accent-ink bg-accent-tint ring-accent-ink/30 z-10 ring-[3px];
     }
   }
   .input-otp__slot-value {
@@ -249,10 +302,7 @@
   }
   .input-otp__caret {
     animation: caret-blink 1.2s ease-out infinite;
-    @apply bg-muted-foreground absolute h-4 w-0.5 rounded-sm motion-reduce:animate-none;
-  }
-  .input-otp__separator {
-    @apply bg-border h-0.5 w-1.5 shrink-0 rounded-sm;
+    @apply bg-accent-ink absolute h-6 w-0.5 rounded-sm motion-reduce:animate-none;
   }
 }
 @keyframes slot-value-in {
@@ -303,29 +353,6 @@
   &::-webkit-scrollbar {
     display: none;
   }
-}
-
-/* Brand palette — applied via <html data-theme="forest-amber"> in index.html */
-[data-theme='forest-amber'] {
-  --primary: #1c6b45;
-  --primary-foreground: oklch(0.985 0 0);
-  --ring: #2e9663;
-  --accent: #96d4b0;
-  --accent-foreground: #0f4028;
-  --sidebar-primary: 151 59% 26%;
-  --sidebar-primary-foreground: 0 0% 98%;
-  --sidebar-ring: 151 53% 38%;
-}
-
-[data-theme='forest-amber'].dark {
-  --primary: #5cb887;
-  --primary-foreground: #0f4028;
-  --ring: #5cb887;
-  --accent: #0f4028;
-  --accent-foreground: oklch(0.985 0 0);
-  --sidebar-primary: 148 39% 54%;
-  --sidebar-primary-foreground: 151 62% 15%;
-  --sidebar-ring: 148 39% 54%;
 }
 
 /* The invoice page prints the card alone: the shell steps aside while

@@ -45,11 +45,7 @@ export default function SimpleAlertDialog({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onCancel}>{cancelText}</AlertDialogCancel>
-          <AlertDialogAction
-            variant={variant}
-            className={variant === 'destructive' ? 'text-white' : ''}
-            onClick={onConfirm}
-          >
+          <AlertDialogAction variant={variant} onClick={onConfirm}>
             {confirmText}
           </AlertDialogAction>
         </AlertDialogFooter>

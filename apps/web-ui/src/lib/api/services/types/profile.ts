@@ -1,6 +1,6 @@
 import type { AxiosResponse } from 'axios'
 
-import type { AxiosItemResponse } from '@/types/api'
+import type { AxiosDeleteResponse, AxiosItemResponse } from '@/types/api'
 
 import type { UpdatePasswordDto, UpdateProfileDto } from '../../dtos/settings/profile/schema'
 import type { User, UserSecurity } from '../../models/user'
@@ -14,4 +14,6 @@ export type ProfileResources = {
   }) => Promise<AxiosItemResponse<User>>
   /** Ends every session: the caller signs in again. */
   changePassword: (body: Omit<UpdatePasswordDto, 'confirm_password'>) => Promise<AxiosResponse>
+  /** Deletes the account for good; the typed email must be the caller's own. */
+  deleteAccount: (body: { email: string }) => Promise<AxiosDeleteResponse>
 }

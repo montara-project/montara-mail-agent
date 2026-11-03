@@ -6,9 +6,9 @@ import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
 
-import SectionCard from '@/components/block/common/section-card'
+import { SettingsCard } from '@/components/block/common/settings-card'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
-import { Badge } from '@/components/ui/badge'
+import StatusDot from '@/components/block/common/status-dot'
 import { Button } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { OTPCodeInput } from '@/components/ui/input-otp'
@@ -19,6 +19,12 @@ import { SECURITY_QUERY_KEY } from '@/lib/api/queries/profile'
 import { services } from '@/lib/api/services'
 import { verifyTOTP } from '@/lib/auth/email-auth'
 import { getQueryClient } from '@/lib/providers/react-query'
+import { cn } from '@/lib/utils'
+
+const STATE = 'gap-[7px] text-[12.5px] font-semibold'
+const ACTION =
+  'h-8 gap-1.5 px-3 text-xs font-semibold shadow-none pointer-coarse:h-11 [&_svg]:size-[13px]'
+const HINT = 'text-ink-3 text-[11px] leading-[15px]'
 
 const refreshSecurity = () => getQueryClient().invalidateQueries({ queryKey: [SECURITY_QUERY_KEY] })
 
@@ -30,7 +36,7 @@ function BackupCodes({ codes }: { codes: string[] }) {
     <div className="grid gap-3">
       <ul
         aria-label="Backup codes"
-        className="bg-muted/40 grid grid-cols-2 gap-x-6 gap-y-1 rounded-lg border p-3 font-mono text-sm sm:grid-cols-3"
+        className="bg-muted/40 grid grid-cols-2 gap-x-6 gap-y-1 rounded-md border p-3 font-mono text-sm sm:grid-cols-3"
       >
         {codes.map((code) => (
           <li key={code}>{code}</li>
@@ -39,19 +45,21 @@ function BackupCodes({ codes }: { codes: string[] }) {
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           size="sm"
           onClick={() =>
-            navigator.clipboard.writeText(text).then(
-              () => toast.success('Backup codes copied'),
-              () => toast.error("Couldn't copy; select the codes instead.")
-            )
+            Promise.resolve()
+              .then(() => navigator.clipboard.writeText(text))
+              .then(
+                () => toast.success('Backup codes copied'),
+                () => toast.error("Couldn't copy; select the codes instead.")
+              )
           }
         >
           <Copy />
           Copy
         </Button>
-        <Button type="button" variant="outline" size="sm" asChild>
+        <Button type="button" variant="secondary" size="sm" asChild>
           <a
             href={`data:text/plain;charset=utf-8,${encodeURIComponent(text + '\n')}`}
             download="montara-backup-codes.txt"
@@ -98,13 +106,15 @@ function Setup({ setup, onClose }: { setup: Models.TOTPSetup; onClose: () => voi
           Use an authenticator app such as Google Authenticator, 1Password or Authy.
         </p>
         {/* White behind the code in both themes: scanners need the contrast. */}
-        <div className="w-fit rounded-lg border bg-white p-3">
+        <div className="w-fit rounded-md border bg-white p-3">
           <QRCodeSVG value={setup.totp_uri} size={176} title="Authenticator QR code" />
         </div>
         {secret && (
           <p className="text-sm">
             Can't scan it? Enter this key:{' '}
-            <code className="bg-muted rounded px-1.5 py-0.5 font-mono break-all">{secret}</code>
+            <code className="bg-muted rounded-chip px-1.5 py-0.5 font-mono break-all">
+              {secret}
+            </code>
           </p>
         )}
       </section>
@@ -126,13 +136,13 @@ function Setup({ setup, onClose }: { setup: Models.TOTPSetup; onClose: () => voi
         <h3 className="font-medium">3. Enter a code</h3>
         <Field>
           <FieldLabel htmlFor="totp-confirm">Code from the app</FieldLabel>
-          <OTPCodeInput id="totp-confirm" value={code} onChange={setCode} />
+          <OTPCodeInput id="totp-confirm" size="sm" value={code} onChange={setCode} />
         </Field>
         <div className="flex gap-2">
           <Button type="submit" disabled={verifying || !code.trim()}>
             {verifying ? 'Verifying...' : 'Turn on'}
           </Button>
-          <Button type="button" variant="outline" onClick={onClose} disabled={verifying}>
+          <Button type="button" variant="secondary" onClick={onClose} disabled={verifying}>
             Cancel
           </Button>
         </div>
@@ -163,30 +173,34 @@ function Enabled() {
   })
 
   return (
-    <div className="grid max-w-xl gap-4">
-      <p className="text-sm">
+    <div className="grid gap-3.5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <StatusDot status="synced" label="Enabled" className={cn(STATE, 'text-success-text')} />
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            className={cn(ACTION, 'bg-muted')}
+            disabled={regenerate.isPending}
+            onClick={() => setConfirming('codes')}
+          >
+            <KeyRound />
+            New backup codes
+          </Button>
+          <Button
+            variant="destructive"
+            className={ACTION}
+            disabled={disable.isPending}
+            onClick={() => setConfirming('disable')}
+          >
+            Turn off
+          </Button>
+        </div>
+      </div>
+      <p className={HINT}>
         Signing in asks for a code from your authenticator app after the password, on every browser
         you don't mark as trusted.
       </p>
       {codes && <BackupCodes codes={codes} />}
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant="outline"
-          disabled={regenerate.isPending}
-          onClick={() => setConfirming('codes')}
-        >
-          <KeyRound />
-          New backup codes
-        </Button>
-        <Button
-          variant="destructive"
-          className="text-white"
-          disabled={disable.isPending}
-          onClick={() => setConfirming('disable')}
-        >
-          Turn off
-        </Button>
-      </div>
       <SimpleAlertDialog
         open={confirming !== null}
         onOpenChange={(open) => !open && setConfirming(null)}
@@ -228,33 +242,39 @@ export default function TOTPSettings() {
     if (enabled) return <Enabled />
     if (setup) return <Setup setup={setup} onClose={() => setSetup(null)} />
     return (
-      <div className="grid max-w-xl gap-4">
-        <p className="text-sm">
-          With it on, someone who learns your password still can't sign in without your phone.
-        </p>
-        <div>
-          <Button onClick={() => enable.mutate()} disabled={enable.isPending}>
+      <div className="grid gap-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <StatusDot
+            status="pending"
+            label="Not enabled"
+            className={cn(STATE, 'text-warning-text')}
+          />
+          <Button
+            variant="outline"
+            className={cn(ACTION, 'bg-muted')}
+            onClick={() => enable.mutate()}
+            disabled={enable.isPending}
+          >
             <ShieldCheck />
-            {enable.isPending ? 'Starting...' : 'Set up'}
+            {enable.isPending ? 'Starting...' : 'Set up 2FA'}
           </Button>
         </div>
+        <p className={HINT}>
+          With it on, someone who learns your password still can't sign in without your phone.
+        </p>
       </div>
     )
   }
 
   return (
-    <SectionCard
+    <SettingsCard
+      icon={ShieldCheck}
+      tone="success"
+      body="form"
       title="Two-factor authentication"
       description="A code from your phone on top of the password."
-      toolbar={
-        data && (
-          <Badge variant={enabled ? 'success' : 'secondary'} appearance="light">
-            {enabled ? 'On' : 'Off'}
-          </Badge>
-        )
-      }
     >
       {content()}
-    </SectionCard>
+    </SettingsCard>
   )
 }

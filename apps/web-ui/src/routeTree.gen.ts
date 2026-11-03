@@ -27,6 +27,7 @@ import { Route as appSettingsIpBlocksRouteImport } from './routes/(app)/settings
 import { Route as appSettingsMailRouteImport } from './routes/(app)/settings/mail'
 import { Route as appSettingsMcpRouteImport } from './routes/(app)/settings/mcp'
 import { Route as appSettingsOrganizationRouteImport } from './routes/(app)/settings/organization'
+import { Route as appSettingsPluginsRouteImport } from './routes/(app)/settings/plugins'
 import { Route as appSettingsProfileRouteImport } from './routes/(app)/settings/profile'
 import { Route as appSettingsSecurityRouteImport } from './routes/(app)/settings/security'
 import { Route as appSettingsSkillsRouteImport } from './routes/(app)/settings/skills'
@@ -123,6 +124,11 @@ const appSettingsOrganizationRoute = appSettingsOrganizationRouteImport.update({
   path: '/organization',
   getParentRoute: () => appSettingsRouteRoute,
 } as any)
+const appSettingsPluginsRoute = appSettingsPluginsRouteImport.update({
+  id: '/plugins',
+  path: '/plugins',
+  getParentRoute: () => appSettingsRouteRoute,
+} as any)
 const appSettingsProfileRoute = appSettingsProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -159,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/settings/mail': typeof appSettingsMailRoute
   '/settings/mcp': typeof appSettingsMcpRoute
   '/settings/organization': typeof appSettingsOrganizationRoute
+  '/settings/plugins': typeof appSettingsPluginsRoute
   '/settings/profile': typeof appSettingsProfileRoute
   '/settings/security': typeof appSettingsSecurityRoute
   '/settings/skills': typeof appSettingsSkillsRoute
@@ -181,6 +188,7 @@ export interface FileRoutesByTo {
   '/settings/mail': typeof appSettingsMailRoute
   '/settings/mcp': typeof appSettingsMcpRoute
   '/settings/organization': typeof appSettingsOrganizationRoute
+  '/settings/plugins': typeof appSettingsPluginsRoute
   '/settings/profile': typeof appSettingsProfileRoute
   '/settings/security': typeof appSettingsSecurityRoute
   '/settings/skills': typeof appSettingsSkillsRoute
@@ -206,6 +214,7 @@ export interface FileRoutesById {
   '/(app)/settings/mail': typeof appSettingsMailRoute
   '/(app)/settings/mcp': typeof appSettingsMcpRoute
   '/(app)/settings/organization': typeof appSettingsOrganizationRoute
+  '/(app)/settings/plugins': typeof appSettingsPluginsRoute
   '/(app)/settings/profile': typeof appSettingsProfileRoute
   '/(app)/settings/security': typeof appSettingsSecurityRoute
   '/(app)/settings/skills': typeof appSettingsSkillsRoute
@@ -231,6 +240,7 @@ export interface FileRouteTypes {
     | '/settings/mail'
     | '/settings/mcp'
     | '/settings/organization'
+    | '/settings/plugins'
     | '/settings/profile'
     | '/settings/security'
     | '/settings/skills'
@@ -253,6 +263,7 @@ export interface FileRouteTypes {
     | '/settings/mail'
     | '/settings/mcp'
     | '/settings/organization'
+    | '/settings/plugins'
     | '/settings/profile'
     | '/settings/security'
     | '/settings/skills'
@@ -277,6 +288,7 @@ export interface FileRouteTypes {
     | '/(app)/settings/mail'
     | '/(app)/settings/mcp'
     | '/(app)/settings/organization'
+    | '/(app)/settings/plugins'
     | '/(app)/settings/profile'
     | '/(app)/settings/security'
     | '/(app)/settings/skills'
@@ -421,6 +433,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof appSettingsOrganizationRouteImport
       parentRoute: typeof appSettingsRouteRoute
     }
+    '/(app)/settings/plugins': {
+      id: '/(app)/settings/plugins'
+      path: '/plugins'
+      fullPath: '/settings/plugins'
+      preLoaderRoute: typeof appSettingsPluginsRouteImport
+      parentRoute: typeof appSettingsRouteRoute
+    }
     '/(app)/settings/profile': {
       id: '/(app)/settings/profile'
       path: '/profile'
@@ -463,6 +482,7 @@ interface appSettingsRouteRouteChildren {
   appSettingsMailRoute: typeof appSettingsMailRoute
   appSettingsMcpRoute: typeof appSettingsMcpRoute
   appSettingsOrganizationRoute: typeof appSettingsOrganizationRoute
+  appSettingsPluginsRoute: typeof appSettingsPluginsRoute
   appSettingsProfileRoute: typeof appSettingsProfileRoute
   appSettingsSecurityRoute: typeof appSettingsSecurityRoute
   appSettingsSkillsRoute: typeof appSettingsSkillsRoute
@@ -481,6 +501,7 @@ const appSettingsRouteRouteChildren: appSettingsRouteRouteChildren = {
   appSettingsMailRoute: appSettingsMailRoute,
   appSettingsMcpRoute: appSettingsMcpRoute,
   appSettingsOrganizationRoute: appSettingsOrganizationRoute,
+  appSettingsPluginsRoute: appSettingsPluginsRoute,
   appSettingsProfileRoute: appSettingsProfileRoute,
   appSettingsSecurityRoute: appSettingsSecurityRoute,
   appSettingsSkillsRoute: appSettingsSkillsRoute,

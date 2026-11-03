@@ -1,14 +1,13 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Copy, KeyRound, Plus, Trash2 } from 'lucide-react'
+import { Copy, KeyRound, Link, Plug, Plus, Trash2 } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
 
-import EmptyState from '@/components/block/common/empty-state'
 import QueryState from '@/components/block/common/query-state'
-import SectionCard from '@/components/block/common/section-card'
 import SectionHeading from '@/components/block/common/section-heading'
+import { SettingsCard, SettingsPage } from '@/components/block/common/settings-card'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import SimpleAlertScrollableDialogForm from '@/components/block/common/simple-alert-scrollable-dialog-form'
 import {
@@ -33,11 +32,8 @@ import {
   GLOBAL_SCOPE,
 } from '@/lib/api/dtos/settings/api-key/schema'
 import { queries } from '@/lib/api/queries'
-import { SERVER_URL } from '@/lib/api/server-url'
+import { MCP_ENDPOINT } from '@/lib/constants/mcp'
 import { isPast, timeAgo } from '@/lib/date'
-
-/** Where MCP clients connect: the server this browser uses. */
-const MCP_ENDPOINT = `${SERVER_URL || window.location.origin}/mcp`
 
 const LIFETIME_OPTIONS = API_KEY_LIFETIMES.map((days) => ({
   value: days,
@@ -60,11 +56,14 @@ const clientConfig = (key: string) =>
     2
   )
 
+// Outside a secure context navigator.clipboard is undefined; the promise turns that into the failure toast.
 const copy = (text: string, what: string) =>
-  navigator.clipboard.writeText(text).then(
-    () => toast.success(`${what} copied`),
-    () => toast.error(`Couldn't copy the ${what.toLowerCase()}; select it instead.`)
-  )
+  Promise.resolve()
+    .then(() => navigator.clipboard.writeText(text))
+    .then(
+      () => toast.success(`${what} copied`),
+      () => toast.error(`Couldn't copy the ${what.toLowerCase()}; select it instead.`)
+    )
 
 const day = (iso: string) =>
   new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -73,7 +72,7 @@ const day = (iso: string) =>
 function KeyMeta({ apiKey }: { apiKey: Models.APIKey }) {
   const expired = !!apiKey.expires_at && isPast(new Date(apiKey.expires_at))
   return (
-    <span className="text-muted-foreground text-xs">
+    <span className="text-ink-3 text-[10.5px] leading-[14px]">
       Created {day(apiKey.created_at)}
       {apiKey.expires_at && (
         <span className={expired ? 'text-destructive' : undefined}>
@@ -92,12 +91,16 @@ function KeyRow({ apiKey }: { apiKey: Models.APIKey }) {
   const remove = useMutation(queries.apiKeys.delete())
 
   return (
-    <li className="flex flex-wrap items-center gap-3 px-4 py-3">
-      <KeyRound className="text-muted-foreground size-4 shrink-0" aria-hidden />
+    <li className="flex flex-wrap items-center gap-3 px-[18px] py-3">
+      <span className="bg-muted grid size-7 shrink-0 place-items-center rounded-[8px]">
+        <KeyRound className="text-muted-foreground size-[13px]" aria-hidden />
+      </span>
       <span className="grid min-w-0 flex-1 gap-0.5">
         <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
-          <span className="truncate text-sm font-medium">{apiKey.name}</span>
-          <span className="text-muted-foreground font-mono text-xs">{apiKey.hint}</span>
+          <span className="text-[12.5px] leading-[17px] font-semibold wrap-anywhere">
+            {apiKey.name}
+          </span>
+          <span className="text-ink-3 font-mono text-[10.5px]">{apiKey.hint}</span>
           <Badge variant="secondary" appearance="light" size="sm" className="max-w-48">
             <span className="truncate">
               {apiKey.organization_id
@@ -114,14 +117,14 @@ function KeyRow({ apiKey }: { apiKey: Models.APIKey }) {
         <KeyMeta apiKey={apiKey} />
       </span>
       <Button
-        variant="ghost"
+        variant="destructive"
+        mode="icon"
         size="sm"
-        className="text-destructive hover:text-destructive"
+        aria-label={`Revoke ${apiKey.name}`}
         disabled={remove.isPending}
         onClick={() => setConfirming(true)}
       >
         <Trash2 />
-        Revoke
       </Button>
 
       <SimpleAlertDialog
@@ -270,7 +273,7 @@ function KeyCreatedDialog({
             </code>
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               size="sm"
               onClick={() => copy(created.key, 'Key')}
             >
@@ -283,7 +286,7 @@ function KeyCreatedDialog({
               <span className="text-sm font-medium">Client config</span>
               <Button
                 type="button"
-                variant="ghost"
+                variant="secondary"
                 size="sm"
                 onClick={() => copy(config, 'Config')}
               >
@@ -294,7 +297,7 @@ function KeyCreatedDialog({
             <pre className="bg-muted/60 overflow-x-auto rounded-md border p-3 font-mono text-xs leading-relaxed">
               {config}
             </pre>
-            <p className="text-muted-foreground text-xs text-pretty">
+            <p className="text-ink-3 text-xs text-pretty">
               Add it to your MCP client's servers, e.g. Claude Desktop's or Cursor's{' '}
               <code className="font-mono">mcp.json</code>.
             </p>
@@ -325,6 +328,15 @@ function Loading() {
   )
 }
 
+/** A group's label, above its card. */
+function GroupLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-ink-faint font-mono text-[10.5px] leading-[13px] font-semibold tracking-[1px] uppercase">
+      {children}
+    </p>
+  )
+}
+
 /**
  * The user's API keys, which let MCP clients outside the app reach their
  * mailboxes through /mcp.
@@ -335,59 +347,83 @@ export default function APIKeyList() {
   const { data: keys = [], isPending, isError, error, refetch } = useQuery(queries.apiKeys.list())
 
   return (
-    <section className="grid gap-3">
+    <SettingsPage>
       <SectionHeading
-        title="API keys"
-        description="Let MCP clients such as Claude Desktop or Cursor search and sort your mail. What they propose to send waits for your approval in the AI assistant."
-        action={
-          <Button className="h-8.5 rounded-lg" onClick={() => setCreating(true)}>
-            <Plus />
-            <span>Create key</span>
-          </Button>
-        }
+        title="API Keys"
+        description="Let MCP clients such as Claude Desktop or Cursor search and sort your mail. Anything they propose to send waits for your approval."
       />
 
-      <SectionCard>
-        <div className="grid gap-2">
-          <span className="text-sm font-medium">MCP endpoint</span>
-          <div className="flex min-w-0 items-center gap-2">
-            <code className="bg-muted/60 min-w-0 flex-1 truncate rounded-md border px-3 py-2 font-mono text-sm">
-              {MCP_ENDPOINT}
+      <div className="grid gap-5">
+        <GroupLabel>Connection</GroupLabel>
+        <SettingsCard icon={Plug} tone="info" body="form" title="MCP endpoint">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <code
+              title={MCP_ENDPOINT}
+              className="bg-background text-foreground flex h-9.5 min-w-0 flex-1 items-center gap-2 rounded-md border px-3 font-mono text-xs"
+            >
+              <Link className="text-ink-3 size-[13px] shrink-0" aria-hidden />
+              <span className="truncate">{MCP_ENDPOINT}</span>
             </code>
-            <Button variant="outline" size="sm" onClick={() => copy(MCP_ENDPOINT, 'Endpoint')}>
+            <Button
+              variant="outline"
+              className="bg-muted h-9.5 gap-1.5 px-3 text-xs font-semibold shadow-none pointer-coarse:h-11 [&_svg]:size-[13px]"
+              onClick={() => copy(MCP_ENDPOINT, 'Endpoint')}
+            >
               <Copy />
               Copy
             </Button>
           </div>
-          <p className="text-muted-foreground text-xs text-pretty">
-            Streamable HTTP. Send a key as <code className="font-mono">Authorization: Bearer</code>;
-            it opens this endpoint only, not your account.
+          <p className="text-ink-3 text-[11px] leading-[15px] text-pretty">
+            Streamable HTTP. Send a key as Authorization: Bearer. It opens this endpoint only, never
+            your account.
           </p>
-        </div>
-      </SectionCard>
+        </SettingsCard>
 
-      <SectionCard>
-        <QueryState
-          isPending={isPending}
-          isError={isError}
-          error={error}
-          onRetry={() => refetch()}
-          isEmpty={keys.length === 0}
-          loading={<Loading />}
-          empty={
-            <EmptyState
-              title="No API keys yet"
-              description="Create one for each app you connect, so you can revoke it alone."
-            />
+        <GroupLabel>Keys</GroupLabel>
+        <SettingsCard
+          icon={KeyRound}
+          tone="info"
+          body="form"
+          title="Active keys"
+          description="One key per app, so you can revoke each one alone."
+          action={
+            <Button
+              variant="outline"
+              className="bg-muted h-7.5 gap-1.5 px-3 text-[11.5px] font-semibold shadow-none pointer-coarse:h-11 [&_svg]:size-3"
+              onClick={() => setCreating(true)}
+            >
+              <Plus />
+              Create key
+            </Button>
           }
         >
-          <ul className="-m-4 divide-y overflow-hidden rounded-lg">
-            {keys.map((apiKey) => (
-              <KeyRow key={apiKey.id} apiKey={apiKey} />
-            ))}
-          </ul>
-        </QueryState>
-      </SectionCard>
+          <QueryState
+            isPending={isPending}
+            isError={isError}
+            error={error}
+            onRetry={() => refetch()}
+            isEmpty={keys.length === 0}
+            loading={<Loading />}
+            empty={
+              <div className="grid justify-items-center gap-2 py-6 text-center">
+                <span className="bg-muted grid size-9 place-items-center rounded-[10px]">
+                  <KeyRound className="text-ink-3 size-4" aria-hidden />
+                </span>
+                <p className="text-[12.5px] leading-[17px] font-semibold">No API keys yet</p>
+                <p className="text-ink-3 text-[11px] leading-[15px]">
+                  Create one for each app you connect, so you can revoke it alone.
+                </p>
+              </div>
+            }
+          >
+            <ul className="divide-border/60 -m-[18px] divide-y overflow-hidden rounded-b-lg">
+              {keys.map((apiKey) => (
+                <KeyRow key={apiKey.id} apiKey={apiKey} />
+              ))}
+            </ul>
+          </QueryState>
+        </SettingsCard>
+      </div>
 
       {creating && (
         <CreateKeyDialog
@@ -399,6 +435,6 @@ export default function APIKeyList() {
         />
       )}
       {created && <KeyCreatedDialog created={created} onClose={() => setCreated(null)} />}
-    </section>
+    </SettingsPage>
   )
 }

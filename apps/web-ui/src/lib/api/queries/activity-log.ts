@@ -1,32 +1,27 @@
-import { infiniteQueryOptions } from '@tanstack/react-query'
+import { keepPreviousData, queryOptions } from '@tanstack/react-query'
 
 import { services } from '../services'
 
 const ACTIVITY_LOG_QUERY_KEY = 'activity-logs'
 
 /** How many entries one page of the log holds. */
-const ACTIVITY_LOG_PAGE_SIZE = 10
+export const ACTIVITY_LOG_PAGE_SIZE = 10
 
-/** One log's activities — the user's own, or an organization's — one page at
- * a time for a "Load more" list. */
-const infinite = (organizationId?: string) =>
-  infiniteQueryOptions({
-    queryKey: [ACTIVITY_LOG_QUERY_KEY, organizationId ?? 'me', 'infinite'],
-    queryFn: async ({ pageParam }: { pageParam: number }) => {
-      const page = { offset: pageParam, limit: ACTIVITY_LOG_PAGE_SIZE }
+/** One page of a log: the user's own, or an organization's. The last page stays
+ * on screen while the next one loads, so the pagination doesn't jump. */
+const page = (pageIndex: number, organizationId?: string) =>
+  queryOptions({
+    queryKey: [ACTIVITY_LOG_QUERY_KEY, organizationId ?? 'me', pageIndex],
+    queryFn: async () => {
+      const params = { offset: pageIndex * ACTIVITY_LOG_PAGE_SIZE, limit: ACTIVITY_LOG_PAGE_SIZE }
       const res = organizationId
-        ? await services.activityLog.byOrganization(organizationId, page)
-        : await services.activityLog.mine(page)
+        ? await services.activityLog.byOrganization(organizationId, params)
+        : await services.activityLog.mine(params)
       return res.data
     },
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, allPages) => {
-      const total = lastPage.metadata.total ?? 0
-      const nextOffset = allPages.length * ACTIVITY_LOG_PAGE_SIZE
-      return nextOffset < total ? nextOffset : undefined
-    },
+    placeholderData: keepPreviousData,
   })
 
 export const activityLogQueries = {
-  infinite,
+  page,
 } as const

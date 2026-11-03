@@ -216,7 +216,7 @@ export default function ReplyAiPanel({
             type="button"
             variant="outline"
             size="sm"
-            className="bg-background h-auto max-w-full rounded-full py-1 text-left text-xs font-normal whitespace-normal"
+            className="bg-background h-auto max-w-full rounded-chip py-1 text-left text-xs font-normal whitespace-normal"
             disabled={busy}
             onClick={() => use(text)}
           >
@@ -230,7 +230,7 @@ export default function ReplyAiPanel({
   return (
     <section
       aria-label="Write with AI"
-      className="animate-in fade-in slide-in-from-bottom-1 rounded-xl border border-accent-ink/25 bg-accent-ink/5 p-3 duration-200 ease-out motion-reduce:animate-none "
+      className="animate-in fade-in slide-in-from-bottom-1 rounded-lg border border-accent-ink/25 bg-accent-tint p-3 duration-200 ease-out motion-reduce:animate-none"
     >
       <div className="mb-2.5 flex items-center gap-2">
         <Sparkles className="size-4 shrink-0 text-accent-ink" aria-hidden />
@@ -283,7 +283,7 @@ export default function ReplyAiPanel({
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="bg-background h-7 rounded-full text-xs"
+                    className="bg-background h-7 rounded-chip text-xs"
                     title={skill.description}
                     disabled={busy || !editorText.hasText}
                     onClick={skill.key === 'translate_reply' ? undefined : () => startPolish(skill)}

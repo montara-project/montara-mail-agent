@@ -149,6 +149,75 @@ func (r *TokenTopupRepository) MarkPaidAndCredit(ctx context.Context, referenceI
 	return t, true, nil
 }
 
+// ErrInsufficientWalletBalance reports a token purchase the wallet can't
+// cover; the handler answers 402 so the UI asks for a top-up.
+var ErrInsufficientWalletBalance = errors.New("insufficient wallet balance")
+
+// BuyFromWallet sells pay-as-you-go tokens straight from the IDR wallet at
+// Rp1.000 per 1M tokens: the guarded UPDATE debits only when the balance
+// covers the price, so a short wallet writes nothing at all; otherwise the
+// paid top-up row, the token credit, and the ledger entry land in one
+// transaction — the webhook flows' exactly-once shape.
+func (r *TokenTopupRepository) BuyFromWallet(ctx context.Context, userID uuid.UUID, tokens int64, amountIDR int) (models.TokenTopup, error) {
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return models.TokenTopup{}, err
+	}
+	defer tx.Rollback()
+
+	res, err := tx.ExecContext(ctx, `
+		UPDATE wallet_balances SET balance_idr = balance_idr - $2, updated_at = now()
+		WHERE user_id = $1 AND balance_idr >= $2`,
+		userID, amountIDR,
+	)
+	if err != nil {
+		return models.TokenTopup{}, err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return models.TokenTopup{}, err
+	}
+	if n == 0 {
+		return models.TokenTopup{}, ErrInsufficientWalletBalance
+	}
+
+	id, err := uuid.NewV7()
+	if err != nil {
+		return models.TokenTopup{}, err
+	}
+	var t models.TokenTopup
+	err = tx.QueryRowContext(ctx, `
+		INSERT INTO token_topups (id, user_id, amount_idr, tokens, status, reference_id, pay_url, paid_at)
+		VALUES ($1, $2, $3, $4, $5, $6, '', now())
+		RETURNING `+tokenTopupColumns,
+		id, userID, amountIDR, tokens, models.TopupStatusPaid, "wallet-"+id.String(),
+	).Scan(&t.ID, &t.CreatedAt, &t.UserID, &t.AmountIDR, &t.Tokens, &t.Status, &t.ReferenceID, &t.PayURL, &t.PaidAt)
+	if err != nil {
+		return models.TokenTopup{}, err
+	}
+
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO token_balances (user_id, balance_tokens) VALUES ($1, $2)
+		ON CONFLICT (user_id) DO UPDATE
+		SET balance_tokens = token_balances.balance_tokens + $2, updated_at = now()`,
+		t.UserID, t.Tokens,
+	); err != nil {
+		return models.TokenTopup{}, err
+	}
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO wallet_transactions (user_id, kind, amount_idr, reference_type, reference_id, note)
+		VALUES ($1, $2, $3, $4, $5, $6)`,
+		t.UserID, models.WalletKindTokenPurchase, -t.AmountIDR,
+		"token_topup", t.ID, "AI token purchase",
+	); err != nil {
+		return models.TokenTopup{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return models.TokenTopup{}, err
+	}
+	return t, nil
+}
+
 // ByIDForUser returns one top-up by id, only when it belongs to userID.
 func (r *TokenTopupRepository) ByIDForUser(ctx context.Context, id, userID uuid.UUID) (models.TokenTopup, error) {
 	return scanTokenTopup(r.queryRowContext(ctx, `

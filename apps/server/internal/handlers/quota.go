@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"crypto/subtle"
-	"strings"
+	"errors"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -15,13 +15,15 @@ import (
 	"montara-mail-agent/server/internal/lib/constant"
 	"montara-mail-agent/server/internal/lib/period"
 	"montara-mail-agent/server/internal/lib/validator"
-	"montara-mail-agent/server/internal/models"
+	"montara-mail-agent/server/internal/repositories"
 )
 
-// The one top-up package: 10M tokens per Rp10,000, pay-as-you-go, no expiry.
+// Pay-as-you-go tokens: a 10M floor in 1M steps, Rp1.000 per 1M, bought
+// straight from the IDR wallet, never expiring.
 const (
-	topupAmountIDR = 10_000
-	topupTokens    = 10_000_000
+	topupTokens        = 10_000_000
+	topupTokenStep     = 1_000_000
+	topupIDRPerMillion = 1_000
 )
 
 type quotaHandler struct{ app *app.Application }
@@ -71,8 +73,8 @@ func (h *quotaHandler) Status(c fiber.Ctx) error {
 	return dtos.OK(c, out)
 }
 
-// topupView is a created top-up: everything the app needs to take the user
-// to BorderPay's checkout.
+// topupView is a bought token package: the wallet purchase is instant, so a
+// fresh row is already paid and pay_url stays empty.
 type topupView struct {
 	ID        string `json:"id"`
 	Status    string `json:"status"`
@@ -81,35 +83,32 @@ type topupView struct {
 	PayURL    string `json:"pay_url"`
 }
 
-// CreateTopup starts one pay-as-you-go purchase: 10M tokens for Rp10,000
-// through BorderPay's QRIS checkout.
+// CreateTopup buys pay-as-you-go tokens straight from the IDR wallet at
+// Rp1.000 per 1M tokens: the design's presets and its custom field both post
+// a token count, the floor is 10M and the steps are 1M.
 func (h *quotaHandler) CreateTopup(c fiber.Ctx) error {
 	uid, err := lib.ContextGetUID(c)
 	if err != nil {
 		return apperr.ErrUnauthorized
 	}
-	if h.app.Config.BorderPay.APIKey == "" {
-		return apperr.New(apperr.KindUnavailable, "Top up is not available on this server")
+	var body dtos.QuotaTopupBody
+	if err := lib.ValidateRequestBody(c, &body); err != nil {
+		return err
 	}
-
-	id, err := uuid.NewV7()
+	if body.Tokens < topupTokens {
+		return apperr.New(apperr.KindBadRequest, "The smallest purchase is 10M tokens")
+	}
+	if body.Tokens%topupTokenStep != 0 {
+		return apperr.New(apperr.KindBadRequest, "Tokens come in steps of 1M")
+	}
+	t, err := h.app.Repositories.TokenTopup.BuyFromWallet(c.Context(), uid, body.Tokens, int(body.Tokens/topupTokenStep*topupIDRPerMillion))
+	if errors.Is(err, repositories.ErrInsufficientWalletBalance) {
+		return apperr.New(apperr.KindPaymentRequired, "Not enough wallet balance. Top up your wallet first.")
+	}
 	if err != nil {
 		return err
 	}
-	t := models.TokenTopup{ID: id, UserID: uid, AmountIDR: topupAmountIDR, Tokens: topupTokens, ReferenceID: id.String()}
-	if err := h.app.Repositories.TokenTopup.Create(c.Context(), t); err != nil {
-		return err
-	}
-
-	returnURL := strings.TrimSuffix(h.app.Config.BorderPay.ReturnURL, "/") + "/invoice/" + t.ID.String()
-	payURL, err := borderPayCheckout(c.Context(), h.app, int64(t.AmountIDR), t.ReferenceID, returnURL)
-	if err != nil {
-		return err
-	}
-	if err := h.app.Repositories.TokenTopup.SetPayment(c.Context(), id, payURL); err != nil {
-		return err
-	}
-	return dtos.OK(c, topupView{ID: id.String(), Status: models.TopupStatusPending, AmountIDR: topupAmountIDR, Tokens: topupTokens, PayURL: payURL})
+	return dtos.OK(c, topupView{ID: t.ID.String(), Status: t.Status, AmountIDR: t.AmountIDR, Tokens: t.Tokens})
 }
 
 // GetTopup returns one of the signed-in user's top-ups, for the invoice page.

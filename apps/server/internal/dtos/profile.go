@@ -49,3 +49,16 @@ func (dto PasswordBody) Validate(v *validator.MapValidator) {
 	v.Field("current_password").Required().String().MaxLen(MaxPasswordLen)
 	v.Field("new_password").Required().String().MaxLen(MaxPasswordLen)
 }
+
+// DeleteAccountBody confirms a self-deletion: the typed email must be the
+// signed-in user's own, so an open page cannot delete the wrong account.
+type DeleteAccountBody struct {
+	Email string `json:"email"`
+}
+
+func (dto DeleteAccountBody) Validate(v *validator.MapValidator) {
+	v.Field("email").Required().String().MaxLen(maxEmailLen)
+}
+
+// maxEmailLen bounds the confirmation email; Authula's column allows 255.
+const maxEmailLen = 254

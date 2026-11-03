@@ -44,11 +44,15 @@ const topup = (id: string) =>
 const createTopup = () => {
   const qc = getQueryClient()
   return mutationOptions({
-    mutationFn: async () => {
-      const res = await services.quota.createTopup()
+    mutationFn: async (body: { tokens: number }) => {
+      const res = await services.quota.createTopup(body)
       return res.data.data
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: [QUOTA_QUERY_KEY] }),
+    // The purchase debits the wallet too, so the billing side refetches.
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [QUOTA_QUERY_KEY] })
+      qc.invalidateQueries({ queryKey: ['billing'] })
+    },
   })
 }
 

@@ -15,6 +15,7 @@ All routes need a signed-in user unless noted. `:id` is a UUID.
 | `PATCH /api/v1/me` | Name, avatar (an `https` URL) and timezone. |
 | `PATCH /api/v1/me/preferences` | Change your app preferences: `split_inbox`. |
 | `PUT /api/v1/me/password` | Change the password after checking the current one; ends every session and revokes your API keys. |
+| `DELETE /api/v1/me` | Delete the account for good: `email` must be the caller's own address. Removes the API keys, the memberships, the organizations nobody else belongs to (with their mailboxes and agent data) and every session. The last super user is refused. |
 | `GET /api/v1/me/activity-logs` | Your own activity. |
 | `GET, POST /api/v1/me/api-keys` | List your API keys, or create one: `name`, `expires_in_days` (1 to 365, default 90), `organization_id` to scope it to one organization (leave it out for every organization), and `read_only` to limit it to listing, searching and reading. The key is in the create answer only. |
 | `DELETE /api/v1/me/api-keys/:id` | Revoke a key. |

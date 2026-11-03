@@ -1,4 +1,5 @@
-import { ChevronDown, Pencil, Plus } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { ChevronsUpDown, Pencil, Plus } from 'lucide-react'
 import React from 'react'
 
 import type { Models } from '@/lib/api/models'
@@ -11,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Separator } from '@/components/ui/separator'
 import { setActiveOrganizationId, useActiveOrganization } from '@/hooks/use-active-organization'
+import { queries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
 
 /** Picks the active organization; shown at the top of every sidebar panel. */
@@ -35,16 +37,35 @@ export default function OrganizationSwitcher() {
   }
 
   const label = active?.name ?? (isPending ? 'Loading...' : 'No organization')
+  // The design's meta line under the name: the org's accounts and their unread.
+  const { data: stats } = useQuery({
+    ...queries.organizations.stats(active?.id),
+    refetchOnWindowFocus: false,
+  })
+  const meta = stats
+    ? `${stats.accounts} ${stats.accounts === 1 ? 'account' : 'accounts'} · ${stats.unread} unread`
+    : ''
 
   return (
-    // Same height and bottom border as the page header (h-16), so the two lines meet;
+    // Same height and bottom border as the page header (h-14), so the two lines meet;
     // the negative margins cancel the panel header's p-4.
-    <div className="-mx-4 -mt-4 flex h-16 shrink-0 items-center border-b px-4">
+    <div className="-mx-4 -mt-4 flex h-14 shrink-0 items-center border-b px-2.5">
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button variant="secondary" className="w-full min-w-0 justify-between">
-            <span className="truncate">{label}</span>
-            <ChevronDown className="text-muted-foreground" />
+          <Button
+            variant="secondary"
+            className="h-11 w-full min-w-0 justify-between gap-2 rounded-[9px] bg-muted px-[7px] shadow-none"
+          >
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="grid size-6 shrink-0 place-items-center rounded-[6px] bg-accent-tint text-[10.5px] font-bold text-accent-soft uppercase">
+                {label.charAt(0).toUpperCase()}
+              </span>
+              <span className="grid min-w-0 flex-1 text-left leading-tight">
+                <span className="truncate text-xs font-semibold">{label}</span>
+                {meta && <span className="text-ink-3 truncate text-[10px]">{meta}</span>}
+              </span>
+            </span>
+            <ChevronsUpDown className="text-ink-3 size-3 shrink-0" />
           </Button>
         </PopoverTrigger>
         <PopoverContent align="start" className="w-(--radix-popover-trigger-width) min-w-64 p-1">

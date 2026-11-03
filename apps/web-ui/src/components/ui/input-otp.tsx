@@ -11,11 +11,17 @@ export function OTPCodeInput({
   value,
   onChange,
   autoFocus,
+  size = 'md',
 }: {
   id: string
   value: string
   onChange: (value: string) => void
   autoFocus?: boolean
+  /**
+   * md stretches the cells across a narrow sign-in card; sm caps them at 44px,
+   * for wide cards where stretched cells grow far too large.
+   */
+  size?: 'md' | 'sm'
 }) {
   return (
     <InputOTP
@@ -28,15 +34,14 @@ export function OTPCodeInput({
       onChange={onChange}
       autoFocus={autoFocus}
     >
+      {/* Six uniform cells per the design: no separator between the halves. */}
       <InputOTP.Group>
-        {[0, 1, 2].map((index) => (
-          <InputOTP.Slot key={index} index={index} />
-        ))}
-      </InputOTP.Group>
-      <InputOTP.Separator />
-      <InputOTP.Group>
-        {[3, 4, 5].map((index) => (
-          <InputOTP.Slot key={index} index={index} />
+        {[0, 1, 2, 3, 4, 5].map((index) => (
+          <InputOTP.Slot
+            key={index}
+            index={index}
+            className={size === 'sm' ? 'h-11 max-w-11 text-lg pointer-coarse:h-11' : undefined}
+          />
         ))}
       </InputOTP.Group>
     </InputOTP>

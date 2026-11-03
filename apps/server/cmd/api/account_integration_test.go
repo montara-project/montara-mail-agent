@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"net/http"
 	"net/url"
@@ -12,6 +13,7 @@ import (
 	authulamodels "github.com/Authula/authula/models"
 	totpservices "github.com/Authula/authula/plugins/totp/services"
 
+	"montara-mail-agent/server/internal/app"
 	"montara-mail-agent/server/internal/config"
 )
 
@@ -193,5 +195,88 @@ func testAccountSettings(t *testing.T, call callFunc, cookies func() string, db 
 	}
 	if status, out := signIn("a-new-password"); status != http.StatusOK || out["totp_redirect"] != true {
 		t.Fatalf("new password: %d %v", status, out)
+	}
+}
+
+// testDeleteAccount walks DELETE /api/v1/me: the typed email must be the
+// caller's own, the app refuses to remove the last super user, and a real
+// deletion takes the account's keys, sessions, workspace and app rows with it.
+func testDeleteAccount(t *testing.T, call callFunc, application *app.Application, db *sql.DB, superToken, superEmail string) {
+	t.Helper()
+	ctx := context.Background()
+
+	const (
+		email    = "doomed@example.com"
+		password = "doomed-password"
+	)
+	services := application.Auth.CoreServices()
+	user, err := services.UserService.Create(ctx, "Doomed User", email, true, nil, nil)
+	if err != nil {
+		t.Fatalf("create the doomed user: %v", err)
+	}
+	hash, err := services.PasswordService.Hash(password)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := services.AccountService.Create(ctx, user.ID, email, authulamodels.AuthProviderEmail.String(), &hash); err != nil {
+		t.Fatal(err)
+	}
+
+	status, out := call(http.MethodPost, "/api/v1/auth/email-password/sign-in", "", map[string]string{"email": email, "password": password})
+	if status != http.StatusOK || out["access_token"] == nil {
+		t.Fatalf("doomed sign in: %d %v", status, out)
+	}
+	token := out["access_token"].(string)
+
+	// A key would outlive the account if the purge forgot it.
+	_, out = call(http.MethodPost, "/api/v1/me/api-keys", token, map[string]any{"name": "Doomed key"})
+	key, _ := data(out)["key"].(string)
+	if status, _ := mcpRPC(call, key, "tools/list", nil); status != http.StatusOK {
+		t.Fatalf("doomed key on /mcp: %d, want 200", status)
+	}
+
+	// The confirmation is the account's own address, not any address.
+	if status, _ := call(http.MethodDelete, "/api/v1/me", token, map[string]string{"email": "someone@example.com"}); status != http.StatusBadRequest {
+		t.Fatalf("delete with the wrong email: %d, want 400", status)
+	}
+	if status, _ := call(http.MethodDelete, "/api/v1/me", token, map[string]string{}); status != http.StatusUnprocessableEntity {
+		t.Fatalf("delete without an email: %d, want 422", status)
+	}
+
+	// The only super user would leave the platform without one.
+	if status, out := call(http.MethodDelete, "/api/v1/me", superToken, map[string]string{"email": superEmail}); status != http.StatusConflict {
+		t.Fatalf("delete the last super user: %d %v, want 409", status, out)
+	}
+
+	if status, out := call(http.MethodDelete, "/api/v1/me", token, map[string]string{"email": strings.ToUpper(email)}); status != http.StatusOK {
+		t.Fatalf("delete the account: %d %v", status, out)
+	}
+
+	// The token, the key and the password are all gone with it.
+	if status, _ := call(http.MethodGet, "/api/v1/me/security", token, nil); status != http.StatusUnauthorized {
+		t.Fatalf("token after the deletion: %d, want 401", status)
+	}
+	if status, _ := mcpRPC(call, key, "tools/list", nil); status != http.StatusUnauthorized {
+		t.Fatalf("API key after the deletion: %d, want 401", status)
+	}
+	if status, _ := call(http.MethodPost, "/api/v1/auth/email-password/sign-in", "", map[string]string{"email": email, "password": password}); status != http.StatusUnauthorized {
+		t.Fatalf("sign in after the deletion: %d, want 401", status)
+	}
+
+	// Nothing of the account is left in either schema, and the workspace it
+	// owned went with it.
+	for _, q := range []struct {
+		name  string
+		query string
+		arg   any
+	}{
+		{"mirror user", `SELECT count(*) FROM public.users WHERE email = $1`, email},
+		{"authula user", `SELECT count(*) FROM authula.users WHERE email = $1`, email},
+		{"workspace", `SELECT count(*) FROM organizations WHERE name = $1`, "Doomed User's Workspace"},
+	} {
+		var n int
+		if err := db.QueryRow(q.query, q.arg).Scan(&n); err != nil || n != 0 {
+			t.Fatalf("%s after the deletion: %d, err=%v", q.name, n, err)
+		}
 	}
 }

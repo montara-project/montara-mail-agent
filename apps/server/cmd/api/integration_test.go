@@ -447,6 +447,7 @@ func TestIntegration(t *testing.T) {
 	testIPBlocks(t, call, userToken, superToken)
 	testOAuthFinish(t, call, application, userToken, userOrg)
 	testAccountSettings(t, call, func() string { return cookies }, db, userEmail, userPass)
+	testDeleteAccount(t, call, application, db, superToken, superEmail)
 
 	// Signing out revokes the access token.
 	if status, out := call(http.MethodPost, "/api/v1/auth/sign-out", superToken, map[string]any{}); status != http.StatusOK {
