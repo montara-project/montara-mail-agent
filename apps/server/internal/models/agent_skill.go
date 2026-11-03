@@ -34,11 +34,14 @@ const (
 // menu or as a /command in the assistant chat. A built-in skill (Builtin set)
 // takes its name and instruction from BuiltinSkills; its row only keeps the
 // organization's switch and agent bot (see migration 0011). A custom skill
-// carries its own.
+// carries its own and belongs to the user who made it (UserID), in every
+// organization they are a member of, with no bot (see migration 0020); its
+// OrganizationID is the one it runs in, set when it is resolved there.
 type AgentSkill struct {
 	Base
 	SoftDelete
 	OrganizationID uuid.UUID  `db:"organization_id" json:"organization_id"`
+	UserID         *uuid.UUID `db:"user_id" json:"user_id"`
 	Builtin        *string    `db:"builtin" json:"builtin"`
 	Name           string     `db:"name" json:"name"`
 	Description    string     `db:"description" json:"description"`
@@ -102,10 +105,11 @@ var BuiltinSkills = []AgentSkill{
 			"Label each one with set_importance, then answer with one short list per group, naming each email by sender and subject. "+
 			"Do not move or archive mail unless the user asks."),
 	builtin(SkillDraftReply, "Draft / reply email",
-		"Writes a full reply in the agent bot's voice, for you to review before it is sent.",
+		"Writes a full reply in the agent bot's voice that reads like you wrote it, for you to review before it is sent.",
 		"Draft a reply to the email the user means (by default the attached email; read it with get_mail first), "+
 			"written in your persona's voice and style, then propose it with propose_reply so the user can approve it. "+
-			"Follow what the user says the reply should say; ask only when the email leaves the answer truly open."),
+			"Follow what the user says the reply should say; ask only when the email leaves the answer truly open.\n\n"+
+			HumanReplyStyle),
 	builtin(SkillHumanize, "Humanize",
 		"Rewrites your reply draft so it sounds like you, not a chatbot: no AI tells, nothing made up.",
 		humanizeInstruction).on(SkillTargetDraft, SkillOutputReply),

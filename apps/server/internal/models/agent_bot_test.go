@@ -120,6 +120,11 @@ func TestBuiltinSkills(t *testing.T) {
 			t.Fatalf("%s works on %q, want %q", key, s.WorksOn(), target)
 		}
 	}
+	draft, _ := BuiltinSkill(SkillDraftReply)
+	humanize, _ := BuiltinSkill(SkillHumanize)
+	if !strings.Contains(draft.Instruction, HumanReplyStyle) || !strings.Contains(humanize.Instruction, aiTells) {
+		t.Fatalf("draft reply and humanize do not share the AI tells:\n%s\n\n%s", draft.Instruction, humanize.Instruction)
+	}
 	if _, ok := BuiltinSkill("nope"); ok {
 		t.Fatal("BuiltinSkill found an unknown key")
 	}

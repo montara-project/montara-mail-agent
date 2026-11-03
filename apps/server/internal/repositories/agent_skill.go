@@ -9,23 +9,26 @@ import (
 	"montara-mail-agent/server/internal/models"
 )
 
-// AgentSkillRepository manages the organizations' skills: custom ones, and
-// the switch and agent bot of the built-in ones (see migration 0011).
+// AgentSkillRepository manages the skills: the users' custom ones, and the
+// organizations' switch and agent bot of the built-in ones (see migrations
+// 0011 and 0020).
 type AgentSkillRepository struct {
 	BaseRepository
 }
 
-const agentSkillColumns = `id, created_at, updated_at, organization_id, builtin, name, description, instruction, agent_bot_id, is_enabled, deleted_at`
+const agentSkillColumns = `id, created_at, updated_at, organization_id, user_id, builtin, name, description, instruction, agent_bot_id, is_enabled, deleted_at`
 
 func scanAgentSkill(row rowScanner) (models.AgentSkill, error) {
 	var s models.AgentSkill
+	var orgID uuid.NullUUID
 	var builtin sql.NullString
 	var deletedAt sql.NullTime
-	err := row.Scan(&s.ID, &s.CreatedAt, &s.UpdatedAt, &s.OrganizationID, &builtin, &s.Name, &s.Description,
+	err := row.Scan(&s.ID, &s.CreatedAt, &s.UpdatedAt, &orgID, &s.UserID, &builtin, &s.Name, &s.Description,
 		&s.Instruction, &s.AgentBotID, &s.IsEnabled, &deletedAt)
 	if err != nil {
 		return s, translateNotFound("agent_skills", err)
 	}
+	s.OrganizationID = orgID.UUID
 	if builtin.Valid {
 		s.Builtin = &builtin.String
 	}
@@ -35,14 +38,16 @@ func scanAgentSkill(row rowScanner) (models.AgentSkill, error) {
 	return s, nil
 }
 
-// List returns an organization's live skill rows, oldest first: the custom
-// skills and the built-in ones it has changed.
-func (r *AgentSkillRepository) List(ctx context.Context, orgID uuid.UUID) ([]models.AgentSkill, error) {
+// List returns the live skill rows userID sees in an organization, oldest
+// first: the built-in ones the organization has changed, and the user's own
+// custom skills.
+func (r *AgentSkillRepository) List(ctx context.Context, orgID, userID uuid.UUID) ([]models.AgentSkill, error) {
 	rows, err := r.queryContext(ctx, `
 		SELECT `+agentSkillColumns+` FROM agent_skills
-		WHERE organization_id = $1 AND deleted_at IS NULL
+		WHERE deleted_at IS NULL
+			AND ((builtin IS NOT NULL AND organization_id = $1) OR (builtin IS NULL AND user_id = $2))
 		ORDER BY created_at`,
-		orgID,
+		orgID, userID,
 	)
 	if err != nil {
 		return nil, err
@@ -78,7 +83,7 @@ func (r *AgentSkillRepository) SetBuiltin(ctx context.Context, orgID uuid.UUID, 
 	return err
 }
 
-// Create stores a new custom skill.
+// Create stores a new custom skill for s.UserID.
 func (r *AgentSkillRepository) Create(ctx context.Context, s *models.AgentSkill) error {
 	id, err := uuid.NewV7()
 	if err != nil {
@@ -86,9 +91,9 @@ func (r *AgentSkillRepository) Create(ctx context.Context, s *models.AgentSkill)
 	}
 	s.ID = id
 	_, err = r.execContext(ctx, `
-		INSERT INTO agent_skills (id, organization_id, name, description, instruction, agent_bot_id, is_enabled)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-		s.ID, s.OrganizationID, s.Name, s.Description, s.Instruction, s.AgentBotID, s.IsEnabled,
+		INSERT INTO agent_skills (id, user_id, name, description, instruction, is_enabled)
+		VALUES ($1, $2, $3, $4, $5, $6)`,
+		s.ID, s.UserID, s.Name, s.Description, s.Instruction, s.IsEnabled,
 	)
 	return err
 }
@@ -96,10 +101,9 @@ func (r *AgentSkillRepository) Create(ctx context.Context, s *models.AgentSkill)
 // Update rewrites a custom skill's fields.
 func (r *AgentSkillRepository) Update(ctx context.Context, s models.AgentSkill) error {
 	res, err := r.execContext(ctx, `
-		UPDATE agent_skills SET name = $2, description = $3, instruction = $4, agent_bot_id = $5,
-			is_enabled = $6, updated_at = now()
+		UPDATE agent_skills SET name = $2, description = $3, instruction = $4, is_enabled = $5, updated_at = now()
 		WHERE id = $1 AND builtin IS NULL AND deleted_at IS NULL`,
-		s.ID, s.Name, s.Description, s.Instruction, s.AgentBotID, s.IsEnabled,
+		s.ID, s.Name, s.Description, s.Instruction, s.IsEnabled,
 	)
 	if err != nil {
 		return err

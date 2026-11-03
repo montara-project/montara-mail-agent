@@ -2,13 +2,13 @@ package dtos
 
 import "montara-mail-agent/server/internal/lib/validator"
 
-// AgentSkillBody creates or updates a custom skill: what it is called, what
-// it tells the model to do with an email, and the agent bot that runs it.
+// AgentSkillBody creates or updates a custom skill: what it is called and
+// what it tells the model to do with an email. It names no agent bot: it runs
+// as the one the user picks, in whichever organization they use it.
 type AgentSkillBody struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Instruction string `json:"instruction"`
-	AgentBotID  string `json:"agent_bot_id"`
 	IsEnabled   bool   `json:"is_enabled"`
 }
 
@@ -16,7 +16,6 @@ func (dto AgentSkillBody) Validate(v *validator.MapValidator) {
 	v.Field("name").Required().String().MaxLen(100)
 	v.Field("description").String().MaxLen(300)
 	v.Field("instruction").Required().String().MaxLen(5000)
-	v.Field("agent_bot_id").Regex(optionalUUID)
 }
 
 // BuiltinSkillBody switches a built-in skill on or off and picks the agent
