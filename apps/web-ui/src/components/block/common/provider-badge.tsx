@@ -16,8 +16,9 @@ export function providerColor(provider: string): string | undefined {
 
 /**
  * A chip naming a mail provider in its brand color: a tint of the brand behind
- * it, the full-strength brand as the text. Providers without a brand token
- * (lark, zoho, imap, ...) show as a muted chip.
+ * it, the brand mixed toward the foreground as the text, since several brand
+ * colors fall short of AA at full strength in one theme or the other. Providers
+ * without a brand token (lark, zoho, imap, ...) show as a muted chip.
  */
 export default function ProviderBadge({
   provider,
@@ -31,14 +32,14 @@ export default function ProviderBadge({
   return (
     <span
       className={cn(
-        'text-foreground inline-flex h-5 items-center rounded-chip px-1.5 text-xs font-medium whitespace-nowrap capitalize',
+        'text-foreground inline-flex h-[21px] items-center rounded-chip px-2 text-[10.5px] font-semibold tracking-[0.2px] whitespace-nowrap capitalize',
         !color && 'bg-secondary text-muted-foreground',
         className
       )}
       style={
         color
           ? {
-              color,
+              color: `color-mix(in srgb, ${color} 55%, var(--foreground))`,
               backgroundColor: `color-mix(in srgb, ${color} 8%, transparent)`,
             }
           : undefined

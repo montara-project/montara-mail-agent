@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
-import { ArrowRightLeft, Loader2, Plus, RefreshCw, Unplug } from 'lucide-react'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
+import { Loader2, Move, Plus, RefreshCw, Unlink } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
@@ -14,6 +14,12 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -25,9 +31,24 @@ import { useActiveOrganization } from '@/hooks/use-active-organization'
 import { useHideEmails } from '@/hooks/use-hide-emails'
 import { axiosErrorMessage, toastAxiosError } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
-import { timeAgo } from '@/lib/date'
+import { isPast, timeAgo } from '@/lib/date'
+import { cn } from '@/lib/utils'
 
-import { ProviderIcon } from './connector-list'
+import {
+  ConnectDialog,
+  CONNECTORS,
+  PROVIDER_TILE,
+  ProviderIcon,
+  type Connector,
+} from './connector-list'
+
+const ACTION = 'h-7 rounded-[8px] px-2 text-[11.5px] shadow-none'
+const QUIET_ACTION = cn(
+  ACTION,
+  'bg-muted text-ink-3 hover:bg-accent hover:text-foreground font-medium'
+)
+/** How old a sync may get before its dot turns amber: the sync job's default interval. */
+const STALE_AFTER_MS = 5 * 60 * 1000
 
 /** When the account last synced, or why it could not. */
 function SyncStatus({ account }: { account: Models.EmailAccount }) {
@@ -39,9 +60,46 @@ function SyncStatus({ account }: { account: Models.EmailAccount }) {
     )
   }
   if (!account.synced_at) {
-    return <StatusDot status="pending" label="Syncing..." />
+    return <StatusDot className="text-ink-3 text-[11.5px]" status="pending" label="Syncing..." />
   }
-  return <StatusDot status="synced" label={`Synced ${timeAgo(new Date(account.synced_at))}`} />
+  const synced = new Date(account.synced_at)
+  return (
+    <StatusDot
+      className="text-ink-3 text-[11.5px]"
+      status={isPast(new Date(synced.getTime() + STALE_AFTER_MS)) ? 'pending' : 'synced'}
+      label={`Synced ${timeAgo(synced)}`}
+    />
+  )
+}
+
+/** One pill in the label filter; the design's tab row over the grid. */
+function FilterTab({
+  active,
+  label,
+  count,
+  onClick,
+}: {
+  active: boolean
+  label: string
+  count: number
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={cn(
+        'focus-visible:ring-ring/50 flex items-center gap-1.5 rounded-[7px] px-[11px] py-1.5 text-xs leading-[15px] outline-none focus-visible:ring-[3px]',
+        active
+          ? 'bg-secondary font-semibold text-foreground'
+          : 'text-muted-foreground hover:text-foreground font-medium'
+      )}
+    >
+      {label}
+      <span className="text-ink-3 text-[11px] font-medium tabular-nums">{count}</span>
+    </button>
+  )
 }
 
 /** Connected mail accounts of the active organization; each card opens that account's mailbox. */
@@ -62,14 +120,29 @@ export default function MailAccountList() {
   const transfer = useMutation(queries.emailAccounts.transfer())
   const [moving, setMoving] = React.useState<Models.EmailAccount | null>(null)
   const [moveTarget, setMoveTarget] = React.useState<string>('')
+  const [connecting, setConnecting] = React.useState<Connector | null>(null)
   // The member-scoped list is the user's own organizations; the account can
   // only move within them, so it never changes hands between users.
   const otherOrgs = organizations.filter((o) => o.id !== organization?.id)
+  // The design's label filter: All accounts, then one tab per label in use. It
+  // lives in the URL so the sidebar's views share it; a label no account has
+  // any more falls back to all.
+  const navigate = useNavigate()
+  const { view } = useSearch({ strict: false })
+  const labeled = (accounts ?? []).filter((account) => account.label)
+  const labels = [...new Set(labeled.map((account) => account.label))]
+  const filter = view && labels.includes(view) ? view : 'all'
+  const setFilter = (label?: string) =>
+    navigate({ to: '/account', search: { view: label }, replace: true, resetScroll: false })
+  const visible =
+    filter === 'all'
+      ? (accounts ?? [])
+      : (accounts ?? []).filter((account) => account.label === filter)
 
   const content = () => {
     if (isPending && organization) {
       return (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-3 gap-x-[18px] sm:grid-cols-2">
           <Skeleton className="h-32 rounded-lg" />
           <Skeleton className="h-32 rounded-lg" />
         </div>
@@ -94,46 +167,58 @@ export default function MailAccountList() {
       )
     }
     return (
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {accounts.map((account) => (
+      <div className="grid gap-3 gap-x-[18px] sm:grid-cols-2">
+        {visible.map((account) => (
           <div
             key={account.id}
-            className="bg-card border-border/60 shadow-hairline grid gap-3.5 rounded-lg border p-[18px] text-sm"
+            className="bg-card border-border/60 shadow-hairline grid gap-3.5 rounded-lg border p-[17px] text-sm"
           >
-            <div className="flex items-start gap-3">
+            <div className="flex items-center gap-3">
               <Link
                 to="/mail"
                 search={split ? { account: account.id } : {}}
-                className="focus-visible:ring-ring/50 -my-1 flex min-w-0 flex-1 items-center gap-3 rounded-md p-1 outline-none focus-visible:ring-[3px]"
+                className="focus-visible:ring-ring/50 -m-1 flex min-w-0 flex-1 items-center gap-3 rounded-md p-1 outline-none focus-visible:ring-[3px]"
               >
                 <ProviderIcon
                   provider={account.provider}
                   tint={false}
-                  className="rounded-[11px] bg-secondary"
+                  className={cn(PROVIDER_TILE, '[&>img]:size-5')}
                 />
-                <span className="grid min-w-0 flex-1">
-                  <span className="truncate font-semibold hover:underline">
+                <span className="grid min-w-0 flex-1 gap-[3px]">
+                  <span className="truncate leading-[17px] font-semibold hover:underline">
                     {mask(account.label)}
                   </span>
-                  <span className="text-muted-foreground truncate text-xs">
+                  <span className="text-ink-3 truncate text-xs leading-[15px]">
                     {mask(account.email)}
                   </span>
                 </span>
               </Link>
-              <ProviderBadge provider={account.provider} className="mt-2.5 shrink-0" />
+              <ProviderBadge
+                provider={
+                  CONNECTORS.find((item) => item.id === account.provider)?.name ?? account.provider
+                }
+                className="shrink-0"
+              />
             </div>
-            <div className="text-muted-foreground flex items-center justify-between gap-2 text-xs">
+            <div className="text-muted-foreground flex flex-wrap items-center justify-between gap-2 text-xs">
               <SyncStatus account={account} />
-              {account.unread > 0 && (
-                <Badge variant="secondary" size="sm" className="shrink-0">
-                  {account.unread} unread
-                </Badge>
+              {/* The design's tag chip; the unread badge stands in for unlabeled accounts. */}
+              {account.label ? (
+                <span className="bg-muted text-muted-foreground shrink-0 rounded-[5px] px-[7px] py-[3px] text-[10.5px] leading-[13px] font-medium">
+                  {account.label}
+                </span>
+              ) : (
+                account.unread > 0 && (
+                  <Badge variant="secondary" size="sm" className="shrink-0">
+                    {account.unread} unread
+                  </Badge>
+                )
               )}
             </div>
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(6.5rem,1fr))] gap-1.5">
               <Button
                 variant="secondary"
-                className="h-7 rounded-lg bg-secondary text-[11.5px] font-medium text-muted-foreground shadow-none [&_svg]:size-3"
+                className={QUIET_ACTION}
                 disabled={sync.isPending && sync.variables === account.id}
                 onClick={() =>
                   sync.mutate(account.id, {
@@ -143,32 +228,36 @@ export default function MailAccountList() {
                 }
               >
                 <RefreshCw
-                  className={
-                    sync.isPending && sync.variables === account.id
-                      ? 'animate-spin motion-reduce:animate-none'
-                      : undefined
-                  }
+                  className={cn(
+                    'size-3',
+                    sync.isPending &&
+                      sync.variables === account.id &&
+                      'animate-spin motion-reduce:animate-none'
+                  )}
                 />
                 Sync now
               </Button>
               <Button
                 variant="secondary"
-                className="h-7 rounded-lg bg-secondary text-[11.5px] font-medium text-muted-foreground shadow-none [&_svg]:size-3"
+                className={QUIET_ACTION}
                 disabled={otherOrgs.length === 0}
                 onClick={() => {
                   setMoveTarget('')
                   setMoving(account)
                 }}
               >
-                <ArrowRightLeft />
+                <Move className="size-3" />
                 Move
               </Button>
               <Button
                 variant="secondary"
-                className="text-ink-faint hover:text-muted-foreground h-7 rounded-lg bg-secondary text-[11.5px] font-medium shadow-none [&_svg]:size-3"
+                className={cn(
+                  ACTION,
+                  'border-destructive/25 bg-card text-danger-soft hover:bg-destructive/10 dark:bg-destructive/12 dark:hover:bg-destructive/20 border font-semibold'
+                )}
                 onClick={() => setDisconnecting(account)}
               >
-                <Unplug />
+                <Unlink className="size-3" />
                 Disconnect
               </Button>
             </div>
@@ -186,45 +275,83 @@ export default function MailAccountList() {
     ? timeAgo(new Date(Math.max(...synced.map((d) => new Date(d).getTime()))))
     : null
 
-  const scrollToConnect = () => {
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    document
-      .getElementById('connect-section')
-      ?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' })
-  }
-
   return (
-    <section aria-labelledby="mail-accounts-title" className="grid gap-3">
+    <section aria-labelledby="mail-accounts-title" className="grid gap-3.5">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="grid gap-1">
-          <h2 id="mail-accounts-title" className="text-lg font-semibold">
+          <h2 id="mail-accounts-title" className="text-lg leading-[25px] font-semibold">
             Email accounts
           </h2>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-sm leading-[19px]">
             {accounts?.length
               ? `${accounts.length} ${accounts.length === 1 ? 'account' : 'accounts'} connected${lastSync ? ` · last sync ${lastSync}` : ''}`
               : 'Connect your first mailbox below.'}
           </p>
         </div>
-        <div className="flex items-center gap-6">
-          <StatusDot
-            status={failing > 0 ? 'failed' : 'healthy'}
-            label={
-              failing > 0
-                ? `${failing} connection${failing === 1 ? '' : 's'} need attention`
-                : 'All connections healthy'
-            }
-          />
-          <Button className="h-8 rounded-lg" onClick={scrollToConnect}>
-            <Plus />
-            Add account
-          </Button>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="h-8 rounded-[8px] text-xs font-semibold shadow-none">
+              <Plus className="size-3.5" />
+              Add account
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-44">
+            {CONNECTORS.map((connector) => (
+              <DropdownMenuItem key={connector.id} onClick={() => setConnecting(connector)}>
+                <ProviderIcon
+                  provider={connector.id}
+                  tint={false}
+                  className="size-5 bg-transparent [&>img]:size-4 [&>svg]:size-4"
+                />
+                {connector.name}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      {/* The design's filter bar: label tabs left, the connections' health right. */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {labels.length > 0 && (
+          <div
+            role="group"
+            aria-label="Filter accounts by label"
+            className="bg-card border-border/60 flex flex-wrap items-center gap-1.5 rounded-[10px] border p-[3px]"
+          >
+            <FilterTab
+              active={filter === 'all'}
+              label="All accounts"
+              count={accounts?.length ?? 0}
+              onClick={() => setFilter()}
+            />
+            {labels.map((label) => (
+              <FilterTab
+                key={label}
+                active={filter === label}
+                label={label}
+                count={labeled.filter((account) => account.label === label).length}
+                onClick={() => setFilter(label)}
+              />
+            ))}
+          </div>
+        )}
+        <StatusDot
+          className={cn(
+            'text-ink-3 gap-2',
+            labels.length === 0 && 'bg-card border-border/60 rounded-[10px] border p-2'
+          )}
+          status={failing > 0 ? 'failed' : 'healthy'}
+          label={
+            failing > 0
+              ? `${failing} connection${failing === 1 ? '' : 's'} need attention`
+              : 'All connections healthy'
+          }
+        />
       </div>
       {content()}
-      <p className="text-ink-3 text-[11.5px]">
-        Disconnecting an account removes local messages but keeps the mailbox itself untouched.
+      <p className="text-ink-3 text-[11.5px] leading-4">
+        Disconnecting an account removes local messages but keeps them on the server.
       </p>
+      {connecting && <ConnectDialog connector={connecting} onClose={() => setConnecting(null)} />}
       <Dialog open={!!moving} onOpenChange={(open) => !open && setMoving(null)}>
         <DialogContent className="gap-0 p-0 sm:max-w-md">
           <div className="grid gap-4 p-6">

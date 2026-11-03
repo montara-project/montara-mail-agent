@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
-import { ChevronRight, Inbox, SlidersHorizontal } from 'lucide-react'
+import { Link, useSearch } from '@tanstack/react-router'
+import { ChevronRight, Inbox, Layers, SlidersHorizontal, Tag } from 'lucide-react'
 import React from 'react'
 
 import type { Models } from '@/lib/api/models'
@@ -44,7 +44,7 @@ function groupByProvider(accounts: Models.EmailAccount[]) {
 
 /**
  * The /account page's second panel: the unified inbox jump, the connected
- * accounts grouped by provider and the footer.
+ * accounts grouped by provider, the label views and the footer.
  */
 export default function AccountsPanel() {
   const { organization } = useActiveOrganization()
@@ -56,6 +56,20 @@ export default function AccountsPanel() {
   const [openProvider, setOpenProvider] = React.useState<string | null>()
   const groups = groupByProvider(accounts ?? [])
   const openGroup = openProvider === undefined ? (groups[0]?.[0] ?? null) : openProvider
+  // The same filter as the page's tabs: both read the URL's view.
+  const { view } = useSearch({ strict: false })
+  const labeled = (accounts ?? []).filter((account) => account.label)
+  const labels = [...new Set(labeled.map((account) => account.label))]
+  const activeView = view && labels.includes(view) ? view : undefined
+  const views = [
+    { label: undefined, title: 'All accounts', icon: Layers, count: accounts?.length ?? 0 },
+    ...labels.map((label) => ({
+      label,
+      title: label,
+      icon: Tag,
+      count: labeled.filter((account) => account.label === label).length,
+    })),
+  ]
 
   return (
     <Sidebar collapsible="none" className="hidden flex-1 md:flex">
@@ -71,13 +85,13 @@ export default function AccountsPanel() {
                 <SidebarMenuButton
                   asChild
                   isActive
-                  className="data-active:bg-accent-tint data-active:text-foreground [&_svg]:text-accent-soft"
+                  className="data-active:bg-accent-tint data-active:text-foreground h-[30px] [&_svg]:text-accent-soft"
                 >
                   <Link to="/mail">
                     <Inbox />
                     <span>Unified inbox</span>
                     {unread > 0 && (
-                      <span className="bg-accent-ink/25 ml-auto rounded-[4px] px-[5px] py-px font-mono text-[10.5px] font-semibold text-accent-soft tabular-nums">
+                      <span className="bg-accent-ink/25 ml-auto rounded-[4px] px-[5px] py-px font-mono text-[9.5px] font-semibold text-accent-soft tabular-nums">
                         {unread > 99 ? '99+' : unread}
                       </span>
                     )}
@@ -114,7 +128,7 @@ export default function AccountsPanel() {
                         className="hover:bg-accent/50 focus-visible:ring-ring/50 flex w-full items-center gap-2 rounded-[7px] px-2 py-1.5 text-left outline-none focus-visible:ring-2"
                       >
                         <span
-                          className="grid size-5 shrink-0 place-items-center rounded-md text-[10.5px] font-bold uppercase"
+                          className="grid size-5 shrink-0 place-items-center rounded-md text-[9.5px] font-bold uppercase"
                           style={
                             color
                               ? {
@@ -129,11 +143,11 @@ export default function AccountsPanel() {
                         >
                           {brandInitial(provider)}
                         </span>
-                        <span className="grid min-w-0 flex-1 leading-tight">
-                          <span className="truncate text-[11.5px] font-semibold capitalize">
+                        <span className="grid min-w-0 flex-1">
+                          <span className="truncate text-[11.5px] leading-4 font-semibold capitalize">
                             {provider}
                           </span>
-                          <span className="text-ink-3 truncate text-[10.5px]">
+                          <span className="text-ink-3 truncate text-[9.5px] leading-[13px]">
                             {list.length} {list.length === 1 ? 'account' : 'accounts'}
                           </span>
                         </span>
@@ -155,7 +169,7 @@ export default function AccountsPanel() {
                         )}
                       >
                         <div className="min-h-0 overflow-hidden">
-                          <div className="grid gap-0.5 px-2 pt-0.5 pb-1.5 ps-[34px]">
+                          <div className="grid gap-0.5 px-2 pb-1.5 ps-[30px]">
                             {list.map((account) => (
                               <Link
                                 key={account.id}
@@ -165,7 +179,7 @@ export default function AccountsPanel() {
                               >
                                 <span
                                   aria-hidden
-                                  className="size-1.5 shrink-0 rounded-full"
+                                  className="size-1 shrink-0 rounded-full"
                                   style={{
                                     backgroundColor: account.sync_error
                                       ? 'var(--destructive)'
@@ -181,11 +195,11 @@ export default function AccountsPanel() {
                                       ? 'Synced'
                                       : 'Syncing'}
                                 </span>
-                                <span className="text-muted-foreground min-w-0 flex-1 truncate text-[10.5px]">
+                                <span className="text-muted-foreground min-w-0 flex-1 truncate text-[10px]">
                                   {mask(account.email)}
                                 </span>
                                 {account.unread > 0 && (
-                                  <span className="text-accent-soft font-mono text-[10.5px] font-semibold tabular-nums">
+                                  <span className="text-accent-soft font-mono text-[9px] font-semibold tabular-nums">
                                     {account.unread}
                                   </span>
                                 )}
@@ -201,6 +215,36 @@ export default function AccountsPanel() {
             </div>
           </SidebarGroupContent>
         </SidebarGroup>
+        {labels.length > 0 && (
+          <SidebarGroup className="mt-auto">
+            <SidebarGroupLabel>Views</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {views.map((item) => {
+                  const active = activeView === item.label
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild isActive={active} className="text-[11.5px]">
+                        <Link to="/account" search={{ view: item.label }} resetScroll={false}>
+                          <item.icon />
+                          <span className="truncate">{item.title}</span>
+                          <span
+                            className={cn(
+                              'ml-auto rounded-[4px] px-[5px] py-px font-mono text-[9.5px] font-semibold tabular-nums',
+                              active ? 'bg-accent-ink/20 text-accent-soft' : 'bg-muted text-ink-3'
+                            )}
+                          >
+                            {item.count}
+                          </span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
       <SidebarFooter className="gap-2 p-4">
         {!COMMUNITY && <TokenUsageCard />}

@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 
 import ConnectorList from '@/components/block/account/connector-list'
 import MailAccountList from '@/components/block/account/mail-account-list'
-import PageContainer from '@/components/block/common/page-container'
+import { SettingsPage } from '@/components/block/common/settings-card'
 import { maskEmails, useHideEmails } from '@/hooks/use-hide-emails'
 import { axiosErrorMessage } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
@@ -18,6 +18,8 @@ type AccountSearch = {
   code?: string
   state?: string
   error?: string
+  /** The label the account list is filtered to; the page's tabs and the sidebar's views set it. */
+  view?: string
 }
 
 const str = (value: unknown) => (typeof value === 'string' && value !== '' ? value : undefined)
@@ -28,6 +30,7 @@ export const Route = createFileRoute('/(app)/account/')({
     code: str(search.code),
     state: str(search.state),
     error: str(search.error),
+    view: str(search.view),
   }),
   component: RouteComponent,
 })
@@ -61,10 +64,12 @@ function OAuthOutcome() {
 
 function RouteComponent() {
   return (
-    <PageContainer className="gap-8">
-      <OAuthOutcome />
-      <MailAccountList />
-      <ConnectorList />
-    </PageContainer>
+    <SettingsPage>
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6">
+        <OAuthOutcome />
+        <MailAccountList />
+        <ConnectorList />
+      </div>
+    </SettingsPage>
   )
 }

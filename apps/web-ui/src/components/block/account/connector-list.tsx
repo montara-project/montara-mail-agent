@@ -140,6 +140,10 @@ export function ProviderIcon({
   )
 }
 
+/** The bordered tile a provider's logo sits on, on the account and connect cards. */
+export const PROVIDER_TILE =
+  'border-border bg-muted rounded-[11px] border [&>svg]:text-ink-3 [&>svg]:size-5'
+
 /** Connects one provider's mailbox: signs in over IMAP first, so a wrong password is caught here. */
 function ConnectForm({ connector, onClose }: { connector: Connector; onClose: () => void }) {
   const { organization } = useActiveOrganization()
@@ -256,16 +260,29 @@ function ConnectForm({ connector, onClose }: { connector: Connector; onClose: ()
   )
 }
 
+/** The way into a provider: its sign-in choice, or the app password form when it has no OAuth. */
+export function ConnectDialog({
+  connector,
+  onClose,
+}: {
+  connector: Connector
+  onClose: () => void
+}) {
+  // IMAP is a protocol and iCloud and Lark offer no public IMAP OAuth: they
+  // only have the app password way in, straight to the form.
+  return connector.oauthName ? (
+    <ProviderConnectDialog key={connector.id} connector={connector} onClose={onClose} />
+  ) : (
+    <ConnectForm key={connector.id} connector={connector} onClose={onClose} />
+  )
+}
+
 /** Providers a mailbox can be connected from. */
 export default function ConnectorList() {
   const [connecting, setConnecting] = React.useState<Connector | null>(null)
 
   return (
-    <section
-      id="connect-section"
-      aria-labelledby="connectors-title"
-      className="grid scroll-mt-20 gap-3"
-    >
+    <section aria-labelledby="connectors-title" className="grid gap-3">
       <div>
         <h2 id="connectors-title" className="text-lg font-semibold">
           Connect an account
@@ -278,19 +295,19 @@ export default function ConnectorList() {
             key={connector.id}
             type="button"
             onClick={() => setConnecting(connector)}
-            className="bg-card border-border/60 hover:bg-accent/50 shadow-hairline focus-visible:ring-ring/50 flex h-[76px] items-center gap-3 rounded-lg border p-[18px] text-left text-sm transition-colors outline-none focus-visible:ring-[3px]"
+            className="bg-card border-border/60 hover:bg-accent/50 shadow-hairline focus-visible:ring-ring/50 flex h-[76px] items-center gap-3 rounded-lg border p-[17px] text-left text-sm transition-colors outline-none focus-visible:ring-[3px]"
           >
             <ProviderIcon
               provider={connector.id}
               tint={false}
-              className="rounded-[11px] bg-secondary"
+              className={cn(PROVIDER_TILE, '[&>img]:size-[22px]')}
             />
-            <div className="grid min-w-0 flex-1">
-              <span className="truncate font-semibold">
+            <div className="grid min-w-0 flex-1 gap-0.5">
+              <span className="truncate leading-[17px] font-semibold">
                 <span className="sr-only">Connect </span>
                 {connector.name}
               </span>
-              <span className="text-muted-foreground truncate text-xs">
+              <span className="text-ink-3 truncate text-xs leading-[15px]">
                 {connector.description}
               </span>
             </div>
@@ -298,23 +315,7 @@ export default function ConnectorList() {
           </button>
         ))}
       </div>
-      {connecting &&
-        (connecting.oauthName ? (
-          <ProviderConnectDialog
-            key={connecting.id}
-            connector={connecting}
-            onClose={() => setConnecting(null)}
-          />
-        ) : (
-          // IMAP is a protocol and iCloud and Lark offer no public IMAP
-          // OAuth: they only have the app password way in, straight to the
-          // form.
-          <ConnectForm
-            key={connecting.id}
-            connector={connecting}
-            onClose={() => setConnecting(null)}
-          />
-        ))}
+      {connecting && <ConnectDialog connector={connecting} onClose={() => setConnecting(null)} />}
     </section>
   )
 }
