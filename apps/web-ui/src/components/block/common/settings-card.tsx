@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 /** The centered column of a Control Center, Dashboard or Account page. */
 export function SettingsPage({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto grid w-full max-w-[880px] grid-cols-[minmax(0,1fr)] gap-7 pt-2 pb-6">
+    <div className="mx-auto grid w-full max-w-[55rem] grid-cols-[minmax(0,1fr)] gap-7 pt-2 pb-6">
       {children}
     </div>
   )
@@ -65,23 +65,25 @@ export function SettingsCard({
           {/* As tall as the title and description together (18 + 4 + 15px). */}
           <span
             className={cn(
-              'grid size-9 shrink-0 place-items-center rounded-[9px] border',
+              'grid size-9 shrink-0 place-items-center rounded-[0.5625rem] border',
               TONES[tone]
             )}
           >
             <Icon className="size-4" aria-hidden />
           </span>
           <div className="grid min-w-0 gap-1">
-            <h3 className="text-[13.5px] leading-[18px] font-bold">{title}</h3>
+            <h3 className="text-[0.90625rem] leading-[1.125rem] font-bold">{title}</h3>
             {description && (
-              <p className="text-ink-3 text-[11px] leading-[15px] text-pretty">{description}</p>
+              <p className="text-ink-3 text-[0.75rem] leading-[0.9375rem] text-pretty">
+                {description}
+              </p>
             )}
           </div>
         </div>
         {(!!count || action) && (
           <div className="flex shrink-0 items-center gap-2">
             {!!count && (
-              <span className="bg-muted text-ink-3 flex shrink-0 items-center gap-1 rounded-chip border px-[7px] py-1 text-[11px] leading-[15px]">
+              <span className="bg-muted text-ink-3 flex shrink-0 items-center gap-1 rounded-chip border px-[0.4375rem] py-1 text-[0.75rem] leading-[0.9375rem]">
                 <span className="text-muted-foreground font-bold tabular-nums">{count}</span>
                 {noun}
               </span>
@@ -99,7 +101,7 @@ export function SettingsCard({
         {children}
       </div>
       {footer && (
-        <div className="border-input flex flex-wrap items-center justify-between gap-2 border-t px-4 py-[11px]">
+        <div className="border-input flex flex-wrap items-center justify-between gap-2 border-t px-4 py-[0.6875rem]">
           {footer}
         </div>
       )}

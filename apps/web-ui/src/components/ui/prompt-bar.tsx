@@ -295,16 +295,18 @@ export default function PromptBar({
     const measure = measureRef.current
     if (!input || !controls || !measure) return
 
-    // send (wider with a label), plus + and the mic when shown
+    // send (wider with a label), plus + and the mic when shown. The design's
+    // px sizes run through rem, so measure against the live root font size.
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) / 16
     const buttons =
-      28 * (1 + (commands.length > 0 ? 1 : 0) + (Speech ? 1 : 0)) + (sendLabel ? 48 : 0)
+      (28 * (1 + (commands.length > 0 ? 1 : 0) + (Speech ? 1 : 0)) + (sendLabel ? 48 : 0)) * rem
     const fixedControlsWidth = buttons + (modelRef.current?.offsetWidth ?? 0)
     const inlineInputWidth = controls.clientWidth - fixedControlsWidth - 4 * 4
     const needsFullWidth = draft.includes('\n') || measure.offsetWidth + 8 > inlineInputWidth
     if (needsFullWidth !== wide) setWide(needsFullWidth)
 
-    const minHeight = 28
-    const maxHeight = 120
+    const minHeight = 28 * rem
+    const maxHeight = 120 * rem
     input.style.height = '0px'
     const contentHeight = input.scrollHeight
     input.style.height = `${Math.min(Math.max(contentHeight, minHeight), maxHeight)}px`
@@ -350,14 +352,14 @@ export default function PromptBar({
   // One row: [+] input [picker] [mic] send. Wide: the input takes the first
   // row and the controls sit below it, a spacer pushing mic and send right.
   const columns = [
-    commands.length > 0 && '28px',
+    commands.length > 0 && '1.75rem',
     !wide && 'minmax(0,1fr)',
     showModels && 'auto',
     wide && 'minmax(0,1fr)',
-    Speech && '28px',
-    sendLabel ? 'auto' : '28px',
+    Speech && '1.75rem',
+    sendLabel ? 'auto' : '1.75rem',
   ].filter((column): column is string => !!column)
-  const roundness = 'rounded-[8px]'
+  const roundness = 'rounded-[0.5rem]'
 
   return (
     <div data-promptbar data-ai-motion className="w-full">
@@ -367,12 +369,12 @@ export default function PromptBar({
         {menuOpen && (
           <div
             onMouseLeave={() => setEngaged(false)}
-            className="bg-surface shadow-raised absolute inset-x-0 bottom-full z-10 mb-2 rounded-[10px] p-1"
+            className="bg-surface shadow-raised absolute inset-x-0 bottom-full z-10 mb-2 rounded-[0.625rem] p-1"
             style={{ animation: `pop-in 180ms ${EASE} both`, transformOrigin: 'bottom center' }}
           >
             <span
               aria-hidden
-              className="bg-hover pointer-events-none absolute inset-x-1 rounded-[6px]"
+              className="bg-hover pointer-events-none absolute inset-x-1 rounded-[0.375rem]"
               style={{
                 top: rowBox?.top ?? 0,
                 height: rowBox?.height ?? 0,
@@ -393,18 +395,20 @@ export default function PromptBar({
                   setEngaged(true)
                 }}
                 onClick={() => pick(row)}
-                className="relative z-10 flex h-9 w-full items-center gap-2.5 rounded-[6px] px-2 text-left"
+                className="relative z-10 flex h-9 w-full items-center gap-2.5 rounded-[0.375rem] px-2 text-left"
               >
-                <span className="text-ink shrink-0 text-[12.5px] font-medium">{row.name}</span>
-                <span className="text-ink-3 min-w-0 flex-1 truncate text-[12px]">{row.desc}</span>
+                <span className="text-ink shrink-0 text-[0.84375rem] font-medium">{row.name}</span>
+                <span className="text-ink-3 min-w-0 flex-1 truncate text-[0.8125rem]">
+                  {row.desc}
+                </span>
               </button>
             ))}
             {rows.length === 0 && (
-              <div className="text-ink-3 flex h-9 items-center px-2 text-[12px]">
+              <div className="text-ink-3 flex h-9 items-center px-2 text-[0.8125rem]">
                 No matches for “{query}”
               </div>
             )}
-            <div className="border-line text-ink-3 mt-1 border-t px-2 pt-1.5 pb-1 text-[11px]">
+            <div className="border-line text-ink-3 mt-1 border-t px-2 pt-1.5 pb-1 text-[0.75rem]">
               Type to search quick prompts
             </div>
           </div>
@@ -414,7 +418,7 @@ export default function PromptBar({
         {modelOpen && (
           <div
             onMouseLeave={() => setModelHovered(null)}
-            className="bg-surface shadow-raised absolute z-10 w-52 rounded-[10px] p-1"
+            className="bg-surface shadow-raised absolute z-10 w-52 rounded-[0.625rem] p-1"
             style={{
               left: modelMenuLeft,
               bottom: modelMenuBottom,
@@ -424,7 +428,7 @@ export default function PromptBar({
           >
             <span
               aria-hidden
-              className="bg-hover pointer-events-none absolute inset-x-1 rounded-[6px]"
+              className="bg-hover pointer-events-none absolute inset-x-1 rounded-[0.375rem]"
               style={{
                 top: modelBox?.top ?? 0,
                 height: modelBox?.height ?? 0,
@@ -445,12 +449,12 @@ export default function PromptBar({
                   selectModel(m)
                   inputRef.current?.focus()
                 }}
-                className="relative z-10 flex h-7.5 w-full items-center gap-2 rounded-[6px] px-2 text-left"
+                className="relative z-10 flex h-7.5 w-full items-center gap-2 rounded-[0.375rem] px-2 text-left"
               >
-                <span className="text-ink min-w-0 flex-1 truncate text-[12.5px] font-medium">
+                <span className="text-ink min-w-0 flex-1 truncate text-[0.84375rem] font-medium">
                   {m.name}
                 </span>
-                {m.tag && <span className="text-ink-3 shrink-0 text-[11px]">{m.tag}</span>}
+                {m.tag && <span className="text-ink-3 shrink-0 text-[0.75rem]">{m.tag}</span>}
                 <span className={`text-ink shrink-0 ${m.key === current?.key ? '' : 'invisible'}`}>
                   <Icon size={13} strokeWidth={2.5}>
                     <path d="M20 6L9 17l-5-5" />
@@ -463,7 +467,7 @@ export default function PromptBar({
 
         {/* ── composer ───────────────────────────────────── */}
         <div
-          className={`border-line bg-surface shadow-card focus-within:border-line-strong relative isolate flex flex-col overflow-hidden border transition-[border-color,border-radius] duration-150 gap-1.5 rounded-[14px] p-1.5 ${
+          className={`border-line bg-surface shadow-card focus-within:border-line-strong relative isolate flex flex-col overflow-hidden border transition-[border-color,border-radius] duration-150 gap-1.5 rounded-[0.875rem] p-1.5 ${
             locked && !busy ? 'opacity-60' : ''
           }`}
         >
@@ -479,7 +483,7 @@ export default function PromptBar({
           <span
             ref={measureRef}
             aria-hidden="true"
-            className="pointer-events-none invisible absolute text-[13px] leading-[18px] whitespace-pre"
+            className="pointer-events-none invisible absolute text-[0.875rem] leading-[1.125rem] whitespace-pre"
           >
             {draft}
           </span>
@@ -548,7 +552,7 @@ export default function PromptBar({
               }}
               placeholder={listening ? 'Listening…' : (placeholder ?? 'Write a message…')}
               aria-label={label}
-              className={`min-h-7 px-1 py-[5px] text-[13px] leading-[18px] text-ink placeholder:text-ink-3 w-full min-w-0 resize-none bg-transparent [overflow-wrap:anywhere] outline-none disabled:cursor-not-allowed ${
+              className={`min-h-7 px-1 py-[0.3125rem] text-[0.875rem] leading-[1.125rem] text-ink placeholder:text-ink-3 w-full min-w-0 resize-none bg-transparent [overflow-wrap:anywhere] outline-none disabled:cursor-not-allowed ${
                 wide ? 'col-span-full row-start-1' : 'row-start-1'
               }`}
             />
@@ -564,7 +568,7 @@ export default function PromptBar({
                   setPlusOpen(false)
                   setModelOpen((open) => !open)
                 }}
-                className={`text-ink-2 hover:bg-hover hover:text-ink flex h-7 max-w-36 min-w-0 shrink-0 items-center gap-1 px-1.5 text-[12px] font-medium transition-colors duration-150 disabled:pointer-events-none ${roundness} ${
+                className={`text-ink-2 hover:bg-hover hover:text-ink flex h-7 max-w-36 min-w-0 shrink-0 items-center gap-1 px-1.5 text-[0.8125rem] font-medium transition-colors duration-150 disabled:pointer-events-none ${roundness} ${
                   wide ? 'row-start-2 justify-self-start' : 'row-start-1'
                 }`}
               >
@@ -593,11 +597,11 @@ export default function PromptBar({
                 } ${wide ? 'row-start-2' : 'row-start-1'}`}
               >
                 {listening ? (
-                  <span className="flex h-3.5 items-center gap-[2.5px]">
+                  <span className="flex h-3.5 items-center gap-[0.15625rem]">
                     {[0, 1, 2].map((i) => (
                       <span
                         key={i}
-                        className="w-[2.5px] rounded-full bg-current"
+                        className="w-[0.15625rem] rounded-full bg-current"
                         style={{
                           height: '100%',
                           animation: `eq-bounce 900ms ease-in-out ${i * 150}ms infinite`,
@@ -627,7 +631,7 @@ export default function PromptBar({
                 }`}
                 style={{ gridColumnStart: columns.length }}
               >
-                <span className="size-2.5 rounded-[2px] bg-current" />
+                <span className="size-2.5 rounded-[0.125rem] bg-current" />
               </button>
             ) : (
               <button
@@ -636,7 +640,7 @@ export default function PromptBar({
                 disabled={!canSend}
                 onClick={send}
                 className={`flex h-7 shrink-0 items-center justify-center gap-1.5 transition-[background-color,color,transform] duration-200 enabled:active:scale-[0.96] ${
-                  sendLabel ? 'px-2.5 text-[12.5px] font-medium' : 'w-7'
+                  sendLabel ? 'px-2.5 text-[0.84375rem] font-medium' : 'w-7'
                 } ${roundness} ${wide ? 'row-start-2' : 'row-start-1'}`}
                 style={{ gridColumnStart: columns.length, ...sendColors }}
               >

@@ -25,8 +25,8 @@ function ToggleRow({ id, label, description, soon, disabled, ...props }: ToggleR
     <div
       className={
         soon
-          ? 'flex items-center gap-[11px] rounded-[9px] border border-transparent px-[9px] py-2'
-          : 'hover:border-input hover:bg-popover relative flex items-center gap-[11px] rounded-[9px] border border-transparent px-[9px] py-2 transition-colors duration-150 motion-reduce:transition-none'
+          ? 'flex items-center gap-[0.6875rem] rounded-[0.5625rem] border border-transparent px-[0.5625rem] py-2'
+          : 'hover:border-input hover:bg-popover relative flex items-center gap-[0.6875rem] rounded-[0.5625rem] border border-transparent px-[0.5625rem] py-2 transition-colors duration-150 motion-reduce:transition-none'
       }
     >
       <div className="grid min-w-0 flex-1 gap-px">
@@ -34,13 +34,16 @@ function ToggleRow({ id, label, description, soon, disabled, ...props }: ToggleR
           htmlFor={id}
           className={
             soon
-              ? 'text-[12px] leading-4 font-semibold'
-              : 'cursor-pointer text-[12px] leading-4 font-semibold after:absolute after:inset-0'
+              ? 'text-[0.8125rem] leading-4 font-semibold'
+              : 'cursor-pointer text-[0.8125rem] leading-4 font-semibold after:absolute after:inset-0'
           }
         >
           {label}
         </Label>
-        <p id={`${id}-description`} className="text-ink-3 text-[10.5px] leading-[14px] text-pretty">
+        <p
+          id={`${id}-description`}
+          className="text-ink-3 text-[0.71875rem] leading-[0.875rem] text-pretty"
+        >
           {description}
         </p>
       </div>
@@ -55,7 +58,7 @@ function ToggleRow({ id, label, description, soon, disabled, ...props }: ToggleR
         aria-describedby={`${id}-description`}
         disabled={soon || disabled}
         className="z-10 w-9"
-        thumbClassName="w-4 data-[state=checked]:translate-x-[18px] rtl:data-[state=checked]:-translate-x-[18px]"
+        thumbClassName="w-4 data-[state=checked]:translate-x-[1.125rem] rtl:data-[state=checked]:-translate-x-[1.125rem]"
         {...props}
       />
     </div>

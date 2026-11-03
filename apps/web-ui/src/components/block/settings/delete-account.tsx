@@ -17,15 +17,15 @@ import { getQueryClient } from '@/lib/providers/react-query'
 /** What the deletion takes with it, said before anything is typed. */
 function PermanentNotice() {
   return (
-    <div className="border-destructive/20 bg-destructive/4 flex items-start gap-3.5 rounded-lg border p-[18px]">
-      <span className="bg-destructive/12 text-danger-soft grid size-[34px] shrink-0 place-items-center rounded-[9px]">
+    <div className="border-destructive/20 bg-destructive/4 flex items-start gap-3.5 rounded-lg border p-[1.125rem]">
+      <span className="bg-destructive/12 text-danger-soft grid size-[2.125rem] shrink-0 place-items-center rounded-[0.5625rem]">
         <TriangleAlert className="size-4" aria-hidden />
       </span>
       <div className="grid gap-1">
-        <h2 className="text-danger-soft text-[13px] leading-[18px] font-bold">
+        <h2 className="text-danger-soft text-[0.875rem] leading-[1.125rem] font-bold">
           This action is permanent
         </h2>
-        <p className="text-muted-foreground text-[11.5px] leading-4 text-pretty">
+        <p className="text-muted-foreground text-[0.78125rem] leading-4 text-pretty">
           Deleting your account removes all mailboxes, messages, API keys, agent bots and billing
           history. Domains and mail delivered elsewhere stay untouched.
         </p>
@@ -74,7 +74,7 @@ export default function DeleteAccountSettings() {
         title="Delete account"
         description="Permanently remove your account and all of its data. This can't be undone."
       />
-      <div className="grid gap-[20px]">
+      <div className="grid gap-[1.25rem]">
         <PermanentNotice />
 
         <SettingsCard
@@ -88,7 +88,7 @@ export default function DeleteAccountSettings() {
             <div className="grid gap-1.5">
               <Label
                 htmlFor="confirm-account-email"
-                className="text-[11.5px] leading-4 font-semibold"
+                className="text-[0.78125rem] leading-4 font-semibold"
               >
                 Account email
               </Label>
@@ -103,7 +103,7 @@ export default function DeleteAccountSettings() {
                 onChange={(event) => setEmail(event.target.value)}
                 aria-invalid={mismatch}
                 aria-describedby="confirm-account-email-hint"
-                className="border-border placeholder:text-ink-3 h-[38px] text-[12.5px] focus-visible:border-ring"
+                className="border-border placeholder:text-ink-3 h-[2.375rem] text-[0.84375rem] focus-visible:border-ring"
               />
               {/* The card's description already says how to enable the button. */}
               <span id="confirm-account-email-hint" className="sr-only">
@@ -116,7 +116,7 @@ export default function DeleteAccountSettings() {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="text-muted-foreground h-8 rounded-[8px]! px-3.5 text-[11.5px] font-semibold pointer-coarse:h-11"
+                className="text-muted-foreground h-8 rounded-[0.5rem]! px-3.5 text-[0.78125rem] font-semibold pointer-coarse:h-11"
                 onClick={() => navigate({ to: '/settings' })}
               >
                 Cancel
@@ -125,7 +125,7 @@ export default function DeleteAccountSettings() {
                 type="submit"
                 size="sm"
                 disabled={!confirmed || remove.isPending}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 h-8 gap-1.5 rounded-[8px]! border-transparent px-3.5 text-[11.5px] font-semibold pointer-coarse:h-11 [&_svg]:size-3"
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 h-8 gap-1.5 rounded-[0.5rem]! border-transparent px-3.5 text-[0.78125rem] font-semibold pointer-coarse:h-11 [&_svg]:size-3"
               >
                 <Trash2 />
                 {remove.isPending ? 'Deleting…' : 'Delete account'}

@@ -99,22 +99,24 @@ function Tier({
         <div className="flex min-h-5 items-center justify-between gap-2">
           <h3 className="text-sm font-bold">{name}</h3>
           {badge && (
-            <span className="bg-accent-tint border-accent-ink/40 rounded-[4px] border px-1.5 py-0.5 font-mono text-[8px] font-semibold tracking-[0.5px] text-accent-soft uppercase">
+            <span className="bg-accent-tint border-accent-ink/40 rounded-[0.25rem] border px-1.5 py-0.5 font-mono text-[0.6875rem] font-semibold tracking-[0.03125rem] text-accent-soft uppercase">
               {badge}
               <span className="sr-only">tier</span>
             </span>
           )}
         </div>
-        <div className="grid gap-[3px]">
-          <div className="flex flex-wrap items-baseline gap-x-[5px]">
-            <span className="text-[26px] font-bold tracking-[-0.6px] tabular-nums">{price}</span>
-            {unit && <span className="text-ink-3 text-[11px]">{unit}</span>}
+        <div className="grid gap-[0.1875rem]">
+          <div className="flex flex-wrap items-baseline gap-x-[0.3125rem]">
+            <span className="text-[1.625rem] font-bold tracking-[-0.0375rem] tabular-nums">
+              {price}
+            </span>
+            {unit && <span className="text-ink-3 text-[0.75rem]">{unit}</span>}
           </div>
           {note}
         </div>
-        <p className="text-ink-3 text-[11.5px]">{tagline}</p>
+        <p className="text-ink-3 text-[0.78125rem]">{tagline}</p>
         {action && (
-          <div className="mt-auto *:h-9 *:w-full *:rounded-[8px] *:text-[11.5px] *:font-semibold">
+          <div className="mt-auto *:h-9 *:w-full *:rounded-[0.5rem] *:text-[0.78125rem] *:font-semibold">
             {action}
           </div>
         )}
@@ -132,7 +134,7 @@ function Tier({
                 strokeWidth={3}
                 aria-hidden
               />
-              <span className="text-muted-foreground text-[11px]">{feature}</span>
+              <span className="text-muted-foreground text-[0.75rem]">{feature}</span>
             </li>
           ))}
         </ul>
@@ -205,11 +207,11 @@ export default function PlansComparison() {
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3" id="billing-plans">
-        <span className="text-ink-faint font-mono text-[9.5px] font-semibold tracking-[1px] uppercase">
+        <span className="text-ink-faint font-mono text-[0.6875rem] font-semibold tracking-[0.0625rem] uppercase">
           Plans
         </span>
         {monthly && yearly && (
-          <div className="border-border bg-muted flex items-center gap-0.5 rounded-[8px] border p-0.5">
+          <div className="border-border bg-muted flex items-center gap-0.5 rounded-[0.5rem] border p-0.5">
             {(['month', 'year'] as const).map((value) => {
               const active = billing === value
               return (
@@ -219,7 +221,7 @@ export default function PlansComparison() {
                   aria-pressed={active}
                   onClick={() => setBilling(value)}
                   className={cn(
-                    'focus-visible:ring-ring/50 flex items-center gap-[5px] rounded-[6px] px-[9px] py-1 text-[11px] whitespace-nowrap transition-colors outline-none focus-visible:ring-[3px]',
+                    'focus-visible:ring-ring/50 flex items-center gap-[0.3125rem] rounded-[0.375rem] px-[0.5625rem] py-1 text-[0.75rem] whitespace-nowrap transition-colors outline-none focus-visible:ring-[0.1875rem]',
                     active
                       ? 'text-accent-soft dark:text-accent-ink bg-accent-ink/6 font-bold'
                       : 'text-ink-3 hover:text-foreground font-medium'
@@ -227,7 +229,7 @@ export default function PlansComparison() {
                 >
                   {value === 'month' ? 'Monthly' : 'Yearly'}
                   {value === 'year' && saving > 0 && (
-                    <span className="text-accent-soft dark:text-accent-ink bg-accent-ink/6 rounded-[4px] px-1 py-px font-mono text-[8.5px] font-semibold">
+                    <span className="text-accent-soft dark:text-accent-ink bg-accent-ink/6 rounded-[0.25rem] px-1 py-px font-mono text-[0.6875rem] font-semibold">
                       −{saving}%
                     </span>
                   )}
@@ -273,12 +275,12 @@ export default function PlansComparison() {
                 selected &&
                 discounted && (
                   <p className="flex flex-wrap items-baseline gap-x-1.5">
-                    <span className="text-muted-foreground text-[11.5px] font-medium line-through tabular-nums">
+                    <span className="text-muted-foreground text-[0.78125rem] font-medium line-through tabular-nums">
                       {formatRupiah(
                         billing === 'year' ? (monthlyRate ?? selected.amount) : selected.amount
                       )}
                     </span>
-                    <span className="text-success-ink text-[11px] font-semibold">
+                    <span className="text-success-ink text-[0.75rem] font-semibold">
                       Save {formatRupiah(selected.discount_amount)}
                       {selected.discount_ends_at
                         ? ` until ${monthDay(new Date(selected.discount_ends_at), true)}`

@@ -56,10 +56,10 @@ function UsageRing({ percent }: { percent: number }) {
         />
       </svg>
       <span className="absolute inset-0 grid content-center justify-items-center gap-px">
-        <span className="text-base leading-[22px] font-bold tracking-[-0.3px] tabular-nums">
+        <span className="text-base leading-[1.375rem] font-bold tracking-[-0.01875rem] tabular-nums">
           {shown}%
         </span>
-        <span className="text-ink-3 text-[9px] leading-3">of quota</span>
+        <span className="text-ink-3 text-[0.6875rem] leading-3">of quota</span>
       </span>
     </div>
   )
@@ -87,25 +87,25 @@ function SourceRow({
   return (
     <div className="flex items-center gap-2.5">
       <div className="grid w-28 shrink-0 gap-px">
-        <span className="text-muted-foreground text-[10.5px] leading-[14px] font-medium">
+        <span className="text-muted-foreground text-[0.71875rem] leading-[0.875rem] font-medium">
           {label}
         </span>
-        <span className="text-ink-faint font-mono text-[8.5px] leading-[11px] font-semibold">
+        <span className="text-ink-faint font-mono text-[0.6875rem] leading-[0.6875rem] font-semibold">
           {note}
         </span>
       </div>
       <div
-        className="bg-secondary h-1 min-w-0 flex-1 overflow-hidden rounded-[2px]"
+        className="bg-secondary h-1 min-w-0 flex-1 overflow-hidden rounded-[0.125rem]"
         aria-hidden="true"
       >
         {percent !== null && (
           <div
-            className={cn('h-full rounded-[2px]', bar)}
+            className={cn('h-full rounded-[0.125rem]', bar)}
             style={{ width: `${Math.min(100, percent)}%` }}
           />
         )}
       </div>
-      <span className="text-ink-strong min-w-16 shrink-0 text-end text-[11px] font-semibold tabular-nums">
+      <span className="text-ink-strong min-w-16 shrink-0 text-end text-[0.75rem] font-semibold tabular-nums">
         {value}
       </span>
     </div>
@@ -138,21 +138,21 @@ export default function UsageCard() {
 
   return (
     <Card className="w-full rounded-lg border-border/60 shadow-hairline">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-[18px] py-[13px]">
-        <span className="flex min-w-0 items-center gap-[9px]">
-          <Gauge className="size-[13px] shrink-0 text-ink-3" aria-hidden />
-          <span className="text-ink-faint font-mono text-[9.5px] font-semibold tracking-[1px] uppercase">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-[1.125rem] py-[0.8125rem]">
+        <span className="flex min-w-0 items-center gap-[0.5625rem]">
+          <Gauge className="size-[0.8125rem] shrink-0 text-ink-3" aria-hidden />
+          <span className="text-ink-faint font-mono text-[0.6875rem] font-semibold tracking-[0.0625rem] uppercase">
             AI usage · this week
           </span>
         </span>
-        <span className="flex items-center gap-[5px] text-ink-3 text-[10.5px]">
-          <RotateCcw className="size-[11px]" aria-hidden />
+        <span className="flex items-center gap-[0.3125rem] text-ink-3 text-[0.71875rem]">
+          <RotateCcw className="size-[0.6875rem]" aria-hidden />
           {/* From the last fetch's time: render stays pure, and the poll keeps it current. */}
           {quotaQuery.dataUpdatedAt > 0 && resetNote(new Date(quotaQuery.dataUpdatedAt))}
         </span>
       </div>
 
-      <div className="border-t border-input px-[18px] py-4">
+      <div className="border-t border-input px-[1.125rem] py-4">
         <QueryState
           isPending={isPending}
           isError={quotaQuery.isError && !quota}
@@ -167,7 +167,7 @@ export default function UsageCard() {
             {limit !== null && percent !== null && <UsageRing percent={percent} />}
             {limit === null && (
               <div
-                className="bg-secondary text-ink-3 grid size-21 shrink-0 place-items-center rounded-full text-[10.5px]"
+                className="bg-secondary text-ink-3 grid size-21 shrink-0 place-items-center rounded-full text-[0.71875rem]"
                 aria-hidden="true"
               >
                 Unlimited
@@ -176,20 +176,20 @@ export default function UsageCard() {
 
             <div className="hidden h-21 w-px bg-border sm:block" aria-hidden="true" />
 
-            <div className="grid min-w-0 flex-1 content-center gap-[11px]">
+            <div className="grid min-w-0 flex-1 content-center gap-[0.6875rem]">
               <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-1">
                 <div className="grid gap-px">
-                  <span className="text-[15px] font-bold tracking-[-0.2px] tabular-nums">
+                  <span className="text-[1rem] font-bold tracking-[-0.0125rem] tabular-nums">
                     {formatTokens(used)} tokens
                   </span>
-                  <span className="text-ink-3 text-[10.5px]">
+                  <span className="text-ink-3 text-[0.71875rem]">
                     {limit !== null
                       ? `used this week · the plan's ${formatTokens(limit)} first, then top-up tokens`
                       : `used this week · No weekly cap · ${planLabel}`}
                   </span>
                 </div>
                 {left !== null && (
-                  <span className="text-muted-foreground text-[11px] font-semibold tabular-nums">
+                  <span className="text-muted-foreground text-[0.75rem] font-semibold tabular-nums">
                     {formatTokens(left + payg)} available
                   </span>
                 )}
@@ -224,8 +224,8 @@ export default function UsageCard() {
         </QueryState>
       </div>
 
-      <div className="border-t border-input px-[18px] py-[11px]">
-        <p className="text-ink-3 text-[10.5px]">Quota refills every Monday at 00:00 UTC</p>
+      <div className="border-t border-input px-[1.125rem] py-[0.6875rem]">
+        <p className="text-ink-3 text-[0.71875rem]">Quota refills every Monday at 00:00 UTC</p>
       </div>
     </Card>
   )

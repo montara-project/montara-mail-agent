@@ -223,28 +223,28 @@ function RouteComponent() {
                 <MailOpen className="size-5.5 text-ink-3" />
               </span>
               <p className="text-sm font-semibold">Select a message</p>
-              <p className="text-ink-3 text-[11.5px]">
+              <p className="text-ink-3 text-[0.78125rem]">
                 Pick a message to read it here, or start with {SEARCH_KEYS} to search.
               </p>
             </div>
             <div className="absolute bottom-6 start-6 flex flex-col gap-1.5">
               <div className="flex items-center gap-2.5">
-                <kbd className="grid h-5 w-11 place-items-center rounded-chip bg-muted font-mono text-[10.5px] font-semibold text-muted-foreground">
+                <kbd className="grid h-5 w-11 place-items-center rounded-chip bg-muted font-mono text-[0.71875rem] font-semibold text-muted-foreground">
                   J / K
                 </kbd>
-                <span className="text-ink-3 text-[10.5px]">Next or previous message</span>
+                <span className="text-ink-3 text-[0.71875rem]">Next or previous message</span>
               </div>
               <div className="flex items-center gap-2.5">
-                <kbd className="grid h-5 w-11 place-items-center rounded-chip bg-muted font-mono text-[10.5px] font-semibold text-muted-foreground">
+                <kbd className="grid h-5 w-11 place-items-center rounded-chip bg-muted font-mono text-[0.71875rem] font-semibold text-muted-foreground">
                   E
                 </kbd>
-                <span className="text-ink-3 text-[10.5px]">Archive</span>
+                <span className="text-ink-3 text-[0.71875rem]">Archive</span>
               </div>
               <div className="flex items-center gap-2.5">
-                <kbd className="grid h-5 w-11 place-items-center rounded-chip bg-muted font-mono text-[10.5px] font-semibold text-muted-foreground">
+                <kbd className="grid h-5 w-11 place-items-center rounded-chip bg-muted font-mono text-[0.71875rem] font-semibold text-muted-foreground">
                   {SEND_KEYS}
                 </kbd>
-                <span className="text-ink-3 text-[10.5px]">Send draft</span>
+                <span className="text-ink-3 text-[0.71875rem]">Send draft</span>
               </div>
             </div>
           </div>

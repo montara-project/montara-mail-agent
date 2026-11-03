@@ -104,11 +104,11 @@ export default function NavUser({ user, userError, onRetryUser }: NavUserProps) 
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground md:mx-auto md:size-[26px] md:p-0"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground md:mx-auto md:size-[1.625rem] md:p-0"
             >
-              <Avatar className="h-8 w-8 rounded-lg md:size-[26px] md:rounded-[7px]">
+              <Avatar className="h-8 w-8 rounded-lg md:size-[1.625rem] md:rounded-[0.4375rem]">
                 <AvatarImage src={user.avatar} alt={name} />
-                <AvatarFallback className="rounded-lg md:rounded-[7px] md:text-[10px]">
+                <AvatarFallback className="rounded-lg md:rounded-[0.4375rem] md:text-[0.71875rem]">
                   {initials}
                 </AvatarFallback>
               </Avatar>

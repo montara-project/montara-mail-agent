@@ -31,18 +31,18 @@ function StatCard({
         <Icon aria-hidden className={cn('size-3.5 shrink-0', mark)} />
       </div>
       {value === undefined ? (
-        <Skeleton className="h-[38px] w-12" />
+        <Skeleton className="h-[2.375rem] w-12" />
       ) : (
         <span
           className={cn(
-            'text-[28px] leading-[38px] font-bold tracking-[-0.4px] tabular-nums',
+            'text-[1.75rem] leading-[2.375rem] font-bold tracking-[-0.025rem] tabular-nums',
             valueClassName
           )}
         >
           {value}
         </span>
       )}
-      <span className="text-ink-3 truncate text-[11px] leading-[15px]">{note}</span>
+      <span className="text-ink-3 truncate text-[0.75rem] leading-[0.9375rem]">{note}</span>
     </div>
   )
 }

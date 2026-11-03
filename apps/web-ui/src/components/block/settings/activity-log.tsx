@@ -92,18 +92,18 @@ function ActivityRow({ entry, audit }: { entry: Models.ActivityLog; audit: boole
   const Icon = ACTION_ICONS[entry.action] ?? ACTION_ICONS[area] ?? History
 
   return (
-    <li className="group/row hover:border-input hover:bg-popover flex flex-wrap items-center gap-x-[11px] gap-y-1.5 rounded-md border border-transparent px-[9px] py-2 transition-colors duration-150 motion-reduce:transition-none">
-      <span className="bg-muted group-hover/row:bg-accent-ink/6 grid size-7 shrink-0 place-items-center rounded-[8px]">
+    <li className="group/row hover:border-input hover:bg-popover flex flex-wrap items-center gap-x-[0.6875rem] gap-y-1.5 rounded-md border border-transparent px-[0.5625rem] py-2 transition-colors duration-150 motion-reduce:transition-none">
+      <span className="bg-muted group-hover/row:bg-accent-ink/6 grid size-7 shrink-0 place-items-center rounded-[0.5rem]">
         <Icon
-          className="text-muted-foreground group-hover/row:text-accent-soft size-[13px]"
+          className="text-muted-foreground group-hover/row:text-accent-soft size-[0.8125rem]"
           aria-hidden
         />
       </span>
-      <div className="grid min-w-0 flex-1 basis-[calc(100%-39px)] gap-px sm:basis-0">
+      <div className="grid min-w-0 flex-1 basis-[calc(100%-2.4375rem)] gap-px sm:basis-0">
         <p className="text-ink-strong group-hover/row:text-foreground text-xs leading-4 font-medium wrap-anywhere">
           {mask(entry.description)}
         </p>
-        <p className="text-ink-3 text-[10.5px] leading-[14px]">
+        <p className="text-ink-3 text-[0.71875rem] leading-[0.875rem]">
           {audit
             ? `${mask(actor)} · ${monthDay(new Date(entry.created_at))}, ${clock(new Date(entry.created_at))}`
             : timeAgo(new Date(entry.created_at))}
@@ -112,8 +112,8 @@ function ActivityRow({ entry, audit }: { entry: Models.ActivityLog; audit: boole
       </div>
       <span
         className={cn(
-          'bg-muted text-muted-foreground group-hover/row:bg-secondary group-hover/row:text-foreground ms-[39px] rounded-tag px-1.5 py-[3px] text-[10.5px] font-semibold wrap-anywhere sm:ms-0 sm:shrink-0',
-          audit ? 'leading-[14px]' : 'font-mono leading-3'
+          'bg-muted text-muted-foreground group-hover/row:bg-secondary group-hover/row:text-foreground ms-[2.4375rem] rounded-tag px-1.5 py-[0.1875rem] text-[0.71875rem] font-semibold wrap-anywhere sm:ms-0 sm:shrink-0',
+          audit ? 'leading-[0.875rem]' : 'font-mono leading-3'
         )}
       >
         {(audit ? AUDIT_LABELS[area] : AREA_LABELS[area]) ?? entry.action}
@@ -135,7 +135,7 @@ function Pagination({
   const start = Math.max(0, Math.min(page - 2, pageCount - PAGE_WINDOW))
   const pages = Array.from({ length: Math.min(PAGE_WINDOW, pageCount) }, (_, i) => start + i)
   const cell =
-    'grid size-6 shrink-0 place-items-center rounded-[7px] border border-transparent text-[11px] outline-none transition-colors duration-150 focus-visible:ring-[3px] focus-visible:ring-ring/50 pointer-coarse:size-11 motion-reduce:transition-none'
+    'grid size-6 shrink-0 place-items-center rounded-[0.4375rem] border border-transparent text-[0.75rem] outline-none transition-colors duration-150 focus-visible:ring-[0.1875rem] focus-visible:ring-ring/50 pointer-coarse:size-11 motion-reduce:transition-none'
   const arrow = cn(
     cell,
     'text-muted-foreground hover:bg-accent disabled:text-ink-faint disabled:hover:bg-transparent'
@@ -252,7 +252,7 @@ export default function ActivityLogList({
       footer={
         total > 0 && (
           <>
-            <p className="text-ink-3 flex items-center gap-[5px] text-[10.5px] leading-[14px]">
+            <p className="text-ink-3 flex items-center gap-[0.3125rem] text-[0.71875rem] leading-[0.875rem]">
               Showing
               <span className="text-foreground font-bold tabular-nums">
                 {first + 1}–{first + entries.length}

@@ -16,10 +16,13 @@ export default function UsageBar({
   return (
     <div
       aria-hidden="true"
-      className={cn('bg-secondary h-[3px] overflow-hidden rounded-[2px]', className)}
+      className={cn('bg-secondary h-[0.1875rem] overflow-hidden rounded-[0.125rem]', className)}
     >
       <div
-        className={cn('h-full rounded-[2px]', percent >= 100 ? 'bg-destructive' : 'bg-accent-ink')}
+        className={cn(
+          'h-full rounded-[0.125rem]',
+          percent >= 100 ? 'bg-destructive' : 'bg-accent-ink'
+        )}
         style={{ width: `${percent}%` }}
       />
     </div>

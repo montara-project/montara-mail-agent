@@ -60,7 +60,7 @@ export const SKILL_ICONS: Record<string, typeof Wand2> = {
 /** The design's tiny mono tag, on the skills whose output lands in your draft. */
 function DraftBadge() {
   return (
-    <span className="bg-muted text-ink-faint rounded-[4px] px-[5px] py-px font-mono text-[8.5px] leading-3 font-semibold tracking-[0.4px] uppercase">
+    <span className="bg-muted text-ink-faint rounded-[0.25rem] px-[0.3125rem] py-px font-mono text-[0.6875rem] leading-3 font-semibold tracking-[0.025rem] uppercase">
       Your draft
     </span>
   )
@@ -90,28 +90,30 @@ function BuiltinSkillRow({
 
   return (
     <li
-      className="hover:border-input hover:bg-popover flex flex-wrap items-center gap-x-[11px] gap-y-2 rounded-[9px] border border-transparent px-[9px] py-2 transition-colors duration-150 motion-reduce:transition-none"
+      className="hover:border-input hover:bg-popover flex flex-wrap items-center gap-x-[0.6875rem] gap-y-2 rounded-[0.5625rem] border border-transparent px-[0.5625rem] py-2 transition-colors duration-150 motion-reduce:transition-none"
       aria-busy={save.isPending}
     >
-      <span className="bg-muted text-ink-2 grid size-7 shrink-0 place-items-center rounded-[8px]">
-        <Icon className="size-[13px]" aria-hidden />
+      <span className="bg-muted text-ink-2 grid size-7 shrink-0 place-items-center rounded-[0.5rem]">
+        <Icon className="size-[0.8125rem]" aria-hidden />
       </span>
-      <div className="grid min-w-0 flex-1 basis-[calc(100%-39px)] gap-px sm:basis-0">
-        <p className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] leading-4 font-semibold">
+      <div className="grid min-w-0 flex-1 basis-[calc(100%-2.4375rem)] gap-px sm:basis-0">
+        <p className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-[0.8125rem] leading-4 font-semibold">
           {skill.name}
           {skill.target === 'draft' && <DraftBadge />}
         </p>
-        <p className="text-ink-3 text-[10.5px] leading-[14px] text-pretty">{skill.description}</p>
+        <p className="text-ink-3 text-[0.71875rem] leading-[0.875rem] text-pretty">
+          {skill.description}
+        </p>
       </div>
       {/* On a phone the controls wrap under the text, not the icon. */}
-      <div className="ms-11 flex basis-full items-center gap-[11px] sm:ms-0 sm:basis-auto">
+      <div className="ms-11 flex basis-full items-center gap-[0.6875rem] sm:ms-0 sm:basis-auto">
         <Select
           value={toBotSelect(skill.agent_bot_id)}
           onValueChange={(value) => change({ agent_bot_id: fromBotSelect(value) })}
           indicatorPosition="right"
         >
           <SelectTrigger
-            className="bg-muted border-border h-7 w-full flex-1 rounded-[7px] px-2 text-[10.5px] font-medium text-muted-foreground shadow-none pointer-coarse:h-11 sm:w-52 sm:max-w-52 sm:flex-none"
+            className="bg-muted border-border h-7 w-full flex-1 rounded-[0.4375rem] px-2 text-[0.71875rem] font-medium text-muted-foreground shadow-none pointer-coarse:h-11 sm:w-52 sm:max-w-52 sm:flex-none"
             aria-label={`Agent bot for ${skill.name}`}
             disabled={save.isPending}
           >
@@ -165,13 +167,13 @@ function CustomSkillRow({
   }
 
   return (
-    <li className="hover:border-input hover:bg-popover flex flex-wrap items-center gap-x-[11px] gap-y-2 rounded-[9px] border border-transparent px-[9px] py-2 transition-colors duration-150 motion-reduce:transition-none">
-      <div className="bg-muted text-ink-2 grid size-7 shrink-0 place-items-center rounded-[8px]">
-        <Wand2 className="size-[13px]" aria-hidden />
+    <li className="hover:border-input hover:bg-popover flex flex-wrap items-center gap-x-[0.6875rem] gap-y-2 rounded-[0.5625rem] border border-transparent px-[0.5625rem] py-2 transition-colors duration-150 motion-reduce:transition-none">
+      <div className="bg-muted text-ink-2 grid size-7 shrink-0 place-items-center rounded-[0.5rem]">
+        <Wand2 className="size-[0.8125rem]" aria-hidden />
       </div>
-      <div className="grid min-w-0 flex-1 basis-[calc(100%-39px)] gap-px sm:basis-0">
-        <p className="text-[12px] leading-4 font-semibold wrap-anywhere">{skill.name}</p>
-        <p className="text-ink-3 text-[10.5px] leading-[14px] truncate">
+      <div className="grid min-w-0 flex-1 basis-[calc(100%-2.4375rem)] gap-px sm:basis-0">
+        <p className="text-[0.8125rem] leading-4 font-semibold wrap-anywhere">{skill.name}</p>
+        <p className="text-ink-3 text-[0.71875rem] leading-[0.875rem] truncate">
           {skill.description || skill.instruction}
         </p>
       </div>
@@ -230,8 +232,8 @@ function Loading({ rows }: { rows: number }) {
   return (
     <div className="grid gap-0.5">
       {Array.from({ length: rows }, (_, index) => (
-        <div key={index} className="flex items-center gap-x-[11px] px-[9px] py-2">
-          <Skeleton className="size-7 rounded-[8px]" />
+        <div key={index} className="flex items-center gap-x-[0.6875rem] px-[0.5625rem] py-2">
+          <Skeleton className="size-7 rounded-[0.5rem]" />
           <div className="grid flex-1 gap-1.5">
             <Skeleton className="h-3.5 w-40" />
             <Skeleton className="h-3 w-3/5" />
@@ -286,16 +288,16 @@ export default function SkillList({ organizationId }: { organizationId: string }
       // The design's empty state: a tile, the invitation, and its button.
       return (
         <div className="grid justify-items-center gap-2 py-6 text-center">
-          <span className="bg-muted text-ink-2 grid size-11 place-items-center rounded-[11px]">
+          <span className="bg-muted text-ink-2 grid size-11 place-items-center rounded-[0.6875rem]">
             <Construction className="size-5" aria-hidden />
           </span>
-          <p className="text-[13px] leading-[18px] font-semibold">No custom skills yet</p>
-          <p className="text-ink-3 max-w-96 text-[11.5px] leading-4 text-pretty">
+          <p className="text-[0.875rem] leading-[1.125rem] font-semibold">No custom skills yet</p>
+          <p className="text-ink-3 max-w-96 text-[0.78125rem] leading-4 text-pretty">
             Add one to have the AI extract dates, translate, list tasks, or anything else you keep
             doing by hand.
           </p>
           <Button
-            className="mt-1.5 h-7 gap-1.5 rounded-lg bg-foreground px-3 text-[11.5px] font-semibold text-background shadow-none hover:bg-foreground/90 pointer-coarse:h-11 [&_svg]:size-3"
+            className="mt-1.5 h-7 gap-1.5 rounded-lg bg-foreground px-3 text-[0.78125rem] font-semibold text-background shadow-none hover:bg-foreground/90 pointer-coarse:h-11 [&_svg]:size-3"
             onClick={() => setOpenAdd(true)}
           >
             <Plus />
@@ -336,7 +338,7 @@ export default function SkillList({ organizationId }: { organizationId: string }
         >
           {builtinContent()}
           {!isError && (
-            <p className="text-ink-faint mt-2 px-2.5 pb-1 text-[11px] leading-[15px] text-pretty">
+            <p className="text-ink-faint mt-2 px-2.5 pb-1 text-[0.75rem] leading-[0.9375rem] text-pretty">
               Humanize is adapted from{' '}
               <a
                 className="underline underline-offset-2"
@@ -373,7 +375,7 @@ export default function SkillList({ organizationId }: { organizationId: string }
             action={
               <Button
                 variant="outline"
-                className="bg-muted border-border h-7 gap-1.5 rounded-lg px-3 text-[11.5px] font-semibold shadow-none pointer-coarse:h-11 [&_svg]:size-3"
+                className="bg-muted border-border h-7 gap-1.5 rounded-lg px-3 text-[0.78125rem] font-semibold shadow-none pointer-coarse:h-11 [&_svg]:size-3"
                 onClick={() => setOpenAdd(true)}
               >
                 <Plus />

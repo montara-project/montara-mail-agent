@@ -82,11 +82,11 @@ function AuthField({
     <Field data-invalid={isInvalid} className="gap-1.5">
       <FieldLabel
         htmlFor={field.name}
-        className="text-[11.5px] font-semibold text-muted-foreground"
+        className="text-[0.78125rem] font-semibold text-muted-foreground"
       >
         {label}
       </FieldLabel>
-      <InputWrapper className="h-[42px] gap-[9px] px-3">
+      <InputWrapper className="h-[2.625rem] gap-[0.5625rem] px-3">
         {Icon && <Icon className="size-3.5 text-ink-faint" />}
         <Input
           id={field.name}
@@ -96,7 +96,7 @@ function AuthField({
           onChange={(e) => field.handleChange(e.target.value)}
           aria-invalid={isInvalid || undefined}
           variant="lg"
-          className="text-[13px]"
+          className="text-[0.875rem]"
           {...input}
         />
       </InputWrapper>
@@ -124,11 +124,11 @@ function AuthPasswordField({
     <Field data-invalid={isInvalid} className="gap-1.5">
       <FieldLabel
         htmlFor={field.name}
-        className="text-[11.5px] font-semibold text-muted-foreground"
+        className="text-[0.78125rem] font-semibold text-muted-foreground"
       >
         {label}
       </FieldLabel>
-      <InputWrapper className="h-[42px] px-3">
+      <InputWrapper className="h-[2.625rem] px-3">
         <Input
           type={visible ? 'text' : 'password'}
           id={field.name}
@@ -139,7 +139,7 @@ function AuthPasswordField({
           aria-invalid={isInvalid || undefined}
           autoComplete="current-password"
           variant="lg"
-          className="text-[13px]"
+          className="text-[0.875rem]"
           {...input}
         />
         {/* The ::after grows the 14px eye to a 44px tap target without moving it. */}
@@ -197,9 +197,9 @@ function TOTPStep({
       {/* The design's autofill banner. App codes can't be fetched from an
           inbox, so it stays a paste hint: OTPCodeInput splits a pasted code. */}
       {!backup && (
-        <div className="flex items-center gap-2 rounded-md border border-accent-ink/40 bg-accent-tint px-[11px] py-[9px]">
+        <div className="flex items-center gap-2 rounded-md border border-accent-ink/40 bg-accent-tint px-[0.6875rem] py-[0.5625rem]">
           <Sparkles className="size-3 shrink-0 text-accent-soft" aria-hidden />
-          <p className="text-[11.5px] text-accent-soft">
+          <p className="text-[0.78125rem] text-accent-soft">
             Paste the code — Montara fills each digit for you.
           </p>
         </div>
@@ -226,7 +226,7 @@ function TOTPStep({
       </Field>
       <Button
         type="submit"
-        className="h-11 w-full text-[13px] font-bold"
+        className="h-11 w-full text-[0.875rem] font-bold"
         disabled={!code.trim() || isLoading}
       >
         {isLoading ? 'Verifying…' : 'Verify and continue'}
@@ -234,14 +234,14 @@ function TOTPStep({
       </Button>
       <div className="flex items-center gap-2">
         <Checkbox id="totp-trust" checked={trust} onCheckedChange={(v) => setTrust(v === true)} />
-        <label htmlFor="totp-trust" className="text-[11px] text-ink-3">
+        <label htmlFor="totp-trust" className="text-[0.75rem] text-ink-3">
           Trust this browser for 30 days
         </label>
       </div>
       <Button
         type="button"
         variant="ghost"
-        className="h-10 w-full text-[12px] font-semibold text-muted-foreground"
+        className="h-10 w-full text-[0.8125rem] font-semibold text-muted-foreground"
         onClick={onBack}
       >
         <ArrowLeft className="size-3.5" />
@@ -366,31 +366,31 @@ export default function LoginForm({
       className={cn(
         'flex flex-col overflow-hidden rounded-2xl border border-border bg-card',
         'w-full',
-        step === 'code' ? 'max-w-[460px]' : 'max-w-[440px]',
+        step === 'code' ? 'max-w-[28.75rem]' : 'max-w-[27.5rem]',
         className
       )}
       {...props}
     >
       {step === 'code' ? (
-        <div className="flex flex-col gap-2.5 px-8 pt-[30px] pb-[22px]">
+        <div className="flex flex-col gap-2.5 px-8 pt-[1.875rem] pb-[1.375rem]">
           <div className="flex items-center justify-between">
-            <span className="font-mono text-[9.5px] font-semibold text-accent-soft">
+            <span className="font-mono text-[0.6875rem] font-semibold text-accent-soft">
               VERIFICATION
             </span>
             {/* Only an app code rotates; a backup code works once, whenever. */}
             {!backup && (
-              <span className="inline-flex items-center gap-1 rounded-chip bg-warning/10 px-2 py-[3px]">
+              <span className="inline-flex items-center gap-1 rounded-chip bg-warning/10 px-2 py-[0.1875rem]">
                 <Clock3 className="size-2.5 text-warning" aria-hidden />
-                <span className="font-mono text-[9.5px] font-semibold text-warning">
+                <span className="font-mono text-[0.6875rem] font-semibold text-warning">
                   Rotates every 30 s
                 </span>
               </span>
             )}
           </div>
-          <h1 className="text-[27px] font-bold tracking-[-0.4px]">
+          <h1 className="text-[1.6875rem] font-bold tracking-[-0.025rem]">
             {backup ? 'Enter a backup code' : 'Enter your 6-digit code'}
           </h1>
-          <p className="flex flex-wrap items-center gap-2 text-[12.5px]">
+          <p className="flex flex-wrap items-center gap-2 text-[0.84375rem]">
             <span className="text-ink-3">Code from</span>
             <span className="font-bold text-ink-strong">
               {backup ? 'Backup code' : 'your authenticator app'}
@@ -405,16 +405,19 @@ export default function LoginForm({
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-2 px-[26px] pt-[26px] pb-[18px]">
-          <span className="font-mono text-[9.5px] font-semibold text-accent-soft">
+        <div className="flex flex-col gap-2 px-[1.625rem] pt-[1.625rem] pb-[1.125rem]">
+          <span className="font-mono text-[0.6875rem] font-semibold text-accent-soft">
             WELCOME BACK
           </span>
-          <h1 className="text-[26px] font-bold tracking-[-0.4px]">Sign in to your inbox</h1>
-          <p className="text-[12.5px] leading-[1.5] text-ink-3">{STEP_DESCRIPTIONS[step]}</p>
+          <h1 className="text-[1.625rem] font-bold tracking-[-0.025rem]">Sign in to your inbox</h1>
+          <p className="text-[0.84375rem] leading-[1.5] text-ink-3">{STEP_DESCRIPTIONS[step]}</p>
         </div>
       )}
       <div
-        className={cn('flex flex-col gap-3.5 px-[26px] pb-[22px]', step === 'code' && 'px-8 pb-6')}
+        className={cn(
+          'flex flex-col gap-3.5 px-[1.625rem] pb-[1.375rem]',
+          step === 'code' && 'px-8 pb-6'
+        )}
       >
         {step === 'server' && (
           <ServerURLForm
@@ -430,18 +433,18 @@ export default function LoginForm({
             <Button
               type="button"
               variant="secondary"
-              className="h-11 w-full gap-2 rounded-[10px] border border-border bg-muted text-[12.5px] font-semibold shadow-none"
+              className="h-11 w-full gap-2 rounded-[0.625rem] border border-border bg-muted text-[0.84375rem] font-semibold shadow-none"
               disabled={googleLoading}
               onClick={() => void signInWithGoogle()}
             >
-              <span className="grid size-[18px] place-items-center rounded-[5px] bg-white">
+              <span className="grid size-[1.125rem] place-items-center rounded-[0.3125rem] bg-white">
                 <img src={googleLogo} alt="" className="size-4" />
               </span>
               {googleLoading ? 'Redirecting…' : 'Continue with Google'}
             </Button>
             <div className="flex items-center gap-2.5" aria-hidden>
               <span className="h-px grow bg-border" />
-              <span className="font-mono text-[9px] font-semibold text-ink-faint">or</span>
+              <span className="font-mono text-[0.6875rem] font-semibold text-ink-faint">or</span>
               <span className="h-px grow bg-border" />
             </div>
             <form
@@ -488,14 +491,17 @@ export default function LoginForm({
                   )}
                 </AnimatePresence>
               </LazyMotion>
-              <Button type="submit" className="h-11 w-full rounded-[10px] text-[13px] font-bold">
+              <Button
+                type="submit"
+                className="h-11 w-full rounded-[0.625rem] text-[0.875rem] font-bold"
+              >
                 {isLoading ? 'Signing in…' : showPassword ? 'Sign in' : 'Continue with email'}
                 {!showPassword && !isLoading && <ArrowRight className="size-3.5" />}
               </Button>
             </form>
             {lastEmail && (
-              <div className="flex flex-col gap-[7px] border-t border-border pt-2">
-                <span className="font-mono text-[9px] font-semibold text-ink-faint">
+              <div className="flex flex-col gap-[0.4375rem] border-t border-border pt-2">
+                <span className="font-mono text-[0.6875rem] font-semibold text-ink-faint">
                   Recently used
                 </span>
                 <div className="flex flex-wrap gap-1.5">
@@ -505,7 +511,7 @@ export default function LoginForm({
                       form.setFieldValue('email', lastEmail)
                       document.getElementById('email')?.focus()
                     }}
-                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-1 text-[10.5px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-1 text-[0.71875rem] font-semibold text-muted-foreground transition-colors hover:text-foreground"
                   >
                     <span className={cn('size-1.5 rounded-full', providerDotClass(lastEmail))} />
                     {lastEmail}
@@ -530,16 +536,16 @@ export default function LoginForm({
         )}
       </div>
       {step === 'code' ? (
-        <div className="flex items-center gap-2 border-t border-border bg-secondary/50 px-8 py-[13px]">
-          <Shield className="size-[11px] shrink-0 text-ink-faint" aria-hidden />
-          <p className="font-mono text-[9.5px] text-ink-faint">
+        <div className="flex items-center gap-2 border-t border-border bg-secondary/50 px-8 py-[0.8125rem]">
+          <Shield className="size-[0.6875rem] shrink-0 text-ink-faint" aria-hidden />
+          <p className="font-mono text-[0.6875rem] text-ink-faint">
             Codes are verified by your server and never stored.
           </p>
         </div>
       ) : (
-        <div className="flex items-center gap-2 border-t border-border bg-secondary/50 px-[26px] py-3">
-          <Lock className="size-[11px] shrink-0 text-ink-faint" aria-hidden />
-          <p className="font-mono text-[9.5px] text-ink-faint">
+        <div className="flex items-center gap-2 border-t border-border bg-secondary/50 px-[1.625rem] py-3">
+          <Lock className="size-[0.6875rem] shrink-0 text-ink-faint" aria-hidden />
+          <p className="font-mono text-[0.6875rem] text-ink-faint">
             Sent only to your server — encrypted in transit.
           </p>
         </div>

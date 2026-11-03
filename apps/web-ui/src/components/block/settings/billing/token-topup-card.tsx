@@ -129,7 +129,7 @@ function PayDialog({
                 <label
                   key={option.value}
                   className={cn(
-                    'has-[:focus-visible]:ring-ring/50 flex items-start gap-3 rounded-[9px] border px-3 py-2.5 has-[:focus-visible]:ring-[3px]',
+                    'has-[:focus-visible]:ring-ring/50 flex items-start gap-3 rounded-[0.5625rem] border px-3 py-2.5 has-[:focus-visible]:ring-[0.1875rem]',
                     chosen === option.value
                       ? 'border-accent-ink/40 bg-accent-ink/6'
                       : 'border-border',
@@ -149,10 +149,10 @@ function PayDialog({
                   />
                   <option.icon className="text-ink-3 mt-px size-4 shrink-0" aria-hidden />
                   <span className="grid min-w-0 gap-0.5">
-                    <span className="text-[12.5px] leading-[17px] font-semibold">
+                    <span className="text-[0.84375rem] leading-[1.0625rem] font-semibold">
                       {option.title}
                     </span>
-                    <span className="text-ink-3 text-[11px] leading-[15px] tabular-nums">
+                    <span className="text-ink-3 text-[0.75rem] leading-[0.9375rem] tabular-nums">
                       {option.note}
                     </span>
                   </span>
@@ -213,20 +213,20 @@ export default function TokenTopUpCard() {
 
   return (
     <Card className="w-full rounded-lg border-border/60 shadow-hairline">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-[18px] py-[13px]">
-        <span className="flex min-w-0 items-center gap-[9px]">
-          <Sparkles className="size-[13px] shrink-0 text-ink-3" aria-hidden />
-          <span className="text-ink-faint font-mono text-[9.5px] font-semibold tracking-[1px] uppercase">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-[1.125rem] py-[0.8125rem]">
+        <span className="flex min-w-0 items-center gap-[0.5625rem]">
+          <Sparkles className="size-[0.8125rem] shrink-0 text-ink-3" aria-hidden />
+          <span className="text-ink-faint font-mono text-[0.6875rem] font-semibold tracking-[0.0625rem] uppercase">
             Top up AI tokens
           </span>
         </span>
-        <span className="flex items-center gap-[5px] text-ink-3 text-[10.5px]">
-          <Tag className="size-[11px]" aria-hidden />
+        <span className="flex items-center gap-[0.3125rem] text-ink-3 text-[0.71875rem]">
+          <Tag className="size-[0.6875rem]" aria-hidden />
           {formatRupiah(IDR_PER_MILLION)} per 1M tokens
         </span>
       </div>
 
-      <div className="grid content-start gap-3.5 border-t border-input px-[18px] py-4">
+      <div className="grid content-start gap-3.5 border-t border-input px-[1.125rem] py-4">
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {PRESETS.map((n) => {
             const selected = custom === '' && preset === n
@@ -237,7 +237,7 @@ export default function TokenTopUpCard() {
                 aria-pressed={selected}
                 onClick={() => pickPreset(n)}
                 className={cn(
-                  'focus-visible:ring-ring/50 grid content-start gap-1 rounded-[9px] border px-3 py-2.5 text-start outline-none focus-visible:ring-[3px]',
+                  'focus-visible:ring-ring/50 grid content-start gap-1 rounded-[0.5625rem] border px-3 py-2.5 text-start outline-none focus-visible:ring-[0.1875rem]',
                   selected
                     ? 'border-accent-ink/40 bg-accent-ink/6'
                     : 'border-border bg-muted hover:bg-accent'
@@ -255,7 +255,7 @@ export default function TokenTopUpCard() {
                   {n === MIN_MILLIONS && (
                     <span
                       className={cn(
-                        'rounded-[4px] px-1 py-px font-mono text-[8px] font-semibold tracking-[0.5px] uppercase',
+                        'rounded-[0.25rem] px-1 py-px font-mono text-[0.6875rem] font-semibold tracking-[0.03125rem] uppercase',
                         selected
                           ? 'text-accent-soft dark:text-accent-ink bg-accent-ink/6'
                           : 'bg-foreground/8 text-ink-3'
@@ -267,7 +267,7 @@ export default function TokenTopUpCard() {
                 </span>
                 <span
                   className={cn(
-                    'font-mono text-[9.5px] font-semibold tabular-nums',
+                    'font-mono text-[0.6875rem] font-semibold tabular-nums',
                     selected ? 'text-accent-soft dark:text-accent-ink' : 'text-ink-3'
                   )}
                 >
@@ -279,11 +279,11 @@ export default function TokenTopUpCard() {
         </div>
 
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-          <div className="border-border bg-background flex w-[276px] max-w-full items-center gap-1.5 rounded-[8px] border px-[11px] py-2">
+          <div className="border-border bg-background flex w-[17.25rem] max-w-full items-center gap-1.5 rounded-[0.5rem] border px-[0.6875rem] py-2">
             <label htmlFor="token-topup-custom" className="sr-only">
               Custom amount in millions of tokens
             </label>
-            <span className="text-ink-faint text-[11px]" aria-hidden="true">
+            <span className="text-ink-faint text-[0.75rem]" aria-hidden="true">
               Custom
             </span>
             <NumberInput
@@ -297,16 +297,16 @@ export default function TokenTopUpCard() {
               placeholder={String(preset)}
               className="h-auto min-w-0 flex-1 rounded-none border-0 bg-transparent p-0 text-xs font-bold shadow-none placeholder:text-ink-3 focus-visible:ring-0"
             />
-            <span className="text-muted-foreground text-[11px] font-medium whitespace-nowrap">
+            <span className="text-muted-foreground text-[0.75rem] font-medium whitespace-nowrap">
               M tokens
             </span>
           </div>
-          <p className="text-ink-3 text-[10.5px]">Min. 10M tokens = Rp10.000 · steps of 1M</p>
+          <p className="text-ink-3 text-[0.71875rem]">Min. 10M tokens = Rp10.000 · steps of 1M</p>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-t border-input px-[18px] py-[11px]">
-        <p className="text-ink-3 text-[10.5px]">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-t border-input px-[1.125rem] py-[0.6875rem]">
+        <p className="text-ink-3 text-[0.71875rem]">
           Wallet ·{' '}
           {walletQuery.data ? (
             <span className="tabular-nums">{formatRupiah(walletQuery.data.balance_idr)}</span>
@@ -316,20 +316,20 @@ export default function TokenTopUpCard() {
           available
         </p>
         <div className="flex items-center gap-3">
-          <span className="flex items-baseline gap-[5px]">
-            <span className="text-ink-3 text-[10.5px]">Total</span>
-            <span className="text-[13px] font-bold tabular-nums">
+          <span className="flex items-baseline gap-[0.3125rem]">
+            <span className="text-ink-3 text-[0.71875rem]">Total</span>
+            <span className="text-[0.875rem] font-bold tabular-nums">
               {valid ? formatRupiah(total) : '–'}
             </span>
           </span>
           <Button
             size="sm"
             // Dark text: white on the accent is 3.4:1, short of AA.
-            className="bg-accent-ink hover:bg-accent-ink/90 h-[27px] gap-[5px] rounded-[7px] px-[11px] text-[11px] font-bold text-[#0a0a0a] shadow-none"
+            className="bg-accent-ink hover:bg-accent-ink/90 h-[1.6875rem] gap-[0.3125rem] rounded-[0.4375rem] px-[0.6875rem] text-[0.75rem] font-bold text-[#0a0a0a] shadow-none"
             disabled={!valid}
             onClick={() => setPaying(true)}
           >
-            <Zap className="size-[11px]" aria-hidden />
+            <Zap className="size-[0.6875rem]" aria-hidden />
             {`Buy ${millions(value)} tokens`}
           </Button>
         </div>

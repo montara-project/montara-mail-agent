@@ -359,12 +359,12 @@ export default function AgentPanel({
     <div className={cn('flex min-w-0 flex-col', className)} data-agent-panel>
       {/* Header: the same 3.5rem as the list and reader toolbars, so the borders line up. */}
       <div className="flex h-14 shrink-0 items-center gap-2.5 border-b px-3">
-        <span className="grid size-[26px] shrink-0 place-items-center rounded-[7px] border border-accent-ink/25 bg-accent-tint">
+        <span className="grid size-[1.625rem] shrink-0 place-items-center rounded-[0.4375rem] border border-accent-ink/25 bg-accent-tint">
           <Sparkles className="size-3.5 text-accent-soft" aria-hidden />
         </span>
         <div className="grid min-w-0 flex-1 leading-tight">
-          <h2 className="text-[12.5px] font-bold">Assistant</h2>
-          <p className="text-ink-3 flex items-center gap-1 font-mono text-[8.5px] font-semibold">
+          <h2 className="text-[0.84375rem] font-bold">Assistant</h2>
+          <p className="text-ink-3 flex items-center gap-1 font-mono text-[0.6875rem] font-semibold">
             <span className="size-1 rounded-full bg-success" aria-hidden />
             {activeBot?.name ?? 'Assistant'} · ready
           </p>
@@ -416,7 +416,7 @@ export default function AgentPanel({
                 document.getElementById(`agent-tab-${other}`)?.focus()
               }}
               className={cn(
-                'focus-visible:ring-ring/50 flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors outline-none focus-visible:ring-[3px]',
+                'focus-visible:ring-ring/50 flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors outline-none focus-visible:ring-[0.1875rem]',
                 tab === id
                   ? 'bg-background dark:bg-input shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -424,7 +424,7 @@ export default function AgentPanel({
             >
               {label}
               {id === 'drafts' && !!pendingDrafts && (
-                <span className="rounded-full bg-accent-ink/15 px-1.5 text-[11px] text-accent-ink tabular-nums">
+                <span className="rounded-full bg-accent-ink/15 px-1.5 text-[0.75rem] text-accent-ink tabular-nums">
                   {pendingDrafts}
                 </span>
               )}
@@ -452,12 +452,12 @@ export default function AgentPanel({
           {/* The context the chat is bound to, per the design's context strip. */}
           <div className="bg-muted/50 flex shrink-0 items-center gap-2 border-b px-3 py-2">
             <Link2 className="text-ink-faint size-2.5 shrink-0" aria-hidden />
-            <span className="text-ink-faint font-mono text-[8px] font-semibold">CONTEXT</span>
+            <span className="text-ink-faint font-mono text-[0.6875rem] font-semibold">CONTEXT</span>
             {about ? (
-              <span className="bg-secondary flex min-w-0 items-center gap-1.5 rounded-[5px] px-[7px] py-[3px]">
+              <span className="bg-secondary flex min-w-0 items-center gap-1.5 rounded-[0.3125rem] px-[0.4375rem] py-[0.1875rem]">
                 <Mail className="size-2.5 shrink-0 text-accent-soft" aria-hidden />
                 <span
-                  className="min-w-0 truncate text-[10px] font-semibold"
+                  className="min-w-0 truncate text-[0.71875rem] font-semibold"
                   title={aboutMail?.subject}
                 >
                   {aboutMail ? aboutMail.subject || '(no subject)' : 'this email'}
@@ -474,9 +474,9 @@ export default function AgentPanel({
                 </Hint>
               </span>
             ) : mailbox ? (
-              <span className="bg-secondary flex min-w-0 items-center gap-1.5 rounded-[5px] px-[7px] py-[3px]">
+              <span className="bg-secondary flex min-w-0 items-center gap-1.5 rounded-[0.3125rem] px-[0.4375rem] py-[0.1875rem]">
                 <Inbox className="size-2.5 shrink-0 text-accent-soft" aria-hidden />
-                <span className="min-w-0 truncate text-[10px] font-semibold">
+                <span className="min-w-0 truncate text-[0.71875rem] font-semibold">
                   {mask(mailbox.email)}
                 </span>
               </span>
@@ -484,7 +484,7 @@ export default function AgentPanel({
             {(about || conversationId) && (
               <button
                 type="button"
-                className="text-ink-faint hover:text-foreground ms-auto shrink-0 text-[10px] font-semibold outline-none"
+                className="text-ink-faint hover:text-foreground ms-auto shrink-0 text-[0.71875rem] font-semibold outline-none"
                 onClick={about ? detach : startNewChat}
               >
                 Clear
@@ -514,7 +514,7 @@ export default function AgentPanel({
                       <button
                         key={starter.label}
                         type="button"
-                        className="bg-muted hover:bg-accent focus-visible:ring-ring/50 flex h-6 items-center gap-1.5 rounded-md px-2 text-[10.5px] font-semibold text-muted-foreground outline-none focus-visible:ring-2"
+                        className="bg-muted hover:bg-accent focus-visible:ring-ring/50 flex h-6 items-center gap-1.5 rounded-md px-2 text-[0.71875rem] font-semibold text-muted-foreground outline-none focus-visible:ring-2"
                         onClick={() => ask(starter.label)}
                       >
                         <starter.icon className="text-accent-soft size-2.5 shrink-0" aria-hidden />
@@ -599,7 +599,7 @@ export default function AgentPanel({
               onModelChange={setActiveBotId}
               modelLabel="Speak as"
             />
-            <p className="text-muted-foreground mt-1.5 px-0.5 text-[11px]">
+            <p className="text-muted-foreground mt-1.5 px-0.5 text-[0.75rem]">
               Enter to send, Shift+Enter for a new line, / for quick prompts. Nothing goes out until
               you approve it.
             </p>
@@ -711,14 +711,14 @@ function AgentMessageRow({
   if (message.role === 'user') {
     return (
       <div className="flex justify-end">
-        <div className="border-accent-ink/25 bg-accent-ink/8 max-w-[85%] rounded-[10px] rounded-br-sm border px-[11px] py-2 text-[11px] text-foreground">
+        <div className="border-accent-ink/25 bg-accent-ink/8 max-w-[85%] rounded-[0.625rem] rounded-br-sm border px-[0.6875rem] py-2 text-[0.75rem] text-foreground">
           {message.content}
         </div>
       </div>
     )
   }
   return (
-    <div className="bg-card border-border/60 max-w-[92%] rounded-[10px] rounded-bl-sm border px-[11px] py-2.5 text-[11px]">
+    <div className="bg-card border-border/60 max-w-[92%] rounded-[0.625rem] rounded-bl-sm border px-[0.6875rem] py-2.5 text-[0.75rem]">
       <StreamingText
         text={message.content}
         animate={reveal}

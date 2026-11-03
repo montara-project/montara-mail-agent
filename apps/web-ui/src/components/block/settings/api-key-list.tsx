@@ -72,7 +72,7 @@ const day = (iso: string) =>
 function KeyMeta({ apiKey }: { apiKey: Models.APIKey }) {
   const expired = !!apiKey.expires_at && isPast(new Date(apiKey.expires_at))
   return (
-    <span className="text-ink-3 text-[10.5px] leading-[14px]">
+    <span className="text-ink-3 text-[0.71875rem] leading-[0.875rem]">
       Created {day(apiKey.created_at)}
       {apiKey.expires_at && (
         <span className={expired ? 'text-destructive' : undefined}>
@@ -91,16 +91,16 @@ function KeyRow({ apiKey }: { apiKey: Models.APIKey }) {
   const remove = useMutation(queries.apiKeys.delete())
 
   return (
-    <li className="flex flex-wrap items-center gap-3 px-[18px] py-3">
-      <span className="bg-muted grid size-7 shrink-0 place-items-center rounded-[8px]">
-        <KeyRound className="text-muted-foreground size-[13px]" aria-hidden />
+    <li className="flex flex-wrap items-center gap-3 px-[1.125rem] py-3">
+      <span className="bg-muted grid size-7 shrink-0 place-items-center rounded-[0.5rem]">
+        <KeyRound className="text-muted-foreground size-[0.8125rem]" aria-hidden />
       </span>
       <span className="grid min-w-0 flex-1 gap-0.5">
         <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
-          <span className="text-[12.5px] leading-[17px] font-semibold wrap-anywhere">
+          <span className="text-[0.84375rem] leading-[1.0625rem] font-semibold wrap-anywhere">
             {apiKey.name}
           </span>
-          <span className="text-ink-3 font-mono text-[10.5px]">{apiKey.hint}</span>
+          <span className="text-ink-3 font-mono text-[0.71875rem]">{apiKey.hint}</span>
           <Badge variant="secondary" appearance="light" size="sm" className="max-w-48">
             <span className="truncate">
               {apiKey.organization_id
@@ -331,7 +331,7 @@ function Loading() {
 /** A group's label, above its card. */
 function GroupLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-ink-faint font-mono text-[10.5px] leading-[13px] font-semibold tracking-[1px] uppercase">
+    <p className="text-ink-faint font-mono text-[0.71875rem] leading-[0.8125rem] font-semibold tracking-[0.0625rem] uppercase">
       {children}
     </p>
   )
@@ -361,19 +361,19 @@ export default function APIKeyList() {
               title={MCP_ENDPOINT}
               className="bg-background text-foreground flex h-9.5 min-w-0 flex-1 items-center gap-2 rounded-md border px-3 font-mono text-xs"
             >
-              <Link className="text-ink-3 size-[13px] shrink-0" aria-hidden />
+              <Link className="text-ink-3 size-[0.8125rem] shrink-0" aria-hidden />
               <span className="truncate">{MCP_ENDPOINT}</span>
             </code>
             <Button
               variant="outline"
-              className="bg-muted h-9.5 gap-1.5 px-3 text-xs font-semibold shadow-none pointer-coarse:h-11 [&_svg]:size-[13px]"
+              className="bg-muted h-9.5 gap-1.5 px-3 text-xs font-semibold shadow-none pointer-coarse:h-11 [&_svg]:size-[0.8125rem]"
               onClick={() => copy(MCP_ENDPOINT, 'Endpoint')}
             >
               <Copy />
               Copy
             </Button>
           </div>
-          <p className="text-ink-3 text-[11px] leading-[15px] text-pretty">
+          <p className="text-ink-3 text-[0.75rem] leading-[0.9375rem] text-pretty">
             Streamable HTTP. Send a key as Authorization: Bearer. It opens this endpoint only, never
             your account.
           </p>
@@ -389,7 +389,7 @@ export default function APIKeyList() {
           action={
             <Button
               variant="outline"
-              className="bg-muted h-7.5 gap-1.5 px-3 text-[11.5px] font-semibold shadow-none pointer-coarse:h-11 [&_svg]:size-3"
+              className="bg-muted h-7.5 gap-1.5 px-3 text-[0.78125rem] font-semibold shadow-none pointer-coarse:h-11 [&_svg]:size-3"
               onClick={() => setCreating(true)}
             >
               <Plus />
@@ -406,17 +406,19 @@ export default function APIKeyList() {
             loading={<Loading />}
             empty={
               <div className="grid justify-items-center gap-2 py-6 text-center">
-                <span className="bg-muted grid size-9 place-items-center rounded-[10px]">
+                <span className="bg-muted grid size-9 place-items-center rounded-[0.625rem]">
                   <KeyRound className="text-ink-3 size-4" aria-hidden />
                 </span>
-                <p className="text-[12.5px] leading-[17px] font-semibold">No API keys yet</p>
-                <p className="text-ink-3 text-[11px] leading-[15px]">
+                <p className="text-[0.84375rem] leading-[1.0625rem] font-semibold">
+                  No API keys yet
+                </p>
+                <p className="text-ink-3 text-[0.75rem] leading-[0.9375rem]">
                   Create one for each app you connect, so you can revoke it alone.
                 </p>
               </div>
             }
           >
-            <ul className="divide-border/60 -m-[18px] divide-y overflow-hidden rounded-b-lg">
+            <ul className="divide-border/60 -m-[1.125rem] divide-y overflow-hidden rounded-b-lg">
               {keys.map((apiKey) => (
                 <KeyRow key={apiKey.id} apiKey={apiKey} />
               ))}

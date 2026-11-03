@@ -85,22 +85,24 @@ function Stepper({ step }: { step: AuthStep }) {
             key={item.label}
             className={
               active
-                ? 'inline-flex items-center gap-1.5 rounded-chip border border-accent-ink/40 bg-accent-tint px-[9px] py-1'
-                : 'inline-flex items-center gap-1.5 rounded-chip border border-transparent px-[9px] py-1'
+                ? 'inline-flex items-center gap-1.5 rounded-chip border border-accent-ink/40 bg-accent-tint px-[0.5625rem] py-1'
+                : 'inline-flex items-center gap-1.5 rounded-chip border border-transparent px-[0.5625rem] py-1'
             }
           >
             {done ? (
               <Check className="size-2 text-success" aria-hidden />
             ) : active ? (
-              <span className="size-[5px] rounded-full bg-accent-ink" aria-hidden />
+              <span className="size-[0.3125rem] rounded-full bg-accent-ink" aria-hidden />
             ) : (
-              <span className="font-mono text-[9px] font-semibold text-ink-faint">{item.n}</span>
+              <span className="font-mono text-[0.6875rem] font-semibold text-ink-faint">
+                {item.n}
+              </span>
             )}
             <span
               className={
                 active
-                  ? 'font-mono text-[9px] font-bold text-foreground'
-                  : 'font-mono text-[9px] font-semibold text-ink-3'
+                  ? 'font-mono text-[0.6875rem] font-bold text-foreground'
+                  : 'font-mono text-[0.6875rem] font-semibold text-ink-3'
               }
             >
               {item.label}
@@ -146,39 +148,41 @@ function RouteComponent() {
   return (
     <main className="flex min-h-svh bg-background">
       {/* Left / product proof: the brand, the pitch and the trust line. */}
-      <aside className="relative hidden w-[560px] shrink-0 flex-col justify-between overflow-hidden border-r border-border bg-gradient-to-b from-card to-background px-11 pt-11 pb-10 lg:flex">
+      <aside className="relative hidden w-[35rem] shrink-0 flex-col justify-between overflow-hidden border-r border-border bg-gradient-to-b from-card to-background px-11 pt-11 pb-10 lg:flex">
         <div
-          className="absolute -top-40 -left-44 size-[560px] rounded-full bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--accent-ink)_18%,transparent),transparent)]"
+          className="absolute -top-40 -left-44 size-[35rem] rounded-full bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--accent-ink)_18%,transparent),transparent)]"
           aria-hidden
         />
         <div className="relative flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="grid size-[30px] place-items-center rounded-[9px] border border-accent-ink/25 bg-accent-tint">
-              <Mail className="size-[15px] text-accent-soft" aria-hidden />
+            <div className="grid size-[1.875rem] place-items-center rounded-[0.5625rem] border border-accent-ink/25 bg-accent-tint">
+              <Mail className="size-[0.9375rem] text-accent-soft" aria-hidden />
             </div>
-            <span className="text-[13px] font-bold">Montara Mail</span>
+            <span className="text-[0.875rem] font-bold">Montara Mail</span>
           </div>
-          <span className="font-mono text-[9px] font-semibold text-ink-faint">{EDITION_LABEL}</span>
+          <span className="font-mono text-[0.6875rem] font-semibold text-ink-faint">
+            {EDITION_LABEL}
+          </span>
         </div>
 
         <div className="relative flex flex-col gap-3">
-          <div className="flex items-center gap-[7px]">
-            <span className="font-mono text-[9.5px] font-semibold text-accent-soft">
+          <div className="flex items-center gap-[0.4375rem]">
+            <span className="font-mono text-[0.6875rem] font-semibold text-accent-soft">
               {pitch.eyebrow}
             </span>
-            <span className="size-[3px] rounded-full bg-ink-faint" aria-hidden />
-            <span className="font-mono text-[9.5px] font-semibold text-ink-faint">
+            <span className="size-[0.1875rem] rounded-full bg-ink-faint" aria-hidden />
+            <span className="font-mono text-[0.6875rem] font-semibold text-ink-faint">
               {pitch.kicker}
             </span>
           </div>
-          <h2 className="text-[34px] font-bold leading-[1.15]">{pitch.headline}</h2>
-          <p className="text-[13px] leading-[1.6] text-ink-3">{pitch.sub}</p>
+          <h2 className="text-[2.125rem] font-bold leading-[1.15]">{pitch.headline}</h2>
+          <p className="text-[0.875rem] leading-[1.6] text-ink-3">{pitch.sub}</p>
           {view === 'verify' ? (
-            <div className="mt-2 flex flex-col gap-2.5 border-t border-border pt-[18px]">
+            <div className="mt-2 flex flex-col gap-2.5 border-t border-border pt-[1.125rem]">
               {pitch.assurance.map((line) => (
                 <div key={line} className="flex items-center gap-2">
                   <Check className="size-3 shrink-0 text-accent-soft" aria-hidden />
-                  <p className="text-[11.5px] text-ink-3">{line}</p>
+                  <p className="text-[0.78125rem] text-ink-3">{line}</p>
                 </div>
               ))}
             </div>
@@ -187,7 +191,7 @@ function RouteComponent() {
               {pitch.providers.map((provider) => (
                 <span
                   key={provider.label}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[10.5px] font-semibold text-muted-foreground"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[0.71875rem] font-semibold text-muted-foreground"
                 >
                   <span className={cn('size-1.5 rounded-full', provider.dot)} aria-hidden />
                   {provider.label}
@@ -198,15 +202,17 @@ function RouteComponent() {
         </div>
 
         {view === 'verify' ? (
-          <p className="relative font-mono text-[9.5px] text-ink-faint">
+          <p className="relative font-mono text-[0.6875rem] text-ink-faint">
             Montara Mail · {EDITION_LABEL} inbox
           </p>
         ) : (
           <div className="relative flex justify-between border-t border-border pt-4">
             {pitch.trust.map((line) => (
               <div key={line} className="flex items-center gap-1.5">
-                <Check className="size-[11px] shrink-0 text-accent-soft" aria-hidden />
-                <span className="font-mono text-[9px] font-semibold text-ink-faint">{line}</span>
+                <Check className="size-[0.6875rem] shrink-0 text-accent-soft" aria-hidden />
+                <span className="font-mono text-[0.6875rem] font-semibold text-ink-faint">
+                  {line}
+                </span>
               </div>
             ))}
           </div>
@@ -214,8 +220,8 @@ function RouteComponent() {
       </aside>
 
       {/* Right / sign-in: the stepper, the card and the legal lines. */}
-      <section className="relative flex min-w-0 flex-1 flex-col items-center justify-center px-4 py-10 sm:px-10 lg:px-[60px]">
-        <span className="absolute top-10 right-10 font-mono text-[9.5px] font-semibold text-ink-faint lg:right-[60px]">
+      <section className="relative flex min-w-0 flex-1 flex-col items-center justify-center px-4 py-10 sm:px-10 lg:px-[3.75rem]">
+        <span className="absolute top-10 right-10 font-mono text-[0.6875rem] font-semibold text-ink-faint lg:right-[3.75rem]">
           Jakarta · EN
         </span>
         {exchanging ? (
@@ -224,11 +230,11 @@ function RouteComponent() {
             <p className="text-muted-foreground text-sm">Finishing Google sign-in…</p>
           </div>
         ) : (
-          <div className="flex w-full flex-col items-center gap-[18px]">
+          <div className="flex w-full flex-col items-center gap-[1.125rem]">
             <Stepper step={authStep} />
             <LoginForm codeFirst={needsCode} onStepChange={setAuthStep} />
             <div className="flex flex-col items-center gap-1 text-center">
-              <p className="text-[11px] text-ink-faint">
+              <p className="text-[0.75rem] text-ink-faint">
                 By continuing you agree to the{' '}
                 <a
                   href={TERMS_URL}
@@ -249,7 +255,7 @@ function RouteComponent() {
                 </a>
                 .
               </p>
-              <p className="text-[11px] text-ink-faint">
+              <p className="text-[0.75rem] text-ink-faint">
                 Lost access? Ask your workspace admin to reset the mailbox.
               </p>
             </div>

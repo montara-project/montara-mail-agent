@@ -38,7 +38,7 @@ function ThemeToggle() {
       theme={resolvedTheme === 'light' ? 'light' : 'dark'}
       onThemeChange={setTheme}
       title="Toggle theme"
-      className="self-center hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-sidebar-ring flex size-[34px] items-center justify-center rounded-[8px] outline-none focus-visible:ring-2 [&_svg]:size-4"
+      className="self-center hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-sidebar-ring flex size-[2.125rem] items-center justify-center rounded-[0.5rem] outline-none focus-visible:ring-2 [&_svg]:size-4"
     />
   )
 }
@@ -91,19 +91,19 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
       {...props}
     >
       {/* Icon rail: not collapsible, fixed to the icon width. */}
-      <Sidebar collapsible="none" className="w-[52px]! shrink-0 border-r">
+      <Sidebar collapsible="none" className="w-[3.25rem]! shrink-0 border-r">
         {/* Each rail button sets its own centered size from md up, and the menu button
         no longer resizes in the collapsed state, so nothing moves when the sidebar toggles. */}
         <SidebarHeader className="p-2.5 pb-0 md:items-center">
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton size="lg" asChild className="md:mx-auto md:size-[30px] md:p-0">
+              <SidebarMenuButton size="lg" asChild className="md:mx-auto md:size-[1.875rem] md:p-0">
                 <Link to="/dashboard">
                   <span
                     aria-hidden
-                    className="grid size-[30px] shrink-0 place-items-center rounded-[8px] bg-accent-ink/15 ring-1 ring-accent-ink/25"
+                    className="grid size-[1.875rem] shrink-0 place-items-center rounded-[0.5rem] bg-accent-ink/15 ring-1 ring-accent-ink/25"
                   >
-                    <Mail className="size-[15px] text-accent-soft" />
+                    <Mail className="size-[0.9375rem] text-accent-soft" />
                   </span>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">Montara</span>
@@ -119,7 +119,7 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
             <SidebarGroupContent className="px-1.5 md:px-0">
               <SidebarMenu className="md:gap-1.5">
                 {NAV_ITEMS.map((item) => {
-                  const className = `rounded-[8px] px-2.5 md:mx-auto md:size-8.5 md:rounded-[8px] md:p-2.25 [&_svg]:size-4`
+                  const className = `rounded-[0.5rem] px-2.5 md:mx-auto md:size-8.5 md:rounded-[0.5rem] md:p-2.25 [&_svg]:size-4`
                   return (
                     <SidebarMenuItem key={item.url}>
                       <SidebarMenuButton

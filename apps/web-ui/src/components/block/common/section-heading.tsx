@@ -19,7 +19,7 @@ export default function SectionHeading({
         <h2
           className={cn(
             'font-bold',
-            size === 'sm' ? 'text-base tracking-[-0.2px]' : 'text-2xl tracking-[-0.4px]'
+            size === 'sm' ? 'text-base tracking-[-0.0125rem]' : 'text-2xl tracking-[-0.025rem]'
           )}
         >
           {title}
@@ -27,7 +27,7 @@ export default function SectionHeading({
         <p
           className={cn(
             'text-muted-foreground text-pretty',
-            size === 'sm' ? 'text-[11.5px]' : 'text-[13px]'
+            size === 'sm' ? 'text-[0.78125rem]' : 'text-[0.875rem]'
           )}
         >
           {description}

@@ -29,8 +29,8 @@ const TIMEZONE_OPTIONS = TIMEZONES.map((zone) => ({ value: zone, label: timezone
 // The design's denser fields, for this form only: the shared fields stay as they
 // are elsewhere, and touch screens keep their larger targets and 16px text.
 const FIELDS =
-  'grid gap-4 [&_[data-slot=field]]:gap-1.5 [&_[data-slot=field-label]]:text-xs [&_[data-slot=field-label]]:leading-4 [&_[data-slot=field-label]]:font-semibold pointer-fine:[&_[data-slot=input-wrapper]]:h-9.5 pointer-fine:[&_[role=combobox]]:h-9.5 pointer-fine:[&_[role=combobox]]:text-[12.5px] pointer-fine:[&_input]:text-[12.5px]'
-const HINT = 'text-ink-3 text-[10.5px] leading-[14px]'
+  'grid gap-4 [&_[data-slot=field]]:gap-1.5 [&_[data-slot=field-label]]:text-xs [&_[data-slot=field-label]]:leading-4 [&_[data-slot=field-label]]:font-semibold pointer-fine:[&_[data-slot=input-wrapper]]:h-9.5 pointer-fine:[&_[role=combobox]]:h-9.5 pointer-fine:[&_[role=combobox]]:text-[0.84375rem] pointer-fine:[&_input]:text-[0.84375rem]'
+const HINT = 'text-ink-3 text-[0.71875rem] leading-[0.875rem]'
 const CARD_GRID = 'grid gap-6 sm:grid-cols-[11.25rem_minmax(0,1fr)]'
 
 function ProfileForm({ user }: { user: Models.User }) {
@@ -69,7 +69,7 @@ function ProfileForm({ user }: { user: Models.User }) {
             <div className="flex items-center justify-center gap-3 self-start sm:flex-col sm:gap-2.5">
               <Avatar className="size-16 sm:size-22">
                 {/^https:\/\/\S+$/.test(image) && <AvatarImage src={image} alt="" />}
-                <AvatarFallback className="border-accent-ink/25 bg-accent-tint text-accent-ink text-2xl font-bold sm:text-[28px]">
+                <AvatarFallback className="border-accent-ink/25 bg-accent-tint text-accent-ink text-2xl font-bold sm:text-[1.75rem]">
                   {mailInitials(name || user.email)}
                 </AvatarFallback>
               </Avatar>
@@ -78,7 +78,7 @@ function ProfileForm({ user }: { user: Models.User }) {
                   type="button"
                   variant="outline"
                   size="xs"
-                  className="bg-muted text-muted-foreground gap-1.5 rounded-md px-2.5 text-[11.5px] font-medium"
+                  className="bg-muted text-muted-foreground gap-1.5 rounded-md px-2.5 text-[0.78125rem] font-medium"
                   onClick={() => document.getElementById('image')?.focus()}
                 >
                   <Link className="size-3" />
@@ -149,7 +149,7 @@ function ProfileForm({ user }: { user: Models.User }) {
         </CardContent>
       </Card>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-ink-3 text-[11px]">
+        <p className="text-ink-3 text-[0.75rem]">
           Last saved on {monthDay(new Date(user.updated_at), true)} at{' '}
           {clock(new Date(user.updated_at))}
         </p>
@@ -166,7 +166,7 @@ function ProfileForm({ user }: { user: Models.User }) {
             <form.SubmitButton
               label="Save changes"
               icon={Check}
-              className="h-8.5 gap-[7px] px-4 text-xs font-semibold pointer-coarse:h-11 [&_svg]:size-3.5"
+              className="h-8.5 gap-[0.4375rem] px-4 text-xs font-semibold pointer-coarse:h-11 [&_svg]:size-3.5"
             />
           </form.AppForm>
         </div>

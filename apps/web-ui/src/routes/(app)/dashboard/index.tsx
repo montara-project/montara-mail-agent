@@ -42,10 +42,10 @@ const QUARANTINE_LIMIT = 3
 
 /** A card head's quiet link; the extra block padding keeps a 24px target. */
 const HEAD_LINK =
-  'text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 rounded-chip -my-1 flex items-center gap-1 py-1 text-[11.5px] font-medium outline-none focus-visible:ring-[3px] [&_svg]:size-3'
+  'text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 rounded-chip -my-1 flex items-center gap-1 py-1 text-[0.78125rem] font-medium outline-none focus-visible:ring-[0.1875rem] [&_svg]:size-3'
 /** An edge-to-edge row inside a card; the card clips its corners. */
 const ROW_LINK =
-  'hover:bg-accent/50 focus-visible:ring-ring/50 outline-none focus-visible:ring-[3px] focus-visible:ring-inset'
+  'hover:bg-accent/50 focus-visible:ring-ring/50 outline-none focus-visible:ring-[0.1875rem] focus-visible:ring-inset'
 
 /**
  * Deterministic per-sender avatar color from the design's palette, so each
@@ -95,16 +95,16 @@ function DashboardToolbar() {
     <div className="flex flex-wrap items-center gap-3">
       <form onSubmit={submit} className="min-w-56 flex-1">
         <InputWrapper className="bg-card border-border gap-2 rounded-md">
-          <Search className="size-[15px]" />
+          <Search className="size-[0.9375rem]" />
           <Input
             ref={searchRef}
             placeholder="Search messages, senders or attachments"
             aria-label="Search mail"
             value={term}
             onChange={(event) => setTerm(event.target.value)}
-            className="text-[12.5px] pointer-coarse:text-base"
+            className="text-[0.84375rem] pointer-coarse:text-base"
           />
-          <kbd className="bg-secondary rounded-tag px-1.5 py-0.5 font-sans text-[10.5px] font-semibold text-muted-foreground">
+          <kbd className="bg-secondary rounded-tag px-1.5 py-0.5 font-sans text-[0.71875rem] font-semibold text-muted-foreground">
             {SEARCH_KEYS}
           </kbd>
         </InputWrapper>
@@ -113,7 +113,7 @@ function DashboardToolbar() {
       <Button
         asChild
         variant="outline"
-        className="bg-card border-border text-muted-foreground text-[12.5px] shadow-none"
+        className="bg-card border-border text-muted-foreground text-[0.84375rem] shadow-none"
       >
         <Link to="/mail">
           <SlidersHorizontal className="size-3.5" />
@@ -123,7 +123,7 @@ function DashboardToolbar() {
       <Button
         onClick={() => setComposing(true)}
         disabled={!accounts?.length}
-        className="gap-[7px] px-3.5 text-[12.5px] font-bold"
+        className="gap-[0.4375rem] px-3.5 text-[0.84375rem] font-bold"
       >
         <SquarePen className="size-3.5" />
         Compose
@@ -149,12 +149,12 @@ function MessageRow({ mail }: { mail: Models.Mail }) {
       search={{ mail: mail.id }}
       className={cn(
         ROW_LINK,
-        'flex items-center gap-3 px-4 py-[11px]',
+        'flex items-center gap-3 px-4 py-[0.6875rem]',
         !mail.is_read && 'bg-muted'
       )}
     >
       <span
-        className="flex size-[34px] shrink-0 items-center justify-center rounded-full border text-[12.5px] font-bold uppercase"
+        className="flex size-[2.125rem] shrink-0 items-center justify-center rounded-full border text-[0.84375rem] font-bold uppercase"
         style={{
           backgroundColor: `${color}1f`,
           borderColor: `${color}33`,
@@ -164,7 +164,7 @@ function MessageRow({ mail }: { mail: Models.Mail }) {
         {name.charAt(0).toUpperCase()}
       </span>
       <span className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)] gap-0.5">
-        <span className="flex items-baseline gap-[7px] text-[12.5px] leading-[17px]">
+        <span className="flex items-baseline gap-[0.4375rem] text-[0.84375rem] leading-[1.0625rem]">
           <span
             className={cn(
               'max-w-[60%] shrink-0 truncate',
@@ -185,13 +185,13 @@ function MessageRow({ mail }: { mail: Models.Mail }) {
           )}
         </span>
         {mail.teaser && (
-          <span className="text-ink-3 truncate text-[11.5px] leading-4">{mail.teaser}</span>
+          <span className="text-ink-3 truncate text-[0.78125rem] leading-4">{mail.teaser}</span>
         )}
       </span>
-      <span className="flex shrink-0 items-center gap-[9px]">
+      <span className="flex shrink-0 items-center gap-[0.5625rem]">
         <span
           className={cn(
-            'min-w-13 text-end text-[11px] font-medium tabular-nums',
+            'min-w-13 text-end text-[0.75rem] font-medium tabular-nums',
             mail.is_read ? 'text-ink-3' : 'text-muted-foreground'
           )}
         >
@@ -222,7 +222,7 @@ function RecentMessages() {
       title="Recent messages"
       badge={
         unread > 0 && (
-          <span className="bg-secondary text-muted-foreground rounded-tag px-[7px] py-0.5 text-[10.5px] leading-[14px] font-semibold tabular-nums">
+          <span className="bg-secondary text-muted-foreground rounded-tag px-[0.4375rem] py-0.5 text-[0.71875rem] leading-[0.875rem] font-semibold tabular-nums">
             {unread} new
           </span>
         )
@@ -278,7 +278,7 @@ function RestoreButton({ mailId, sender }: { mailId: string; sender: string }) {
       variant="outline"
       size="xs"
       aria-label={`Restore mail from ${sender}`}
-      className="border-border text-ink-strong rounded-chip h-5 shrink-0 bg-transparent px-2 text-[10.5px] font-semibold shadow-none pointer-coarse:h-9"
+      className="border-border text-ink-strong rounded-chip h-5 shrink-0 bg-transparent px-2 text-[0.71875rem] font-semibold shadow-none pointer-coarse:h-9"
       disabled={move.isPending}
       onClick={() => move.mutate('inbox', { onError: toastAxiosError })}
     >
@@ -307,7 +307,7 @@ function Quarantined() {
       title="Quarantined"
       badge={
         total > 0 && (
-          <span className="bg-warning/12 text-warning-ink rounded-tag px-1.5 py-0.5 text-[10.5px] leading-[14px] font-bold tabular-nums">
+          <span className="bg-warning/12 text-warning-ink rounded-tag px-1.5 py-0.5 text-[0.71875rem] leading-[0.875rem] font-bold tabular-nums">
             {total}
           </span>
         )
@@ -350,16 +350,16 @@ function Quarantined() {
             return (
               <div
                 key={mail.id}
-                className="hover:bg-accent/50 flex items-center gap-[11px] px-4 py-[9px]"
+                className="hover:bg-accent/50 flex items-center gap-[0.6875rem] px-4 py-[0.5625rem]"
               >
-                <span className="bg-warning/8 text-warning flex size-[26px] shrink-0 items-center justify-center rounded-[7px]">
-                  <ShieldX className="size-[13px]" aria-hidden />
+                <span className="bg-warning/8 text-warning flex size-[1.625rem] shrink-0 items-center justify-center rounded-[0.4375rem]">
+                  <ShieldX className="size-[0.8125rem]" aria-hidden />
                 </span>
                 <div className="grid min-w-0 flex-1 gap-px">
                   <span className="text-ink-strong truncate text-xs leading-4 font-semibold">
                     {sender}
                   </span>
-                  <span className="text-ink-3 truncate text-[11.5px] leading-4">
+                  <span className="text-ink-3 truncate text-[0.78125rem] leading-4">
                     {mail.subject || '(no subject)'}
                   </span>
                 </div>
@@ -384,7 +384,7 @@ function Mailboxes() {
       title="Mailboxes"
       toolbar={
         accounts ? (
-          <span className="text-ink-3 text-[11px]">{accounts.length} connected</span>
+          <span className="text-ink-3 text-[0.75rem]">{accounts.length} connected</span>
         ) : null
       }
     >
@@ -422,22 +422,22 @@ function Mailboxes() {
               key={account.id}
               to="/mail"
               search={split ? { account: account.id } : {}}
-              className={cn(ROW_LINK, 'flex items-center gap-2.5 px-4 py-[13px]')}
+              className={cn(ROW_LINK, 'flex items-center gap-2.5 px-4 py-[0.8125rem]')}
             >
-              <span className="bg-muted grid size-7 shrink-0 place-items-center rounded-[8px]">
+              <span className="bg-muted grid size-7 shrink-0 place-items-center rounded-[0.5rem]">
                 <ProviderIcon provider={account.provider} className="size-4" />
               </span>
               <span className="grid min-w-0 flex-1 gap-px">
                 <span className="text-ink-strong truncate text-xs leading-4 font-semibold">
                   {mask(account.label)}
                 </span>
-                <span className="text-ink-3 truncate text-[10.5px] leading-[14px]">
+                <span className="text-ink-3 truncate text-[0.71875rem] leading-[0.875rem]">
                   {mask(account.email)}
                 </span>
               </span>
               <span
                 className={cn(
-                  'rounded-chip h-[18px] min-w-5 shrink-0 px-1.5 text-center text-[10.5px] leading-[18px] font-bold tabular-nums',
+                  'rounded-chip h-[1.125rem] min-w-5 shrink-0 px-1.5 text-center text-[0.71875rem] leading-[1.125rem] font-bold tabular-nums',
                   account.unread > 0 ? 'bg-secondary text-muted-foreground' : 'text-ink-3'
                 )}
               >
@@ -447,15 +447,18 @@ function Mailboxes() {
           ))}
 
           {/* The design's connect row: the connectors live on the Account page. */}
-          <Link to="/account" className={cn(ROW_LINK, 'flex items-center gap-2.5 px-4 py-[13px]')}>
-            <span className="text-muted-foreground border-border grid size-7 shrink-0 place-items-center rounded-[8px] border">
+          <Link
+            to="/account"
+            className={cn(ROW_LINK, 'flex items-center gap-2.5 px-4 py-[0.8125rem]')}
+          >
+            <span className="text-muted-foreground border-border grid size-7 shrink-0 place-items-center rounded-[0.5rem] border">
               <Plus className="size-3.5" aria-hidden />
             </span>
             <span className="grid min-w-0 flex-1 gap-px">
               <span className="text-ink-strong truncate text-xs leading-4 font-semibold">
                 Connect a mailbox
               </span>
-              <span className="text-ink-3 truncate text-[10.5px] leading-[14px]">
+              <span className="text-ink-3 truncate text-[0.71875rem] leading-[0.875rem]">
                 Gmail, Outlook, Proton and more
               </span>
             </span>
@@ -495,13 +498,13 @@ function Shortcuts() {
             key={item.folder}
             to="/mail"
             search={{ folder: item.folder }}
-            className={cn(ROW_LINK, 'flex items-center gap-[11px] px-4 py-[12.5px]')}
+            className={cn(ROW_LINK, 'flex items-center gap-[0.6875rem] px-4 py-[0.78125rem]')}
           >
-            <span className="bg-muted grid size-[26px] shrink-0 place-items-center rounded-[7px]">
+            <span className="bg-muted grid size-[1.625rem] shrink-0 place-items-center rounded-[0.4375rem]">
               <item.icon className="text-muted-foreground size-3.5" aria-hidden />
             </span>
             <span className="text-ink-strong flex-1 text-xs font-medium">{item.label}</span>
-            <kbd className="text-ink-3 font-sans text-[10.5px] font-semibold">
+            <kbd className="text-ink-3 font-sans text-[0.71875rem] font-semibold">
               {SEARCH_KEYS.replace('K', item.digit)}
             </kbd>
           </Link>

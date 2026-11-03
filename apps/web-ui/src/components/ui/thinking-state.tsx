@@ -81,7 +81,7 @@ export default function ThinkingState({
         <span role="status" className="contents">
           {working ? (
             <span
-              className="bg-clip-text text-[13px] font-medium whitespace-nowrap text-transparent"
+              className="bg-clip-text text-[0.875rem] font-medium whitespace-nowrap text-transparent"
               style={{
                 backgroundImage:
                   'linear-gradient(90deg, var(--ink-3) 35%, var(--ink) 50%, var(--ink-3) 65%)',
@@ -93,7 +93,7 @@ export default function ThinkingState({
             </span>
           ) : (
             <span
-              className="text-ink-2 text-[13px] font-medium whitespace-nowrap"
+              className="text-ink-2 text-[0.875rem] font-medium whitespace-nowrap"
               style={{ animation: 'fade-in 350ms ease-out both' }}
             >
               {done}
@@ -128,10 +128,10 @@ export default function ThinkingState({
         }}
       >
         <div className="overflow-hidden">
-          <div className="relative mt-1 ml-[5px] pl-4">
+          <div className="relative mt-1 ml-[0.3125rem] pl-4">
             <span
               aria-hidden
-              className="bg-line absolute left-[3px] w-px"
+              className="bg-line absolute left-[0.1875rem] w-px"
               style={{
                 top: -8,
                 height: lineHeight ? lineHeight - 2 : 0,
@@ -142,19 +142,19 @@ export default function ThinkingState({
               {rows.map((row, i) => (
                 <div
                   key={`${i}-${row.primary}`}
-                  className="flex min-h-7 w-full items-center gap-2 rounded-[6px] px-1.5 py-0.5 text-left"
+                  className="flex min-h-7 w-full items-center gap-2 rounded-[0.375rem] px-1.5 py-0.5 text-left"
                   style={{ animation: `fade-up 320ms ${EASE} both` }}
                 >
                   {working && i === rows.length - 1 ? (
-                    <span className="border-line-strong border-t-ink-2 size-3 shrink-0 animate-spin rounded-full border-[1.5px]" />
+                    <span className="border-line-strong border-t-ink-2 size-3 shrink-0 animate-spin rounded-full border-[0.09375rem]" />
                   ) : (
                     <Check />
                   )}
-                  <span className="text-ink min-w-0 truncate text-[12.5px] font-medium">
+                  <span className="text-ink min-w-0 truncate text-[0.84375rem] font-medium">
                     {row.primary}
                   </span>
                   {row.secondary && (
-                    <span className="text-ink-3 min-w-0 truncate text-[11.5px]">
+                    <span className="text-ink-3 min-w-0 truncate text-[0.78125rem]">
                       {row.secondary}
                     </span>
                   )}

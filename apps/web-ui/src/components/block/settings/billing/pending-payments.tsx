@@ -85,12 +85,12 @@ export default function PendingPayments() {
       className="border-warning/30 bg-warning/8 grid gap-2.5 rounded-lg border p-4"
     >
       <div className="flex items-center gap-2">
-        <Clock3 className="text-warning-text size-[13px] shrink-0" aria-hidden />
-        <h2 id="pending-payments-title" className="text-[13px] leading-[18px] font-bold">
+        <Clock3 className="text-warning-text size-[0.8125rem] shrink-0" aria-hidden />
+        <h2 id="pending-payments-title" className="text-[0.875rem] leading-[1.125rem] font-bold">
           {rows.length === 1 ? 'A payment is waiting' : `${rows.length} payments are waiting`}
         </h2>
       </div>
-      <p className="text-ink-3 text-[11.5px] leading-4 text-pretty">
+      <p className="text-ink-3 text-[0.78125rem] leading-4 text-pretty">
         Started at the BorderPay checkout but not paid yet. Finish one to get its balance; an unpaid
         checkout expires after an hour.
       </p>
@@ -98,9 +98,9 @@ export default function PendingPayments() {
         {rows.map((row) => (
           <li
             key={row.key}
-            className="bg-card border-border flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[9px] border px-3 py-2.5"
+            className="bg-card border-border flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[0.5625rem] border px-3 py-2.5"
           >
-            <span className="bg-muted text-ink-3 grid size-6.5 shrink-0 place-items-center rounded-[7px]">
+            <span className="bg-muted text-ink-3 grid size-6.5 shrink-0 place-items-center rounded-[0.4375rem]">
               {row.kind === 'wallet' ? (
                 <Wallet className="size-3" aria-hidden />
               ) : (
@@ -111,7 +111,7 @@ export default function PendingPayments() {
               <span className="text-ink-strong truncate text-xs leading-4 font-semibold">
                 {row.title} · <span className="tabular-nums">{formatRupiah(row.amount)}</span>
               </span>
-              <span className="text-ink-3 text-[10.5px] leading-3.5">
+              <span className="text-ink-3 text-[0.71875rem] leading-3.5">
                 Started {monthDay(row.createdAt)}, {clock(row.createdAt)} · expires in{' '}
                 <span className="tabular-nums">
                   {countdown(row.createdAt.getTime() + PENDING_FOR_MS - now)}
@@ -121,7 +121,7 @@ export default function PendingPayments() {
             <Button
               asChild
               size="sm"
-              className="h-7 shrink-0 text-[11.5px] font-semibold shadow-none"
+              className="h-7 shrink-0 text-[0.78125rem] font-semibold shadow-none"
             >
               <a href={row.payUrl} target="_blank" rel="noreferrer">
                 <ExternalLink aria-hidden />

@@ -37,7 +37,7 @@ function CopyButton({ text }: { text: string }) {
           .then(() => setCopied(true))
           .catch(() => {})
       }}
-      className="text-ink-3 hover:bg-hover-2 hover:text-ink-2 flex size-6 items-center justify-center rounded-[6px] transition-colors duration-100"
+      className="text-ink-3 hover:bg-hover-2 hover:text-ink-2 flex size-6 items-center justify-center rounded-[0.375rem] transition-colors duration-100"
     >
       <svg
         width="15"

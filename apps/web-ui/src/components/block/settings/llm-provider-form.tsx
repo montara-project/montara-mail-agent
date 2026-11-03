@@ -312,30 +312,30 @@ function ProviderDialog({
 }
 
 /** The column widths the design gives the provider table; the endpoint takes the rest. */
-const PROVIDER_COL = 'w-full md:w-[150px] md:shrink-0'
-const MODEL_COL = 'md:w-[188px] md:shrink-0'
-const RUNS_COL = 'md:w-[110px] md:shrink-0'
-const ACTIONS_COL = 'md:w-[132px] md:shrink-0'
+const PROVIDER_COL = 'w-full md:w-[9.375rem] md:shrink-0'
+const MODEL_COL = 'md:w-[11.75rem] md:shrink-0'
+const RUNS_COL = 'md:w-[6.875rem] md:shrink-0'
+const ACTIONS_COL = 'md:w-[8.25rem] md:shrink-0'
 
 /** The column labels: mono, uppercase, faint, above the rows. */
 function ProviderTableHead() {
   return (
-    <div className="hidden items-center gap-2.5 px-2.5 py-[7px] md:flex">
+    <div className="hidden items-center gap-2.5 px-2.5 py-[0.4375rem] md:flex">
       <span
-        className={`text-ink-faint font-mono text-[9px] leading-3 font-semibold tracking-[0.8px] uppercase ${PROVIDER_COL}`}
+        className={`text-ink-faint font-mono text-[0.6875rem] leading-3 font-semibold tracking-[0.05rem] uppercase ${PROVIDER_COL}`}
       >
         Provider
       </span>
-      <span className="text-ink-faint min-w-0 flex-1 font-mono text-[9px] leading-3 font-semibold tracking-[0.8px] uppercase">
+      <span className="text-ink-faint min-w-0 flex-1 font-mono text-[0.6875rem] leading-3 font-semibold tracking-[0.05rem] uppercase">
         Endpoint
       </span>
       <span
-        className={`text-ink-faint font-mono text-[9px] leading-3 font-semibold tracking-[0.8px] uppercase ${MODEL_COL}`}
+        className={`text-ink-faint font-mono text-[0.6875rem] leading-3 font-semibold tracking-[0.05rem] uppercase ${MODEL_COL}`}
       >
         Model
       </span>
       <span
-        className={`text-ink-faint font-mono text-[9px] leading-3 font-semibold tracking-[0.8px] uppercase ${RUNS_COL}`}
+        className={`text-ink-faint font-mono text-[0.6875rem] leading-3 font-semibold tracking-[0.05rem] uppercase ${RUNS_COL}`}
       >
         Runs in
       </span>
@@ -375,25 +375,25 @@ function ProviderRow({
     )
 
   return (
-    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 rounded-[8px] px-2.5 py-2 md:flex-nowrap">
-      <div className={`flex items-center gap-[9px] ${PROVIDER_COL}`}>
-        <span className="bg-accent-tint grid size-[26px] shrink-0 place-items-center rounded-[7px]">
+    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 rounded-[0.5rem] px-2.5 py-2 md:flex-nowrap">
+      <div className={`flex items-center gap-[0.5625rem] ${PROVIDER_COL}`}>
+        <span className="bg-accent-tint grid size-[1.625rem] shrink-0 place-items-center rounded-[0.4375rem]">
           <Cpu className="text-accent-ink size-3" aria-hidden />
         </span>
         <span className="grid min-w-0 gap-px">
           <span className="truncate text-xs leading-4 font-semibold">{providerName(provider)}</span>
-          <span className="text-ink-faint truncate text-[10px] leading-[14px]">
+          <span className="text-ink-faint truncate text-[0.71875rem] leading-[0.875rem]">
             {providerTag(provider)}
           </span>
         </span>
       </div>
 
-      <span className="text-ink-3 order-4 basis-full min-w-0 truncate font-mono text-[10.5px] leading-[15px] md:order-none md:basis-auto md:flex-1">
+      <span className="text-ink-3 order-4 basis-full min-w-0 truncate font-mono text-[0.71875rem] leading-[0.9375rem] md:order-none md:basis-auto md:flex-1">
         {providerEndpoint(provider)}
       </span>
 
       <span
-        className={`text-ink-3 order-5 truncate font-mono text-[10.5px] leading-[15px] md:order-none ${MODEL_COL}`}
+        className={`text-ink-3 order-5 truncate font-mono text-[0.71875rem] leading-[0.9375rem] md:order-none ${MODEL_COL}`}
       >
         {provider.model || '—'}
       </span>
@@ -406,15 +406,15 @@ function ProviderRow({
               type="button"
               disabled={move.isPending}
               aria-label={`Where ${providerName(provider)} runs`}
-              className="bg-muted text-muted-foreground hover:bg-accent focus-visible:ring-ring/50 flex h-6 w-full items-center justify-between gap-[5px] rounded-chip border px-[7px] text-[10.5px] leading-[14px] outline-none transition-colors duration-150 focus-visible:ring-[3px] disabled:opacity-60 motion-reduce:transition-none"
+              className="bg-muted text-muted-foreground hover:bg-accent focus-visible:ring-ring/50 flex h-6 w-full items-center justify-between gap-[0.3125rem] rounded-chip border px-[0.4375rem] text-[0.71875rem] leading-[0.875rem] outline-none transition-colors duration-150 focus-visible:ring-[0.1875rem] disabled:opacity-60 motion-reduce:transition-none"
             >
-              <span className="flex min-w-0 items-center gap-[5px]">
-                <span className="bg-success size-[5px] shrink-0 rounded-full" aria-hidden />
+              <span className="flex min-w-0 items-center gap-[0.3125rem]">
+                <span className="bg-success size-[0.3125rem] shrink-0 rounded-full" aria-hidden />
                 <span className="truncate">
                   {provider.organization_id ? provider.organization_name : 'Platform'}
                 </span>
               </span>
-              <ChevronDown className="text-ink-faint size-[9px] shrink-0" aria-hidden />
+              <ChevronDown className="text-ink-faint size-[0.5625rem] shrink-0" aria-hidden />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-60">
@@ -437,7 +437,7 @@ function ProviderRow({
       </div>
 
       <div
-        className={`order-3 ml-auto flex items-center justify-end gap-[3px] md:order-none md:ml-0 ${ACTIONS_COL}`}
+        className={`order-3 ml-auto flex items-center justify-end gap-[0.1875rem] md:order-none md:ml-0 ${ACTIONS_COL}`}
       >
         <Hint label="Edit">
           <Button
@@ -447,7 +447,7 @@ function ProviderRow({
             className="text-muted-foreground size-5 rounded-tag pointer-coarse:size-11"
             onClick={() => setOpenEdit(true)}
           >
-            <Pencil className="size-[11px]" />
+            <Pencil className="size-[0.6875rem]" />
           </Button>
         </Hint>
         <Hint label="Delete">
@@ -458,7 +458,7 @@ function ProviderRow({
             className="text-danger-soft hover:text-danger-soft size-5 rounded-tag pointer-coarse:size-11"
             onClick={() => setOpenDelete(true)}
           >
-            <Trash2 className="size-[11px]" />
+            <Trash2 className="size-[0.6875rem]" />
           </Button>
         </Hint>
       </div>
@@ -543,8 +543,8 @@ export default function LLMProviderSettings() {
     if (isPending) {
       return (
         <div className="grid gap-2 px-2.5 pt-2.5 pb-1.5">
-          <Skeleton className="h-10 rounded-[8px]" />
-          <Skeleton className="h-10 rounded-[8px]" />
+          <Skeleton className="h-10 rounded-[0.5rem]" />
+          <Skeleton className="h-10 rounded-[0.5rem]" />
         </div>
       )
     }
@@ -592,7 +592,7 @@ export default function LLMProviderSettings() {
         action={
           <Button
             variant="secondary"
-            className="border-border bg-muted hover:bg-accent h-[27px] shrink-0 gap-1.5 rounded-[7px]! border px-[11px] text-[11px] leading-[15px] font-semibold shadow-none [&_svg]:size-[11px] pointer-coarse:h-11"
+            className="border-border bg-muted hover:bg-accent h-[1.6875rem] shrink-0 gap-1.5 rounded-[0.4375rem]! border px-[0.6875rem] text-[0.75rem] leading-[0.9375rem] font-semibold shadow-none [&_svg]:size-[0.6875rem] pointer-coarse:h-11"
             onClick={() => setOpenAdd(true)}
           >
             <Plus />
@@ -601,8 +601,8 @@ export default function LLMProviderSettings() {
         }
         footer={
           <div className="flex items-center gap-2">
-            <Info className="text-ink-faint size-[11px] shrink-0" aria-hidden />
-            <p className="text-ink-3 text-[10.5px] leading-[14px] text-pretty">
+            <Info className="text-ink-faint size-[0.6875rem] shrink-0" aria-hidden />
+            <p className="text-ink-3 text-[0.71875rem] leading-[0.875rem] text-pretty">
               Requests route to the first provider with a valid key, then fall back to the platform
               router.
             </p>

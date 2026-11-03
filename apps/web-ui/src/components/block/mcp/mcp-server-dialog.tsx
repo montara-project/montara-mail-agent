@@ -375,7 +375,7 @@ export default function MCPServerDialog({
                       patch({ kind: k.kind })
                     }}
                     className={cn(
-                      'flex shrink-0 items-center justify-between gap-3 rounded-control px-2.5 py-2 text-start text-sm transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 disabled:cursor-not-allowed',
+                      'flex shrink-0 items-center justify-between gap-3 rounded-control px-2.5 py-2 text-start text-sm transition-colors outline-none focus-visible:ring-[0.1875rem] focus-visible:ring-ring/30 disabled:cursor-not-allowed',
                       active ? 'bg-secondary font-medium' : 'hover:bg-accent/60',
                       locked && 'opacity-50'
                     )}
@@ -392,7 +392,7 @@ export default function MCPServerDialog({
                 aria-pressed={importing}
                 onClick={() => setImporting((on) => !on)}
                 className={cn(
-                  'text-muted-foreground hover:text-foreground mt-auto hidden w-fit items-center gap-1.5 rounded-md px-2 py-1.5 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 sm:flex',
+                  'text-muted-foreground hover:text-foreground mt-auto hidden w-fit items-center gap-1.5 rounded-md px-2 py-1.5 text-sm outline-none focus-visible:ring-[0.1875rem] focus-visible:ring-ring/30 sm:flex',
                   importing && 'text-foreground'
                 )}
               >

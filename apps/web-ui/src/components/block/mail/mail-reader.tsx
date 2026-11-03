@@ -399,7 +399,7 @@ export default function MailReader({
               {mail.from_name && <span className="text-ink-3">{mask(mail.from_email)}</span>}
             </p>
             {(mail.to.length > 0 || mail.cc.length > 0) && (
-              <p className="text-muted-foreground text-[11.5px]">
+              <p className="text-muted-foreground text-[0.78125rem]">
                 {mail.to.length > 0 && (
                   <>
                     <span className="text-ink-3 font-medium">To:</span>{' '}
@@ -418,7 +418,7 @@ export default function MailReader({
             {/* A reply goes out from this account. */}
             {flag && (
               <p className="flex min-w-0 items-center gap-1.5">
-                <span className="text-ink-3 shrink-0 font-mono text-[10.5px] font-semibold">
+                <span className="text-ink-3 shrink-0 font-mono text-[0.71875rem] font-semibold">
                   Received in:
                 </span>
                 <AccountFlag account={flag} className="rounded-chip" />
@@ -426,17 +426,17 @@ export default function MailReader({
             )}
           </div>
           <div className="text-ink-3 flex shrink-0 items-center gap-1.5 text-sm @max-lg:ms-13">
-            <span className="text-ink-3 me-1.5 font-mono text-[10.5px]">{`${monthDay(new Date(mail.received_at))}, ${clock(new Date(mail.received_at), '.')}`}</span>
+            <span className="text-ink-3 me-1.5 font-mono text-[0.71875rem]">{`${monthDay(new Date(mail.received_at))}, ${clock(new Date(mail.received_at), '.')}`}</span>
             <IconButton
               label="Print"
-              className="bg-muted rounded-[7px] [&_svg]:size-3.5"
+              className="bg-muted rounded-[0.4375rem] [&_svg]:size-3.5"
               onClick={() => printMail(mail)}
             >
               <Printer />
             </IconButton>
             <IconButton
               label="Forward"
-              className="bg-muted rounded-[7px] [&_svg]:size-3.5"
+              className="bg-muted rounded-[0.4375rem] [&_svg]:size-3.5"
               onClick={() => setForwarding(true)}
             >
               <Forward />
@@ -444,7 +444,7 @@ export default function MailReader({
             {/* The assistant pane is desktop only, like the button that opens it. */}
             <IconButton
               label="Ask AI about this email"
-              className="bg-muted hidden size-8 rounded-[7px] lg:inline-flex [&_svg]:size-3.5"
+              className="bg-muted hidden size-8 rounded-[0.4375rem] lg:inline-flex [&_svg]:size-3.5"
               onClick={() =>
                 navigate({ to: '/mail', search: (s) => ({ ...s, agent: true, about: mail.id }) })
               }
@@ -454,7 +454,7 @@ export default function MailReader({
             <IconButton
               label={mail.is_starred ? 'Unstar' : 'Star'}
               aria-pressed={mail.is_starred}
-              className="bg-muted rounded-[7px] [&_svg]:size-3.5"
+              className="bg-muted rounded-[0.4375rem] [&_svg]:size-3.5"
               onClick={() => update({ is_starred: !mail.is_starred })}
             >
               <Star className={cn(mail.is_starred && 'fill-warning text-warning')} />

@@ -45,14 +45,14 @@ function OrganizationRow({ record, active }: { record: Models.Organization; acti
   return (
     <li
       className={cn(
-        'flex flex-wrap items-center gap-x-[11px] gap-y-1.5 rounded-md border px-[9px] py-2 transition-colors duration-150 motion-reduce:transition-none',
+        'flex flex-wrap items-center gap-x-[0.6875rem] gap-y-1.5 rounded-md border px-[0.5625rem] py-2 transition-colors duration-150 motion-reduce:transition-none',
         active ? 'border-accent-ink/40 bg-accent-ink/6' : 'hover:bg-muted border-transparent'
       )}
     >
       <span
         aria-hidden
         className={cn(
-          'grid size-7 shrink-0 place-items-center rounded-[8px] text-[11.5px] font-bold',
+          'grid size-7 shrink-0 place-items-center rounded-[0.5rem] text-[0.78125rem] font-bold',
           active ? 'bg-accent-tint text-accent-soft' : 'bg-muted text-muted-foreground'
         )}
       >
@@ -67,19 +67,19 @@ function OrganizationRow({ record, active }: { record: Models.Organization; acti
         >
           {record.name}
         </span>
-        <span className="text-ink-3 text-[10.5px] leading-[14px]">
+        <span className="text-ink-3 text-[0.71875rem] leading-[0.875rem]">
           Since {monthDay(new Date(record.created_at))}
         </span>
       </span>
       {active ? (
-        <span className="bg-accent-ink/6 text-accent-soft flex shrink-0 items-center gap-1 rounded-tag px-1.5 py-[3px] text-[10.5px] leading-[14px] font-bold">
-          <Check className="size-[9px]" aria-hidden />
+        <span className="bg-accent-ink/6 text-accent-soft flex shrink-0 items-center gap-1 rounded-tag px-1.5 py-[0.1875rem] text-[0.71875rem] leading-[0.875rem] font-bold">
+          <Check className="size-[0.5625rem]" aria-hidden />
           Current
         </span>
       ) : (
         <Button
           variant="ghost"
-          className="text-muted-foreground h-[22px] rounded-chip px-2 text-[10.5px] font-semibold pointer-coarse:h-11"
+          className="text-muted-foreground h-[1.375rem] rounded-chip px-2 text-[0.71875rem] font-semibold pointer-coarse:h-11"
           onClick={() => setActiveOrganizationId(record.id)}
         >
           Switch
@@ -89,7 +89,7 @@ function OrganizationRow({ record, active }: { record: Models.Organization; acti
         <Button
           variant="ghost"
           mode="icon"
-          className="text-ink-3 size-[22px] rounded-chip pointer-coarse:size-11 [&_svg]:size-[11px]"
+          className="text-ink-3 size-[1.375rem] rounded-chip pointer-coarse:size-11 [&_svg]:size-[0.6875rem]"
           aria-label={`Edit ${record.name}`}
           onClick={() => setOpenEdit(true)}
         >
@@ -100,7 +100,7 @@ function OrganizationRow({ record, active }: { record: Models.Organization; acti
           <Button
             variant="ghost"
             mode="icon"
-            className="text-danger-soft hover:text-danger-soft size-[22px] rounded-chip pointer-coarse:size-11 [&_svg]:size-[11px]"
+            className="text-danger-soft hover:text-danger-soft size-[1.375rem] rounded-chip pointer-coarse:size-11 [&_svg]:size-[0.6875rem]"
             aria-label={`Delete ${record.name}`}
             onClick={() => setOpenDelete(true)}
           >
@@ -142,8 +142,8 @@ export default function OrganizationList() {
       return (
         <div className="grid gap-3 p-2">
           {[0, 1].map((index) => (
-            <div key={index} className="flex items-center gap-[11px]">
-              <Skeleton className="size-7 rounded-[8px]" />
+            <div key={index} className="flex items-center gap-[0.6875rem]">
+              <Skeleton className="size-7 rounded-[0.5rem]" />
               <div className="grid flex-1 gap-1.5">
                 <Skeleton className="h-3.5 w-40" />
                 <Skeleton className="h-3 w-24" />
@@ -183,7 +183,7 @@ export default function OrganizationList() {
         <>
           <Button
             mode="link"
-            className="text-muted-foreground h-auto gap-1.5 p-0 text-[11px] leading-[15px] font-semibold no-underline pointer-coarse:h-11 [&_svg]:size-[11px]"
+            className="text-muted-foreground h-auto gap-1.5 p-0 text-[0.75rem] leading-[0.9375rem] font-semibold no-underline pointer-coarse:h-11 [&_svg]:size-[0.6875rem]"
             onClick={() => setOpenAdd(true)}
           >
             <Plus />
@@ -191,7 +191,7 @@ export default function OrganizationList() {
           </Button>
           {/* Members and roles aren't built yet; the Community Edition has one user. */}
           {!COMMUNITY && (
-            <span className="text-ink-3 flex items-center gap-1.5 text-[11px] leading-[15px] font-medium">
+            <span className="text-ink-3 flex items-center gap-1.5 text-[0.75rem] leading-[0.9375rem] font-medium">
               Manage access
               <Badge variant="secondary" appearance="light" size="sm">
                 Soon

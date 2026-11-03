@@ -21,7 +21,7 @@ import { getQueryClient } from '@/lib/providers/react-query'
 // The design's denser fields, for this form only: the shared field stays as it is
 // elsewhere, and touch screens keep their larger targets and 16px text.
 const FIELDS =
-  'grid gap-3.5 [&_[data-slot=field]]:gap-[5px] [&_[data-slot=field-label]]:text-[11.5px] [&_[data-slot=field-label]]:leading-4 [&_[data-slot=field-label]]:font-semibold pointer-fine:[&_[data-slot=input-wrapper]]:h-9.5 pointer-fine:[&_[data-slot=input-wrapper]_svg]:size-3.5 pointer-fine:[&_input]:text-[12.5px]'
+  'grid gap-3.5 [&_[data-slot=field]]:gap-[0.3125rem] [&_[data-slot=field-label]]:text-[0.78125rem] [&_[data-slot=field-label]]:leading-4 [&_[data-slot=field-label]]:font-semibold pointer-fine:[&_[data-slot=input-wrapper]]:h-9.5 pointer-fine:[&_[data-slot=input-wrapper]_svg]:size-3.5 pointer-fine:[&_input]:text-[0.84375rem]'
 
 function PasswordForm() {
   const change = useMutation(queries.profile.changePassword())
@@ -81,7 +81,7 @@ function PasswordForm() {
           />
         )}
       />
-      <FieldDescription className="text-ink-3 text-[10.5px] leading-[14px]">
+      <FieldDescription className="text-ink-3 text-[0.71875rem] leading-[0.875rem]">
         Changing your password signs you out everywhere, this browser included.
       </FieldDescription>
       <div>

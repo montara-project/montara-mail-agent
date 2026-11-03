@@ -27,7 +27,7 @@ function ClockChip({
   return (
     <span
       className={cn(
-        'bg-muted text-muted-foreground hidden h-[19px] shrink-0 items-center gap-[5px] rounded-chip px-[7px] font-mono text-[9.5px] leading-none whitespace-nowrap',
+        'bg-muted text-muted-foreground hidden h-[1.1875rem] shrink-0 items-center gap-[0.3125rem] rounded-chip px-[0.4375rem] font-mono text-[0.6875rem] leading-none whitespace-nowrap',
         className
       )}
     >

@@ -42,7 +42,7 @@ import {
   type Connector,
 } from './connector-list'
 
-const ACTION = 'h-7 rounded-[8px] px-2 text-[11.5px] shadow-none'
+const ACTION = 'h-7 rounded-[0.5rem] px-2 text-[0.78125rem] shadow-none'
 const QUIET_ACTION = cn(
   ACTION,
   'bg-muted text-ink-3 hover:bg-accent hover:text-foreground font-medium'
@@ -60,12 +60,14 @@ function SyncStatus({ account }: { account: Models.EmailAccount }) {
     )
   }
   if (!account.synced_at) {
-    return <StatusDot className="text-ink-3 text-[11.5px]" status="pending" label="Syncing..." />
+    return (
+      <StatusDot className="text-ink-3 text-[0.78125rem]" status="pending" label="Syncing..." />
+    )
   }
   const synced = new Date(account.synced_at)
   return (
     <StatusDot
-      className="text-ink-3 text-[11.5px]"
+      className="text-ink-3 text-[0.78125rem]"
       status={isPast(new Date(synced.getTime() + STALE_AFTER_MS)) ? 'pending' : 'synced'}
       label={`Synced ${timeAgo(synced)}`}
     />
@@ -90,14 +92,14 @@ function FilterTab({
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        'focus-visible:ring-ring/50 flex items-center gap-1.5 rounded-[7px] px-[11px] py-1.5 text-xs leading-[15px] outline-none focus-visible:ring-[3px]',
+        'focus-visible:ring-ring/50 flex items-center gap-1.5 rounded-[0.4375rem] px-[0.6875rem] py-1.5 text-xs leading-[0.9375rem] outline-none focus-visible:ring-[0.1875rem]',
         active
           ? 'bg-secondary font-semibold text-foreground'
           : 'text-muted-foreground hover:text-foreground font-medium'
       )}
     >
       {label}
-      <span className="text-ink-3 text-[11px] font-medium tabular-nums">{count}</span>
+      <span className="text-ink-3 text-[0.75rem] font-medium tabular-nums">{count}</span>
     </button>
   )
 }
@@ -142,7 +144,7 @@ export default function MailAccountList() {
   const content = () => {
     if (isPending && organization) {
       return (
-        <div className="grid gap-3 gap-x-[18px] sm:grid-cols-2">
+        <div className="grid gap-3 gap-x-[1.125rem] sm:grid-cols-2">
           <Skeleton className="h-32 rounded-lg" />
           <Skeleton className="h-32 rounded-lg" />
         </div>
@@ -167,28 +169,28 @@ export default function MailAccountList() {
       )
     }
     return (
-      <div className="grid gap-3 gap-x-[18px] sm:grid-cols-2">
+      <div className="grid gap-3 gap-x-[1.125rem] sm:grid-cols-2">
         {visible.map((account) => (
           <div
             key={account.id}
-            className="bg-card border-border/60 shadow-hairline grid gap-3.5 rounded-lg border p-[17px] text-sm"
+            className="bg-card border-border/60 shadow-hairline grid gap-3.5 rounded-lg border p-[1.0625rem] text-sm"
           >
             <div className="flex items-center gap-3">
               <Link
                 to="/mail"
                 search={split ? { account: account.id } : {}}
-                className="focus-visible:ring-ring/50 -m-1 flex min-w-0 flex-1 items-center gap-3 rounded-md p-1 outline-none focus-visible:ring-[3px]"
+                className="focus-visible:ring-ring/50 -m-1 flex min-w-0 flex-1 items-center gap-3 rounded-md p-1 outline-none focus-visible:ring-[0.1875rem]"
               >
                 <ProviderIcon
                   provider={account.provider}
                   tint={false}
                   className={cn(PROVIDER_TILE, '[&>img]:size-5')}
                 />
-                <span className="grid min-w-0 flex-1 gap-[3px]">
-                  <span className="truncate leading-[17px] font-semibold hover:underline">
+                <span className="grid min-w-0 flex-1 gap-[0.1875rem]">
+                  <span className="truncate leading-[1.0625rem] font-semibold hover:underline">
                     {mask(account.label)}
                   </span>
-                  <span className="text-ink-3 truncate text-xs leading-[15px]">
+                  <span className="text-ink-3 truncate text-xs leading-[0.9375rem]">
                     {mask(account.email)}
                   </span>
                 </span>
@@ -204,7 +206,7 @@ export default function MailAccountList() {
               <SyncStatus account={account} />
               {/* The design's tag chip; the unread badge stands in for unlabeled accounts. */}
               {account.label ? (
-                <span className="bg-muted text-muted-foreground shrink-0 rounded-[5px] px-[7px] py-[3px] text-[10.5px] leading-[13px] font-medium">
+                <span className="bg-muted text-muted-foreground shrink-0 rounded-[0.3125rem] px-[0.4375rem] py-[0.1875rem] text-[0.71875rem] leading-[0.8125rem] font-medium">
                   {account.label}
                 </span>
               ) : (
@@ -279,10 +281,10 @@ export default function MailAccountList() {
     <section aria-labelledby="mail-accounts-title" className="grid gap-3.5">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="grid gap-1">
-          <h2 id="mail-accounts-title" className="text-lg leading-[25px] font-semibold">
+          <h2 id="mail-accounts-title" className="text-lg leading-[1.5625rem] font-semibold">
             Email accounts
           </h2>
-          <p className="text-muted-foreground text-sm leading-[19px]">
+          <p className="text-muted-foreground text-sm leading-[1.1875rem]">
             {accounts?.length
               ? `${accounts.length} ${accounts.length === 1 ? 'account' : 'accounts'} connected${lastSync ? ` · last sync ${lastSync}` : ''}`
               : 'Connect your first mailbox below.'}
@@ -290,7 +292,7 @@ export default function MailAccountList() {
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button className="h-8 rounded-[8px] text-xs font-semibold shadow-none">
+            <Button className="h-8 rounded-[0.5rem] text-xs font-semibold shadow-none">
               <Plus className="size-3.5" />
               Add account
             </Button>
@@ -315,7 +317,7 @@ export default function MailAccountList() {
           <div
             role="group"
             aria-label="Filter accounts by label"
-            className="bg-card border-border/60 flex flex-wrap items-center gap-1.5 rounded-[10px] border p-[3px]"
+            className="bg-card border-border/60 flex flex-wrap items-center gap-1.5 rounded-[0.625rem] border p-[0.1875rem]"
           >
             <FilterTab
               active={filter === 'all'}
@@ -339,7 +341,7 @@ export default function MailAccountList() {
           <StatusDot
             className={cn(
               'text-ink-3 gap-2',
-              labels.length === 0 && 'bg-card border-border/60 rounded-[10px] border p-2'
+              labels.length === 0 && 'bg-card border-border/60 rounded-[0.625rem] border p-2'
             )}
             status={failing > 0 ? 'failed' : 'healthy'}
             label={
@@ -351,7 +353,7 @@ export default function MailAccountList() {
         )}
       </div>
       {content()}
-      <p className="text-ink-3 text-[11.5px] leading-4">
+      <p className="text-ink-3 text-[0.78125rem] leading-4">
         Disconnecting an account removes local messages but keeps them on the server.
       </p>
       {connecting && <ConnectDialog connector={connecting} onClose={() => setConnecting(null)} />}

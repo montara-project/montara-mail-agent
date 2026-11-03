@@ -35,7 +35,7 @@ export default function SectionCard({
         >
           <CardHeading className={cn('min-w-0 flex-1', description ? 'basis-56' : 'basis-auto')}>
             <div className="flex items-center gap-2">
-              <CardTitle className="text-[13.5px] leading-[18px] font-bold tracking-normal">
+              <CardTitle className="text-[0.90625rem] leading-[1.125rem] font-bold tracking-normal">
                 {title}
               </CardTitle>
               {badge}
