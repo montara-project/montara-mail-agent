@@ -56,11 +56,14 @@ const clientConfig = (key: string) =>
     2
   )
 
+// Outside a secure context navigator.clipboard is undefined; the promise turns that into the failure toast.
 const copy = (text: string, what: string) =>
-  navigator.clipboard.writeText(text).then(
-    () => toast.success(`${what} copied`),
-    () => toast.error(`Couldn't copy the ${what.toLowerCase()}; select it instead.`)
-  )
+  Promise.resolve()
+    .then(() => navigator.clipboard.writeText(text))
+    .then(
+      () => toast.success(`${what} copied`),
+      () => toast.error(`Couldn't copy the ${what.toLowerCase()}; select it instead.`)
+    )
 
 const day = (iso: string) =>
   new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })

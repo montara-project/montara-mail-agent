@@ -48,10 +48,12 @@ function BackupCodes({ codes }: { codes: string[] }) {
           variant="secondary"
           size="sm"
           onClick={() =>
-            navigator.clipboard.writeText(text).then(
-              () => toast.success('Backup codes copied'),
-              () => toast.error("Couldn't copy; select the codes instead.")
-            )
+            Promise.resolve()
+              .then(() => navigator.clipboard.writeText(text))
+              .then(
+                () => toast.success('Backup codes copied'),
+                () => toast.error("Couldn't copy; select the codes instead.")
+              )
           }
         >
           <Copy />

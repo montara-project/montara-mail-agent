@@ -74,11 +74,14 @@ const STATUS_LOOK: Record<
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
+// Outside a secure context navigator.clipboard is undefined; the promise turns that into the failure toast.
 const copy = (text: string, what: string) =>
-  navigator.clipboard.writeText(text).then(
-    () => toast.success(`${what} copied`),
-    () => toast.error(`Couldn't copy the ${what.toLowerCase()}; select it instead.`)
-  )
+  Promise.resolve()
+    .then(() => navigator.clipboard.writeText(text))
+    .then(
+      () => toast.success(`${what} copied`),
+      () => toast.error(`Couldn't copy the ${what.toLowerCase()}; select it instead.`)
+    )
 
 /** "Connected", "Needs sign-in": a dot and a word, coloured for the ones that want a look. */
 function StatusChip({ status }: { status: Models.MCPServerStatus }) {

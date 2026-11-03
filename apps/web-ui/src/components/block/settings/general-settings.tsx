@@ -1,6 +1,6 @@
 import { useStore } from '@tanstack/react-form'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Check, Upload } from 'lucide-react'
+import { Check, Link } from 'lucide-react'
 import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
@@ -81,10 +81,9 @@ function ProfileForm({ user }: { user: Models.User }) {
                   className="bg-muted text-muted-foreground gap-1.5 rounded-md px-2.5 text-[11.5px] font-medium"
                   onClick={() => document.getElementById('image')?.focus()}
                 >
-                  <Upload className="size-3" />
-                  Change photo
+                  <Link className="size-3" />
+                  Edit avatar URL
                 </Button>
-                <p className={HINT}>PNG or JPG, up to 2 MB.</p>
               </div>
             </div>
             <div className={FIELDS}>
