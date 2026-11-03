@@ -81,6 +81,9 @@ func TestDraftReply(t *testing.T) {
 	if draftReplySystem(nil) != draftReplyPrompt {
 		t.Fatalf("draftReplySystem(nil) changed the built-in prompt")
 	}
+	if !strings.Contains(draftReplyPrompt, models.HumanReplyStyle) {
+		t.Fatalf("the draft prompt does not write by the humanizer's rules:\n%s", draftReplyPrompt)
+	}
 	bot := &models.AgentBot{Name: "Ops Bot"}
 	if got := draftReplySystem(bot); got != bot.Persona()+"\n\n"+draftReplyPrompt {
 		t.Fatalf("draftReplySystem(bot) is not persona + blank line + prompt:\n%s", got)
