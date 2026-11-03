@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { ChevronRight, Search } from 'lucide-react'
 import React from 'react'
 
+import { SettingsPage } from '@/components/block/common/settings-card'
 import { SEARCH_KEYS } from '@/components/layout/mail/mail-search'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -162,35 +163,40 @@ export default function SettingsNav() {
   const empty = shown.length === 0 && danger.items.length === 0
 
   return (
-    <nav aria-label="Control Center" className="grid gap-3.5">
-      <label className="bg-card focus-within:ring-ring/50 flex items-center gap-2.25 rounded-[10px] border px-3 py-2 focus-within:ring-[3px]">
-        <Search className="text-ink-3 size-[13px] shrink-0" aria-hidden />
-        <span className="sr-only">Search settings</span>
-        <input
-          ref={inputRef}
-          type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') setQuery('')
-          }}
-          placeholder="Search settings, tools and providers"
-          className="placeholder:text-ink-3 min-w-0 flex-1 bg-transparent text-ellipsis text-[12.5px] leading-[17px] outline-none pointer-coarse:text-base"
-        />
-        <kbd className="text-ink-3 bg-muted rounded-tag border px-[5px] py-0.5 font-mono text-[10.5px] leading-[11px] font-semibold pointer-coarse:hidden">
-          {SEARCH_KEYS}
-        </kbd>
-      </label>
+    <SettingsPage>
+      <nav aria-label="Control Center" className="grid gap-3.5">
+        <label className="bg-card focus-within:ring-ring/50 flex items-center gap-2.25 rounded-[10px] border px-3 py-2 focus-within:ring-[3px]">
+          <Search className="text-ink-3 size-[13px] shrink-0" aria-hidden />
+          <span className="sr-only">Search settings</span>
+          <input
+            ref={inputRef}
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') setQuery('')
+            }}
+            placeholder="Search settings, tools and providers"
+            className="placeholder:text-ink-3 min-w-0 flex-1 bg-transparent text-ellipsis text-[12.5px] leading-[17px] outline-none pointer-coarse:text-base"
+          />
+          <kbd className="text-ink-3 bg-muted rounded-tag border px-[5px] py-0.5 font-mono text-[10.5px] leading-[11px] font-semibold pointer-coarse:hidden">
+            {SEARCH_KEYS}
+          </kbd>
+        </label>
 
-      {shown.map((group) => (
-        <SettingsSection key={group.title} group={group} />
-      ))}
-      {danger.items.length > 0 && <SettingsSection group={danger} danger />}
-      {empty && (
-        <p role="status" className="text-muted-foreground py-10 text-center text-sm wrap-anywhere">
-          No settings match “{query.trim()}”.
-        </p>
-      )}
-    </nav>
+        {shown.map((group) => (
+          <SettingsSection key={group.title} group={group} />
+        ))}
+        {danger.items.length > 0 && <SettingsSection group={danger} danger />}
+        {empty && (
+          <p
+            role="status"
+            className="text-muted-foreground py-10 text-center text-sm wrap-anywhere"
+          >
+            No settings match “{query.trim()}”.
+          </p>
+        )}
+      </nav>
+    </SettingsPage>
   )
 }
