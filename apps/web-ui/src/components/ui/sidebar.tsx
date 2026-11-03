@@ -307,7 +307,7 @@ function SidebarContent({ className, ...props }: React.ComponentProps<'div'>) {
       data-slot="sidebar-content"
       data-sidebar="content"
       className={cn(
-        'no-scrollbar flex min-h-0 flex-1 flex-col gap-0.5 overflow-auto overscroll-contain px-2.5 py-2 group-data-[collapsible=icon]:overflow-hidden',
+        'no-scrollbar flex min-h-0 flex-1 flex-col gap-0.5 overflow-auto overscroll-contain px-2.5 py-2.5 group-data-[collapsible=icon]:overflow-hidden',
         className
       )}
       {...props}
@@ -320,7 +320,12 @@ function SidebarGroup({ className, ...props }: React.ComponentProps<'div'>) {
     <div
       data-slot="sidebar-group"
       data-sidebar="group"
-      className={cn('relative flex w-full min-w-0 flex-col', className)}
+      // A group after another one stands apart from the rows above it, as the
+      // design's 14px label padding does; the first group sits right under the header.
+      className={cn(
+        'relative flex w-full min-w-0 flex-col [[data-slot=sidebar-group]+&]:pt-[13px]',
+        className
+      )}
       {...props}
     />
   )
@@ -362,7 +367,7 @@ function SidebarMenu({ className, ...props }: React.ComponentProps<'ul'>) {
     <ul
       data-slot="sidebar-menu"
       data-sidebar="menu"
-      className={cn('flex w-full min-w-0 flex-col gap-0.5', className)}
+      className={cn('flex w-full min-w-0 flex-col gap-1', className)}
       {...props}
     />
   )

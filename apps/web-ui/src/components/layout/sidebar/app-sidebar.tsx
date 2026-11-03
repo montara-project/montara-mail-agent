@@ -118,21 +118,24 @@ export default function AppSidebar({ user, userError, onRetryUser, ...props }: A
           <SidebarGroup className="p-0">
             <SidebarGroupContent className="px-1.5 md:px-0">
               <SidebarMenu className="md:gap-1.5">
-                {NAV_ITEMS.map((item) => (
-                  <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton
-                      asChild
-                      tooltip={{ children: item.title, hidden: false }}
-                      isActive={pathname.startsWith(item.url)}
-                      className="rounded-[8px] px-2.5 md:mx-auto md:size-[34px] md:rounded-[8px] md:p-[9px] [&_svg]:size-4"
-                    >
-                      <Link to={item.url}>
-                        {item.icon && <item.icon />}
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                {NAV_ITEMS.map((item) => {
+                  const className = `rounded-[8px] px-2.5 md:mx-auto md:size-8.5 md:rounded-[8px] md:p-2.25 [&_svg]:size-4`
+                  return (
+                    <SidebarMenuItem key={item.url}>
+                      <SidebarMenuButton
+                        asChild
+                        tooltip={{ children: item.title, hidden: false }}
+                        isActive={pathname.startsWith(item.url)}
+                        className={className}
+                      >
+                        <Link to={item.url}>
+                          {item.icon && <item.icon />}
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

@@ -8,7 +8,7 @@ import {
   OctagonAlert,
   PenLine,
   Send,
-  Settings,
+  SlidersHorizontal,
   Sparkles,
   SquarePen,
   Trash2,
@@ -228,17 +228,22 @@ export function MobileMailBar() {
   )
 }
 
-/** The design's upgrade banner: shown while the organization is on the Free plan. */
+/**
+ * The design's upgrade banner: shown while the user is on the Free plan. The
+ * plan comes from the quota, because a Free user has no subscription at all.
+ */
 function UpgradeBanner() {
   const { organization } = useActiveOrganization()
-  const { data: subscription } = useQuery(queries.billing.subscription())
+  const { data: quota } = useQuery(queries.quota.status())
   const { data: stats } = useQuery({
     ...queries.organizations.stats(organization?.id),
     refetchOnWindowFocus: false,
   })
   const { data: plans } = useQuery(queries.billing.plans())
-  if (!subscription || subscription.plan_code !== 'free') return null
-  const limit = plans?.find((plan) => plan.code === subscription.plan_code)?.max_email_accounts
+  // Unlimited means an enterprise tier or a super user: nothing to upgrade to.
+  if (quota?.plan !== 'free' || quota.limit_tokens === null) return null
+  const plan = plans?.find((item) => item.code === 'free')
+  const limit = plan?.max_email_accounts
   const meta = stats
     ? limit
       ? `${stats.accounts} of ${limit} mailboxes`
@@ -254,7 +259,7 @@ function UpgradeBanner() {
         <span className="grid min-w-0 flex-1 text-left">
           <span className="truncate text-xs leading-4 font-bold">Upgrade your plan</span>
           <span className="text-ink-3 truncate text-[9.5px] leading-[13px]">
-            {meta ? `${subscription.plan_name} · ${meta}` : subscription.plan_name}
+            {[plan?.name ?? 'Free', meta].filter(Boolean).join(' · ')}
           </span>
         </span>
       </div>
@@ -305,7 +310,7 @@ export default function MailPanel() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu className="gap-1">
+            <SidebarMenu>
               <SidebarMenuItem className="mb-2 flex gap-2">
                 <Button
                   className="h-8 flex-1 justify-center gap-[7px] rounded-[8px] bg-accent-ink text-xs font-semibold text-[#0a0a0a] hover:bg-accent-ink/90"
@@ -362,10 +367,10 @@ export default function MailPanel() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarGroup className="pt-[13px]">
+        <SidebarGroup>
           <SidebarGroupLabel>Labels</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu className="gap-1">
+            <SidebarMenu>
               {MAIL_LABELS.map((item) => (
                 <SidebarMenuItem key={item.id}>
                   {/* The dot's column lines its text up with the folder names above. */}
@@ -401,13 +406,13 @@ export default function MailPanel() {
         )}
       </SidebarContent>
       {!COMMUNITY && (
-        <SidebarFooter className="gap-2 p-2.5">
+        <SidebarFooter className="gap-2 border-t p-2.5">
           <TokenUsageCard />
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
                 <Link to="/settings">
-                  <Settings />
+                  <SlidersHorizontal />
                   <span>Control Center</span>
                 </Link>
               </SidebarMenuButton>

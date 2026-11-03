@@ -246,7 +246,7 @@ export default function AccountsPanel() {
           </SidebarGroup>
         )}
       </SidebarContent>
-      <SidebarFooter className="gap-2 p-4">
+      <SidebarFooter className="gap-2 border-t p-2.5">
         {!COMMUNITY && <TokenUsageCard />}
         <SidebarMenu>
           <SidebarMenuItem>

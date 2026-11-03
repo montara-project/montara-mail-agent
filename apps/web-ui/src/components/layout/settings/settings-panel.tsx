@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useLocation } from '@tanstack/react-router'
-import { ArrowLeft, Settings } from 'lucide-react'
+import { ArrowLeft, SlidersHorizontal } from 'lucide-react'
 
 import TokenUsageCard from '@/components/block/settings/billing/token-usage-card'
 import OrganizationSwitcher from '@/components/layout/organization/organization-switcher'
@@ -54,7 +54,7 @@ export default function SettingsPanel() {
         </SidebarGroup>
         {groups.map((group) => (
           <SidebarGroup key={group.title}>
-            <SidebarGroupLabel className="mb-1 tracking-[1px]">{group.title}</SidebarGroupLabel>
+            <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item) => (
@@ -104,13 +104,13 @@ export default function SettingsPanel() {
           </SidebarGroup>
         ))}
       </SidebarContent>
-      <SidebarFooter className="gap-2 p-2.5">
+      <SidebarFooter className="gap-2 border-t p-2.5">
         {!COMMUNITY && <TokenUsageCard />}
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname === '/settings'}>
               <Link to="/settings">
-                <Settings />
+                <SlidersHorizontal />
                 <span>Control Center</span>
               </Link>
             </SidebarMenuButton>

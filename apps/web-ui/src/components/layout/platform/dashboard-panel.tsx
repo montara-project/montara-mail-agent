@@ -1,9 +1,10 @@
 import { Link, useLocation } from '@tanstack/react-router'
 import {
   ArrowLeft,
+  Bookmark,
   Inbox,
   LayoutDashboard,
-  Settings,
+  SlidersHorizontal,
   Sparkles,
   ShieldAlert,
   UserRound,
@@ -24,16 +25,19 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
+import { SOON_BUTTON } from '@/data/sidebar-menu'
 import { COMMUNITY } from '@/lib/constants/edition'
 
 const WORKSPACE_ITEMS = [
   { title: 'Dashboard', icon: LayoutDashboard, url: '/dashboard' },
   { title: 'Account', icon: UserRound, url: '/account' },
-  { title: 'Control Center', icon: Settings, url: '/settings' },
+  { title: 'Control Center', icon: SlidersHorizontal, url: '/settings' },
 ]
 
 const SHORTCUT_ITEMS = [
   { title: 'Unified inbox', icon: Inbox, folder: 'inbox' },
+  // The server has no filter for starred mail yet, so it has no folder to open.
+  { title: 'Saved messages', icon: Bookmark, folder: undefined },
   { title: 'Spam & blocked', icon: ShieldAlert, folder: 'spam' },
 ] as const
 
@@ -74,21 +78,33 @@ export default function DashboardPanel() {
           <SidebarGroupLabel>Shortcuts</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {SHORTCUT_ITEMS.map((item) => (
-                <SidebarMenuItem key={item.folder}>
-                  <SidebarMenuButton asChild>
-                    <Link to="/mail" search={{ folder: item.folder }}>
+              {SHORTCUT_ITEMS.map((item) =>
+                item.folder ? (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <Link to="/mail" search={{ folder: item.folder }}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                        {counts[item.folder] > 0 && (
+                          <span className="bg-muted ml-auto rounded-[4px] px-[5px] py-px font-mono text-[9.5px] font-semibold text-ink-3 tabular-nums">
+                            {counts[item.folder] > 99 ? '99+' : counts[item.folder]}
+                          </span>
+                        )}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ) : (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton aria-disabled className={SOON_BUTTON}>
                       <item.icon />
                       <span>{item.title}</span>
-                      {counts[item.folder] > 0 && (
-                        <span className="bg-muted ml-auto rounded-[4px] px-[5px] py-px font-mono text-[9.5px] font-semibold text-ink-3 tabular-nums">
-                          {counts[item.folder] > 99 ? '99+' : counts[item.folder]}
-                        </span>
-                      )}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+                      <span className="bg-muted text-ink-3 ml-auto rounded-[4px] px-[5px] py-px font-mono text-[9px] font-semibold">
+                        Soon
+                      </span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -109,7 +125,7 @@ export default function DashboardPanel() {
         </SidebarGroup>
       </SidebarContent>
       {!COMMUNITY && (
-        <SidebarFooter className="gap-1 p-4">
+        <SidebarFooter className="gap-2 border-t p-2.5">
           <TokenUsageCard />
           <Link
             to="/settings/billing"
