@@ -1,5 +1,7 @@
 import type { ISO8601DateString } from '@/types/time'
 
+import type { MailFolder } from './mail'
+
 export type EmailProvider = 'gmail' | 'outlook' | 'yahoo' | 'icloud' | 'lark' | 'zoho' | 'imap'
 
 /** A mailbox connected over IMAP; the password never leaves the server. */
@@ -24,4 +26,6 @@ export interface EmailAccount {
   /** Unread inbox mail. */
   unread: number
   spam: number
+  /** Every mail of each folder, read or not; a folder with none is left out. */
+  folder_counts: Partial<Record<MailFolder, number>>
 }

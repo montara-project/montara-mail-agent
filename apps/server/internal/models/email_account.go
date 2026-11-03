@@ -32,7 +32,9 @@ type EmailAccount struct {
 	SyncedAt          *time.Time `db:"synced_at" json:"synced_at"`
 	SyncError         *string    `db:"sync_error" json:"sync_error"`
 
-	// Counts filled by list queries; not columns.
-	Unread int `db:"-" json:"unread"`
-	Spam   int `db:"-" json:"spam"`
+	// Counts filled by list queries; not columns. FolderCounts holds every
+	// mail of each folder that has any, read or not.
+	Unread       int            `db:"-" json:"unread"`
+	Spam         int            `db:"-" json:"spam"`
+	FolderCounts map[string]int `db:"-" json:"folder_counts"`
 }
