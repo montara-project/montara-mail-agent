@@ -548,10 +548,10 @@ func newAuth(cfg config.Config, mirror, personalOrg func(*authulamodels.User) er
 	}
 	auth.RegisterRoute(issuer.route())
 
-	if cfg.Auth.MicrosoftClientID != "" {
+	if cfg.Auth.MicrosoftClientID != "" || cfg.Auth.MicrosoftClientSecret != "" {
 		auth.RegisterRoutes(microsoftSignInRoutes(auth, authConfig, cfg.Auth.MicrosoftClientID, cfg.Auth.MicrosoftClientSecret, logger))
 	} else {
-		logger.Warn("microsoft sign-in disabled: microsoft-client-id is not set")
+		logger.Warn("microsoft sign-in disabled: microsoft-client-id or microsoft-client-secret is not set")
 	}
 
 	// The OAuth2 callback marks its redirect as handled before the after hooks,
