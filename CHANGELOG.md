@@ -3,6 +3,17 @@
 All notable changes to this project are documented in this file. Versions follow the git tags (`v*`); Docker images are published to ghcr.io with the same version.
 
 
+## [1.6.0](https://github.com/montara-project/montara-mail-agent/compare/v1.5.0...v1.6.0) (2026-11-04)
+
+### Features
+
+* **auth:** add sign in with Microsoft (Outlook) ([b3e7c5c](https://github.com/montara-project/montara-mail-agent/commit/b3e7c5cb323427ec87e947e3dd1d792658f4b08c))
+
+### Bug Fixes
+
+* update authula ([d324935](https://github.com/montara-project/montara-mail-agent/commit/d3249353b22ef9084c7585b15ec602983d914b87))
+* update well known ([3e206a9](https://github.com/montara-project/montara-mail-agent/commit/3e206a94b867efbd0f58aaa46292c35e6bc45011))
+
 ## [1.5.0](https://github.com/montara-project/montara-mail-agent/compare/v1.4.0...v1.5.0) (2026-11-03)
 
 ### Bug Fixes
