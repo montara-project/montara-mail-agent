@@ -4,8 +4,12 @@ import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import LoginForm, { type AuthStep } from '@/components/block/auth/login-form'
-import { completeGoogleSignIn } from '@/lib/auth/google-auth'
 import { redirectIfAuthenticated } from '@/lib/auth/handler'
+import {
+  completeOAuthSignIn,
+  isOAuthProvider,
+  OAUTH_PROVIDER_NAMES,
+} from '@/lib/auth/oauth-sign-in'
 import { COMMUNITY } from '@/lib/constants/edition'
 import { cn } from '@/lib/utils'
 
@@ -59,8 +63,8 @@ function leftPitch(step: AuthStep) {
 }
 
 export const Route = createFileRoute('/sign-in/')({
-  // via=google is the address Google's callback returns the browser to (see
-  // google-auth.ts): the sign-in page then trades the fresh session cookie
+  // via=google (or microsoft) is the address the provider's callback returns
+  // the browser to (see oauth-sign-in.ts): the sign-in page then trades the fresh session cookie
   // for a token pair. The API adds totp=1 for a user with two-factor sign-in,
   // who has no session yet: the code step comes first and returns the tokens.
   validateSearch: (search: Record<string, unknown>): { via?: string; totp?: number } => ({
@@ -116,7 +120,8 @@ function Stepper({ step }: { step: AuthStep }) {
 
 function RouteComponent() {
   const { via, totp } = Route.useSearch()
-  const needsCode = via === 'google' && totp === 1
+  const provider = isOAuthProvider(via) ? via : undefined
+  const needsCode = provider !== undefined && totp === 1
   const router = useRouter()
   const [exchanging, setExchanging] = useState(false)
   // The card reports its step so the split chrome follows it.
@@ -125,11 +130,11 @@ function RouteComponent() {
   const attempted = useRef(false)
 
   useEffect(() => {
-    if (via !== 'google' || needsCode || attempted.current) return
+    if (!provider || needsCode || attempted.current) return
     attempted.current = true
     setExchanging(true)
 
-    completeGoogleSignIn()
+    completeOAuthSignIn()
       .then(async () => {
         await router.invalidate()
         await router.navigate({ to: '/dashboard', replace: true })
@@ -137,10 +142,12 @@ function RouteComponent() {
       .catch(() => {
         // The consent was abandoned, or the callback's session cookie stayed
         // on the API's origin; the cause isn't knowable here.
-        toast.error("Google sign-in didn't finish. Try again, or log in with your email.")
+        toast.error(
+          `${OAUTH_PROVIDER_NAMES[provider]} sign-in didn't finish. Try again, or log in with your email.`
+        )
       })
       .finally(() => setExchanging(false))
-  }, [via, needsCode, router])
+  }, [provider, needsCode, router])
 
   const pitch = leftPitch(authStep === 'server' ? 'identify' : authStep)
   const view = authStep === 'server' ? 'identify' : authStep
@@ -227,7 +234,9 @@ function RouteComponent() {
         {exchanging ? (
           <div role="status" className="flex flex-col items-center gap-3 text-center">
             <Loader2 className="text-muted-foreground size-6 animate-spin" />
-            <p className="text-muted-foreground text-sm">Finishing Google sign-in…</p>
+            <p className="text-muted-foreground text-sm">
+              Finishing {provider ? OAUTH_PROVIDER_NAMES[provider] : ''} sign-in…
+            </p>
           </div>
         ) : (
           <div className="flex w-full flex-col items-center gap-[1.125rem]">

@@ -1,6 +1,6 @@
 ---
 title: OAuth apps
-description: Google sign-in, and connecting mailboxes with OAuth instead of app passwords.
+description: Google and Microsoft sign-in, and connecting mailboxes with OAuth instead of app passwords.
 ---
 
 OAuth is optional. Without it, people sign in with email and password or a magic link, and connect mailboxes with app passwords.
@@ -14,6 +14,23 @@ Create an OAuth client (Web application) in the Google Cloud console, then set `
 ```text
 Authorized redirect URI: $AUTH_BASE_URL/api/v1/auth/oauth2/callback/google
 ```
+
+## Microsoft sign-in
+
+Register an app in the Microsoft Entra admin center, then set `MICROSOFT_CLIENT_ID` (the Application (client) ID) and `MICROSOFT_CLIENT_SECRET` (a client secret's **Value**, not its ID). The sign-in button reads "Continue with Outlook".
+
+- Supported account types: accounts in any organizational directory and personal Microsoft accounts.
+- Platform: **Web**, with the redirect URI below.
+- API permissions: Microsoft Graph, delegated: `openid`, `email`, `profile`, `User.Read`.
+- Token configuration: add the optional claim `xms_edov` to the ID token. Without it, a personal account can sign in only on outlook.com, hotmail.com, live.com or msn.com.
+
+```text
+Redirect URI: $AUTH_BASE_URL/api/v1/auth/oauth2/callback/microsoft
+```
+
+The account's address comes from its user principal name, not the email claim, which any tenant admin can set to someone else's address. A personal account must show that Microsoft verified its address (`xms_edov`). A guest account has no usable address and can't sign in.
+
+This app can be the same one that connects Outlook mailboxes below, with both redirect URIs and all the permissions added.
 
 ## Connecting mailboxes
 

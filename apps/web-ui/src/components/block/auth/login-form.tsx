@@ -18,6 +18,7 @@ import { flushSync } from 'react-dom'
 import { toast } from 'sonner'
 
 import googleLogo from '@/assets/brands/google.svg'
+import outlookLogo from '@/assets/connectors/outlook.svg'
 import { ServerURLForm } from '@/components/block/settings/server-url-form'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -27,8 +28,14 @@ import { OTPCodeInput } from '@/components/ui/input-otp'
 import { useAppForm } from '@/hooks/form'
 import { SignInSchema } from '@/lib/api/dtos/auth/schema'
 import { signInWithEmail, verifyTOTP } from '@/lib/auth/email-auth'
-import { startGoogleSignIn } from '@/lib/auth/google-auth'
+import { type OAuthProvider, startOAuthSignIn } from '@/lib/auth/oauth-sign-in'
 import { cn } from '@/lib/utils'
+
+/** The provider buttons above the email form, in order. */
+const OAUTH_BUTTONS: { provider: OAuthProvider; label: string; logo: string }[] = [
+  { provider: 'google', label: 'Continue with Google', logo: googleLogo },
+  { provider: 'microsoft', label: 'Continue with Outlook', logo: outlookLogo },
+]
 
 /** The email last signed in with on this browser, offered again on the card. */
 const LAST_EMAIL_KEY = 'auth.lastEmail'
@@ -255,7 +262,7 @@ function TOTPStep({
 const STEP_DESCRIPTIONS = {
   server: 'Choose your Montara server',
   password:
-    'One inbox for every mailbox you own — sign in with email, Google, or a two-factor code.',
+    'One inbox for every mailbox you own — sign in with email, Google, Outlook, or a two-factor code.',
 }
 
 /** Which screen the login card shows; picking a server wins over the code step. */
@@ -276,7 +283,7 @@ export default function LoginForm({
   onStepChange,
   ...props
 }: React.ComponentProps<'div'> & {
-  /** Start at the code step: Google already vouched for the user. */
+  /** Start at the code step: Google or Microsoft already vouched for the user. */
   codeFirst?: boolean
   /** The split page chrome (left panel, stepper) follows the card's step. */
   onStepChange?: (step: AuthStep) => void
@@ -287,8 +294,8 @@ export default function LoginForm({
   const [needsCode, setNeedsCode] = useState(codeFirst)
   // Choosing a server here, since an account on a self-hosted one can't reach settings first.
   const [pickServer, setPickServer] = useState(false)
-  // Stays set on success: the browser leaves for Google's consent screen.
-  const [googleLoading, setGoogleLoading] = useState(false)
+  // Stays set on success: the browser leaves for the provider's consent screen.
+  const [redirecting, setRedirecting] = useState<OAuthProvider | null>(null)
   // The email form's password field: hidden until "Continue with email" is used.
   const [showPassword, setShowPassword] = useState(false)
   // The verify step alternates between the app code and a backup code.
@@ -318,14 +325,14 @@ export default function LoginForm({
     await router.navigate({ to: '/dashboard' })
   }
 
-  const signInWithGoogle = async () => {
-    setGoogleLoading(true)
+  const signInWith = async (provider: OAuthProvider) => {
+    setRedirecting(provider)
     try {
-      const authUrl = await startGoogleSignIn()
+      const authUrl = await startOAuthSignIn(provider)
       window.location.assign(authUrl)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'An error occurred')
-      setGoogleLoading(false)
+      setRedirecting(null)
     }
   }
 
@@ -430,18 +437,21 @@ export default function LoginForm({
         )}
         {step === 'password' && (
           <>
-            <Button
-              type="button"
-              variant="secondary"
-              className="h-11 w-full gap-2 rounded-[0.625rem] border border-border bg-muted text-[0.84375rem] font-semibold shadow-none"
-              disabled={googleLoading}
-              onClick={() => void signInWithGoogle()}
-            >
-              <span className="grid size-[1.125rem] place-items-center rounded-[0.3125rem] bg-white">
-                <img src={googleLogo} alt="" className="size-4" />
-              </span>
-              {googleLoading ? 'Redirecting…' : 'Continue with Google'}
-            </Button>
+            {OAUTH_BUTTONS.map(({ provider, label, logo }) => (
+              <Button
+                key={provider}
+                type="button"
+                variant="secondary"
+                className="h-11 w-full gap-2 rounded-[0.625rem] border border-border bg-muted text-[0.84375rem] font-semibold shadow-none"
+                disabled={redirecting !== null}
+                onClick={() => void signInWith(provider)}
+              >
+                <span className="grid size-[1.125rem] place-items-center rounded-[0.3125rem] bg-white">
+                  <img src={logo} alt="" className="size-4" />
+                </span>
+                {redirecting === provider ? 'Redirecting…' : label}
+              </Button>
+            ))}
             <div className="flex items-center gap-2.5" aria-hidden>
               <span className="h-px grow bg-border" />
               <span className="font-mono text-[0.6875rem] font-semibold text-ink-faint">or</span>

@@ -33,6 +33,7 @@ import (
 	sessionplugin "github.com/Authula/authula/plugins/session"
 	totpplugin "github.com/Authula/authula/plugins/totp"
 	totpplugintypes "github.com/Authula/authula/plugins/totp/types"
+	authulaservices "github.com/Authula/authula/services"
 
 	"montara-mail-agent/server/internal/config"
 	"montara-mail-agent/server/internal/lib/constant"
@@ -174,6 +175,35 @@ func refuseUnverified(_ context.Context, u *authulamodels.User) error {
 		return emailpasswordconstants.ErrInvalidCredentials
 	}
 	return nil
+}
+
+// claimVerifiedEmail runs after an OAuth sign-in, which proves the user owns
+// the address. Authula links that sign-in to whoever signed up with the
+// address, but leaves it unverified. A password set before then came from
+// someone who never proved the address, and it would start working once the
+// owner clicks the pending verification link. So the password and the link
+// go, and the address counts as verified.
+func claimVerifiedEmail(ctx context.Context, core *authulaservices.CoreServices, userID string) error {
+	user, err := core.UserService.GetByID(ctx, userID)
+	if err != nil || user == nil || user.EmailVerified {
+		return err
+	}
+	account, err := core.AccountService.GetByUserIDAndProvider(ctx, userID, authulamodels.AuthProviderEmail.String())
+	if err != nil {
+		return err
+	}
+	if account != nil && account.Password != nil {
+		account.Password = nil
+		if _, err := core.AccountService.Update(ctx, account); err != nil {
+			return err
+		}
+	}
+	if err := core.VerificationService.DeleteByUserIDAndType(ctx, userID, authulamodels.TypeEmailVerification); err != nil {
+		return err
+	}
+	user.EmailVerified = true
+	_, err = core.UserService.Update(ctx, user)
+	return err
 }
 
 // tokenLifetime reads the issued-at and expiry times (Unix seconds) from a
@@ -518,6 +548,12 @@ func newAuth(cfg config.Config, mirror, personalOrg func(*authulamodels.User) er
 	}
 	auth.RegisterRoute(issuer.route())
 
+	if cfg.Auth.MicrosoftClientID != "" {
+		auth.RegisterRoutes(microsoftSignInRoutes(auth, authConfig, cfg.Auth.MicrosoftClientID, cfg.Auth.MicrosoftClientSecret, logger))
+	} else {
+		logger.Warn("microsoft sign-in disabled: microsoft-client-id is not set")
+	}
+
 	// The OAuth2 callback marks its redirect as handled before the after hooks,
 	// and the router stops at the first hook of a handled request. That is
 	// totp.intercept (order 5), so the session cookie (order 10) never came.
@@ -534,6 +570,20 @@ func newAuth(cfg config.Config, mirror, personalOrg func(*authulamodels.User) er
 			return nil
 		},
 		Order: -1,
+	})
+
+	// An OAuth sign-in proves the address. Runs before totp.intercept (5),
+	// which drops the success mark for a two-factor user.
+	auth.RegisterHook(authulamodels.Hook{
+		Stage: authulamodels.HookAfter,
+		Matcher: func(reqCtx *authulamodels.RequestContext) bool {
+			success, _ := reqCtx.Values[authulamodels.ContextAuthSuccess.String()].(bool)
+			return success && reqCtx.Actor != nil && strings.HasPrefix(reqCtx.Path, authBasePath+"/oauth2/callback/")
+		},
+		Handler: func(reqCtx *authulamodels.RequestContext) error {
+			return claimVerifiedEmail(reqCtx.Request.Context(), auth.CoreServices(), reqCtx.Actor.ID)
+		},
+		Order: 1,
 	})
 
 	// totp.intercept answers 200, which would turn that redirect into a blank

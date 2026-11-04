@@ -18,9 +18,9 @@ const resources = (): AuthResources => ({
   totpBackupCodes: () => api.post(`${path}/totp/generate-backup-codes`, {}),
   totpVerify: (body, backup) =>
     api.post(`${path}/totp/${backup ? 'verify-backup-code' : 'verify'}`, body, withCookies),
-  googleAuthorize: (redirectTo) =>
-    api.get(`${path}/oauth2/authorize/google`, { params: { redirect_to: redirectTo } }),
-  // The session cookie the Google callback set lives on the API's origin; the
+  oauthAuthorize: (provider, redirectTo) =>
+    api.get(`${path}/oauth2/authorize/${provider}`, { params: { redirect_to: redirectTo } }),
+  // The session cookie the OAuth callback set lives on the API's origin; the
   // same-origin (and dev-proxied) browser sends it on its own.
   exchangeSessionTokens: () => api.post(`${path}/token`, null, withCookies),
 })

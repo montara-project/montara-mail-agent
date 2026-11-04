@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import type { Models } from '@/lib/api/models'
 
 import googleLogo from '@/assets/brands/google.svg'
+import outlookLogo from '@/assets/connectors/outlook.svg'
 import { SettingsCard } from '@/components/block/common/settings-card'
 import { FieldDescription } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -96,10 +97,16 @@ function PasswordForm() {
   )
 }
 
-/** How an account without a password, or one linked to Google, signs in. */
+/** How an account without a password, or one linked to Google or Microsoft, signs in. */
 function SignInMethod({ security }: { security: Models.UserSecurity }) {
   const { data: me } = useQuery(queries.auth.profile())
   const { mask } = useHideEmails()
+  // Google first when both are linked; they share the account's one address.
+  const linked = security.has_google
+    ? { name: 'Google', logo: googleLogo }
+    : security.has_microsoft
+      ? { name: 'Microsoft', logo: outlookLogo }
+      : null
 
   return (
     <SettingsCard
@@ -109,18 +116,18 @@ function SignInMethod({ security }: { security: Models.UserSecurity }) {
       title="Sign-in method"
       description="How you sign in to Montara."
     >
-      {security.has_google ? (
+      {linked ? (
         <div className="grid gap-3">
           <div className="flex items-center gap-3 text-sm">
-            <img src={googleLogo} alt="" className="size-5 shrink-0" />
+            <img src={linked.logo} alt="" className="size-5 shrink-0" />
             <div className="grid min-w-0">
-              <span className="font-medium">Google</span>
+              <span className="font-medium">{linked.name}</span>
               <span className="text-muted-foreground truncate">{mask(me?.user?.email ?? '')}</span>
             </div>
           </div>
           {!security.has_password && (
             <FieldDescription>
-              You sign in with Google, so there's no password to change here.
+              You sign in with {linked.name}, so there's no password to change here.
             </FieldDescription>
           )}
         </div>
@@ -154,7 +161,9 @@ export default function PasswordSettings() {
 
   return (
     <>
-      {(data.has_google || !data.has_password) && <SignInMethod security={data} />}
+      {(data.has_google || data.has_microsoft || !data.has_password) && (
+        <SignInMethod security={data} />
+      )}
       {data.has_password && (
         <SettingsCard
           icon={KeyRound}
