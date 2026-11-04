@@ -28,8 +28,10 @@ type security struct {
 	// HasPassword is false for a user who only signs in with Google or a magic link.
 	HasPassword bool `json:"has_password"`
 	// HasGoogle is true for a user linked to Google sign-in.
-	HasGoogle   bool `json:"has_google"`
-	TOTPEnabled bool `json:"totp_enabled"`
+	HasGoogle bool `json:"has_google"`
+	// HasMicrosoft is true for a user linked to Microsoft sign-in.
+	HasMicrosoft bool `json:"has_microsoft"`
+	TOTPEnabled  bool `json:"totp_enabled"`
 	// SuperUser shows the platform pages (IP blocks) in the web app.
 	SuperUser bool `json:"super_user"`
 }
@@ -49,6 +51,11 @@ func (h *profileHandler) Security(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	// Matches microsoftProviderID in cmd/api, which Authula has no constant for.
+	microsoft, err := h.app.Auth.CoreServices().AccountService.GetByUserIDAndProvider(c.Context(), uid.String(), "microsoft")
+	if err != nil {
+		return err
+	}
 	totp, err := h.app.Repositories.User.TOTPEnabled(c.Context(), uid)
 	if err != nil {
 		return err
@@ -57,7 +64,7 @@ func (h *profileHandler) Security(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return dtos.OK(c, security{HasPassword: account != nil && account.Password != nil, HasGoogle: google != nil, TOTPEnabled: totp, SuperUser: super})
+	return dtos.OK(c, security{HasPassword: account != nil && account.Password != nil, HasGoogle: google != nil, HasMicrosoft: microsoft != nil, TOTPEnabled: totp, SuperUser: super})
 }
 
 // Update changes the user's name and avatar.

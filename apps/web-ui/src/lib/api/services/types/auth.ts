@@ -3,8 +3,8 @@ import type { AxiosResponse } from 'axios'
 import type { AxiosDeleteResponse } from '@/types/api'
 
 import type {
-  GoogleAuthUrl,
   MeData,
+  OAuthAuthUrl,
   SignInData,
   TokenPairData,
   TOTPRedirect,
@@ -30,10 +30,13 @@ export type AuthResources = {
   /** A code from the app, or with backup a backup code; answers like a sign-in. */
   totpVerify: (body: TOTPVerifyBody, backup?: boolean) => Promise<AxiosResponse<SignInData>>
   /**
-   * GET the Google consent URL. A server without GOOGLE_CLIENT_ID answers
-   * 400 — the caller turns that into the "not set up" message.
+   * GET a provider's consent URL. A server without that provider's client id
+   * answers 400 or 404 — the caller turns that into the "not set up" message.
    */
-  googleAuthorize: (redirectTo: string) => Promise<AxiosResponse<GoogleAuthUrl>>
-  /** Trade the session cookie the Google callback left for a token pair. */
+  oauthAuthorize: (
+    provider: 'google' | 'microsoft',
+    redirectTo: string
+  ) => Promise<AxiosResponse<OAuthAuthUrl>>
+  /** Trade the session cookie an OAuth callback left for a token pair. */
   exchangeSessionTokens: () => Promise<AxiosResponse<TokenPairData>>
 }

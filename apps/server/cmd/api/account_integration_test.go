@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -86,7 +87,21 @@ func testAccountSettings(t *testing.T, call callFunc, cookies func() string, db 
 		t.Fatalf("oauth callback over a session: %d %v, want 400", status, out)
 	}
 
-	if status, out := call(http.MethodGet, "/api/v1/me/security", token, nil); status != http.StatusOK || data(out)["has_password"] != true || data(out)["has_google"] != false || data(out)["totp_enabled"] != false {
+	// Microsoft runs through its own routes with the same handlers and hooks.
+	status, out = call(http.MethodGet, "/api/v1/auth/oauth2/authorize/microsoft?redirect_to=http://localhost:3000/sign-in", "", nil)
+	if status != http.StatusOK || !strings.HasPrefix(fmt.Sprint(out["auth_url"]), "https://login.microsoftonline.com/common/") {
+		t.Fatalf("microsoft authorize: %d %v", status, out)
+	}
+	authURL, _ = url.Parse(out["auth_url"].(string))
+	if got := authURL.Query().Get("redirect_uri"); got != "http://localhost:8080/api/v1/auth/oauth2/callback/microsoft" {
+		t.Fatalf("microsoft redirect_uri: %q", got)
+	}
+	stateCookies = cookies()
+	if status, out := call(http.MethodGet, "/api/v1/auth/oauth2/callback/microsoft?code=bad&state="+url.QueryEscape(authURL.Query().Get("state")), "", nil, "Cookie", stateCookies+session); status != http.StatusBadRequest {
+		t.Fatalf("microsoft callback with a bad code: %d %v, want 400", status, out)
+	}
+
+	if status, out := call(http.MethodGet, "/api/v1/me/security", token, nil); status != http.StatusOK || data(out)["has_password"] != true || data(out)["has_google"] != false || data(out)["has_microsoft"] != false || data(out)["totp_enabled"] != false {
 		t.Fatalf("security: %d %v", status, out)
 	}
 

@@ -63,8 +63,10 @@ func TestIntegration(t *testing.T) {
 			EmailFrom:    "noreply@example.com",
 			ResendAPIKey: "re_test",
 			// Turns the OAuth2 routes on; no test finishes a real Google sign-in.
-			GoogleClientID:     "test-client",
-			GoogleClientSecret: "test-secret",
+			GoogleClientID:        "test-client",
+			GoogleClientSecret:    "test-secret",
+			MicrosoftClientID:     "test-client",
+			MicrosoftClientSecret: "test-secret",
 		},
 		BorderPay: config.ConfigBorderPay{WebhookToken: "bpt_test"},
 	}
@@ -330,6 +332,22 @@ func TestIntegration(t *testing.T) {
 	}
 	if status, out := call(http.MethodPost, "/api/v1/auth/email-password/sign-in", "", map[string]string{"email": strangerEmail, "password": "stranger-password"}); status != http.StatusUnauthorized {
 		t.Fatalf("unverified sign in: %d %v, want 401", status, out)
+	}
+	// The real owner then signs in with Google or Microsoft: the stranger's
+	// password must not come to life with the verified address.
+	var strangerID string
+	if err := db.QueryRow(`SELECT id FROM authula.users WHERE email = $1`, strangerEmail).Scan(&strangerID); err != nil {
+		t.Fatal(err)
+	}
+	if err := claimVerifiedEmail(context.Background(), auth.CoreServices(), strangerID); err != nil {
+		t.Fatal(err)
+	}
+	var verified bool
+	if err := db.QueryRow(`SELECT email_verified FROM authula.users WHERE id = $1`, strangerID).Scan(&verified); err != nil || !verified {
+		t.Fatalf("claimed address: verified %v, err %v", verified, err)
+	}
+	if status, out := call(http.MethodPost, "/api/v1/auth/email-password/sign-in", "", map[string]string{"email": strangerEmail, "password": "stranger-password"}); status != http.StatusUnauthorized {
+		t.Fatalf("planted password after an oauth sign-in: %d %v, want 401", status, out)
 	}
 	userToken := signIn(userEmail, userPass)["access_token"].(string)
 

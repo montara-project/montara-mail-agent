@@ -38,7 +38,7 @@ export interface RefreshData {
 
 /**
  * POST /api/v1/auth/token: a token pair for the caller's session cookie, the
- * answer Google sign-in trades for after the consent redirect. Authula adds
+ * answer an OAuth sign-in trades for after the consent redirect. Authula adds
  * the same fields a sign-in body carries, minus the user.
  */
 export interface TokenPairData {
@@ -48,8 +48,8 @@ export interface TokenPairData {
   expires_in: number
 }
 
-/** GET /api/v1/auth/oauth2/authorize/google. Authula answers unwrapped. */
-export interface GoogleAuthUrl {
+/** GET /api/v1/auth/oauth2/authorize/{google,microsoft}. Authula answers unwrapped. */
+export interface OAuthAuthUrl {
   auth_url: string
 }
 
@@ -63,10 +63,12 @@ export interface TOTPRedirect {
 
 /** GET /api/v1/me/security. */
 export interface UserSecurity {
-  /** False for a user who only signs in with Google or a magic link. */
+  /** False for a user who only signs in with Google, Microsoft or a magic link. */
   has_password: boolean
   /** The account is linked to Google sign-in. */
   has_google: boolean
+  /** The account is linked to Microsoft sign-in. */
+  has_microsoft: boolean
   totp_enabled: boolean
   /** Sees the Platform pages, such as IP Block. */
   super_user: boolean

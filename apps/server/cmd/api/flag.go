@@ -95,6 +95,8 @@ func parseFlag(cfg *config.Config) {
 	flag.StringVar(&cfg.Auth.ResendAPIKey, "resend-api-key", envString("RESEND_API_KEY", ""), "Resend API key for auth emails")
 	flag.StringVar(&cfg.Auth.GoogleClientID, "google-client-id", envString("GOOGLE_CLIENT_ID", ""), "Google OAuth client ID (empty disables Google sign-in)")
 	flag.StringVar(&cfg.Auth.GoogleClientSecret, "google-client-secret", envString("GOOGLE_CLIENT_SECRET", ""), "Google OAuth client secret")
+	flag.StringVar(&cfg.Auth.MicrosoftClientID, "microsoft-client-id", envString("MICROSOFT_CLIENT_ID", ""), "Microsoft OAuth client ID (empty disables Microsoft sign-in)")
+	flag.StringVar(&cfg.Auth.MicrosoftClientSecret, "microsoft-client-secret", envString("MICROSOFT_CLIENT_SECRET", ""), "Microsoft OAuth client secret")
 
 	// AI
 	flag.StringVar(&cfg.AI.AnthropicAPIKey, "anthropic-api-key", envString("ANTHROPIC_API_KEY", ""), "Fallback Anthropic API key for organizations without their own LLM provider (empty: none)")
@@ -207,6 +209,9 @@ func validateFlag(cfg *config.Config) {
 
 	if (cfg.Auth.GoogleClientID == "") != (cfg.Auth.GoogleClientSecret == "") {
 		log.Fatal("flags google-client-id and google-client-secret must be provided together")
+	}
+	if (cfg.Auth.MicrosoftClientID == "") != (cfg.Auth.MicrosoftClientSecret == "") {
+		log.Fatal("flags microsoft-client-id and microsoft-client-secret must be provided together")
 	}
 
 	// A half-configured OAuth client would fail at consent time, far from

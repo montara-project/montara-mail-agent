@@ -83,11 +83,13 @@ type ConfigMailOAuth struct {
 
 // ConfigAuth configures the embedded Authula server.
 type ConfigAuth struct {
-	BaseURL            string
-	EmailFrom          string
-	ResendAPIKey       string
-	GoogleClientID     string
-	GoogleClientSecret string
+	BaseURL               string
+	EmailFrom             string
+	ResendAPIKey          string
+	GoogleClientID        string
+	GoogleClientSecret    string
+	MicrosoftClientID     string
+	MicrosoftClientSecret string
 }
 
 type ConfigApp struct {
