@@ -446,9 +446,7 @@ export default function LoginForm({
                 disabled={redirecting !== null}
                 onClick={() => void signInWith(provider)}
               >
-                <span className="grid size-[1.125rem] place-items-center rounded-[0.3125rem] bg-white">
-                  <img src={logo} alt="" className="size-4" />
-                </span>
+                <img src={logo} alt="" className="size-4" />
                 {redirecting === provider ? 'Redirecting…' : label}
               </Button>
             ))}
