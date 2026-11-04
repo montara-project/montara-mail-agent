@@ -38,7 +38,7 @@ type SuperUserSeeder struct {
 	DB      *sql.DB
 	Auth    *authulaservices.CoreServices
 	Promote func(*authulamodels.User) error
-	// RevokeKeys ends the user's API keys when the password is reset; nil
+	// RevokeKeys ends the user's API keys and passkeys when the password is reset; nil
 	// leaves them.
 	RevokeKeys func(ctx context.Context, userID string) error
 	Email      string

@@ -37,6 +37,10 @@ export type AuthResources = {
     provider: 'google' | 'microsoft',
     redirectTo: string
   ) => Promise<AxiosResponse<OAuthAuthUrl>>
+  /** The challenge for navigator.credentials.get; names no account. */
+  passkeyOptions: () => Promise<AxiosResponse<{ publicKey: PublicKeyCredentialRequestOptionsJSON }>>
+  /** The browser's signed answer; answers like a sign-in, with no two-factor step. */
+  passkeySignIn: (credential: AuthenticationResponseJSON) => Promise<AxiosResponse<SignInData>>
   /** Trade the session cookie an OAuth callback left for a token pair. */
   exchangeSessionTokens: () => Promise<AxiosResponse<TokenPairData>>
 }

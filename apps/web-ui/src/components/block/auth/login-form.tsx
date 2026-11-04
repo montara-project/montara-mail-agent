@@ -6,6 +6,7 @@ import {
   Clock3,
   Eye,
   EyeOff,
+  Fingerprint,
   Lock,
   Mail,
   Shield,
@@ -29,6 +30,7 @@ import { useAppForm } from '@/hooks/form'
 import { SignInSchema } from '@/lib/api/dtos/auth/schema'
 import { signInWithEmail, verifyTOTP } from '@/lib/auth/email-auth'
 import { type OAuthProvider, startOAuthSignIn } from '@/lib/auth/oauth-sign-in'
+import { passkeyCancelled, passkeysSupported, signInWithPasskey } from '@/lib/auth/passkey'
 import { cn } from '@/lib/utils'
 
 /** The provider buttons above the email form, in order. */
@@ -262,7 +264,7 @@ function TOTPStep({
 const STEP_DESCRIPTIONS = {
   server: 'Choose your Montara server',
   password:
-    'One inbox for every mailbox you own — sign in with email, Google, Outlook, or a two-factor code.',
+    'One inbox for every mailbox you own — sign in with email, Google, Outlook, a passkey, or a two-factor code.',
 }
 
 /** Which screen the login card shows; picking a server wins over the code step. */
@@ -323,6 +325,22 @@ export default function LoginForm({
     }
     await router.invalidate()
     await router.navigate({ to: '/dashboard' })
+  }
+
+  // A passkey verifies the user on the device, so it skips the code step.
+  const [passkeyPending, setPasskeyPending] = useState(false)
+  const signInWithKey = async () => {
+    setPasskeyPending(true)
+    try {
+      await signInWithPasskey()
+      await enter()
+    } catch (error) {
+      if (!passkeyCancelled(error)) {
+        toast.error(error instanceof Error ? error.message : 'An error occurred')
+      }
+    } finally {
+      setPasskeyPending(false)
+    }
   }
 
   const signInWith = async (provider: OAuthProvider) => {
@@ -450,6 +468,18 @@ export default function LoginForm({
                 {redirecting === provider ? 'Redirecting…' : label}
               </Button>
             ))}
+            {passkeysSupported() && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="h-11 w-full gap-2 rounded-[0.625rem] border border-border bg-muted text-[0.84375rem] font-semibold shadow-none"
+                disabled={redirecting !== null || passkeyPending}
+                onClick={() => void signInWithKey()}
+              >
+                <Fingerprint className="size-4" aria-hidden />
+                {passkeyPending ? 'Waiting for your passkey…' : 'Sign in with a passkey'}
+              </Button>
+            )}
             <div className="flex items-center gap-2.5" aria-hidden>
               <span className="h-px grow bg-border" />
               <span className="font-mono text-[0.6875rem] font-semibold text-ink-faint">or</span>

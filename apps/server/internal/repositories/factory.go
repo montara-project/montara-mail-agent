@@ -20,6 +20,7 @@ type Repositories struct {
 	Plan         PlanRepository
 	Subscription SubscriptionRepository
 	Wallet       WalletRepository
+	Passkey      PasskeyRepository
 }
 
 // New builds every repository over db.
@@ -44,5 +45,6 @@ func New(db *sql.DB) Repositories {
 		Plan:         PlanRepository{base},
 		Subscription: SubscriptionRepository{base},
 		Wallet:       WalletRepository{base},
+		Passkey:      PasskeyRepository{base},
 	}
 }

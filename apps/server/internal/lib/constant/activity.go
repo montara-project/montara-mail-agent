@@ -32,4 +32,7 @@ const (
 	ActivityAPIKeyRevoked           = "api_key.revoked"
 	ActivityIPBlockAdded            = "ip_block.added"
 	ActivityIPBlockRemoved          = "ip_block.removed"
+	ActivitySessionRevoked          = "session.revoked"
+	ActivityPasskeyAdded            = "passkey.added"
+	ActivityPasskeyRemoved          = "passkey.removed"
 )

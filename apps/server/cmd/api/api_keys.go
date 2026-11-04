@@ -10,8 +10,10 @@ import (
 	accesscontrolplugintypes "github.com/Authula/authula/plugins/access-control/types"
 	apikeyplugin "github.com/Authula/authula/plugins/api-key"
 	apikeyplugintypes "github.com/Authula/authula/plugins/api-key/types"
+	"github.com/google/uuid"
 
 	"montara-mail-agent/server/internal/app"
+	"montara-mail-agent/server/internal/passkey"
 )
 
 // apiKeyPrefix starts every key, so a leaked one is recognisable in logs and
@@ -73,4 +75,13 @@ func deleteAPIKeys(ctx context.Context, auth *authula.Auth, userID string) error
 		return nil
 	}
 	return keys.DeleteAllByOwner(ctx, &authulamodels.Actor{ID: userID, Type: authulamodels.ActorUser}, apikeyplugintypes.OwnerTypeUser, userID)
+}
+
+// deletePasskeys removes every passkey of the user alongside their API keys.
+func deletePasskeys(ctx context.Context, passkeys *passkey.Service, userID string) error {
+	id, err := uuid.Parse(userID)
+	if err != nil {
+		return err
+	}
+	return passkeys.DeleteAll(ctx, id)
 }

@@ -13,6 +13,7 @@ type Handlers struct {
 	Mail         *mailHandler
 	LLMProvider  *llmProviderHandler
 	Profile      *profileHandler
+	Passkey      *passkeyHandler
 	ActivityLog  *activityLogHandler
 	Agent        *agentHandler
 	AgentBot     *agentBotHandler
@@ -34,6 +35,7 @@ func New(app *app.Application) *Handlers {
 		Mail:         &mailHandler{app: app, sync: sync},
 		LLMProvider:  &llmProviderHandler{app: app},
 		Profile:      &profileHandler{app: app},
+		Passkey:      &passkeyHandler{app: app},
 		ActivityLog:  &activityLogHandler{app: app},
 		Agent:        &agentHandler{app: app, sync: sync},
 		AgentBot:     &agentBotHandler{app: app},

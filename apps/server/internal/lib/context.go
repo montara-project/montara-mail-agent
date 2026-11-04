@@ -18,3 +18,13 @@ func ContextGetUID(c fiber.Ctx) (uuid.UUID, error) {
 func ContextSetUID(c fiber.Ctx, uid uuid.UUID) {
 	fiber.Locals[uuid.UUID](c, "uid", uid)
 }
+
+// ContextGetSessionID returns the Authula session the caller signed in with,
+// or "" for a caller without one.
+func ContextGetSessionID(c fiber.Ctx) string {
+	return fiber.Locals[string](c, "session_id")
+}
+
+func ContextSetSessionID(c fiber.Ctx, id string) {
+	fiber.Locals[string](c, "session_id", id)
+}

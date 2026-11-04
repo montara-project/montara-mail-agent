@@ -31,9 +31,9 @@ func bearerToken(header string) string {
 // checks for routes outside the Authula handler; sliding session renewal
 // still happens on Authula's own routes (e.g. /me).
 func (m *Middlewares) Authorization(c fiber.Ctx) error {
-	userID := m.bearerUserID(c)
+	userID, sessionID := m.bearerUserID(c)
 	if userID == "" {
-		userID = m.sessionUserID(c)
+		userID, sessionID = m.sessionUserID(c)
 	}
 
 	uid, err := uuid.Parse(userID)
@@ -41,6 +41,7 @@ func (m *Middlewares) Authorization(c fiber.Ctx) error {
 		return apperr.ErrUnauthorized
 	}
 	lib.ContextSetUID(c, uid)
+	lib.ContextSetSessionID(c, sessionID)
 
 	return c.Next()
 }
@@ -83,44 +84,44 @@ func (m *Middlewares) APIKey(c fiber.Ctx) error {
 	return c.Next()
 }
 
-// bearerUserID returns the user a valid access token belongs to, or "". The
+// bearerUserID returns the user and session of a valid access token, or "". The
 // jwt plugin verifies the signature and expiry and that the token's session
 // still exists, so signing out revokes it. It does not check that the session
 // is still live, so that is checked here.
-func (m *Middlewares) bearerUserID(c fiber.Ctx) string {
+func (m *Middlewares) bearerUserID(c fiber.Ctx) (string, string) {
 	token := bearerToken(c.Get(fiber.HeaderAuthorization))
 	if token == "" {
-		return ""
+		return "", ""
 	}
 
 	jwt, ok := m.app.Auth.ServiceRegistry.Get(authulamodels.ServiceJWT.String()).(authulaservices.JWTService)
 	if !ok {
-		return ""
+		return "", ""
 	}
 	actor, err := jwt.ValidateToken(c.Context(), token)
 	if err != nil || actor.Type != authulamodels.ActorUser {
-		return ""
+		return "", ""
 	}
 
 	sessionID, _ := actor.Claims["session_id"].(string)
 	session, err := m.app.Auth.CoreServices().SessionService.GetByID(c.Context(), sessionID)
 	if err != nil || session == nil || session.ExpiresAt.Before(time.Now().UTC()) {
-		return ""
+		return "", ""
 	}
-	return actor.ID
+	return actor.ID, session.ID
 }
 
-// sessionUserID returns the user of a live session cookie, or "".
-func (m *Middlewares) sessionUserID(c fiber.Ctx) string {
+// sessionUserID returns the user and session of a live session cookie, or "".
+func (m *Middlewares) sessionUserID(c fiber.Ctx) (string, string) {
 	token := c.Cookies(config.SessionCookieName)
 	if token == "" {
-		return ""
+		return "", ""
 	}
 
 	services := m.app.Auth.CoreServices()
 	session, err := services.SessionService.GetByToken(c.Context(), services.TokenService.Hash(token))
 	if err != nil || session == nil || session.ExpiresAt.Before(time.Now().UTC()) {
-		return ""
+		return "", ""
 	}
-	return session.UserID
+	return session.UserID, session.ID
 }

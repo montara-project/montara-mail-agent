@@ -38,6 +38,7 @@ import (
 	"montara-mail-agent/server/internal/config"
 	"montara-mail-agent/server/internal/lib/constant"
 	"montara-mail-agent/server/internal/models"
+	"montara-mail-agent/server/internal/passkey"
 	"montara-mail-agent/server/internal/repositories"
 )
 
@@ -370,7 +371,7 @@ func (i tokenIssuer) route() authulamodels.Route {
 // through Resend. Authula migrates its own tables (users, accounts, sessions,
 // verifications) into authSchema of the app database when it starts, and
 // mirror runs after every user it creates or updates.
-func newAuth(cfg config.Config, mirror, personalOrg func(*authulamodels.User) error, activities *repositories.ActivityLogRepository, logger *slog.Logger) *authula.Auth {
+func newAuth(cfg config.Config, mirror, personalOrg func(*authulamodels.User) error, activities *repositories.ActivityLogRepository, passkeys *passkey.Service, logger *slog.Logger) *authula.Auth {
 	// Assigned below; the hooks that use it only run once requests arrive.
 	var auth *authula.Auth
 
@@ -508,6 +509,9 @@ func newAuth(cfg config.Config, mirror, personalOrg func(*authulamodels.User) er
 							if err := deleteAPIKeys(ctx, auth, u.ID); err != nil {
 								return err
 							}
+							if err := deletePasskeys(ctx, passkeys, u.ID); err != nil {
+								return err
+							}
 							return auth.CoreServices().SessionService.DeleteAllByUserID(ctx, u.ID)
 						},
 					},
@@ -547,6 +551,7 @@ func newAuth(cfg config.Config, mirror, personalOrg func(*authulamodels.User) er
 		panic(err)
 	}
 	auth.RegisterRoute(issuer.route())
+	auth.RegisterRoutes(passkeySignInRoutes(auth, authConfig, passkeys, logger))
 
 	if cfg.Auth.MicrosoftClientID != "" || cfg.Auth.MicrosoftClientSecret != "" {
 		auth.RegisterRoutes(microsoftSignInRoutes(auth, authConfig, cfg.Auth.MicrosoftClientID, cfg.Auth.MicrosoftClientSecret, logger))
@@ -648,6 +653,7 @@ var signInPaths = []string{
 	authBasePath + "/magic-link/verify",
 	authBasePath + "/magic-link/exchange",
 	authBasePath + "/oauth2/callback/",
+	authBasePath + "/passkey/sign-in",
 	authBasePath + "/totp/verify",
 	authBasePath + "/totp/verify-backup-code",
 }

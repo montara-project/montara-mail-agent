@@ -99,7 +99,11 @@ func TestIntegration(t *testing.T) {
 
 	repos := repositories.New(db)
 	mirror := mirrorUser(&repos.User)
-	auth := newAuth(cfg, mirror, personalOrganization(&repos.Organization, logger), &repos.ActivityLog, logger)
+	passkeys, err := newPasskeys(cfg, &repos.Passkey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth := newAuth(cfg, mirror, personalOrganization(&repos.Organization, logger), &repos.ActivityLog, passkeys, logger)
 	auth.RegisterRoute(fakeOAuthCallback(auth))
 	defer auth.CloseSystems()
 	defer auth.ClosePlugins()
@@ -208,7 +212,7 @@ func TestIntegration(t *testing.T) {
 		t.Fatal(err)
 	}
 	// No fallback model at first: AI requests answer 503 until one is set.
-	application := &app.Application{Config: cfg, Logger: logger, DB: db, Repositories: repos, Auth: auth, Secrets: secrets, HTTPClient: outboundClient(false)}
+	application := &app.Application{Config: cfg, Logger: logger, DB: db, Repositories: repos, Auth: auth, Secrets: secrets, Passkeys: passkeys, HTTPClient: outboundClient(false)}
 	if err := application.ReloadPlans(context.Background()); err != nil {
 		t.Fatalf("reload plans: %v", err)
 	}
@@ -464,6 +468,7 @@ func TestIntegration(t *testing.T) {
 	testMCPEndpoint(t, call, server, application, userToken, superToken, userOrg, superOrg)
 	testIPBlocks(t, call, userToken, superToken)
 	testOAuthFinish(t, call, application, userToken, userOrg)
+	testPasskeys(t, call, userToken)
 	testAccountSettings(t, call, func() string { return cookies }, db, userEmail, userPass)
 	testDeleteAccount(t, call, application, db, superToken, superEmail)
 

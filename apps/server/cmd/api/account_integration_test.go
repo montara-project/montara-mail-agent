@@ -105,6 +105,34 @@ func testAccountSettings(t *testing.T, call callFunc, cookies func() string, db 
 		t.Fatalf("security: %d %v", status, out)
 	}
 
+	// Sessions: the earlier sign-ins too, the caller's marked.
+	// Revoking the others ends the OAuth session, so its cookie trades for nothing.
+	status, out = call(http.MethodGet, "/api/v1/me/sessions", token, nil)
+	if sessions := list(out); status != http.StatusOK || len(sessions) < 2 {
+		t.Fatalf("sessions: %d %v", status, out)
+	}
+	current := 0
+	for _, s := range list(out) {
+		if s.(map[string]any)["current"] == true {
+			current++
+		}
+	}
+	if current != 1 {
+		t.Fatalf("sessions: %d marked current, want 1: %v", current, out)
+	}
+	if status, _ := call(http.MethodDelete, "/api/v1/me/sessions/00000000-0000-0000-0000-000000000000", token, nil); status != http.StatusNotFound {
+		t.Fatalf("revoke an unknown session: %d, want 404", status)
+	}
+	if status, out := call(http.MethodDelete, "/api/v1/me/sessions", token, nil); status != http.StatusOK {
+		t.Fatalf("revoke other sessions: %d %v", status, out)
+	}
+	if status, _ := call(http.MethodPost, "/api/v1/auth/token", "", nil, "Cookie", session); status == http.StatusOK {
+		t.Fatal("a revoked session still trades for tokens")
+	}
+	if status, out := call(http.MethodGet, "/api/v1/me/sessions", token, nil); status != http.StatusOK || len(list(out)) != 1 {
+		t.Fatalf("sessions after revoking the others: %d %v", status, out)
+	}
+
 	// Profile: the change reaches the public mirror through Authula's hooks.
 	if status, _ := call(http.MethodPatch, "/api/v1/me", token, map[string]string{"name": "Renamed", "image": "http://example.com/a.png"}); status != http.StatusUnprocessableEntity {
 		t.Fatalf("http avatar: %d, want 422", status)

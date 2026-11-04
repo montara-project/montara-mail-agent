@@ -51,6 +51,45 @@ func (r *UserRepository) HasOtherThan(ctx context.Context, email string) (bool, 
 	return found, err
 }
 
+// Sessions lists the user's live Authula sign-ins, most recently renewed
+// first. Authula writes its timestamps in UTC without a zone.
+func (r *UserRepository) Sessions(ctx context.Context, id uuid.UUID) ([]models.Session, error) {
+	rows, err := r.queryContext(ctx, `
+		SELECT id, ip_address, user_agent, created_at, updated_at, expires_at
+		FROM authula.sessions
+		WHERE user_id = $1 AND expires_at > (now() AT TIME ZONE 'utc')
+		ORDER BY updated_at DESC`, id)
+	if err != nil {
+		return nil, err
+	}
+	return collectRows(rows, func(row rowScanner) (models.Session, error) {
+		var s models.Session
+		err := row.Scan(&s.ID, &s.IPAddress, &s.UserAgent, &s.CreatedAt, &s.UpdatedAt, &s.ExpiresAt)
+		return s, err
+	})
+}
+
+// DeleteSession ends one of the user's sessions; its refresh tokens cascade,
+// and the access tokens it issued stop verifying. Another user's session
+// reads as missing.
+func (r *UserRepository) DeleteSession(ctx context.Context, id uuid.UUID, sessionID uuid.UUID) error {
+	res, err := r.execContext(ctx, `DELETE FROM authula.sessions WHERE id = $1 AND user_id = $2`, sessionID, id)
+	if err != nil {
+		return err
+	}
+	return requireAffected(res, "session")
+}
+
+// DeleteOtherSessions ends every session of the user but keep, and returns
+// how many it ended.
+func (r *UserRepository) DeleteOtherSessions(ctx context.Context, id uuid.UUID, keep string) (int64, error) {
+	res, err := r.execContext(ctx, `DELETE FROM authula.sessions WHERE user_id = $1 AND id::text <> $2`, id, keep)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
+
 // SetRole changes a mirrored user's role.
 func (r *UserRepository) SetRole(ctx context.Context, id uuid.UUID, role string) error {
 	res, err := r.execContext(ctx, `UPDATE users SET role = $2, updated_at = now() WHERE id = $1`, id, role)
