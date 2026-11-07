@@ -470,7 +470,8 @@ func TestIntegration(t *testing.T) {
 	testMCPEndpoint(t, call, server, application, userToken, superToken, userOrg, superOrg)
 	testIPBlocks(t, call, userToken, superToken)
 	testOAuthFinish(t, call, application, userToken, userOrg)
-	testPasskeys(t, call, userToken)
+	testPasskeys(t, call, userToken, userPass)
+	testRecentSignIn(t, call, func() string { return cookies }, auth, db)
 	testAccountSettings(t, call, func() string { return cookies }, db, userEmail, userPass)
 	testDeleteAccount(t, call, application, db, superToken, superEmail)
 
@@ -486,7 +487,7 @@ func TestIntegration(t *testing.T) {
 	// and the passkeys added with it.
 	superToken = signIn(superEmail, superPass)["access_token"].(string)
 	superCookie = cookies
-	superPasskey := registerPasskey(t, call, superToken)
+	superPasskey := registerPasskey(t, call, superToken, superPass)
 	superUser.Password = "the-rotated-password"
 	if err := superUser.Seed(); err != nil {
 		t.Fatalf("rotate: %v", err)

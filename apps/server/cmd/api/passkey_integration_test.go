@@ -1,16 +1,19 @@
 package main
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
 	"net/http"
 	"testing"
 
+	authula "github.com/Authula/authula"
 	"github.com/fxamacker/cbor/v2"
 )
 
@@ -99,8 +102,8 @@ func (a *authenticator) get(t *testing.T, options map[string]any, verified bool)
 }
 
 // registerPasskey adds a new software passkey, with its own credential id, to
-// the user of token.
-func registerPasskey(t *testing.T, call callFunc, token string) *authenticator {
+// the user of token, confirming with their password.
+func registerPasskey(t *testing.T, call callFunc, token, password string) *authenticator {
 	t.Helper()
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
@@ -112,7 +115,7 @@ func registerPasskey(t *testing.T, call callFunc, token string) *authenticator {
 	}
 	a := &authenticator{key: key, id: id}
 
-	status, out := call(http.MethodPost, "/api/v1/me/passkeys/options", token, nil)
+	status, out := call(http.MethodPost, "/api/v1/me/passkeys/options", token, map[string]string{"password": password})
 	if status != http.StatusOK {
 		t.Fatalf("passkey options: %d %v", status, out)
 	}
@@ -140,12 +143,17 @@ func passkeySignIn(t *testing.T, call callFunc, a *authenticator, verified bool)
 	return status, out, assertion
 }
 
-// testPasskeys registers a passkey, signs in with it, and removes it. A
-// challenge verifies once, an assertion without user verification is
-// refused, and a removed passkey signs nobody in.
-func testPasskeys(t *testing.T, call callFunc, token string) {
+// testPasskeys registers a passkey, signs in with it, and removes it. Adding
+// one takes the password, a challenge verifies once, an assertion without
+// user verification is refused, and a removed passkey signs nobody in.
+func testPasskeys(t *testing.T, call callFunc, token, password string) {
 	t.Helper()
-	a := registerPasskey(t, call, token)
+	for _, body := range []any{nil, map[string]string{"password": "wrong-password"}} {
+		if status, _ := call(http.MethodPost, "/api/v1/me/passkeys/options", token, body); status != http.StatusBadRequest {
+			t.Fatalf("passkey options with %v: %d, want 400", body, status)
+		}
+	}
+	a := registerPasskey(t, call, token, password)
 	status, out := call(http.MethodGet, "/api/v1/me/passkeys", token, nil)
 	if keys := list(out); status != http.StatusOK || len(keys) != 1 {
 		t.Fatalf("passkeys: %d %v", status, out)
@@ -173,5 +181,41 @@ func testPasskeys(t *testing.T, call callFunc, token string) {
 	}
 	if status, _, _ := passkeySignIn(t, call, a, true); status != http.StatusUnauthorized {
 		t.Fatalf("sign-in with a removed passkey: %d, want 401", status)
+	}
+}
+
+// testRecentSignIn covers a user without a password, who signed in with
+// Google, Microsoft or a magic link: they add a passkey or an authenticator
+// app without one, but only within handlers.RecentSignIn of signing in.
+func testRecentSignIn(t *testing.T, call callFunc, cookies func() string, auth *authula.Auth, db *sql.DB) {
+	t.Helper()
+	user, err := auth.CoreServices().UserService.Create(context.Background(), "Google User", "google-user@example.com", true, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status, out := call(http.MethodGet, "/api/v1/auth/oauth2/test-callback?user="+user.ID, "", nil); status != http.StatusFound {
+		t.Fatalf("passwordless sign-in: %d %v", status, out)
+	}
+	status, out := call(http.MethodPost, "/api/v1/auth/token", "", nil, "Cookie", cookies())
+	if status != http.StatusOK || out["access_token"] == nil {
+		t.Fatalf("passwordless token: %d %v", status, out)
+	}
+	token := out["access_token"].(string)
+
+	if status, out := call(http.MethodPost, "/api/v1/me/passkeys/options", token, map[string]any{}); status != http.StatusOK {
+		t.Fatalf("passkey options right after sign-in: %d %v", status, out)
+	}
+	if status, out := call(http.MethodPost, "/api/v1/auth/totp/enable", token, map[string]any{}); status != http.StatusOK {
+		t.Fatalf("totp enable right after sign-in: %d %v", status, out)
+	}
+
+	if _, err := db.Exec(`UPDATE authula.sessions SET created_at = now() - interval '11 minutes' WHERE user_id = $1`, user.ID); err != nil {
+		t.Fatal(err)
+	}
+	if status, out := call(http.MethodPost, "/api/v1/me/passkeys/options", token, map[string]any{}); status != http.StatusForbidden {
+		t.Fatalf("passkey options on an old session: %d %v, want 403", status, out)
+	}
+	if status, out := call(http.MethodPost, "/api/v1/auth/totp/enable", token, map[string]any{}); status != http.StatusForbidden {
+		t.Fatalf("totp enable on an old session: %d %v, want 403", status, out)
 	}
 }

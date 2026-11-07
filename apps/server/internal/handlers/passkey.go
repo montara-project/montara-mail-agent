@@ -36,14 +36,29 @@ func (h *passkeyHandler) List(c fiber.Ctx) error {
 	return dtos.List(c, keys, dtos.ListMeta(len(keys), 0, len(keys)))
 }
 
-// Options starts registering a passkey: the options for
-// navigator.credentials.create, valid for a few minutes.
+// passkeyOptionsBody confirms the caller before a passkey is registered (see
+// ConfirmIdentity); empty for a user without a password.
+type passkeyOptionsBody struct {
+	Password string `json:"password"`
+}
+
+// Options starts registering a passkey once the caller confirms who they are:
+// the options for navigator.credentials.create, valid for a few minutes.
+// Create needs the challenge handed out here, so it is the one check.
 func (h *passkeyHandler) Options(c fiber.Ctx) error {
 	uid, err := lib.ContextGetUID(c)
 	if err != nil {
 		return apperr.ErrUnauthorized
 	}
-	user, err := h.app.Auth.CoreServices().UserService.GetByID(c.Context(), uid.String())
+	var body passkeyOptionsBody
+	// An empty body leaves the password empty, which ConfirmIdentity refuses
+	// for a user who has one.
+	_ = json.Unmarshal(c.Body(), &body)
+	core := h.app.Auth.CoreServices()
+	if err := ConfirmIdentity(c.Context(), core, uid.String(), lib.ContextGetSessionID(c), body.Password); err != nil {
+		return err
+	}
+	user, err := core.UserService.GetByID(c.Context(), uid.String())
 	if err != nil {
 		return err
 	}

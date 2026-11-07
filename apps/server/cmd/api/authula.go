@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -36,6 +37,8 @@ import (
 	authulaservices "github.com/Authula/authula/services"
 
 	"montara-mail-agent/server/internal/config"
+	"montara-mail-agent/server/internal/handlers"
+	"montara-mail-agent/server/internal/lib/apperr"
 	"montara-mail-agent/server/internal/lib/constant"
 	"montara-mail-agent/server/internal/models"
 	"montara-mail-agent/server/internal/passkey"
@@ -564,6 +567,35 @@ func newAuth(cfg config.Config, mirror, personalOrg func(*authulamodels.User) er
 	} else {
 		logger.Warn("microsoft sign-in disabled: microsoft-client-id or microsoft-client-secret is not set")
 	}
+
+	// Adding an authenticator app is a new way to sign in, so the caller
+	// confirms who they are first, as for a passkey. After the session and
+	// bearer hooks (10), which set the actor; Authula's enable reads no body.
+	auth.RegisterHook(authulamodels.Hook{
+		Stage: authulamodels.HookBefore,
+		Matcher: func(reqCtx *authulamodels.RequestContext) bool {
+			return reqCtx.Request.Method == http.MethodPost && reqCtx.Path == authBasePath+"/totp/enable"
+		},
+		Handler: func(reqCtx *authulamodels.RequestContext) error {
+			if reqCtx.Actor == nil || reqCtx.Actor.Type != authulamodels.ActorUser {
+				reqCtx.SetJSONResponse(http.StatusUnauthorized, map[string]any{"message": "unauthorized"})
+				reqCtx.Handled = true
+				return nil
+			}
+			var body struct {
+				Password string `json:"password"`
+			}
+			_ = json.NewDecoder(io.LimitReader(reqCtx.Request.Body, 4<<10)).Decode(&body)
+			sessionID, _ := reqCtx.Values[authulamodels.ContextSessionID.String()].(string)
+			if err := handlers.ConfirmIdentity(reqCtx.Request.Context(), auth.CoreServices(), reqCtx.Actor.ID, sessionID, body.Password); err != nil {
+				status, message := apperr.From(err)
+				reqCtx.SetJSONResponse(status, map[string]any{"message": message})
+				reqCtx.Handled = true
+			}
+			return nil
+		},
+		Order: 20,
+	})
 
 	// The OAuth2 callback marks its redirect as handled before the after hooks,
 	// and the router stops at the first hook of a handled request. That is

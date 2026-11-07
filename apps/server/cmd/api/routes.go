@@ -71,9 +71,10 @@ func routes(r *fiber.App, app *app.Application) {
 	me.Delete("/sessions", idempotent, h.Profile.RevokeOtherSessions)
 	me.Delete("/sessions/:id", idempotent, h.Profile.RevokeSession)
 	// Passkeys: options, then the browser's answer. Not idempotent: a replay
-	// would answer with a challenge already used.
+	// would answer with a challenge already used. The options check the
+	// password, so they share the slow budget against guessing it.
 	me.Get("/passkeys", h.Passkey.List)
-	me.Post("/passkeys/options", h.Passkey.Options)
+	me.Post("/passkeys/options", slow, h.Passkey.Options)
 	me.Post("/passkeys", h.Passkey.Create)
 	me.Delete("/passkeys/:id", idempotent, h.Passkey.Delete)
 	// Deleting the account deletes everything it owns, so it shares the slow

@@ -166,8 +166,14 @@ func testAccountSettings(t *testing.T, call callFunc, cookies func() string, db 
 		t.Fatalf("a profile save dropped split inbox: %v", data(out))
 	}
 
-	// Two-factor: enabling waits for a first code, so a botched scan locks no one out.
-	status, out = call(http.MethodPost, "/api/v1/auth/totp/enable", token, map[string]any{})
+	// Two-factor: enabling takes the password, then waits for a first code,
+	// so a botched scan locks no one out.
+	for _, body := range []map[string]any{{}, {"password": "wrong-password"}} {
+		if status, out := call(http.MethodPost, "/api/v1/auth/totp/enable", token, body); status != http.StatusBadRequest {
+			t.Fatalf("enable totp with %v: %d %v, want 400", body, status, out)
+		}
+	}
+	status, out = call(http.MethodPost, "/api/v1/auth/totp/enable", token, map[string]any{"password": password})
 	if status != http.StatusOK || out["totp_uri"] == nil || len(out["backup_codes"].([]any)) == 0 {
 		t.Fatalf("enable totp: %d %v", status, out)
 	}
@@ -225,7 +231,7 @@ func testAccountSettings(t *testing.T, call callFunc, cookies func() string, db 
 		t.Fatalf("new key on /mcp: %d, want 200", status)
 	}
 	// A passkey too, which signs in past the two-factor step until the change.
-	passkey := registerPasskey(t, call, token)
+	passkey := registerPasskey(t, call, token, password)
 	if status, _, _ := passkeySignIn(t, call, passkey, true); status != http.StatusOK {
 		t.Fatalf("passkey before the change: %d, want 200", status)
 	}
