@@ -56,6 +56,8 @@ func TestIntegration(t *testing.T) {
 			// minute's budget allows; the rate-limit check sends its own
 			// X-Forwarded-For, so it is still counted.
 			RateLimitExemptIPs: "0.0.0.0",
+			// Authula refuses an OAuth redirect_to outside the trusted origins.
+			CORSAllowedOrigins: "http://localhost:3000",
 		},
 		DB: config.ConfigDB{DSN: dsn, MaxOpenConns: 5, MaxIdleConns: 5},
 		Auth: config.ConfigAuth{

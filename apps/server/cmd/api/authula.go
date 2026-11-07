@@ -535,7 +535,7 @@ func newAuth(cfg config.Config, mirror, personalOrg func(*authulamodels.User) er
 				Enabled: googleEnabled,
 				Providers: map[string]oauth2plugintypes.ProviderConfig{
 					"google": {
-						Enabled:      googleEnabled,
+						Enabled:      &googleEnabled,
 						ClientID:     cfg.Auth.GoogleClientID,
 						ClientSecret: cfg.Auth.GoogleClientSecret,
 						RedirectURL:  authConfig.BaseURL + authBasePath + "/oauth2/callback/google",
