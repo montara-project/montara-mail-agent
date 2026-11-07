@@ -3,6 +3,22 @@
 All notable changes to this project are documented in this file. Versions follow the git tags (`v*`); Docker images are published to ghcr.io with the same version.
 
 
+## [1.7.0](https://github.com/montara-project/montara-mail-agent/compare/v1.6.0...v1.7.0) (2026-11-07)
+
+### Features
+
+* **auth:** add passkey sign-in and revoking sessions ([984563e](https://github.com/montara-project/montara-mail-agent/commit/984563e762a2512849a01560eeff0e4c6af07b51))
+* **server:** confirm identity before adding a passkey or TOTP ([652b18c](https://github.com/montara-project/montara-mail-agent/commit/652b18c4704f3a237175ffdeca583a4f9cf07baf))
+* **web-ui:** ask for the password before adding a passkey or 2FA ([525285d](https://github.com/montara-project/montara-mail-agent/commit/525285d43b3d961c77e9c83631c5011ad98738e6))
+
+### Bug Fixes
+
+* **server:** revoke credentials before a password is written ([c1c3748](https://github.com/montara-project/montara-mail-agent/commit/c1c3748f868d4989bbfbebb27079151e209db8fd))
+* **server:** upgrade authula to v1.50.1 and patch vulnerable deps ([539ac23](https://github.com/montara-project/montara-mail-agent/commit/539ac2315233d0856b057a30b925a78f3ca90b45))
+* update login oauth button ([58d9dde](https://github.com/montara-project/montara-mail-agent/commit/58d9ddef3d65012c1070fbd988cc72ca187d5a44))
+* update mailoauth ([b3a437e](https://github.com/montara-project/montara-mail-agent/commit/b3a437e47c7a621a58046e43beca174baf5666b8))
+* **web-ui:** recognize Firefox and Chrome on iOS in session names ([347b629](https://github.com/montara-project/montara-mail-agent/commit/347b6292729b1d6edd5f5ed7af8990ab441ca84a))
+
 ## [1.6.0](https://github.com/montara-project/montara-mail-agent/compare/v1.5.0...v1.6.0) (2026-11-04)
 
 ### Features
