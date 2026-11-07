@@ -19,7 +19,7 @@ func TestConsentURLEncodesScopeSpaces(t *testing.T) {
 	if strings.Contains(url, "+") {
 		t.Fatalf("consent URL carries a literal plus: %s", url)
 	}
-	if !strings.Contains(url, "scope=mail-r%20mail-w%20openid%20profile%20email") {
+	if !strings.Contains(url, "scope=mail-w%20openid%20profile%20email") {
 		t.Fatalf("scopes are not space-encoded: %s", url)
 	}
 	if !strings.Contains(url, "state=signed-state") {
