@@ -227,7 +227,17 @@ func (s *Service) FinishLogin(ctx context.Context, response []byte) (uuid.UUID, 
 }
 
 // DeleteAll removes every passkey of the user, as a password change does:
-// whoever knew the old password could have added one.
+// whoever knew the old password could have added one. Their registrations in
+// flight go too, so one begun before the change can't finish after it.
+// ponytail: a FinishRegistration already past take() can still insert after
+// the delete; a per-user credentials version checked on insert closes that.
 func (s *Service) DeleteAll(ctx context.Context, uid uuid.UUID) error {
+	s.mu.Lock()
+	for challenge, p := range s.pending {
+		if p.user == uid {
+			delete(s.pending, challenge)
+		}
+	}
+	s.mu.Unlock()
 	return s.repo.DeleteAllByUser(ctx, uid)
 }

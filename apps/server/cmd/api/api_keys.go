@@ -77,6 +77,15 @@ func deleteAPIKeys(ctx context.Context, auth *authula.Auth, userID string) error
 	return keys.DeleteAllByOwner(ctx, &authulamodels.Actor{ID: userID, Type: authulamodels.ActorUser}, apikeyplugintypes.OwnerTypeUser, userID)
 }
 
+// revokeCredentials removes the API keys and passkeys of a user whose password
+// was reset: whoever knew the old one could have made either.
+func revokeCredentials(ctx context.Context, auth *authula.Auth, passkeys *passkey.Service, userID string) error {
+	if err := deleteAPIKeys(ctx, auth, userID); err != nil {
+		return err
+	}
+	return deletePasskeys(ctx, passkeys, userID)
+}
+
 // deletePasskeys removes every passkey of the user alongside their API keys.
 func deletePasskeys(ctx context.Context, passkeys *passkey.Service, userID string) error {
 	id, err := uuid.Parse(userID)

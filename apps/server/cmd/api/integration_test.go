@@ -115,7 +115,7 @@ func TestIntegration(t *testing.T) {
 		DB:         db,
 		Auth:       auth.CoreServices(),
 		Promote:    promoteSuperUser(&repos.User, mirror),
-		RevokeKeys: func(ctx context.Context, userID string) error { return deleteAPIKeys(ctx, auth, userID) },
+		RevokeKeys: func(ctx context.Context, userID string) error { return revokeCredentials(ctx, auth, passkeys, userID) },
 		Email:      superEmail,
 		Password:   "the-first-password",
 	}
@@ -482,12 +482,17 @@ func TestIntegration(t *testing.T) {
 		t.Fatalf("create after sign out: %d, want 401", status)
 	}
 
-	// Rotating SUPER_USER ends the sessions opened with the old password.
+	// Rotating SUPER_USER ends the sessions opened with the old password,
+	// and the passkeys added with it.
 	superToken = signIn(superEmail, superPass)["access_token"].(string)
 	superCookie = cookies
+	superPasskey := registerPasskey(t, call, superToken)
 	superUser.Password = "the-rotated-password"
 	if err := superUser.Seed(); err != nil {
 		t.Fatalf("rotate: %v", err)
+	}
+	if status, _, _ := passkeySignIn(t, call, superPasskey, true); status != http.StatusUnauthorized {
+		t.Fatalf("super user passkey after rotation: %d, want 401", status)
 	}
 	for _, headers := range [][]string{{"Cookie", superCookie}, {"Authorization", "Bearer " + superToken}} {
 		if status, _ := call(http.MethodGet, "/api/v1/auth/me", "", nil, headers...); status != http.StatusUnauthorized {

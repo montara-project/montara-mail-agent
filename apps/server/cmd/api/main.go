@@ -112,10 +112,7 @@ func run() error {
 			Auth:    auth.CoreServices(),
 			Promote: promoteSuperUser(&repos.User, mirror),
 			RevokeKeys: func(ctx context.Context, userID string) error {
-				if err := deleteAPIKeys(ctx, auth, userID); err != nil {
-					return err
-				}
-				return deletePasskeys(ctx, passkeys, userID)
+				return revokeCredentials(ctx, auth, passkeys, userID)
 			},
 			Email:    cfg.App.SuperUserEmail,
 			Password: cfg.App.SuperUserPassword,

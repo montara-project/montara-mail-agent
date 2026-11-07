@@ -237,21 +237,23 @@ func (h *profileHandler) ChangePassword(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	account.Password = &hash
-	if _, err := services.AccountService.Update(c.Context(), account); err != nil {
-		return err
-	}
-	// The API keys too, first: whoever knew the old password could have made
-	// one, and a failure here must not leave them working behind ended sessions.
+	// The API keys and passkeys go before the password changes: whoever knew
+	// the old password could have made either, and a failure here must not
+	// leave the new password in place with them still working. The change
+	// then fails as a whole and can be tried again.
 	if keys, ok := h.app.APIKeys(); ok {
 		if err := keys.DeleteAllByOwner(c.Context(), userActor(uid), apikeyplugintypes.OwnerTypeUser, uid.String()); err != nil {
 			return err
 		}
 	}
-	// Passkeys likewise: one added with the old password would outlive it.
 	if err := h.app.Passkeys.DeleteAll(c.Context(), uid); err != nil {
 		return err
 	}
+	account.Password = &hash
+	if _, err := services.AccountService.Update(c.Context(), account); err != nil {
+		return err
+	}
+	// Sessions after the write, so none opened with the old password survives.
 	if err := services.SessionService.DeleteAllByUserID(c.Context(), uid.String()); err != nil {
 		return err
 	}

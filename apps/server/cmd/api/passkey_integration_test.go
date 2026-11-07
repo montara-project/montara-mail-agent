@@ -69,12 +69,17 @@ func (a *authenticator) create(t *testing.T, options map[string]any) map[string]
 	}
 }
 
-// get answers navigator.credentials.get with a signed assertion.
-func (a *authenticator) get(t *testing.T, options map[string]any) map[string]any {
+// get answers navigator.credentials.get with a signed assertion. Without
+// verified, the authenticator reports the user present but not verified.
+func (a *authenticator) get(t *testing.T, options map[string]any, verified bool) map[string]any {
 	t.Helper()
 	pk := options["publicKey"].(map[string]any)
 	a.count++
-	data := a.authData(pk["rpId"].(string), 0x01|0x04, nil)
+	flags := byte(0x01)
+	if verified {
+		flags |= 0x04
+	}
+	data := a.authData(pk["rpId"].(string), flags, nil)
 	client := clientData("webauthn.get", pk["challenge"].(string))
 	hash := sha256.Sum256(client)
 	digest := sha256.Sum256(append(append([]byte{}, data...), hash[:]...))
@@ -93,15 +98,19 @@ func (a *authenticator) get(t *testing.T, options map[string]any) map[string]any
 	}
 }
 
-// testPasskeys registers a passkey, signs in with it, and removes it. A
-// challenge verifies once, and a removed passkey signs nobody in.
-func testPasskeys(t *testing.T, call callFunc, token string) {
+// registerPasskey adds a new software passkey, with its own credential id, to
+// the user of token.
+func registerPasskey(t *testing.T, call callFunc, token string) *authenticator {
 	t.Helper()
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		t.Fatal(err)
 	}
-	a := &authenticator{key: key, id: []byte("test-passkey-credential-id")}
+	id := make([]byte, 16)
+	if _, err := rand.Read(id); err != nil {
+		t.Fatal(err)
+	}
+	a := &authenticator{key: key, id: id}
 
 	status, out := call(http.MethodPost, "/api/v1/me/passkeys/options", token, nil)
 	if status != http.StatusOK {
@@ -115,22 +124,40 @@ func testPasskeys(t *testing.T, call callFunc, token string) {
 	if status, _ := call(http.MethodPost, "/api/v1/me/passkeys", token, map[string]any{"credential": credential}); status != http.StatusBadRequest {
 		t.Fatalf("passkey registration replayed: %d, want 400", status)
 	}
-	status, out = call(http.MethodGet, "/api/v1/me/passkeys", token, nil)
+	return a
+}
+
+// passkeySignIn signs in with a's passkey and returns the answer and the
+// assertion it sent.
+func passkeySignIn(t *testing.T, call callFunc, a *authenticator, verified bool) (int, map[string]any, map[string]any) {
+	t.Helper()
+	status, options := call(http.MethodPost, "/api/v1/auth/passkey/options", "", map[string]any{})
+	if status != http.StatusOK {
+		t.Fatalf("passkey sign-in options: %d %v", status, options)
+	}
+	assertion := a.get(t, options, verified)
+	status, out := call(http.MethodPost, "/api/v1/auth/passkey/sign-in", "", assertion)
+	return status, out, assertion
+}
+
+// testPasskeys registers a passkey, signs in with it, and removes it. A
+// challenge verifies once, an assertion without user verification is
+// refused, and a removed passkey signs nobody in.
+func testPasskeys(t *testing.T, call callFunc, token string) {
+	t.Helper()
+	a := registerPasskey(t, call, token)
+	status, out := call(http.MethodGet, "/api/v1/me/passkeys", token, nil)
 	if keys := list(out); status != http.StatusOK || len(keys) != 1 {
 		t.Fatalf("passkeys: %d %v", status, out)
 	}
 	id := list(out)[0].(map[string]any)["id"].(string)
 
-	signIn := func() (int, map[string]any, map[string]any) {
-		status, options := call(http.MethodPost, "/api/v1/auth/passkey/options", "", map[string]any{})
-		if status != http.StatusOK {
-			t.Fatalf("passkey sign-in options: %d %v", status, options)
-		}
-		assertion := a.get(t, options)
-		status, out := call(http.MethodPost, "/api/v1/auth/passkey/sign-in", "", assertion)
-		return status, out, assertion
+	// Presence alone isn't enough: the key must have verified the user.
+	if status, _, _ := passkeySignIn(t, call, a, false); status != http.StatusUnauthorized {
+		t.Fatalf("passkey sign-in without user verification: %d, want 401", status)
 	}
-	status, out, assertion := signIn()
+
+	status, out, assertion := passkeySignIn(t, call, a, true)
 	if status != http.StatusOK || out["access_token"] == nil {
 		t.Fatalf("passkey sign-in: %d %v", status, out)
 	}
@@ -144,7 +171,7 @@ func testPasskeys(t *testing.T, call callFunc, token string) {
 	if status, out := call(http.MethodDelete, "/api/v1/me/passkeys/"+id, token, nil); status != http.StatusOK {
 		t.Fatalf("remove passkey: %d %v", status, out)
 	}
-	if status, _, _ := signIn(); status != http.StatusUnauthorized {
+	if status, _, _ := passkeySignIn(t, call, a, true); status != http.StatusUnauthorized {
 		t.Fatalf("sign-in with a removed passkey: %d, want 401", status)
 	}
 }

@@ -503,15 +503,21 @@ func newAuth(cfg config.Config, mirror, personalOrg func(*authulamodels.User) er
 						BeforeSignIn: refuseUnverified,
 					},
 					// A reset password must also lock out whoever stole the old
-					// one, and the API keys they could have made with it.
+					// one, and the API keys and passkeys they could have made
+					// with it. Authula only logs an error from the after hook,
+					// once the reset token is spent, so the revocation runs
+					// before the password is written: a failure fails the reset
+					// and leaves the link usable for another try.
 					PasswordChange: &emailpasswordplugintypes.PasswordChangeServiceHooksConfig{
+						BeforeChangePassword: func(ctx context.Context, u *authulamodels.User, _ string) error {
+							if err := revokeCredentials(ctx, auth, passkeys, u.ID); err != nil {
+								return err
+							}
+							return auth.CoreServices().SessionService.DeleteAllByUserID(ctx, u.ID)
+						},
+						// Again, for a session opened with the old password while
+						// the new one was being written.
 						AfterChangePassword: func(ctx context.Context, u *authulamodels.User) error {
-							if err := deleteAPIKeys(ctx, auth, u.ID); err != nil {
-								return err
-							}
-							if err := deletePasskeys(ctx, passkeys, u.ID); err != nil {
-								return err
-							}
 							return auth.CoreServices().SessionService.DeleteAllByUserID(ctx, u.ID)
 						},
 					},

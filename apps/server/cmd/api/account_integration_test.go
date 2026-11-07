@@ -224,8 +224,16 @@ func testAccountSettings(t *testing.T, call callFunc, cookies func() string, db 
 	if status, _ := mcpRPC(call, key, "tools/list", nil); status != http.StatusOK {
 		t.Fatalf("new key on /mcp: %d, want 200", status)
 	}
+	// A passkey too, which signs in past the two-factor step until the change.
+	passkey := registerPasskey(t, call, token)
+	if status, _, _ := passkeySignIn(t, call, passkey, true); status != http.StatusOK {
+		t.Fatalf("passkey before the change: %d, want 200", status)
+	}
 	if status, out := call(http.MethodPut, "/api/v1/me/password", token, map[string]string{"current_password": password, "new_password": "a-new-password"}); status != http.StatusOK {
 		t.Fatalf("change password: %d %v", status, out)
+	}
+	if status, _, _ := passkeySignIn(t, call, passkey, true); status != http.StatusUnauthorized {
+		t.Fatalf("passkey after the change: %d, want 401", status)
 	}
 	if status, _ := mcpRPC(call, key, "tools/list", nil); status != http.StatusUnauthorized {
 		t.Fatalf("API key after the change: %d, want 401", status)
