@@ -8,7 +8,12 @@ import type { Models } from '@/lib/api/models'
 
 import { SettingsCard } from '@/components/block/common/settings-card'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
+import SimpleAlertScrollableDialogForm from '@/components/block/common/simple-alert-scrollable-dialog-form'
 import StatusDot from '@/components/block/common/status-dot'
+import {
+  ConfirmPasswordField,
+  useConfirmIdentityError,
+} from '@/components/block/settings/confirm-identity'
 import { Button } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { OTPCodeInput } from '@/components/ui/input-otp'
@@ -222,10 +227,18 @@ function Enabled() {
 export default function TOTPSettings() {
   const { data, isPending, isError, error } = useQuery(queries.profile.security())
   const [setup, setSetup] = React.useState<Models.TOTPSetup | null>(null)
+  // Setup starts once the user confirms it's them (see ConfirmPasswordField).
+  const [confirming, setConfirming] = React.useState(false)
+  const [password, setPassword] = React.useState('')
+  const confirmError = useConfirmIdentityError()
   const enable = useMutation({
-    mutationFn: async () => (await services.auth.totpEnable()).data,
-    onSuccess: setSetup,
-    onError: toastAxiosError,
+    mutationFn: async () => (await services.auth.totpEnable(password)).data,
+    onSuccess: (next) => {
+      setSetup(next)
+      setConfirming(false)
+      setPassword('')
+    },
+    onError: confirmError,
   })
   const enabled = data?.totp_enabled
 
@@ -252,16 +265,34 @@ export default function TOTPSettings() {
           <Button
             variant="outline"
             className={cn(ACTION, 'bg-muted')}
-            onClick={() => enable.mutate()}
+            onClick={() => setConfirming(true)}
             disabled={enable.isPending}
           >
             <ShieldCheck />
-            {enable.isPending ? 'Starting...' : 'Set up 2FA'}
+            Set up 2FA
           </Button>
         </div>
         <p className={HINT}>
           With it on, someone who learns your password still can't sign in without your phone.
         </p>
+        <SimpleAlertScrollableDialogForm
+          open={confirming}
+          onOpenChange={(open) => {
+            setConfirming(open)
+            if (!open) setPassword('')
+          }}
+          onSubmit={(e) => {
+            e.preventDefault()
+            enable.mutate()
+          }}
+          title="Set up two-factor sign-in"
+          description="Next you scan a code with your authenticator app."
+          confirmText="Continue"
+          loading={enable.isPending}
+          size="md"
+        >
+          <ConfirmPasswordField value={password} onChange={setPassword} autoFocus />
+        </SimpleAlertScrollableDialogForm>
       </div>
     )
   }

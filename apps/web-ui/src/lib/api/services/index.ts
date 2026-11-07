@@ -11,6 +11,7 @@ import { llmProviderServices } from './llm-provider'
 import { mailServices } from './mail'
 import { mcpServerServices } from './mcp-server'
 import { organizationServices } from './organization'
+import { passkeyServices } from './passkey'
 import { profileServices } from './profile'
 import { quotaServices } from './quota'
 
@@ -27,6 +28,7 @@ export const services = {
   agentSkills: agentSkillServices,
   mcpServers: mcpServerServices,
   apiKeys: apiKeyServices,
+  passkeys: passkeyServices,
   ipBlocks: ipBlockServices,
   billing: billingServices,
   quota: quotaServices,

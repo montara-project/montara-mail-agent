@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -36,8 +37,11 @@ import (
 	authulaservices "github.com/Authula/authula/services"
 
 	"montara-mail-agent/server/internal/config"
+	"montara-mail-agent/server/internal/handlers"
+	"montara-mail-agent/server/internal/lib/apperr"
 	"montara-mail-agent/server/internal/lib/constant"
 	"montara-mail-agent/server/internal/models"
+	"montara-mail-agent/server/internal/passkey"
 	"montara-mail-agent/server/internal/repositories"
 )
 
@@ -370,7 +374,7 @@ func (i tokenIssuer) route() authulamodels.Route {
 // through Resend. Authula migrates its own tables (users, accounts, sessions,
 // verifications) into authSchema of the app database when it starts, and
 // mirror runs after every user it creates or updates.
-func newAuth(cfg config.Config, mirror, personalOrg func(*authulamodels.User) error, activities *repositories.ActivityLogRepository, logger *slog.Logger) *authula.Auth {
+func newAuth(cfg config.Config, mirror, personalOrg func(*authulamodels.User) error, activities *repositories.ActivityLogRepository, passkeys *passkey.Service, logger *slog.Logger) *authula.Auth {
 	// Assigned below; the hooks that use it only run once requests arrive.
 	var auth *authula.Auth
 
@@ -502,12 +506,21 @@ func newAuth(cfg config.Config, mirror, personalOrg func(*authulamodels.User) er
 						BeforeSignIn: refuseUnverified,
 					},
 					// A reset password must also lock out whoever stole the old
-					// one, and the API keys they could have made with it.
+					// one, and the API keys and passkeys they could have made
+					// with it. Authula only logs an error from the after hook,
+					// once the reset token is spent, so the revocation runs
+					// before the password is written: a failure fails the reset
+					// and leaves the link usable for another try.
 					PasswordChange: &emailpasswordplugintypes.PasswordChangeServiceHooksConfig{
-						AfterChangePassword: func(ctx context.Context, u *authulamodels.User) error {
-							if err := deleteAPIKeys(ctx, auth, u.ID); err != nil {
+						BeforeChangePassword: func(ctx context.Context, u *authulamodels.User, _ string) error {
+							if err := revokeCredentials(ctx, auth, passkeys, u.ID); err != nil {
 								return err
 							}
+							return auth.CoreServices().SessionService.DeleteAllByUserID(ctx, u.ID)
+						},
+						// Again, for a session opened with the old password while
+						// the new one was being written.
+						AfterChangePassword: func(ctx context.Context, u *authulamodels.User) error {
 							return auth.CoreServices().SessionService.DeleteAllByUserID(ctx, u.ID)
 						},
 					},
@@ -531,7 +544,7 @@ func newAuth(cfg config.Config, mirror, personalOrg func(*authulamodels.User) er
 				Enabled: googleEnabled,
 				Providers: map[string]oauth2plugintypes.ProviderConfig{
 					"google": {
-						Enabled:      googleEnabled,
+						Enabled:      &googleEnabled,
 						ClientID:     cfg.Auth.GoogleClientID,
 						ClientSecret: cfg.Auth.GoogleClientSecret,
 						RedirectURL:  authConfig.BaseURL + authBasePath + "/oauth2/callback/google",
@@ -547,12 +560,42 @@ func newAuth(cfg config.Config, mirror, personalOrg func(*authulamodels.User) er
 		panic(err)
 	}
 	auth.RegisterRoute(issuer.route())
+	auth.RegisterRoutes(passkeySignInRoutes(auth, authConfig, passkeys, logger))
 
 	if cfg.Auth.MicrosoftClientID != "" || cfg.Auth.MicrosoftClientSecret != "" {
 		auth.RegisterRoutes(microsoftSignInRoutes(auth, authConfig, cfg.Auth.MicrosoftClientID, cfg.Auth.MicrosoftClientSecret, logger))
 	} else {
 		logger.Warn("microsoft sign-in disabled: microsoft-client-id or microsoft-client-secret is not set")
 	}
+
+	// Adding an authenticator app is a new way to sign in, so the caller
+	// confirms who they are first, as for a passkey. After the session and
+	// bearer hooks (10), which set the actor; Authula's enable reads no body.
+	auth.RegisterHook(authulamodels.Hook{
+		Stage: authulamodels.HookBefore,
+		Matcher: func(reqCtx *authulamodels.RequestContext) bool {
+			return reqCtx.Request.Method == http.MethodPost && reqCtx.Path == authBasePath+"/totp/enable"
+		},
+		Handler: func(reqCtx *authulamodels.RequestContext) error {
+			if reqCtx.Actor == nil || reqCtx.Actor.Type != authulamodels.ActorUser {
+				reqCtx.SetJSONResponse(http.StatusUnauthorized, map[string]any{"message": "unauthorized"})
+				reqCtx.Handled = true
+				return nil
+			}
+			var body struct {
+				Password string `json:"password"`
+			}
+			_ = json.NewDecoder(io.LimitReader(reqCtx.Request.Body, 4<<10)).Decode(&body)
+			sessionID, _ := reqCtx.Values[authulamodels.ContextSessionID.String()].(string)
+			if err := handlers.ConfirmIdentity(reqCtx.Request.Context(), auth.CoreServices(), reqCtx.Actor.ID, sessionID, body.Password); err != nil {
+				status, message := apperr.From(err)
+				reqCtx.SetJSONResponse(status, map[string]any{"message": message})
+				reqCtx.Handled = true
+			}
+			return nil
+		},
+		Order: 20,
+	})
 
 	// The OAuth2 callback marks its redirect as handled before the after hooks,
 	// and the router stops at the first hook of a handled request. That is
@@ -648,6 +691,7 @@ var signInPaths = []string{
 	authBasePath + "/magic-link/verify",
 	authBasePath + "/magic-link/exchange",
 	authBasePath + "/oauth2/callback/",
+	authBasePath + "/passkey/sign-in",
 	authBasePath + "/totp/verify",
 	authBasePath + "/totp/verify-backup-code",
 }

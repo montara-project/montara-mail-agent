@@ -237,20 +237,80 @@ func (h *profileHandler) ChangePassword(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	account.Password = &hash
-	if _, err := services.AccountService.Update(c.Context(), account); err != nil {
-		return err
-	}
-	// The API keys too, first: whoever knew the old password could have made
-	// one, and a failure here must not leave them working behind ended sessions.
+	// The API keys and passkeys go before the password changes: whoever knew
+	// the old password could have made either, and a failure here must not
+	// leave the new password in place with them still working. The change
+	// then fails as a whole and can be tried again.
 	if keys, ok := h.app.APIKeys(); ok {
 		if err := keys.DeleteAllByOwner(c.Context(), userActor(uid), apikeyplugintypes.OwnerTypeUser, uid.String()); err != nil {
 			return err
 		}
 	}
+	if err := h.app.Passkeys.DeleteAll(c.Context(), uid); err != nil {
+		return err
+	}
+	account.Password = &hash
+	if _, err := services.AccountService.Update(c.Context(), account); err != nil {
+		return err
+	}
+	// Sessions after the write, so none opened with the old password survives.
 	if err := services.SessionService.DeleteAllByUserID(c.Context(), uid.String()); err != nil {
 		return err
 	}
 	recordActivity(c, h.app, uuid.Nil, constant.ActivityPasswordChanged, "Changed their password", nil)
 	return dtos.Message(c, fiber.StatusOK, "password changed, sign in again")
+}
+
+// Sessions lists where the user is signed in, the caller's own session marked.
+func (h *profileHandler) Sessions(c fiber.Ctx) error {
+	uid, err := lib.ContextGetUID(c)
+	if err != nil {
+		return apperr.ErrUnauthorized
+	}
+	sessions, err := h.app.Repositories.User.Sessions(c.Context(), uid)
+	if err != nil {
+		return err
+	}
+	current := lib.ContextGetSessionID(c)
+	for i := range sessions {
+		sessions[i].Current = sessions[i].ID == current
+	}
+	return dtos.List(c, sessions, dtos.ListMeta(len(sessions), 0, len(sessions)))
+}
+
+// RevokeSession signs one of the user's sessions out. Revoking the caller's
+// own session signs the caller out too.
+func (h *profileHandler) RevokeSession(c fiber.Ctx) error {
+	uid, err := lib.ContextGetUID(c)
+	if err != nil {
+		return apperr.ErrUnauthorized
+	}
+	id, err := pathID(c, "session")
+	if err != nil {
+		return err
+	}
+	if err := h.app.Repositories.User.DeleteSession(c.Context(), uid, id); err != nil {
+		if apperr.IsNotFound(err) {
+			return apperr.New(apperr.KindNotFound, "session not found")
+		}
+		return err
+	}
+	recordActivity(c, h.app, uuid.Nil, constant.ActivitySessionRevoked, "Signed out a session", map[string]any{"session_id": id.String()})
+	return dtos.Message(c, fiber.StatusOK, "session revoked")
+}
+
+// RevokeOtherSessions signs the user out everywhere but the caller's session.
+func (h *profileHandler) RevokeOtherSessions(c fiber.Ctx) error {
+	uid, err := lib.ContextGetUID(c)
+	if err != nil {
+		return apperr.ErrUnauthorized
+	}
+	n, err := h.app.Repositories.User.DeleteOtherSessions(c.Context(), uid, lib.ContextGetSessionID(c))
+	if err != nil {
+		return err
+	}
+	if n > 0 {
+		recordActivity(c, h.app, uuid.Nil, constant.ActivitySessionRevoked, "Signed out every other session", map[string]any{"count": n})
+	}
+	return dtos.Message(c, fiber.StatusOK, "other sessions revoked")
 }

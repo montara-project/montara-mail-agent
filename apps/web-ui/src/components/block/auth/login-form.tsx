@@ -1,16 +1,13 @@
-import { type AnyFieldApi, useSelector } from '@tanstack/react-form'
 import { useRouter } from '@tanstack/react-router'
 import {
   ArrowLeft,
   ArrowRight,
   Clock3,
-  Eye,
-  EyeOff,
+  Fingerprint,
   Lock,
   Mail,
   Shield,
   Sparkles,
-  type LucideIcon,
 } from 'lucide-react'
 import { AnimatePresence, domAnimation, LazyMotion, m, useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
@@ -22,19 +19,20 @@ import outlookLogo from '@/assets/brands/outlook.svg'
 import { ServerURLForm } from '@/components/block/settings/server-url-form'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Field, FieldError, FieldLabel } from '@/components/ui/field'
-import { Input, InputWrapper } from '@/components/ui/input'
+import { Field, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
 import { OTPCodeInput } from '@/components/ui/input-otp'
 import { useAppForm } from '@/hooks/form'
 import { SignInSchema } from '@/lib/api/dtos/auth/schema'
 import { signInWithEmail, verifyTOTP } from '@/lib/auth/email-auth'
 import { type OAuthProvider, startOAuthSignIn } from '@/lib/auth/oauth-sign-in'
+import { passkeyCancelled, passkeysSupported, signInWithPasskey } from '@/lib/auth/passkey'
 import { cn } from '@/lib/utils'
 
 /** The provider buttons above the email form, in order. */
 const OAUTH_BUTTONS: { provider: OAuthProvider; label: string; logo: string }[] = [
-  { provider: 'google', label: 'Continue with Google', logo: googleLogo },
-  { provider: 'microsoft', label: 'Continue with Outlook', logo: outlookLogo },
+  { provider: 'google', label: 'Google', logo: googleLogo },
+  { provider: 'microsoft', label: 'Outlook', logo: outlookLogo },
 ]
 
 /** The email last signed in with on this browser, offered again on the card. */
@@ -55,114 +53,18 @@ function providerDotClass(email: string) {
 }
 
 /**
- * The field's errors once they're worth showing: form-wide validators flag
- * every field on the first keystroke, so a field stays quiet until it's left
- * or the form is submitted. The prop-based variant of `useVisibleFieldErrors`:
- * fields rendered in a form.Field render prop have no field context.
+ * The card's compact field style over the shared form fields: the design's
+ * small label, a 42px field and a 14px faint leading icon.
  */
-function useFieldErrors(field: AnyFieldApi) {
-  const errors = useSelector(field.store, (state) => state.meta.errors)
-  const blurred = useSelector(field.store, (state) => state.meta.isBlurred)
-  const submitted = useSelector(field.form.store, (state) => state.submissionAttempts > 0)
-  return blurred || submitted ? errors : []
-}
-
-/**
- * The card's text field: the design's compact label, a leading icon and a
- * 42px field. It takes the field API as a prop so it can render inside a
- * form.Field render prop.
- */
-function AuthField({
-  field,
-  label,
-  icon: Icon,
-  ...input
-}: Omit<React.ComponentProps<'input'>, 'value' | 'onChange'> & {
-  field: AnyFieldApi
-  label: string
-  icon?: LucideIcon
-}) {
-  const errors = useFieldErrors(field)
-  const isInvalid = errors.length > 0
-
-  return (
-    <Field data-invalid={isInvalid} className="gap-1.5">
-      <FieldLabel
-        htmlFor={field.name}
-        className="text-[0.78125rem] font-semibold text-muted-foreground"
-      >
-        {label}
-      </FieldLabel>
-      <InputWrapper className="h-[2.625rem] gap-[0.5625rem] px-3">
-        {Icon && <Icon className="size-3.5 text-ink-faint" />}
-        <Input
-          id={field.name}
-          name={field.name}
-          value={field.state.value}
-          onBlur={field.handleBlur}
-          onChange={(e) => field.handleChange(e.target.value)}
-          aria-invalid={isInvalid || undefined}
-          variant="lg"
-          className="text-[0.875rem]"
-          {...input}
-        />
-      </InputWrapper>
-      {isInvalid && <FieldError errors={errors} />}
-    </Field>
-  )
-}
-
-/**
- * The password field: the same field style, with the show/hide eye.
- */
-function AuthPasswordField({
-  field,
-  label,
-  ...input
-}: Omit<React.ComponentProps<'input'>, 'value' | 'onChange'> & {
-  field: AnyFieldApi
-  label: string
-}) {
-  const errors = useFieldErrors(field)
-  const [visible, setVisible] = useState(false)
-  const isInvalid = errors.length > 0
-
-  return (
-    <Field data-invalid={isInvalid} className="gap-1.5">
-      <FieldLabel
-        htmlFor={field.name}
-        className="text-[0.78125rem] font-semibold text-muted-foreground"
-      >
-        {label}
-      </FieldLabel>
-      <InputWrapper className="h-[2.625rem] px-3">
-        <Input
-          type={visible ? 'text' : 'password'}
-          id={field.name}
-          name={field.name}
-          value={field.state.value}
-          onBlur={field.handleBlur}
-          onChange={(e) => field.handleChange(e.target.value)}
-          aria-invalid={isInvalid || undefined}
-          autoComplete="current-password"
-          variant="lg"
-          className="text-[0.875rem]"
-          {...input}
-        />
-        {/* The ::after grows the 14px eye to a 44px tap target without moving it. */}
-        <button
-          type="button"
-          className="text-muted-foreground hover:text-foreground relative after:absolute after:-inset-3.5"
-          onClick={() => setVisible((v) => !v)}
-          aria-label={visible ? 'Hide password' : 'Show password'}
-        >
-          {visible ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-        </button>
-      </InputWrapper>
-      {isInvalid && <FieldError errors={errors} />}
-    </Field>
-  )
-}
+const AUTH_FIELDS = cn(
+  'flex flex-col gap-3.5',
+  '[&_[data-slot=field]]:gap-1.5',
+  '[&_[data-slot=field-label]]:text-[0.78125rem] [&_[data-slot=field-label]]:font-semibold [&_[data-slot=field-label]]:text-muted-foreground',
+  '[&_[data-slot=input-wrapper]]:h-[2.625rem] [&_[data-slot=input-wrapper]]:gap-[0.5625rem] [&_[data-slot=input-wrapper]]:px-3',
+  // Important: InputWrapper's own icon size has the same specificity.
+  '[&_[data-slot=input-wrapper]_svg]:size-3.5! [&_[data-slot=input-wrapper]>svg]:text-ink-faint',
+  '[&_input]:text-[0.875rem]'
+)
 
 /**
  * The second step for a user with two-factor sign-in: a rotating code from
@@ -262,7 +164,7 @@ function TOTPStep({
 const STEP_DESCRIPTIONS = {
   server: 'Choose your Montara server',
   password:
-    'One inbox for every mailbox you own — sign in with email, Google, Outlook, or a two-factor code.',
+    'One inbox for every mailbox you own — sign in with email, Google, Outlook, a passkey, or a two-factor code.',
 }
 
 /** Which screen the login card shows; picking a server wins over the code step. */
@@ -289,7 +191,6 @@ export default function LoginForm({
   onStepChange?: (step: AuthStep) => void
 }) {
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
   // Set once the password was right but the account asks for a code too.
   const [needsCode, setNeedsCode] = useState(codeFirst)
   // Choosing a server here, since an account on a self-hosted one can't reach settings first.
@@ -325,6 +226,22 @@ export default function LoginForm({
     await router.navigate({ to: '/dashboard' })
   }
 
+  // A passkey verifies the user on the device, so it skips the code step.
+  const [passkeyPending, setPasskeyPending] = useState(false)
+  const signInWithKey = async () => {
+    setPasskeyPending(true)
+    try {
+      await signInWithPasskey()
+      await enter()
+    } catch (error) {
+      if (!passkeyCancelled(error)) {
+        toast.error(error instanceof Error ? error.message : 'An error occurred')
+      }
+    } finally {
+      setPasskeyPending(false)
+    }
+  }
+
   const signInWith = async (provider: OAuthProvider) => {
     setRedirecting(provider)
     try {
@@ -346,8 +263,6 @@ export default function LoginForm({
       onChange: SignInSchema,
     },
     onSubmit: async ({ value }) => {
-      setIsLoading(true)
-
       try {
         const res = await signInWithEmail(value)
         if (res && 'totp_redirect' in res) {
@@ -357,8 +272,6 @@ export default function LoginForm({
         await enter()
       } catch (error) {
         toast.error(error instanceof Error ? error.message : 'An error occurred')
-      } finally {
-        setIsLoading(false)
       }
     },
   })
@@ -437,26 +350,40 @@ export default function LoginForm({
         )}
         {step === 'password' && (
           <>
-            {OAUTH_BUTTONS.map(({ provider, label, logo }) => (
+            <div className="flex flex-row gap-2">
+              {OAUTH_BUTTONS.map(({ provider, label, logo }) => (
+                <Button
+                  key={provider}
+                  type="button"
+                  variant="secondary"
+                  className="h-11 w-full gap-2 rounded-[0.625rem] border border-border bg-muted text-[0.84375rem] font-semibold shadow-none"
+                  disabled={redirecting !== null}
+                  onClick={() => void signInWith(provider)}
+                >
+                  <img src={logo} alt="" className="size-4" />
+                  {redirecting === provider ? 'Redirecting…' : label}
+                </Button>
+              ))}
+            </div>
+            {passkeysSupported() && (
               <Button
-                key={provider}
                 type="button"
                 variant="secondary"
                 className="h-11 w-full gap-2 rounded-[0.625rem] border border-border bg-muted text-[0.84375rem] font-semibold shadow-none"
-                disabled={redirecting !== null}
-                onClick={() => void signInWith(provider)}
+                disabled={redirecting !== null || passkeyPending}
+                onClick={() => void signInWithKey()}
               >
-                <img src={logo} alt="" className="size-4" />
-                {redirecting === provider ? 'Redirecting…' : label}
+                <Fingerprint className="size-4" aria-hidden />
+                {passkeyPending ? 'Waiting for your passkey…' : 'Sign in with a passkey'}
               </Button>
-            ))}
+            )}
             <div className="flex items-center gap-2.5" aria-hidden>
               <span className="h-px grow bg-border" />
               <span className="font-mono text-[0.6875rem] font-semibold text-ink-faint">or</span>
               <span className="h-px grow bg-border" />
             </div>
             <form
-              className="flex flex-col gap-3.5"
+              className={AUTH_FIELDS}
               noValidate
               onSubmit={(e) => {
                 e.preventDefault()
@@ -469,10 +396,10 @@ export default function LoginForm({
                 }
               }}
             >
-              <form.Field name="email">
-                {(field) => (
-                  <AuthField
-                    field={field}
+              <form.AppField
+                name="email"
+                children={(field) => (
+                  <field.TextField
                     label="Email address"
                     icon={Mail}
                     type="email"
@@ -480,7 +407,7 @@ export default function LoginForm({
                     placeholder="hello@montaramail.web.id"
                   />
                 )}
-              </form.Field>
+              />
               <LazyMotion features={domAnimation}>
                 <AnimatePresence initial={false}>
                   {showPassword && (
@@ -492,20 +419,27 @@ export default function LoginForm({
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: reduceMotion ? 0 : 0.25, ease: [0.2, 0, 0, 1] }}
                     >
-                      <form.Field name="password">
-                        {(field) => <AuthPasswordField field={field} label="Password" autoFocus />}
-                      </form.Field>
+                      <form.AppField
+                        name="password"
+                        children={(field) => (
+                          <field.PasswordField label="Password" autoComplete="current-password" />
+                        )}
+                      />
                     </m.div>
                   )}
                 </AnimatePresence>
               </LazyMotion>
-              <Button
-                type="submit"
-                className="h-11 w-full rounded-[0.625rem] text-[0.875rem] font-bold"
-              >
-                {isLoading ? 'Signing in…' : showPassword ? 'Sign in' : 'Continue with email'}
-                {!showPassword && !isLoading && <ArrowRight className="size-3.5" />}
-              </Button>
+              <form.AppForm>
+                {/* Reversed so the arrow trails the label, as in the design. */}
+                <form.SubmitButton
+                  label={showPassword ? 'Sign in' : 'Continue with email'}
+                  icon={showPassword ? undefined : ArrowRight}
+                  className={cn(
+                    'h-11 w-full rounded-[0.625rem] px-4 text-[0.875rem] font-bold [&_svg]:size-3.5',
+                    !showPassword && 'flex-row-reverse'
+                  )}
+                />
+              </form.AppForm>
             </form>
             {lastEmail && (
               <div className="flex flex-col gap-[0.4375rem] border-t border-border pt-2">

@@ -83,7 +83,8 @@ function PasswordForm() {
         )}
       />
       <FieldDescription className="text-ink-3 text-[0.71875rem] leading-[0.875rem]">
-        Changing your password signs you out everywhere, this browser included.
+        Changing your password signs you out everywhere, this browser included, and removes your
+        passkeys and API keys.
       </FieldDescription>
       <div>
         <form.AppForm>

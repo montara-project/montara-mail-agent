@@ -56,6 +56,8 @@ func TestIntegration(t *testing.T) {
 			// minute's budget allows; the rate-limit check sends its own
 			// X-Forwarded-For, so it is still counted.
 			RateLimitExemptIPs: "0.0.0.0",
+			// Authula refuses an OAuth redirect_to outside the trusted origins.
+			CORSAllowedOrigins: "http://localhost:3000",
 		},
 		DB: config.ConfigDB{DSN: dsn, MaxOpenConns: 5, MaxIdleConns: 5},
 		Auth: config.ConfigAuth{
@@ -99,7 +101,11 @@ func TestIntegration(t *testing.T) {
 
 	repos := repositories.New(db)
 	mirror := mirrorUser(&repos.User)
-	auth := newAuth(cfg, mirror, personalOrganization(&repos.Organization, logger), &repos.ActivityLog, logger)
+	passkeys, err := newPasskeys(cfg, &repos.Passkey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth := newAuth(cfg, mirror, personalOrganization(&repos.Organization, logger), &repos.ActivityLog, passkeys, logger)
 	auth.RegisterRoute(fakeOAuthCallback(auth))
 	defer auth.CloseSystems()
 	defer auth.ClosePlugins()
@@ -109,7 +115,7 @@ func TestIntegration(t *testing.T) {
 		DB:         db,
 		Auth:       auth.CoreServices(),
 		Promote:    promoteSuperUser(&repos.User, mirror),
-		RevokeKeys: func(ctx context.Context, userID string) error { return deleteAPIKeys(ctx, auth, userID) },
+		RevokeKeys: func(ctx context.Context, userID string) error { return revokeCredentials(ctx, auth, passkeys, userID) },
 		Email:      superEmail,
 		Password:   "the-first-password",
 	}
@@ -208,7 +214,7 @@ func TestIntegration(t *testing.T) {
 		t.Fatal(err)
 	}
 	// No fallback model at first: AI requests answer 503 until one is set.
-	application := &app.Application{Config: cfg, Logger: logger, DB: db, Repositories: repos, Auth: auth, Secrets: secrets, HTTPClient: outboundClient(false)}
+	application := &app.Application{Config: cfg, Logger: logger, DB: db, Repositories: repos, Auth: auth, Secrets: secrets, Passkeys: passkeys, HTTPClient: outboundClient(false)}
 	if err := application.ReloadPlans(context.Background()); err != nil {
 		t.Fatalf("reload plans: %v", err)
 	}
@@ -464,6 +470,8 @@ func TestIntegration(t *testing.T) {
 	testMCPEndpoint(t, call, server, application, userToken, superToken, userOrg, superOrg)
 	testIPBlocks(t, call, userToken, superToken)
 	testOAuthFinish(t, call, application, userToken, userOrg)
+	testPasskeys(t, call, userToken, userPass)
+	testRecentSignIn(t, call, func() string { return cookies }, auth, db)
 	testAccountSettings(t, call, func() string { return cookies }, db, userEmail, userPass)
 	testDeleteAccount(t, call, application, db, superToken, superEmail)
 
@@ -475,12 +483,17 @@ func TestIntegration(t *testing.T) {
 		t.Fatalf("create after sign out: %d, want 401", status)
 	}
 
-	// Rotating SUPER_USER ends the sessions opened with the old password.
+	// Rotating SUPER_USER ends the sessions opened with the old password,
+	// and the passkeys added with it.
 	superToken = signIn(superEmail, superPass)["access_token"].(string)
 	superCookie = cookies
+	superPasskey := registerPasskey(t, call, superToken, superPass)
 	superUser.Password = "the-rotated-password"
 	if err := superUser.Seed(); err != nil {
 		t.Fatalf("rotate: %v", err)
+	}
+	if status, _, _ := passkeySignIn(t, call, superPasskey, true); status != http.StatusUnauthorized {
+		t.Fatalf("super user passkey after rotation: %d, want 401", status)
 	}
 	for _, headers := range [][]string{{"Cookie", superCookie}, {"Authorization", "Bearer " + superToken}} {
 		if status, _ := call(http.MethodGet, "/api/v1/auth/me", "", nil, headers...); status != http.StatusUnauthorized {

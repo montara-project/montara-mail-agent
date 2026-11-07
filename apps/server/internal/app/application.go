@@ -20,6 +20,7 @@ import (
 	"montara-mail-agent/server/internal/lib/mailoauth"
 	"montara-mail-agent/server/internal/lib/period"
 	"montara-mail-agent/server/internal/models"
+	"montara-mail-agent/server/internal/passkey"
 	"montara-mail-agent/server/internal/repositories"
 )
 
@@ -49,6 +50,9 @@ type Application struct {
 
 	// plans caches the pricing catalog for the enforcement hot paths (see
 	// plan_catalog.go); its zero value works, filled by ReloadPlans at boot.
+	// Passkeys registers passkeys and signs in with them.
+	Passkeys *passkey.Service
+
 	plans planCatalog
 }
 

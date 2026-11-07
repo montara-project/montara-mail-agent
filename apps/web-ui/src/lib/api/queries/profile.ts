@@ -8,6 +8,10 @@ import { services } from '../services'
 import { PROFILE_QUERY_KEY } from './auth'
 
 export const SECURITY_QUERY_KEY = 'security'
+const SESSIONS_QUERY_KEY = 'sessions'
+
+const invalidateSessions = () =>
+  getQueryClient().invalidateQueries({ queryKey: [SESSIONS_QUERY_KEY] })
 
 /** Whether the user has a password and two-factor sign-in. */
 const security = () =>
@@ -53,6 +57,34 @@ const changePassword = () =>
     },
   })
 
+/** Where the user is signed in, most recently active first. */
+const sessions = () =>
+  queryOptions({
+    queryKey: [SESSIONS_QUERY_KEY],
+    queryFn: async () => {
+      const res = await services.profile.sessions()
+      return res.data.data
+    },
+  })
+
+const revokeSession = () =>
+  mutationOptions({
+    mutationFn: async (id: string) => {
+      const res = await services.profile.revokeSession(id)
+      return res.data
+    },
+    onSuccess: invalidateSessions,
+  })
+
+const revokeOtherSessions = () =>
+  mutationOptions({
+    mutationFn: async () => {
+      const res = await services.profile.revokeOtherSessions()
+      return res.data
+    },
+    onSuccess: invalidateSessions,
+  })
+
 /** Deletes the account; the caller's sessions end with it, so the app signs out. */
 const deleteAccount = () =>
   mutationOptions({
@@ -67,5 +99,8 @@ export const profileQueries = {
   update,
   updatePreferences,
   changePassword,
+  sessions,
+  revokeSession,
+  revokeOtherSessions,
   deleteAccount,
 } as const

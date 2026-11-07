@@ -11,6 +11,7 @@ import { llmProviderQueries } from './llm-provider'
 import { mailQueries } from './mail'
 import { mcpServerQueries } from './mcp-server'
 import { organizationQueries } from './organization'
+import { passkeyQueries } from './passkey'
 import { profileQueries } from './profile'
 import { quotaQueries } from './quota'
 
@@ -27,6 +28,7 @@ export const queries = {
   agentSkills: agentSkillQueries,
   mcpServers: mcpServerQueries,
   apiKeys: apiKeyQueries,
+  passkeys: passkeyQueries,
   ipBlocks: ipBlockQueries,
   billing: billingQueries,
   quota: quotaQueries,

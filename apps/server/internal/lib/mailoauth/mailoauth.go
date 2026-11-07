@@ -73,7 +73,11 @@ var providers = map[string]Provider{
 	constant.ProviderYahoo: {
 		AuthURL:  "https://api.login.yahoo.com/oauth2/request_auth",
 		TokenURL: "https://api.login.yahoo.com/oauth2/get_token",
-		Scopes:   []string{"mail-r", "mail-w", "openid", "profile", "email"},
+		// mail-w is read+write and already covers IMAP reads; asking for mail-r
+		// as well fails when the app was granted only one of them. Both mail
+		// scopes need Yahoo's Mail API approval, or the consent page answers
+		// "invalid scope"; openid, profile and email work without it.
+		Scopes:   []string{"mail-w", "openid", "profile", "email"},
 		Userinfo: "https://api.login.yahoo.com/openid/v1/userinfo",
 	},
 	constant.ProviderZoho: {

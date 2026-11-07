@@ -9,6 +9,9 @@ const resources = (): ProfileResources => ({
   update: (body) => api.patch(path, body),
   updatePreferences: (body) => api.patch(`${path}/preferences`, body),
   changePassword: (body) => api.put(`${path}/password`, body),
+  sessions: () => api.get(`${path}/sessions`),
+  revokeSession: (id) => api.delete(`${path}/sessions/${id}`),
+  revokeOtherSessions: () => api.delete(`${path}/sessions`),
   deleteAccount: (body) => api.delete(path, { data: body }),
 })
 

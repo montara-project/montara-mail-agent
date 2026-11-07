@@ -74,6 +74,28 @@ export interface UserSecurity {
   super_user: boolean
 }
 
+/** A place the user is signed in (GET /api/v1/me/sessions). */
+export interface Session {
+  id: string
+  ip_address: string | null
+  /** Raw User-Agent header; empty when the sign-in sent none. */
+  user_agent: string | null
+  created_at: ISO8601DateString
+  /** Renewed at most once a day, so only roughly the last activity. */
+  updated_at: ISO8601DateString
+  expires_at: ISO8601DateString
+  /** The session this browser signed in with. */
+  current: boolean
+}
+
+/** A passkey the user signs in with (GET /api/v1/me/passkeys); never its key. */
+export interface Passkey {
+  id: string
+  name: string
+  created_at: ISO8601DateString
+  last_used_at: ISO8601DateString | null
+}
+
 /** POST /api/v1/auth/totp/enable: on once a first code is verified. */
 export interface TOTPSetup {
   totp_uri: string

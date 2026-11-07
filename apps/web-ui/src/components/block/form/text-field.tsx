@@ -22,6 +22,7 @@ export default function TextField({
   onChange,
   disabled,
   asterisk = false,
+  icon: Icon,
   ...props
 }: TextFieldProps) {
   const field = useFieldContext<string | number>()
@@ -40,7 +41,7 @@ export default function TextField({
         )}
       </FieldLabel>
       <InputWrapper className="h-10 pointer-coarse:h-11">
-        {props.icon && <props.icon />}
+        {Icon && <Icon />}
         <Input
           id={field.name}
           name={field.name}

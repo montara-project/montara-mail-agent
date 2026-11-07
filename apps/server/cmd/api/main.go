@@ -71,8 +71,13 @@ func run() error {
 	repos := repositories.New(db)
 	mirror := mirrorUser(&repos.User)
 
+	passkeys, err := newPasskeys(cfg, &repos.Passkey)
+	if err != nil {
+		return fmt.Errorf("passkeys: %w", err)
+	}
+
 	// Creating the instance runs Authula's own migrations.
-	auth := newAuth(cfg, mirror, personalOrganization(&repos.Organization, logger), &repos.ActivityLog, logger)
+	auth := newAuth(cfg, mirror, personalOrganization(&repos.Organization, logger), &repos.ActivityLog, passkeys, logger)
 	defer auth.CloseSystems()
 	defer auth.ClosePlugins()
 
@@ -103,12 +108,14 @@ func run() error {
 	// Seeding follows Authula because the super user is created through it.
 	if cfg.App.SeedOnBoot {
 		superUser := seeders.SuperUserSeeder{
-			DB:         db,
-			Auth:       auth.CoreServices(),
-			Promote:    promoteSuperUser(&repos.User, mirror),
-			RevokeKeys: func(ctx context.Context, userID string) error { return deleteAPIKeys(ctx, auth, userID) },
-			Email:      cfg.App.SuperUserEmail,
-			Password:   cfg.App.SuperUserPassword,
+			DB:      db,
+			Auth:    auth.CoreServices(),
+			Promote: promoteSuperUser(&repos.User, mirror),
+			RevokeKeys: func(ctx context.Context, userID string) error {
+				return revokeCredentials(ctx, auth, passkeys, userID)
+			},
+			Email:    cfg.App.SuperUserEmail,
+			Password: cfg.App.SuperUserPassword,
 		}
 		if err := seedAll(db, superUser, logger); err != nil {
 			return err
@@ -159,6 +166,7 @@ func run() error {
 		AIConfig:     aiConfig,
 		Secrets:      secrets,
 		MailOAuth:    mailOAuth,
+		Passkeys:     passkeys,
 		HTTPClient:   outboundClient(cfg.App.AllowPrivateHosts),
 	})
 }

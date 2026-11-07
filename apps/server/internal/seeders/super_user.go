@@ -38,7 +38,7 @@ type SuperUserSeeder struct {
 	DB      *sql.DB
 	Auth    *authulaservices.CoreServices
 	Promote func(*authulamodels.User) error
-	// RevokeKeys ends the user's API keys when the password is reset; nil
+	// RevokeKeys ends the user's API keys and passkeys when the password is reset; nil
 	// leaves them.
 	RevokeKeys func(ctx context.Context, userID string) error
 	Email      string
@@ -68,10 +68,30 @@ func (s SuperUserSeeder) Seed() error {
 			}
 		}
 
-		// Set when someone else may hold a session on this account: its
-		// password was not SUPER_USER's, or it was registered unverified,
-		// possibly by whoever guessed the email before the first seed.
-		revoke := false
+		provider := authulamodels.AuthProviderEmail.String()
+		account, err := s.Auth.AccountService.GetByUserIDAndProvider(ctx, user.ID, provider)
+		if err != nil {
+			return err
+		}
+		staleAccount := account == nil || account.Password == nil || !s.Auth.PasswordService.Verify(s.Password, *account.Password)
+
+		// Someone else may hold a session on this account: its password was
+		// not SUPER_USER's, or it was registered unverified, possibly by
+		// whoever guessed the email before the first seed. Revoked before the
+		// writes below, which clear both conditions: a failed revocation fails
+		// the boot, and the next one finds them again and retries it.
+		// Ahead of the promotion too: no session from before this seed may
+		// hold the role.
+		if staleAccount || !user.EmailVerified {
+			if s.RevokeKeys != nil {
+				if err := s.RevokeKeys(ctx, user.ID); err != nil {
+					return err
+				}
+			}
+			if err := s.Auth.SessionService.DeleteAllByUserID(ctx, user.ID); err != nil {
+				return err
+			}
+		}
 
 		// Password sign-in refuses unverified users; SUPER_USER vouches for this one.
 		if !user.EmailVerified {
@@ -79,16 +99,9 @@ func (s SuperUserSeeder) Seed() error {
 			if user, err = s.Auth.UserService.Update(ctx, user); err != nil {
 				return err
 			}
-			revoke = true
 		}
 
-		provider := authulamodels.AuthProviderEmail.String()
-		account, err := s.Auth.AccountService.GetByUserIDAndProvider(ctx, user.ID, provider)
-		if err != nil {
-			return err
-		}
-		if account == nil || account.Password == nil || !s.Auth.PasswordService.Verify(s.Password, *account.Password) {
-			revoke = true
+		if staleAccount {
 			hash, err := s.Auth.PasswordService.Hash(s.Password)
 			if err != nil {
 				return err
@@ -100,18 +113,6 @@ func (s SuperUserSeeder) Seed() error {
 				_, err = s.Auth.AccountService.Update(ctx, account)
 			}
 			if err != nil {
-				return err
-			}
-		}
-
-		// Ahead of the promotion: no session from before this seed may hold the role.
-		if revoke {
-			if s.RevokeKeys != nil {
-				if err := s.RevokeKeys(ctx, user.ID); err != nil {
-					return err
-				}
-			}
-			if err := s.Auth.SessionService.DeleteAllByUserID(ctx, user.ID); err != nil {
 				return err
 			}
 		}

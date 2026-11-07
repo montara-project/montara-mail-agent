@@ -13,7 +13,7 @@ const resources = (): AuthResources => ({
   signIn: (body: SignInDto) => api.post(`${path}/email-password/sign-in`, body, withCookies),
   me: () => api.get(`${path}/me`),
   signOut: () => api.post(`${path}/sign-out`),
-  totpEnable: () => api.post(`${path}/totp/enable`, {}, withCookies),
+  totpEnable: (password) => api.post(`${path}/totp/enable`, { password }, withCookies),
   totpDisable: () => api.post(`${path}/totp/disable`, {}),
   totpBackupCodes: () => api.post(`${path}/totp/generate-backup-codes`, {}),
   totpVerify: (body, backup) =>
@@ -22,6 +22,8 @@ const resources = (): AuthResources => ({
     api.get(`${path}/oauth2/authorize/${provider}`, { params: { redirect_to: redirectTo } }),
   // The session cookie the OAuth callback set lives on the API's origin; the
   // same-origin (and dev-proxied) browser sends it on its own.
+  passkeyOptions: () => api.post(`${path}/passkey/options`, {}),
+  passkeySignIn: (credential) => api.post(`${path}/passkey/sign-in`, credential, withCookies),
   exchangeSessionTokens: () => api.post(`${path}/token`, null, withCookies),
 })
 

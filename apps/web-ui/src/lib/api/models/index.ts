@@ -12,6 +12,8 @@ export namespace Models {
   export type WalletTopup = import('./billing').WalletTopup
   export type User = import('./user').User
   export type UserSecurity = import('./user').UserSecurity
+  export type Session = import('./user').Session
+  export type Passkey = import('./user').Passkey
   export type TOTPSetup = import('./user').TOTPSetup
   export type Organization = import('./organization').Organization
   export type OrganizationStats = import('./organization').OrganizationStats

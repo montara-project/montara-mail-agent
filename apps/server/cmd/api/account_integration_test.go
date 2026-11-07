@@ -83,8 +83,8 @@ func testAccountSettings(t *testing.T, call callFunc, cookies func() string, db 
 	}
 	authURL, _ := url.Parse(out["auth_url"].(string))
 	stateCookies := cookies()
-	if status, out := call(http.MethodGet, "/api/v1/auth/oauth2/callback/google?code=bad&state="+url.QueryEscape(authURL.Query().Get("state")), "", nil, "Cookie", stateCookies+session); status != http.StatusBadRequest {
-		t.Fatalf("oauth callback over a session: %d %v, want 400", status, out)
+	if status, out := call(http.MethodGet, "/api/v1/auth/oauth2/callback/google?code=bad&state="+url.QueryEscape(authURL.Query().Get("state")), "", nil, "Cookie", stateCookies+session); status != http.StatusBadGateway {
+		t.Fatalf("oauth callback over a session: %d %v, want 502", status, out)
 	}
 
 	// Microsoft runs through its own routes with the same handlers and hooks.
@@ -97,12 +97,40 @@ func testAccountSettings(t *testing.T, call callFunc, cookies func() string, db 
 		t.Fatalf("microsoft redirect_uri: %q", got)
 	}
 	stateCookies = cookies()
-	if status, out := call(http.MethodGet, "/api/v1/auth/oauth2/callback/microsoft?code=bad&state="+url.QueryEscape(authURL.Query().Get("state")), "", nil, "Cookie", stateCookies+session); status != http.StatusBadRequest {
-		t.Fatalf("microsoft callback with a bad code: %d %v, want 400", status, out)
+	if status, out := call(http.MethodGet, "/api/v1/auth/oauth2/callback/microsoft?code=bad&state="+url.QueryEscape(authURL.Query().Get("state")), "", nil, "Cookie", stateCookies+session); status != http.StatusBadGateway {
+		t.Fatalf("microsoft callback with a bad code: %d %v, want 502", status, out)
 	}
 
 	if status, out := call(http.MethodGet, "/api/v1/me/security", token, nil); status != http.StatusOK || data(out)["has_password"] != true || data(out)["has_google"] != false || data(out)["has_microsoft"] != false || data(out)["totp_enabled"] != false {
 		t.Fatalf("security: %d %v", status, out)
+	}
+
+	// Sessions: the earlier sign-ins too, the caller's marked.
+	// Revoking the others ends the OAuth session, so its cookie trades for nothing.
+	status, out = call(http.MethodGet, "/api/v1/me/sessions", token, nil)
+	if sessions := list(out); status != http.StatusOK || len(sessions) < 2 {
+		t.Fatalf("sessions: %d %v", status, out)
+	}
+	current := 0
+	for _, s := range list(out) {
+		if s.(map[string]any)["current"] == true {
+			current++
+		}
+	}
+	if current != 1 {
+		t.Fatalf("sessions: %d marked current, want 1: %v", current, out)
+	}
+	if status, _ := call(http.MethodDelete, "/api/v1/me/sessions/00000000-0000-0000-0000-000000000000", token, nil); status != http.StatusNotFound {
+		t.Fatalf("revoke an unknown session: %d, want 404", status)
+	}
+	if status, out := call(http.MethodDelete, "/api/v1/me/sessions", token, nil); status != http.StatusOK {
+		t.Fatalf("revoke other sessions: %d %v", status, out)
+	}
+	if status, _ := call(http.MethodPost, "/api/v1/auth/token", "", nil, "Cookie", session); status == http.StatusOK {
+		t.Fatal("a revoked session still trades for tokens")
+	}
+	if status, out := call(http.MethodGet, "/api/v1/me/sessions", token, nil); status != http.StatusOK || len(list(out)) != 1 {
+		t.Fatalf("sessions after revoking the others: %d %v", status, out)
 	}
 
 	// Profile: the change reaches the public mirror through Authula's hooks.
@@ -138,8 +166,14 @@ func testAccountSettings(t *testing.T, call callFunc, cookies func() string, db 
 		t.Fatalf("a profile save dropped split inbox: %v", data(out))
 	}
 
-	// Two-factor: enabling waits for a first code, so a botched scan locks no one out.
-	status, out = call(http.MethodPost, "/api/v1/auth/totp/enable", token, map[string]any{})
+	// Two-factor: enabling takes the password, then waits for a first code,
+	// so a botched scan locks no one out.
+	for _, body := range []map[string]any{{}, {"password": "wrong-password"}} {
+		if status, out := call(http.MethodPost, "/api/v1/auth/totp/enable", token, body); status != http.StatusBadRequest {
+			t.Fatalf("enable totp with %v: %d %v, want 400", body, status, out)
+		}
+	}
+	status, out = call(http.MethodPost, "/api/v1/auth/totp/enable", token, map[string]any{"password": password})
 	if status != http.StatusOK || out["totp_uri"] == nil || len(out["backup_codes"].([]any)) == 0 {
 		t.Fatalf("enable totp: %d %v", status, out)
 	}
@@ -196,8 +230,16 @@ func testAccountSettings(t *testing.T, call callFunc, cookies func() string, db 
 	if status, _ := mcpRPC(call, key, "tools/list", nil); status != http.StatusOK {
 		t.Fatalf("new key on /mcp: %d, want 200", status)
 	}
+	// A passkey too, which signs in past the two-factor step until the change.
+	passkey := registerPasskey(t, call, token, password)
+	if status, _, _ := passkeySignIn(t, call, passkey, true); status != http.StatusOK {
+		t.Fatalf("passkey before the change: %d, want 200", status)
+	}
 	if status, out := call(http.MethodPut, "/api/v1/me/password", token, map[string]string{"current_password": password, "new_password": "a-new-password"}); status != http.StatusOK {
 		t.Fatalf("change password: %d %v", status, out)
+	}
+	if status, _, _ := passkeySignIn(t, call, passkey, true); status != http.StatusUnauthorized {
+		t.Fatalf("passkey after the change: %d, want 401", status)
 	}
 	if status, _ := mcpRPC(call, key, "tools/list", nil); status != http.StatusUnauthorized {
 		t.Fatalf("API key after the change: %d, want 401", status)

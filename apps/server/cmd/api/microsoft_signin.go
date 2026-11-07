@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/microsoft"
@@ -14,6 +15,7 @@ import (
 	authula "github.com/Authula/authula"
 	"github.com/Authula/authula/middleware"
 	authulamodels "github.com/Authula/authula/models"
+	oauth2constants "github.com/Authula/authula/plugins/oauth2/constants"
 	oauth2handlers "github.com/Authula/authula/plugins/oauth2/handlers"
 	oauth2services "github.com/Authula/authula/plugins/oauth2/services"
 	oauth2types "github.com/Authula/authula/plugins/oauth2/types"
@@ -43,10 +45,14 @@ var microsoftOwnedDomains = map[string]bool{
 // The common tenant takes personal (outlook.com) and work or school accounts.
 type microsoftProvider struct {
 	*oauth2services.BaseProvider
-	meURL string
+	meURL  string
+	client *http.Client
+	logger authulamodels.Logger
 }
 
-func newMicrosoftProvider(clientID, clientSecret, redirectURL string) *microsoftProvider {
+func newMicrosoftProvider(clientID, clientSecret, redirectURL string, logger authulamodels.Logger) *microsoftProvider {
+	// The timeout matches the oauth2 plugin's own providers.
+	client := &http.Client{Timeout: 10 * time.Second}
 	return &microsoftProvider{
 		BaseProvider: oauth2services.NewBaseProvider(microsoftProviderID, &oauth2.Config{
 			ClientID:     clientID,
@@ -54,8 +60,10 @@ func newMicrosoftProvider(clientID, clientSecret, redirectURL string) *microsoft
 			RedirectURL:  redirectURL,
 			Endpoint:     microsoft.AzureADEndpoint("common"),
 			Scopes:       []string{"openid", "email", "profile", "User.Read"},
-		}),
-		meURL: microsoftMeURL,
+		}, &oauth2services.ProviderOptions{HTTPClient: client, Logger: logger}, true),
+		meURL:  microsoftMeURL,
+		client: client,
+		logger: logger,
 	}
 }
 
@@ -66,7 +74,7 @@ func newMicrosoftProvider(clientID, clientSecret, redirectURL string) *microsoft
 // account can carry an address nobody verified, so it must be on a
 // Microsoft-owned domain or come with xms_edov.
 func (p *microsoftProvider) GetUserInfo(ctx context.Context, token *oauth2.Token) (*oauth2types.UserInfo, error) {
-	info, err := oauth2services.FetchUserInfo(ctx, token, p.meURL)
+	info, err := oauth2services.FetchUserInfo(ctx, p.client, p.logger, token, p.meURL)
 	if err != nil {
 		return nil, err
 	}
@@ -87,8 +95,11 @@ func (p *microsoftProvider) GetUserInfo(ctx context.Context, token *oauth2.Token
 	return &oauth2types.UserInfo{
 		ProviderAccountID: id,
 		Email:             upn,
-		Name:              oauth2services.GetStringField(info, "displayName"),
-		Raw:               info,
+		// The checks above are the verification: Authula signs into an existing
+		// user with this address only when the provider vouches for it.
+		EmailVerified: true,
+		Name:          oauth2services.GetStringField(info, "displayName"),
+		Raw:           info,
 	}, nil
 }
 
@@ -101,18 +112,28 @@ func microsoftSignInRoutes(auth *authula.Auth, cfg *authulamodels.Config, client
 	registry := oauth2services.NewProviderRegistry()
 	// Unreachable: the registry is new and empty.
 	_ = registry.Register(microsoftProviderID, newMicrosoftProvider(clientID, clientSecret,
-		cfg.BaseURL+cfg.BasePath+"/oauth2/callback/"+microsoftProviderID))
+		cfg.BaseURL+cfg.BasePath+"/oauth2/callback/"+microsoftProviderID, logger))
 
 	// The plugin's key, so the state cookies it signs read the same.
 	hmacKey := oauth2services.DeriveOAuthHMACKey(cfg.Secret)
 	core := auth.CoreServices()
+	// The plugin's flow-cookie settings (see its routes.go).
+	cookie := oauth2handlers.CookieOptions{
+		Secure:   cfg.Session.Secure,
+		Domain:   cfg.Session.Domain,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   oauth2constants.FlowCookieTTL,
+	}
 	authorize := &oauth2handlers.AuthorizeHandler{
 		UseCase: oauth2usecases.NewAuthorizeUseCase(registry, logger, cfg.Security.TrustedOrigins, hmacKey),
+		Cookie:  cookie,
+		Logger:  logger,
 	}
 	callback := &oauth2handlers.CallbackHandler{
 		UseCase: oauth2usecases.NewCallbackUseCase(cfg, registry, logger, hmacKey,
 			core.UserService, core.AccountService, core.SessionService, core.TokenService),
-		HMACKey: hmacKey,
+		Cookie: cookie,
+		Logger: logger,
 	}
 
 	// The handlers read the provider from the {provider} wildcard these

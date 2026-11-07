@@ -45,7 +45,7 @@ func TestMicrosoftUserInfo(t *testing.T) {
 				token = token.WithExtra(map[string]any{"id_token": jwt})
 			}
 
-			p := newMicrosoftProvider("id", "secret", "http://localhost/cb")
+			p := newMicrosoftProvider("id", "secret", "http://localhost/cb", nil)
 			p.meURL = srv.URL
 			info, err := p.GetUserInfo(context.Background(), token)
 			if tc.email == "" {
