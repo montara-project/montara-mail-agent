@@ -31,8 +31,8 @@ import { cn } from '@/lib/utils'
 
 /** The provider buttons above the email form, in order. */
 const OAUTH_BUTTONS: { provider: OAuthProvider; label: string; logo: string }[] = [
-  { provider: 'google', label: 'Continue with Google', logo: googleLogo },
-  { provider: 'microsoft', label: 'Continue with Outlook', logo: outlookLogo },
+  { provider: 'google', label: 'Google', logo: googleLogo },
+  { provider: 'microsoft', label: 'Outlook', logo: outlookLogo },
 ]
 
 /** The email last signed in with on this browser, offered again on the card. */
@@ -350,19 +350,21 @@ export default function LoginForm({
         )}
         {step === 'password' && (
           <>
-            {OAUTH_BUTTONS.map(({ provider, label, logo }) => (
-              <Button
-                key={provider}
-                type="button"
-                variant="secondary"
-                className="h-11 w-full gap-2 rounded-[0.625rem] border border-border bg-muted text-[0.84375rem] font-semibold shadow-none"
-                disabled={redirecting !== null}
-                onClick={() => void signInWith(provider)}
-              >
-                <img src={logo} alt="" className="size-4" />
-                {redirecting === provider ? 'Redirecting…' : label}
-              </Button>
-            ))}
+            <div className="flex flex-row gap-2">
+              {OAUTH_BUTTONS.map(({ provider, label, logo }) => (
+                <Button
+                  key={provider}
+                  type="button"
+                  variant="secondary"
+                  className="h-11 w-full gap-2 rounded-[0.625rem] border border-border bg-muted text-[0.84375rem] font-semibold shadow-none"
+                  disabled={redirecting !== null}
+                  onClick={() => void signInWith(provider)}
+                >
+                  <img src={logo} alt="" className="size-4" />
+                  {redirecting === provider ? 'Redirecting…' : label}
+                </Button>
+              ))}
+            </div>
             {passkeysSupported() && (
               <Button
                 type="button"
