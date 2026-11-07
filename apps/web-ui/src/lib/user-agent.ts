@@ -1,9 +1,10 @@
 // Order matters: Edge and Opera say Chrome too, Chrome says Safari, iOS says Mac OS.
+// Firefox and Chrome on iOS name themselves FxiOS and CriOS, and say Safari.
 const BROWSERS: [RegExp, string][] = [
   [/Edg\//, 'Edge'],
   [/OPR\//, 'Opera'],
-  [/Firefox\//, 'Firefox'],
-  [/Chrome\//, 'Chrome'],
+  [/Firefox\/|FxiOS\//, 'Firefox'],
+  [/Chrome\/|CriOS\//, 'Chrome'],
   [/Safari\//, 'Safari'],
 ]
 const SYSTEMS: [RegExp, string][] = [
