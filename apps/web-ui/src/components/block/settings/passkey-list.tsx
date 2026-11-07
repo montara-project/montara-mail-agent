@@ -9,6 +9,10 @@ import QueryState from '@/components/block/common/query-state'
 import { SettingsCard } from '@/components/block/common/settings-card'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
 import SimpleAlertScrollableDialogForm from '@/components/block/common/simple-alert-scrollable-dialog-form'
+import {
+  ConfirmPasswordField,
+  useConfirmIdentityError,
+} from '@/components/block/settings/confirm-identity'
 import { Button } from '@/components/ui/button'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -76,7 +80,9 @@ function PasskeyRow({ passkey }: { passkey: Models.Passkey }) {
 /** Names the passkey, then hands over to the browser's passkey sheet. */
 function AddPasskeyDialog({ onClose }: { onClose: () => void }) {
   const [name, setName] = React.useState(() => describeUserAgent(navigator.userAgent).name)
+  const [password, setPassword] = React.useState('')
   const create = useMutation(queries.passkeys.create())
+  const confirmError = useConfirmIdentityError()
 
   return (
     <SimpleAlertScrollableDialogForm
@@ -84,15 +90,18 @@ function AddPasskeyDialog({ onClose }: { onClose: () => void }) {
       onOpenChange={(open) => !open && onClose()}
       onSubmit={(e) => {
         e.preventDefault()
-        create.mutate(name.trim(), {
-          onSuccess: (passkey) => {
-            toast.success(`${passkey.name} added`)
-            onClose()
-          },
-          onError: (error) => {
-            if (!passkeyCancelled(error)) toastAxiosError(error)
-          },
-        })
+        create.mutate(
+          { name: name.trim(), password },
+          {
+            onSuccess: (passkey) => {
+              toast.success(`${passkey.name} added`)
+              onClose()
+            },
+            onError: (error) => {
+              if (!passkeyCancelled(error)) confirmError(error)
+            },
+          }
+        )
       }}
       title="Add a passkey"
       description="Your device asks for your fingerprint, face or screen lock, and keeps the key."
@@ -112,6 +121,7 @@ function AddPasskeyDialog({ onClose }: { onClose: () => void }) {
         />
         <FieldDescription>So you can tell your passkeys apart.</FieldDescription>
       </Field>
+      <ConfirmPasswordField value={password} onChange={setPassword} />
     </SimpleAlertScrollableDialogForm>
   )
 }

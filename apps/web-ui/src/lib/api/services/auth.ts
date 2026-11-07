@@ -13,7 +13,7 @@ const resources = (): AuthResources => ({
   signIn: (body: SignInDto) => api.post(`${path}/email-password/sign-in`, body, withCookies),
   me: () => api.get(`${path}/me`),
   signOut: () => api.post(`${path}/sign-out`),
-  totpEnable: () => api.post(`${path}/totp/enable`, {}, withCookies),
+  totpEnable: (password) => api.post(`${path}/totp/enable`, { password }, withCookies),
   totpDisable: () => api.post(`${path}/totp/disable`, {}),
   totpBackupCodes: () => api.post(`${path}/totp/generate-backup-codes`, {}),
   totpVerify: (body, backup) =>

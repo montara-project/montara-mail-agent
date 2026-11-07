@@ -24,7 +24,8 @@ export type AuthResources = {
   }) => Promise<AxiosResponse<SignInData | TOTPRedirect>>
   me: () => Promise<AxiosResponse<MeData>>
   signOut: () => Promise<AxiosDeleteResponse>
-  totpEnable: () => Promise<AxiosResponse<TOTPSetup>>
+  /** Starts two-factor setup once the password is confirmed (empty without one). */
+  totpEnable: (password: string) => Promise<AxiosResponse<TOTPSetup>>
   totpDisable: () => Promise<AxiosResponse<{ message: string }>>
   totpBackupCodes: () => Promise<AxiosResponse<{ backup_codes: string[] }>>
   /** A code from the app, or with backup a backup code; answers like a sign-in. */

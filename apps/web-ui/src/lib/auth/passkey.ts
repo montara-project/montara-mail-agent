@@ -30,8 +30,8 @@ export async function signInWithPasskey() {
 }
 
 /** Make a passkey on this device for the signed-in user and register it under name. */
-export async function createPasskey(name: string) {
-  const res = await services.passkeys.options()
+export async function createPasskey(name: string, password: string) {
+  const res = await services.passkeys.options(password)
   const credential = (await navigator.credentials.create({
     publicKey: PublicKeyCredential.parseCreationOptionsFromJSON(res.data.data.publicKey),
   })) as PublicKeyCredential | null

@@ -22,8 +22,8 @@ const list = () =>
 /** Makes a passkey on this device, then registers it. */
 const create = () =>
   mutationOptions({
-    mutationFn: async (name: string) => {
-      const res = await createPasskey(name)
+    mutationFn: async ({ name, password }: { name: string; password: string }) => {
+      const res = await createPasskey(name, password)
       return res.data.data
     },
     onSuccess: invalidate,
