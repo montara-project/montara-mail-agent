@@ -5,7 +5,7 @@ A Go API starter on Fiber and PostgreSQL, with authentication by
 
 ## Run
 
-Requires Go 1.27.2+ and PostgreSQL 18 (the migrations use `uuidv7()`).
+Requires Go 1.27.4+ and PostgreSQL 18 (the migrations use `uuidv7()`).
 
 ```sh
 cp .env.example .env   # then fill in APP_SECRET, RESEND_API_KEY, SUPER_USER
