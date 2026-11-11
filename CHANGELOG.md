@@ -3,6 +3,22 @@
 All notable changes to this project are documented in this file. Versions follow the git tags (`v*`); Docker images are published to ghcr.io with the same version.
 
 
+## [1.8.0](https://github.com/montara-project/montara-mail-agent/compare/v1.7.0...v1.8.0) (2026-11-11)
+
+### Features
+
+* **server:** list the OAuth providers this server has a client for ([50b0c23](https://github.com/montara-project/montara-mail-agent/commit/50b0c23d47d5b80255fc7b92dbff003ab16b6690))
+* **web-ui:** paginate blocked addresses and active sessions ([2d26223](https://github.com/montara-project/montara-mail-agent/commit/2d26223fca945f01f74ed74c93df8a59719dc35d))
+* **web-ui:** show only the OAuth ways in the server can serve ([52a7680](https://github.com/montara-project/montara-mail-agent/commit/52a7680e3207dde1e7e7f2916b9cfb881cb4b6af))
+
+### Bug Fixes
+
+* **server:** bump go 1.27.4 for govulncheck ([6afc1b8](https://github.com/montara-project/montara-mail-agent/commit/6afc1b87f8fcc72a5b28eae8cb112787d8580241))
+* **server:** pin the go 1.27.4 build image and tidy OAuth review notes ([d20f1f8](https://github.com/montara-project/montara-mail-agent/commit/d20f1f862461858195a90d0819266e2e5b8c2335))
+* **server:** refuse Outlook app passwords up front ([b27e030](https://github.com/montara-project/montara-mail-agent/commit/b27e03038432c5c7c388fbd8a658608001677436))
+* **server:** send OAuth returns to the API's own origin on Origin: null ([81ab9b8](https://github.com/montara-project/montara-mail-agent/commit/81ab9b828d328e921bc7700b19c2c2bd9f977629))
+* **web-ui:** handle a failed OAuth provider list and touch-capable pointers ([d717914](https://github.com/montara-project/montara-mail-agent/commit/d7179145b3e09d41a3eee2e10566317ee17f7404))
+
 ## [1.7.0](https://github.com/montara-project/montara-mail-agent/compare/v1.6.0...v1.7.0) (2026-11-07)
 
 ### Features
