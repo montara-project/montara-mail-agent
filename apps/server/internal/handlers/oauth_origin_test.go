@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"io"
 	"net/http/httptest"
 	"testing"
 
@@ -47,9 +48,12 @@ func TestRequestOrigin(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		buf := make([]byte, 128)
-		n, _ := res.Body.Read(buf)
-		if got := string(buf[:n]); got != tc.want {
+		body, err := io.ReadAll(res.Body)
+		res.Body.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := string(body); got != tc.want {
 			t.Errorf("%s: got %q, want %q", tc.name, got, tc.want)
 		}
 	}

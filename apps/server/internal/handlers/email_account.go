@@ -124,7 +124,9 @@ func (h *emailAccountHandler) Create(c fiber.Ctx) error {
 
 	if err := h.sync.Verify(c.Context(), account.IMAPHost, account.IMAPPort, account.Username, body.Password); err != nil {
 		// A custom IMAP server can turn password sign-in off the same way
-		// (outlook.office365.com does).
+		// (outlook.office365.com does). The match is on Microsoft's IMAP
+		// answer, "NO Basic authentication is disabled."; if its wording
+		// changes, the raw IMAP error shows instead.
 		if strings.Contains(err.Error(), "Basic authentication is disabled") {
 			return apperr.New(apperr.KindBadRequest, "this mail server no longer accepts passwords; connect it over OAuth instead")
 		}
@@ -405,12 +407,13 @@ func idToken(token *oauth2.Token) string {
 	return id
 }
 
-// requestOrigin is the web app's origin that started the flow (the Origin
-// header, else the Referer's, else the API's own for a same-origin request,
-// else the first allowed CORS origin), which the
-// callback redirects back to with the code. It must be one of the web apps
-// this server serves: an allowed CORS origin, or the API's own (the SPA it
-// serves itself); any other would receive the code.
+// requestOrigin is the origin of the web app that started an OAuth flow; the
+// callback redirects back to it with the code. It is, in order: the Origin
+// header; the Referer's origin; the API's own origin for a same-origin
+// request that sent neither (the SPA under its no-referrer policy); the first
+// allowed CORS origin. The result must be an allowed CORS origin or the API's
+// own origin, else the request is refused: any other origin would receive
+// the code.
 func requestOrigin(c fiber.Ctx, app *app.Application) (string, error) {
 	allowed := splitOrigins(app.Config.App.CORSAllowedOrigins)
 	own := apiOrigin(app)
