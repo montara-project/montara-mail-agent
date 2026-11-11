@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
 
+import { PageNav, PageRange, usePaged } from '@/components/block/common/page-nav'
 import QueryState from '@/components/block/common/query-state'
 import { SettingsCard } from '@/components/block/common/settings-card'
 import SimpleAlertDialog from '@/components/block/common/simple-alert-dialog'
@@ -15,6 +16,8 @@ import { toastAxiosError } from '@/lib/api/axios-error'
 import { queries } from '@/lib/api/queries'
 import { timeAgo } from '@/lib/date'
 import { describeUserAgent as describe } from '@/lib/user-agent'
+
+const PAGE_SIZE = 10
 
 function SessionRow({ session }: { session: Models.Session }) {
   const [confirming, setConfirming] = React.useState(false)
@@ -105,6 +108,7 @@ export default function SessionList() {
   } = useQuery(queries.profile.sessions())
   const revokeOthers = useMutation(queries.profile.revokeOtherSessions())
   const others = sessions.filter((session) => !session.current).length
+  const { page, setPage, pageCount, first, pageItems } = usePaged(sessions, PAGE_SIZE)
 
   return (
     <SettingsCard
@@ -113,6 +117,19 @@ export default function SessionList() {
       body="form"
       title="Active sessions"
       description="Devices signed in to your account. Sign out any you don't recognize."
+      footer={
+        pageCount > 1 && (
+          <>
+            <PageRange first={first} count={pageItems.length} total={sessions.length} />
+            <PageNav
+              page={page}
+              pageCount={pageCount}
+              onChange={setPage}
+              label="Active session pages"
+            />
+          </>
+        )
+      }
       action={
         others > 0 && (
           <Button
@@ -137,7 +154,7 @@ export default function SessionList() {
         empty={<p className="text-ink-3 py-6 text-center text-[0.75rem]">No active sessions</p>}
       >
         <ul className="divide-border/60 -m-[1.125rem] divide-y overflow-hidden rounded-b-lg">
-          {sessions.map((session) => (
+          {pageItems.map((session) => (
             <SessionRow key={session.id} session={session} />
           ))}
         </ul>

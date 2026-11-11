@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 
 import type { Models } from '@/lib/api/models'
 
+import { PageNav, PageRange, usePaged } from '@/components/block/common/page-nav'
 import QueryState from '@/components/block/common/query-state'
 import SectionHeading from '@/components/block/common/section-heading'
 import { SettingsCard, SettingsPage } from '@/components/block/common/settings-card'
@@ -21,6 +22,8 @@ import { IP_BLOCK_DURATIONS, IPBlockSchema } from '@/lib/api/dtos/settings/ip-bl
 import { queries } from '@/lib/api/queries'
 import { timeAgo } from '@/lib/date'
 import { cn } from '@/lib/utils'
+
+const PAGE_SIZE = 10
 
 const DURATION_OPTIONS = IP_BLOCK_DURATIONS.map((hours) => ({
   value: hours,
@@ -212,6 +215,7 @@ export default function IPBlockList() {
   const { data, isPending, isError, error, refetch } = useQuery(queries.ipBlocks.list())
   const blocks = data?.data ?? []
   const auto = data?.metadata.auto
+  const { page, setPage, pageCount, first, pageItems: pageBlocks } = usePaged(blocks, PAGE_SIZE)
 
   return (
     <SettingsPage>
@@ -277,10 +281,21 @@ export default function IPBlockList() {
           }
         >
           <ul className="grid gap-0.5">
-            {blocks.map((block) => (
+            {pageBlocks.map((block) => (
               <BlockRow key={block.id} block={block} />
             ))}
           </ul>
+          {pageCount > 1 && (
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 px-2.5">
+              <PageRange first={first} count={pageBlocks.length} total={blocks.length} />
+              <PageNav
+                page={page}
+                pageCount={pageCount}
+                onChange={setPage}
+                label="Blocked address pages"
+              />
+            </div>
+          )}
         </QueryState>
       </SettingsCard>
 
