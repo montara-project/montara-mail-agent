@@ -116,7 +116,18 @@ func (h *emailAccountHandler) Create(c fiber.Ctx) error {
 		account.Label = account.Email
 	}
 
+	// Microsoft turned off password (Basic) IMAP sign-in for Outlook.com and
+	// Microsoft 365, app passwords included: only OAuth gets in.
+	if body.Provider == constant.ProviderOutlook {
+		return apperr.New(apperr.KindBadRequest, "Outlook no longer accepts app passwords; connect it with Microsoft OAuth")
+	}
+
 	if err := h.sync.Verify(c.Context(), account.IMAPHost, account.IMAPPort, account.Username, body.Password); err != nil {
+		// A custom IMAP server can turn password sign-in off the same way
+		// (outlook.office365.com does).
+		if strings.Contains(err.Error(), "Basic authentication is disabled") {
+			return apperr.New(apperr.KindBadRequest, "this mail server no longer accepts passwords; connect it over OAuth instead")
+		}
 		return apperr.New(apperr.KindBadRequest, "couldn't connect to the mailbox: %v", err)
 	}
 
