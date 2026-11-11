@@ -40,6 +40,7 @@ import {
   PROVIDER_TILE,
   ProviderIcon,
   type Connector,
+  useConnectors,
 } from './connector-list'
 
 const ACTION = 'h-7 rounded-[0.5rem] px-2 text-[0.78125rem] shadow-none'
@@ -123,6 +124,7 @@ export default function MailAccountList() {
   const [moving, setMoving] = React.useState<Models.EmailAccount | null>(null)
   const [moveTarget, setMoveTarget] = React.useState<string>('')
   const [connecting, setConnecting] = React.useState<Connector | null>(null)
+  const connectors = useConnectors()
   // The member-scoped list is the user's own organizations; the account can
   // only move within them, so it never changes hands between users.
   const otherOrgs = organizations.filter((o) => o.id !== organization?.id)
@@ -298,7 +300,7 @@ export default function MailAccountList() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-44">
-            {CONNECTORS.map((connector) => (
+            {connectors.map((connector) => (
               <DropdownMenuItem key={connector.id} onClick={() => setConnecting(connector)}>
                 <ProviderIcon
                   provider={connector.id}

@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 import {
   ArrowLeft,
@@ -24,6 +25,7 @@ import { Input } from '@/components/ui/input'
 import { OTPCodeInput } from '@/components/ui/input-otp'
 import { useAppForm } from '@/hooks/form'
 import { SignInSchema } from '@/lib/api/dtos/auth/schema'
+import { queries } from '@/lib/api/queries'
 import { signInWithEmail, verifyTOTP } from '@/lib/auth/email-auth'
 import { type OAuthProvider, startOAuthSignIn } from '@/lib/auth/oauth-sign-in'
 import { passkeyCancelled, passkeysSupported, signInWithPasskey } from '@/lib/auth/passkey'
@@ -212,6 +214,10 @@ export default function LoginForm({
   // MotionConfig's reducedMotion leaves height animating, so the duration drops instead.
   const reduceMotion = useReducedMotion()
   const changeServer = useRef<HTMLButtonElement>(null)
+  // Only the providers the server has a client for; none until it answers.
+  const { data: oauthProviders } = useQuery(queries.auth.oauthProviders())
+  const oauthButtons = OAUTH_BUTTONS.filter((b) => oauthProviders?.sign_in.includes(b.provider))
+  const canPasskey = passkeysSupported()
 
   const enter = async () => {
     const email = form.state.values.email.trim()
@@ -350,22 +356,24 @@ export default function LoginForm({
         )}
         {step === 'password' && (
           <>
-            <div className="flex flex-row gap-2">
-              {OAUTH_BUTTONS.map(({ provider, label, logo }) => (
-                <Button
-                  key={provider}
-                  type="button"
-                  variant="secondary"
-                  className="h-11 w-full gap-2 rounded-[0.625rem] border border-border bg-muted text-[0.84375rem] font-semibold shadow-none"
-                  disabled={redirecting !== null}
-                  onClick={() => void signInWith(provider)}
-                >
-                  <img src={logo} alt="" className="size-4" />
-                  {redirecting === provider ? 'Redirecting…' : label}
-                </Button>
-              ))}
-            </div>
-            {passkeysSupported() && (
+            {oauthButtons.length > 0 && (
+              <div className="flex flex-row gap-2">
+                {oauthButtons.map(({ provider, label, logo }) => (
+                  <Button
+                    key={provider}
+                    type="button"
+                    variant="secondary"
+                    className="h-11 w-full gap-2 rounded-[0.625rem] border border-border bg-muted text-[0.84375rem] font-semibold shadow-none"
+                    disabled={redirecting !== null}
+                    onClick={() => void signInWith(provider)}
+                  >
+                    <img src={logo} alt="" className="size-4" />
+                    {redirecting === provider ? 'Redirecting…' : label}
+                  </Button>
+                ))}
+              </div>
+            )}
+            {canPasskey && (
               <Button
                 type="button"
                 variant="secondary"
@@ -377,11 +385,13 @@ export default function LoginForm({
                 {passkeyPending ? 'Waiting for your passkey…' : 'Sign in with a passkey'}
               </Button>
             )}
-            <div className="flex items-center gap-2.5" aria-hidden>
-              <span className="h-px grow bg-border" />
-              <span className="font-mono text-[0.6875rem] font-semibold text-ink-faint">or</span>
-              <span className="h-px grow bg-border" />
-            </div>
+            {(oauthButtons.length > 0 || canPasskey) && (
+              <div className="flex items-center gap-2.5" aria-hidden>
+                <span className="h-px grow bg-border" />
+                <span className="font-mono text-[0.6875rem] font-semibold text-ink-faint">or</span>
+                <span className="h-px grow bg-border" />
+              </div>
+            )}
             <form
               className={AUTH_FIELDS}
               noValidate

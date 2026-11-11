@@ -20,6 +20,7 @@ const resources = (): AuthResources => ({
     api.post(`${path}/totp/${backup ? 'verify-backup-code' : 'verify'}`, body, withCookies),
   oauthAuthorize: (provider, redirectTo) =>
     api.get(`${path}/oauth2/authorize/${provider}`, { params: { redirect_to: redirectTo } }),
+  oauthProviders: () => api.get('/api/v1/oauth-providers'),
   // The session cookie the OAuth callback set lives on the API's origin; the
   // same-origin (and dev-proxied) browser sends it on its own.
   passkeyOptions: () => api.post(`${path}/passkey/options`, {}),

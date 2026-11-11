@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Plus, Server } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
@@ -42,6 +42,8 @@ export type Connector = {
   oauthName?: string
   /** The OAuth button's logo; falls back to the tile's brand logo. */
   oauthLogo?: string
+  /** No app password way in: the provider turned password IMAP sign-in off. */
+  oauthOnly?: boolean
   /** Where the user gets the app password the connection signs in with. */
   help: string
 }
@@ -63,7 +65,10 @@ export const CONNECTORS: Connector[] = [
     description: 'Outlook.com and Microsoft 365',
     logo: outlookLogo,
     oauthName: 'Microsoft',
-    help: 'Create an app password under Microsoft account › Security › Advanced security options. Some Microsoft 365 organizations turn IMAP sign-in off.',
+    // Microsoft turned Basic (password) IMAP sign-in off for Outlook.com and
+    // Microsoft 365, app passwords included.
+    oauthOnly: true,
+    help: 'Outlook no longer accepts app passwords; sign in with Microsoft.',
   },
   {
     id: 'yahoo',
@@ -285,17 +290,32 @@ export function ConnectDialog({
   connector: Connector
   onClose: () => void
 }) {
+  // Only a provider the server has an OAuth client for offers the OAuth way in.
+  const { data: oauthProviders, isPending } = useQuery(queries.auth.oauthProviders())
+  if (isPending) return null
+
   // IMAP is a protocol and iCloud and Lark offer no public IMAP OAuth: they
-  // only have the app password way in, straight to the form.
-  return connector.oauthName ? (
+  // only have the app password way in, straight to the form. So does a
+  // provider whose OAuth client isn't configured.
+  return connector.oauthName && oauthProviders?.mailbox.includes(connector.id) ? (
     <ProviderConnectDialog key={connector.id} connector={connector} onClose={onClose} />
   ) : (
     <ConnectForm key={connector.id} connector={connector} onClose={onClose} />
   )
 }
 
+/**
+ * The connectors this server can connect: an OAuth-only provider shows only
+ * once the server answers that its OAuth client is configured.
+ */
+export function useConnectors() {
+  const { data } = useQuery(queries.auth.oauthProviders())
+  return CONNECTORS.filter((c) => !c.oauthOnly || data?.mailbox.includes(c.id))
+}
+
 /** Providers a mailbox can be connected from. */
 export default function ConnectorList() {
+  const connectors = useConnectors()
   const [connecting, setConnecting] = React.useState<Connector | null>(null)
 
   return (
@@ -307,7 +327,7 @@ export default function ConnectorList() {
         <p className="text-muted-foreground text-sm">Add a mailbox from one of these providers.</p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {CONNECTORS.map((connector) => (
+        {connectors.map((connector) => (
           <button
             key={connector.id}
             type="button"
