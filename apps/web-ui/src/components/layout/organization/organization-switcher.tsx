@@ -91,8 +91,8 @@ export default function OrganizationSwitcher() {
               <Button
                 variant="dim"
                 size="icon"
-                // Shown on hover or keyboard focus; touch screens have no hover, so always there.
-                className="size-8 opacity-0 group-hover/org:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100"
+                // Shown on hover or keyboard focus; always there when any pointer is touch, which can't hover.
+                className="size-8 opacity-0 group-hover/org:opacity-100 focus-visible:opacity-100 any-pointer-coarse:opacity-100"
                 aria-label={`Edit ${org.name}`}
                 onClick={() => openDialog(org)}
               >

@@ -215,7 +215,11 @@ export default function LoginForm({
   const reduceMotion = useReducedMotion()
   const changeServer = useRef<HTMLButtonElement>(null)
   // Only the providers the server has a client for; none until it answers.
-  const { data: oauthProviders } = useQuery(queries.auth.oauthProviders())
+  const {
+    data: oauthProviders,
+    isError: oauthFailed,
+    refetch: refetchOAuth,
+  } = useQuery(queries.auth.oauthProviders())
   const oauthButtons = OAUTH_BUTTONS.filter((b) => oauthProviders?.sign_in.includes(b.provider))
   const canPasskey = passkeysSupported()
 
@@ -385,7 +389,19 @@ export default function LoginForm({
                 {passkeyPending ? 'Waiting for your passkey…' : 'Sign in with a passkey'}
               </Button>
             )}
-            {(oauthButtons.length > 0 || canPasskey) && (
+            {oauthFailed && (
+              <p className="text-[0.75rem] text-ink-3">
+                Couldn't load Google and Outlook sign-in.{' '}
+                <button
+                  type="button"
+                  className="font-semibold text-foreground underline underline-offset-2"
+                  onClick={() => void refetchOAuth()}
+                >
+                  Try again
+                </button>
+              </p>
+            )}
+            {(oauthButtons.length > 0 || oauthFailed || canPasskey) && (
               <div className="flex items-center gap-2.5" aria-hidden>
                 <span className="h-px grow bg-border" />
                 <span className="font-mono text-[0.6875rem] font-semibold text-ink-faint">or</span>

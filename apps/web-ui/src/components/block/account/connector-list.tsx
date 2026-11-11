@@ -296,8 +296,11 @@ export function ConnectDialog({
 
   // IMAP is a protocol and iCloud and Lark offer no public IMAP OAuth: they
   // only have the app password way in, straight to the form. So does a
-  // provider whose OAuth client isn't configured.
-  return connector.oauthName && oauthProviders?.mailbox.includes(connector.id) ? (
+  // provider whose OAuth client isn't configured, or when the list didn't
+  // load. An OAuth-only provider never gets the form: a password can't work,
+  // and its OAuth button answers clearly when the server can't serve it.
+  const oauth = connector.oauthOnly || oauthProviders?.mailbox.includes(connector.id)
+  return connector.oauthName && oauth ? (
     <ProviderConnectDialog key={connector.id} connector={connector} onClose={onClose} />
   ) : (
     <ConnectForm key={connector.id} connector={connector} onClose={onClose} />
