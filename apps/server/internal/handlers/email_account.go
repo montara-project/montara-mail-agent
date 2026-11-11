@@ -406,14 +406,16 @@ func idToken(token *oauth2.Token) string {
 }
 
 // requestOrigin is the web app's origin that started the flow (the Origin
-// header, else the Referer's, else the first allowed CORS origin), which the
+// header, else the Referer's, else the API's own for a same-origin request,
+// else the first allowed CORS origin), which the
 // callback redirects back to with the code. It must be one of the web apps
 // this server serves: an allowed CORS origin, or the API's own (the SPA it
 // serves itself); any other would receive the code.
 func requestOrigin(c fiber.Ctx, app *app.Application) (string, error) {
 	allowed := splitOrigins(app.Config.App.CORSAllowedOrigins)
-	if u, err := url.Parse(app.Config.Auth.BaseURL); err == nil && u.Host != "" {
-		allowed = append(allowed, u.Scheme+"://"+u.Host)
+	own := apiOrigin(app)
+	if own != "" {
+		allowed = append(allowed, own)
 	}
 
 	origin := c.Get(fiber.HeaderOrigin)
@@ -423,6 +425,12 @@ func requestOrigin(c fiber.Ctx, app *app.Application) (string, error) {
 				origin = u.Scheme + "://" + u.Host
 			}
 		}
+	}
+	// The SPA this API serves sends "Origin: null" and no Referer under its
+	// no-referrer policy; the browser still marks the request same-origin,
+	// so the page is on the API's own origin, not the first CORS one.
+	if (origin == "" || origin == "null") && c.Get("Sec-Fetch-Site") == "same-origin" && own != "" {
+		origin = own
 	}
 	if (origin == "" || origin == "null") && len(allowed) > 0 {
 		origin = allowed[0]
@@ -450,8 +458,15 @@ func splitOrigins(list string) []string {
 }
 
 // fallbackOrigin is where a callback whose state is missing or broken sends
-// the browser: the first allowed CORS origin, else the API's own origin.
+// the browser: the API's own origin when it serves the SPA, else the first
+// allowed CORS origin, else the API's own origin.
 func fallbackOrigin(app *app.Application) string {
+	// The API serves the SPA itself: that is the web app, whatever CORS lists.
+	if app.Config.App.SPADir != "" {
+		if own := apiOrigin(app); own != "" {
+			return own
+		}
+	}
 	if first, _, _ := strings.Cut(app.Config.App.CORSAllowedOrigins, ","); strings.TrimSpace(first) != "" {
 		return strings.TrimSpace(first)
 	}
@@ -616,4 +631,14 @@ func (h *emailAccountHandler) checkMailboxCap(c fiber.Ctx, organizationID uuid.U
 			"Free accounts connect up to %d mailboxes. Upgrade to Pro for unlimited.", *p.MaxEmailAccounts)
 	}
 	return nil
+}
+
+// apiOrigin is the API's public origin (scheme and host of AUTH_BASE_URL), or
+// "" when that is unset or malformed.
+func apiOrigin(app *app.Application) string {
+	u, err := url.Parse(app.Config.Auth.BaseURL)
+	if err != nil || u.Host == "" {
+		return ""
+	}
+	return u.Scheme + "://" + u.Host
 }
