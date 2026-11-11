@@ -55,7 +55,7 @@ The edition is chosen at build time (`EDITION` build arg, which sets
 
 ## Development
 
-Requirements: Node.js 24, pnpm 11 (`corepack enable`), Go 1.27.2+ and
+Requirements: Node.js 24, pnpm 11 (`corepack enable`), Go 1.27.4+ and
 PostgreSQL 18 (the migrations use `uuidv7()`).
 
 ```sh

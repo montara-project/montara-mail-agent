@@ -43,6 +43,7 @@ export function OrganizationPageSettings() {
         {COMMUNITY && <ServerSettings />}
         {organization && (
           <ActivityLogList
+            key={organization.id}
             title="Audit log"
             description="Every change made in the organization"
             organizationId={organization.id}

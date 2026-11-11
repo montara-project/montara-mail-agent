@@ -16,6 +16,18 @@ const profile = () =>
     },
   })
 
+/** Which OAuth buttons to show. Fixed until the server restarts; switching server reloads the app. */
+const oauthProviders = () =>
+  queryOptions({
+    queryKey: ['oauth-providers'],
+    staleTime: Infinity,
+    queryFn: async () => {
+      const res = await services.auth.oauthProviders()
+      return res.data.data
+    },
+  })
+
 export const authQueries = {
   profile,
+  oauthProviders,
 } as const

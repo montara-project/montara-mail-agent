@@ -1,10 +1,11 @@
 import type { AxiosResponse } from 'axios'
 
-import type { AxiosDeleteResponse } from '@/types/api'
+import type { AxiosDeleteResponse, AxiosItemResponse } from '@/types/api'
 
 import type {
   MeData,
   OAuthAuthUrl,
+  OAuthProviders,
   SignInData,
   TokenPairData,
   TOTPRedirect,
@@ -38,6 +39,8 @@ export type AuthResources = {
     provider: 'google' | 'microsoft',
     redirectTo: string
   ) => Promise<AxiosResponse<OAuthAuthUrl>>
+  /** The providers whose OAuth client is configured; public. */
+  oauthProviders: () => Promise<AxiosItemResponse<OAuthProviders>>
   /** The challenge for navigator.credentials.get; names no account. */
   passkeyOptions: () => Promise<AxiosResponse<{ publicKey: PublicKeyCredentialRequestOptionsJSON }>>
   /** The browser's signed answer; answers like a sign-in, with no two-factor step. */

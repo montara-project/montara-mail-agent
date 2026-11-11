@@ -53,6 +53,14 @@ export interface OAuthAuthUrl {
   auth_url: string
 }
 
+/** GET /api/v1/oauth-providers: the providers whose OAuth client is configured. */
+export interface OAuthProviders {
+  /** "Login with" buttons. */
+  sign_in: ('google' | 'microsoft')[]
+  /** "Connect" buttons, by mailbox provider (gmail, outlook, yahoo, zoho). */
+  mailbox: string[]
+}
+
 /**
  * A sign-in of a user with two-factor sign-in on: no tokens yet, only a
  * pending cookie for POST /totp/verify.

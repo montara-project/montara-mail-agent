@@ -120,7 +120,9 @@ export default function ProviderConnectDialog({
               <AlertDialogHeader>
                 <AlertDialogTitle>Connect {connector.name}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Choose how Montara signs in to your {connector.name} account.
+                  {connector.oauthOnly
+                    ? `Montara signs in to your ${connector.name} account through ${connector.oauthName}.`
+                    : `Choose how Montara signs in to your ${connector.name} account.`}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <div className="mt-4 grid gap-3">
@@ -148,22 +150,24 @@ export default function ProviderConnectDialog({
                     </span>
                   </span>
                 </button>
-                <button
-                  type="button"
-                  disabled={!organization}
-                  onClick={() => setMethod('app-password')}
-                  className={methodButtonClass}
-                >
-                  <span className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-md">
-                    <KeyRound className="size-1/2" />
-                  </span>
-                  <span className="grid min-w-0 flex-1">
-                    <span className="truncate font-semibold">App password</span>
-                    <span className="text-muted-foreground truncate text-xs">
-                      Sign in with your {connector.name} app password over IMAP
+                {!connector.oauthOnly && (
+                  <button
+                    type="button"
+                    disabled={!organization}
+                    onClick={() => setMethod('app-password')}
+                    className={methodButtonClass}
+                  >
+                    <span className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-md">
+                      <KeyRound className="size-1/2" />
                     </span>
-                  </span>
-                </button>
+                    <span className="grid min-w-0 flex-1">
+                      <span className="truncate font-semibold">App password</span>
+                      <span className="text-muted-foreground truncate text-xs">
+                        Sign in with your {connector.name} app password over IMAP
+                      </span>
+                    </span>
+                  </button>
+                )}
               </div>
               <AlertDialogFooter className="mt-6">
                 <Button type="button" variant="outline" onClick={onClose}>

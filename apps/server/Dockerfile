@@ -34,7 +34,7 @@ ENV VITE_APP_NAME=$VITE_APP_NAME \
 RUN pnpm --filter web-ui exec vite build && test -f apps/web-ui/dist/index.html
 
 # ---- API
-FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.27.4-alpine AS build
 WORKDIR /src
 
 COPY apps/server/go.mod apps/server/go.sum ./

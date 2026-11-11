@@ -46,6 +46,9 @@ func routes(r *fiber.App, app *app.Application) {
 	// budget; give them shared storage once there is more than one instance.
 	v1 := r.Group("/api/v1", middlewares.RateLimit(apiRateLimit, exempt))
 
+	// Which OAuth buttons the web app shows; public, the sign-in page needs it.
+	v1.Get("/oauth-providers", h.Health.OAuthProviders)
+
 	// Every route below needs a signed-in user; what they may touch follows
 	// from their organizations (see handlers.member). Idempotency comes last,
 	// after the caller is known, and replays a repeated write instead of

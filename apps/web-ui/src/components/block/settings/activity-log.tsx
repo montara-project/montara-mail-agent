@@ -2,8 +2,6 @@ import { useQuery } from '@tanstack/react-query'
 import {
   Bot,
   Building2,
-  ChevronLeft,
-  ChevronRight,
   GraduationCap,
   History,
   Inbox,
@@ -23,6 +21,7 @@ import React from 'react'
 import type { Models } from '@/lib/api/models'
 
 import EmptyState from '@/components/block/common/empty-state'
+import { PageNav, PageRange } from '@/components/block/common/page-nav'
 import { SettingsCard } from '@/components/block/common/settings-card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -82,9 +81,6 @@ const ACTION_ICONS: Record<string, LucideIcon> = {
   mcp_server: Plug,
 }
 
-/** How many page numbers the footer shows at once. */
-const PAGE_WINDOW = 5
-
 function ActivityRow({ entry, audit }: { entry: Models.ActivityLog; audit: boolean }) {
   const area = entry.action.split('.')[0]
   const actor = entry.actor_name || 'Unknown'
@@ -119,66 +115,6 @@ function ActivityRow({ entry, audit }: { entry: Models.ActivityLog; audit: boole
         {(audit ? AUDIT_LABELS[area] : AREA_LABELS[area]) ?? entry.action}
       </span>
     </li>
-  )
-}
-
-/** Previous, up to five page numbers around the current one, next. */
-function Pagination({
-  page,
-  pageCount,
-  onChange,
-}: {
-  page: number
-  pageCount: number
-  onChange: (page: number) => void
-}) {
-  const start = Math.max(0, Math.min(page - 2, pageCount - PAGE_WINDOW))
-  const pages = Array.from({ length: Math.min(PAGE_WINDOW, pageCount) }, (_, i) => start + i)
-  const cell =
-    'grid size-6 shrink-0 place-items-center rounded-[0.4375rem] border border-transparent text-[0.75rem] outline-none transition-colors duration-150 focus-visible:ring-[0.1875rem] focus-visible:ring-ring/50 pointer-coarse:size-11 motion-reduce:transition-none'
-  const arrow = cn(
-    cell,
-    'text-muted-foreground hover:bg-accent disabled:text-ink-faint disabled:hover:bg-transparent'
-  )
-
-  return (
-    <nav aria-label="Activity log pages" className="flex items-center gap-1">
-      <button
-        type="button"
-        aria-label="Previous page"
-        disabled={page === 0}
-        onClick={() => onChange(page - 1)}
-        className={arrow}
-      >
-        <ChevronLeft className="size-3" aria-hidden />
-      </button>
-      {pages.map((item) => (
-        <button
-          key={item}
-          type="button"
-          aria-label={`Page ${item + 1}`}
-          aria-current={item === page ? 'page' : undefined}
-          onClick={() => onChange(item)}
-          className={cn(
-            cell,
-            item === page
-              ? 'border-accent-ink/40 bg-accent-ink/6 text-accent-soft font-bold'
-              : 'text-ink-3 hover:bg-accent font-medium'
-          )}
-        >
-          {item + 1}
-        </button>
-      ))}
-      <button
-        type="button"
-        aria-label="Next page"
-        disabled={page >= pageCount - 1}
-        onClick={() => onChange(page + 1)}
-        className={arrow}
-      >
-        <ChevronRight className="size-3" aria-hidden />
-      </button>
-    </nav>
   )
 }
 
@@ -252,14 +188,13 @@ export default function ActivityLogList({
       footer={
         total > 0 && (
           <>
-            <p className="text-ink-3 flex items-center gap-[0.3125rem] text-[0.71875rem] leading-[0.875rem]">
-              Showing
-              <span className="text-foreground font-bold tabular-nums">
-                {first + 1}–{first + entries.length}
-              </span>
-              of {total} {noun(total)}
-            </p>
-            <Pagination page={page} pageCount={pageCount} onChange={setPage} />
+            <PageRange first={first} count={entries.length} total={total} noun={noun(total)} />
+            <PageNav
+              page={page}
+              pageCount={pageCount}
+              onChange={setPage}
+              label="Activity log pages"
+            />
           </>
         )
       }
