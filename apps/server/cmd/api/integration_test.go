@@ -360,6 +360,12 @@ func TestIntegration(t *testing.T) {
 	if status, out := call(http.MethodGet, "/health", "", nil); status != http.StatusOK {
 		t.Fatalf("health: %d %v", status, out)
 	}
+	// Both sign-in clients are set and no mailbox one is: the web app hides
+	// the mailbox OAuth buttons.
+	if status, out := call(http.MethodGet, "/api/v1/oauth-providers", "", nil); status != http.StatusOK ||
+		fmt.Sprint(out["data"]) != "map[mailbox:[] sign_in:[google microsoft]]" {
+		t.Fatalf("oauth providers: %d %v", status, out)
+	}
 	if status, out := call(http.MethodGet, "/api/v1/auth/me", superToken, nil); status != http.StatusOK {
 		t.Fatalf("me with bearer: %d %v", status, out)
 	}
